@@ -41,7 +41,7 @@ class UsersApi(object):
             settings={
                 'response_type': (CreateUser200Response,),
                 'auth': [
-                    'OAuth2',
+                    # 'OAuth2',
                     'OAuth2',
                     'kindeBearerAuth'
                 ],

@@ -41,7 +41,7 @@ class OAuthApi(object):
             settings={
                 'response_type': (UserProfile,),
                 'auth': [
-                    'OAuth2',
+                    # 'OAuth2',
                     'OAuth2',
                     'kindeBearerAuth'
                 ],
@@ -87,7 +87,7 @@ class OAuthApi(object):
             settings={
                 'response_type': (UserProfileV2,),
                 'auth': [
-                    'OAuth2',
+                    # 'OAuth2',
                     'OAuth2',
                     'kindeBearerAuth'
                 ],

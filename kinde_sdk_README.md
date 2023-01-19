@@ -28,17 +28,14 @@ you can run the following:
 
 ```python
 
-import time
-import kinde_sdk
 from pprint import pprint
+import kinde_sdk
 from kinde_sdk.api import o_auth_api
-from kinde_sdk.model.user_profile import UserProfile
-from kinde_sdk.model.user_profile_v2 import UserProfileV2
+from kinde_sdk.kinde_api_client import KindeApiClient
+
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
-configuration = kinde_sdk.Configuration(
-    host = "https://app.kinde.com"
-)
+# configuration = kinde_sdk.Configuration(host="https://app.kinde.com")
 
 # The client must configure the authentication and authorization parameters
 # in accordance with the API server security policy.
@@ -46,25 +43,26 @@ configuration = kinde_sdk.Configuration(
 # satisfies your auth use case.
 
 # Configure OAuth2 access token for authorization: OAuth2
-configuration = kinde_sdk.Configuration(
-    host = "https://app.kinde.com"
-)
-configuration.access_token = 'YOUR_ACCESS_TOKEN'
-
-# Configure OAuth2 access token for authorization: OAuth2
-configuration = kinde_sdk.Configuration(
-    host = "https://app.kinde.com"
-)
-configuration.access_token = 'YOUR_ACCESS_TOKEN'
+configuration = kinde_sdk.Configuration(host="https://app.kinde.com")
+# configuration.access_token = "YOUR_ACCESS_TOKEN"
 
 # Configure Bearer authorization (JWT): kindeBearerAuth
-configuration = kinde_sdk.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
+# configuration = kinde_sdk.Configuration(access_token="YOUR_BEARER_TOKEN")
 
+domain = "DOMAIN"
+client_id = "CLIENT_ID"
+client_secret = "CLIENT_SECRET"
+grant_type = "GRANT_TYPE"
 
 # Enter a context with an instance of the API client
-with kinde_sdk.ApiClient(configuration) as api_client:
+# with kinde_sdk.ApiClient(configuration) as api_client:
+with kinde_sdk.kinde_api_client.KindeApiClient(
+    configuration,
+    domain=domain,
+    client_id=client_id,
+    client_secret=client_secret,
+    grant_type=grant_type,
+) as api_client:
     # Create an instance of the API class
     api_instance = o_auth_api.OAuthApi(api_client)
 

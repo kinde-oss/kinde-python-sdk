@@ -33,13 +33,18 @@ class KindeApiClient(ApiClient):
 
         self.access_token_obj = None
 
-    def login(self):
+
         self.client = OAuth2Session(
             self.client_id,
             self.client_secret,
             scope=self.scope,
             token_endpoint=self.token_endpoint,
         )
+
+    def login(self):
+        self.fetch_token()
+    def register(self):
+        self.fetch_token(start_page="registration")
 
     def get_authorization_url(self):
         self.authorization_url, self.state = self.client.create_authorization_url(
@@ -52,13 +57,14 @@ class KindeApiClient(ApiClient):
         )
 
     def call_api(self, *args, **kwargs):
-        self.get_or_refresh_auth_token()
+        self.refresh_auth_token_if_needed()
         return super().call_api(*args, **kwargs)
 
     def get_or_refresh_auth_token(self):
-        if not self.__access_token_obj or (
-            self.__access_token_obj and self.__access_token_obj.is_expired()
-        ):
+        if not self.__access_token_obj:
+            # custom exception
+            raise Exception("login or register first")
+        if self.__access_token_obj.is_expired():
             self.__access_token_obj = self.client.fetch_token(
                 self.token_endpoint,
                 authorization_response=self.authorization_endpoint,

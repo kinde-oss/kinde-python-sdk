@@ -11,8 +11,12 @@
 
 from kinde_sdk.model.create_user200_response import CreateUser200Response
 from kinde_sdk.model.create_user_request import CreateUserRequest
-from kinde_sdk.model.create_user_request_identities_inner import CreateUserRequestIdentitiesInner
-from kinde_sdk.model.create_user_request_identities_inner_details import CreateUserRequestIdentitiesInnerDetails
+from kinde_sdk.model.create_user_request_identities_inner import (
+    CreateUserRequestIdentitiesInner,
+)
+from kinde_sdk.model.create_user_request_identities_inner_details import (
+    CreateUserRequestIdentitiesInnerDetails,
+)
 from kinde_sdk.model.create_user_request_profile import CreateUserRequestProfile
 from kinde_sdk.model.user import User
 from kinde_sdk.model.user_identity import UserIdentity

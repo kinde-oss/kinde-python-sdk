@@ -108,8 +108,8 @@ Class | Method | HTTP request | Description
 
 - **Type**: OAuth
 - **Flow**: application
-- **Authorization URL**: 
-- **Scopes**: 
+- **Authorization URL**:
+- **Scopes**:
  - **read**: Grants read access
  - **write**: Grants write access
  - **admin**: Grants access to admin operations
@@ -120,7 +120,7 @@ Class | Method | HTTP request | Description
 - **Type**: OAuth
 - **Flow**: accessCode
 - **Authorization URL**: https://example.com/oauth/authorize
-- **Scopes**: 
+- **Scopes**:
  - **read**: Grants read access
  - **write**: Grants write access
  - **admin**: Grants access to admin operations
@@ -154,4 +154,3 @@ import kinde_sdk
 from kinde_sdk.apis import *
 from kinde_sdk.models import *
 ```
-

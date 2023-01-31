@@ -13,10 +13,13 @@ import sys
 import unittest
 
 import kinde_sdk
-from kinde_sdk.model.create_user_request_identities_inner import CreateUserRequestIdentitiesInner
+from kinde_sdk.model.create_user_request_identities_inner import (
+    CreateUserRequestIdentitiesInner,
+)
 from kinde_sdk.model.create_user_request_profile import CreateUserRequestProfile
-globals()['CreateUserRequestIdentitiesInner'] = CreateUserRequestIdentitiesInner
-globals()['CreateUserRequestProfile'] = CreateUserRequestProfile
+
+globals()["CreateUserRequestIdentitiesInner"] = CreateUserRequestIdentitiesInner
+globals()["CreateUserRequestProfile"] = CreateUserRequestProfile
 from kinde_sdk.model.create_user_request import CreateUserRequest
 
 
@@ -36,5 +39,5 @@ class TestCreateUserRequest(unittest.TestCase):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

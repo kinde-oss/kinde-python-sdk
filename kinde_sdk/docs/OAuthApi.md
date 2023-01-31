@@ -13,7 +13,7 @@ Method | HTTP request | Description
 
 Returns the details of the currently logged in user
 
-Contains the id, names and email of the currently logged in user 
+Contains the id, names and email of the currently logged in user
 
 ### Example
 
@@ -101,7 +101,7 @@ This endpoint does not need any parameter.
 
 Returns the details of the currently logged in user
 
-Contains the id, names and email of the currently logged in user 
+Contains the id, names and email of the currently logged in user
 
 ### Example
 
@@ -183,4 +183,3 @@ This endpoint does not need any parameter.
 **403** | invalid_credentials |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

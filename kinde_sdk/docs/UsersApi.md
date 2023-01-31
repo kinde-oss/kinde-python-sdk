@@ -12,7 +12,7 @@ Method | HTTP request | Description
 
 Creates a user record
 
-Creates a user record and optionally zero or more identities for the user. An example identity could be the email address of the user 
+Creates a user record and optionally zero or more identities for the user. An example identity could be the email address of the user
 
 ### Example
 
@@ -112,4 +112,3 @@ Name | Type | Description  | Notes
 **200** | Successfully created a new user |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

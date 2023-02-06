@@ -157,3 +157,15 @@ def render_path(path_to_item):
         else:
             result += "['{0}']".format(pth)
     return result
+
+
+class KindeConfigurationException(Exception):
+    pass
+
+
+class KindeLoginException(Exception):
+    pass
+
+
+class KindeTokenException(Exception):
+    pass

@@ -14,7 +14,8 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.user_identity import UserIdentity
-globals()['UserIdentity'] = UserIdentity
+
+globals()["UserIdentity"] = UserIdentity
 from kinde_sdk.model.create_user200_response import CreateUser200Response
 
 
@@ -34,5 +35,5 @@ class TestCreateUser200Response(unittest.TestCase):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

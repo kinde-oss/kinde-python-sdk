@@ -1,6 +1,7 @@
-from authlib.integrations.requests_client import OAuth2Session
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
+from authlib.integrations.requests_client import OAuth2Session
 import jwt
 
 from kinde_sdk.api_client import ApiClient

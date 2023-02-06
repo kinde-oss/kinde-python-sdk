@@ -13,7 +13,9 @@ import sys
 import unittest
 
 import kinde_sdk
-from kinde_sdk.model.create_user_request_identities_inner_details import CreateUserRequestIdentitiesInnerDetails
+from kinde_sdk.model.create_user_request_identities_inner_details import (
+    CreateUserRequestIdentitiesInnerDetails,
+)
 
 
 class TestCreateUserRequestIdentitiesInnerDetails(unittest.TestCase):
@@ -32,5 +34,5 @@ class TestCreateUserRequestIdentitiesInnerDetails(unittest.TestCase):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

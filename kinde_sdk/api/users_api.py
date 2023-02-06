@@ -20,7 +20,7 @@ from kinde_sdk.model_utils import (  # noqa: F401
     datetime,
     file_type,
     none_type,
-    validate_and_convert_types
+    validate_and_convert_types,
 )
 from kinde_sdk.model.create_user200_response import CreateUser200Response
 from kinde_sdk.model.create_user_request import CreateUserRequest
@@ -39,61 +39,46 @@ class UsersApi(object):
         self.api_client = api_client
         self.create_user_endpoint = _Endpoint(
             settings={
-                'response_type': (CreateUser200Response,),
-                'auth': [
+                "response_type": (CreateUser200Response,),
+                "auth": [
                     # 'OAuth2',
-                    'OAuth2',
-                    'kindeBearerAuth'
+                    "OAuth2",
+                    "kindeBearerAuth",
                 ],
-                'endpoint_path': '/api/v1/user',
-                'operation_id': 'create_user',
-                'http_method': 'POST',
-                'servers': None,
+                "endpoint_path": "/api/v1/user",
+                "operation_id": "create_user",
+                "http_method": "POST",
+                "servers": None,
             },
             params_map={
-                'all': [
-                    'create_user_request',
+                "all": [
+                    "create_user_request",
                 ],
-                'required': [],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
+                "required": [],
+                "nullable": [],
+                "enum": [],
+                "validation": [],
             },
             root_map={
-                'validations': {
+                "validations": {},
+                "allowed_values": {},
+                "openapi_types": {
+                    "create_user_request": (CreateUserRequest,),
                 },
-                'allowed_values': {
+                "attribute_map": {},
+                "location_map": {
+                    "create_user_request": "body",
                 },
-                'openapi_types': {
-                    'create_user_request':
-                        (CreateUserRequest,),
-                },
-                'attribute_map': {
-                },
-                'location_map': {
-                    'create_user_request': 'body',
-                },
-                'collection_format_map': {
-                }
+                "collection_format_map": {},
             },
             headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [
-                    'application/json'
-                ]
+                "accept": ["application/json"],
+                "content_type": ["application/json"],
             },
-            api_client=api_client
+            api_client=api_client,
         )
 
-    def create_user(
-        self,
-        **kwargs
-    ):
+    def create_user(self, **kwargs):
         """Creates a user record  # noqa: E501
 
         Creates a user record and optionally zero or more identities for the user. An example identity could be the email address of the user   # noqa: E501
@@ -142,30 +127,14 @@ class UsersApi(object):
                 If the method is called asynchronously, returns the request
                 thread.
         """
-        kwargs['async_req'] = kwargs.get(
-            'async_req', False
-        )
-        kwargs['_return_http_data_only'] = kwargs.get(
-            '_return_http_data_only', True
-        )
-        kwargs['_preload_content'] = kwargs.get(
-            '_preload_content', True
-        )
-        kwargs['_request_timeout'] = kwargs.get(
-            '_request_timeout', None
-        )
-        kwargs['_check_input_type'] = kwargs.get(
-            '_check_input_type', True
-        )
-        kwargs['_check_return_type'] = kwargs.get(
-            '_check_return_type', True
-        )
-        kwargs['_spec_property_naming'] = kwargs.get(
-            '_spec_property_naming', False
-        )
-        kwargs['_content_type'] = kwargs.get(
-            '_content_type')
-        kwargs['_host_index'] = kwargs.get('_host_index')
-        kwargs['_request_auths'] = kwargs.get('_request_auths', None)
+        kwargs["async_req"] = kwargs.get("async_req", False)
+        kwargs["_return_http_data_only"] = kwargs.get("_return_http_data_only", True)
+        kwargs["_preload_content"] = kwargs.get("_preload_content", True)
+        kwargs["_request_timeout"] = kwargs.get("_request_timeout", None)
+        kwargs["_check_input_type"] = kwargs.get("_check_input_type", True)
+        kwargs["_check_return_type"] = kwargs.get("_check_return_type", True)
+        kwargs["_spec_property_naming"] = kwargs.get("_spec_property_naming", False)
+        kwargs["_content_type"] = kwargs.get("_content_type")
+        kwargs["_host_index"] = kwargs.get("_host_index")
+        kwargs["_request_auths"] = kwargs.get("_request_auths", None)
         return self.create_user_endpoint.call_with_http_info(**kwargs)
-

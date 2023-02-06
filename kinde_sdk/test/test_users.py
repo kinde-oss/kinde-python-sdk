@@ -14,7 +14,8 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.user import User
-globals()['User'] = User
+
+globals()["User"] = User
 from kinde_sdk.model.users import Users
 
 
@@ -34,5 +35,5 @@ class TestUsers(unittest.TestCase):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

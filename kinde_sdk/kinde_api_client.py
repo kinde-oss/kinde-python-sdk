@@ -14,8 +14,8 @@ from kinde_sdk.exceptions import (
 
 class GrantType(Enum):
     CLIENT_CREDENTIALS = "client_credentials"
-    AUTORIZATION_CODE = "authorization_code"
-    AUTORIZATION_CODE_WITH_PKCE = "authorization_code_with_pkce"
+    AUTHORIZATION_CODE = "authorization_code"
+    AUTHORIZATION_CODE_WITH_PKCE = "authorization_code_with_pkce"
 
 
 class KindeApiClient(ApiClient):
@@ -26,6 +26,7 @@ class KindeApiClient(ApiClient):
         self,
         *,
         domain,
+        callback_url,
         client_id,
         grant_type,
         client_secret=None,
@@ -48,6 +49,7 @@ class KindeApiClient(ApiClient):
         self.code_verifier = code_verifier
         self.audience = audience
         self.org_code = org_code
+        self.callback_url = callback_url
         self.authorization_endpoint = f"{self.domain}/oauth2/auth"
         self.token_endpoint = f"{self.domain}/oauth2/token"
         self.logout_endpoint = f"{self.domain}/logout"
@@ -61,16 +63,19 @@ class KindeApiClient(ApiClient):
             "token_endpoint": self.token_endpoint,
         }
         create_authorization_url_params = {}
-        if self.grant_type == GrantType.AUTORIZATION_CODE_WITH_PKCE:
+        if self.grant_type == GrantType.AUTHORIZATION_CODE_WITH_PKCE:
             if self.code_verifier is None:
                 raise KindeConfigurationException(
-                    '"code_verifier" parameter is required when a grant_type is AUTORIZATION_CODE_WITH_PKCE.'
+                    '"code_verifier" parameter is required when a grant_type is AUTHORIZATION_CODE_WITH_PKCE.'
                 )
             auth_session_params["code_challenge_method"] = "S256"
             create_authorization_url_params["code_verifier"] = self.code_verifier
 
         self.client = OAuth2Session(
-            self.client_id, self.client_secret, **auth_session_params
+            self.client_id,
+            self.client_secret,
+            redirect_uri=self.callback_url,
+            **auth_session_params,
         )
 
         self.login_url, self.state = self.client.create_authorization_url(
@@ -85,10 +90,10 @@ class KindeApiClient(ApiClient):
         self.registration_url = f"{self.login_url}&start_page=registration"
         self.create_org_url = f"{self.registration_url}&is_create_org=true"
 
-    def login(self) -> str:
+    def get_login_url(self) -> str:
         return self.login_url
 
-    def register(self) -> str:
+    def get_register_url(self) -> str:
         return self.registration_url
 
     def create_org(self) -> str:
@@ -103,7 +108,7 @@ class KindeApiClient(ApiClient):
                     '"authorization_response" parameter is required when grant_type is different than CLIENT_CREDENTIALS.'
                 )
             params = {"authorization_response": authorization_response}
-        if self.grant_type == GrantType.AUTORIZATION_CODE_WITH_PKCE:
+        if self.grant_type == GrantType.AUTHORIZATION_CODE_WITH_PKCE:
             params["code_verifier"] = self.code_verifier
         self.__access_token_obj = self.client.fetch_token(self.token_endpoint, **params)
         self.configuration.access_token = self.__access_token_obj.get("access_token")
@@ -130,7 +135,9 @@ class KindeApiClient(ApiClient):
                 self.fetch_token()
         else:
             if not self.__access_token_obj:
-                raise KindeLoginException('Please use "login()" or "register()" first.')
+                raise KindeLoginException(
+                    'Please use "get_login_url()" or "get_register_url()" first.'
+                )
             if self.__access_token_obj.is_expired():
                 self.refresh_token()
 
@@ -151,7 +158,7 @@ class KindeApiClient(ApiClient):
                 raise KindeTokenException(
                     "Access token doesn't exist.\n"
                     "When grant_type is CLIENT_CREDENTIALS use fetch_token().\n"
-                    'For other grant_type use "login()" or "register()".'
+                    'For other grant_type use "get_login_url()" or "get_register_url()".'
                 )
             if token := self.__access_token_obj.get(token_name):
                 self.__decoded_tokens[token_name] = jwt.decode(

@@ -12,6 +12,7 @@ from kinde_sdk.kinde_api_client import (
 class BaseTestCase(TestCase):
     def setUp(self):
         self.host = "HOST_ADDRESS"
+        self.callback_url = "CALLBACK_URL"
         self.client_id = "CLIENT_ID"
         self.client_secret = "CLIENT_SECRET"
         self.login_url = "login_url"
@@ -20,7 +21,7 @@ class BaseTestCase(TestCase):
         self.scope = "openid profile email offline"
         self.state = "state"
 
-    def _create_kindle_client(self, auth_session_mock, grand_type, **kwargs):
+    def _create_kinde_client(self, auth_session_mock, grant_type, **kwargs):
         auth_session_mock.return_value.create_authorization_url.return_value = [
             self.login_url,
             self.state,
@@ -29,9 +30,10 @@ class BaseTestCase(TestCase):
         kinde_client = KindeApiClient(
             configuration=configuration,
             domain=self.host,
+            callback_url=self.callback_url,
             client_id=self.client_id,
             client_secret=self.client_secret,
-            grant_type=grand_type,
+            grant_type=grant_type,
             **kwargs,
         )
         return kinde_client
@@ -44,13 +46,15 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_client_credentials_create_client(self, auth_session_mock):
-        kinde_client = self._create_kindle_client(
-            auth_session_mock, grand_type=self.grant_type
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
         )
 
         auth_session_mock.assert_called_with(
             self.client_id,
             self.client_secret,
+            redirect_uri=self.callback_url,
             scope=self.scope,
             token_endpoint=kinde_client.token_endpoint,
         )
@@ -62,8 +66,9 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
     def test_client_credentials_fetch_token(self, auth_session_mock):
         fake_access_token = {"access_token": "123456789123456789"}
         auth_session_mock.return_value.fetch_token.return_value = fake_access_token
-        kinde_client = self._create_kindle_client(
-            auth_session_mock, grand_type=self.grant_type
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
         )
 
         kinde_client.fetch_token()
@@ -77,15 +82,16 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         )
 
 
-class TestKindeApiClientAutorizationCode(BaseTestCase):
+class TestKindeApiClientAuthorizationCode(BaseTestCase):
     def setUp(self):
         super().setUp()
-        self.grant_type = GrantType.AUTORIZATION_CODE
+        self.grant_type = GrantType.AUTHORIZATION_CODE
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_create_client(self, auth_session_mock):
-        kinde_client = self._create_kindle_client(
-            auth_session_mock, grand_type=self.grant_type
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
         )
 
         auth_session_mock.assert_called_with(
@@ -93,6 +99,7 @@ class TestKindeApiClientAutorizationCode(BaseTestCase):
             self.client_secret,
             scope=self.scope,
             token_endpoint=kinde_client.token_endpoint,
+            redirect_uri=self.callback_url,
         )
         auth_session_mock.return_value.create_authorization_url.assert_called_with(
             kinde_client.authorization_endpoint
@@ -100,24 +107,27 @@ class TestKindeApiClientAutorizationCode(BaseTestCase):
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_login(self, auth_session_mock):
-        kinde_client = self._create_kindle_client(
-            auth_session_mock, grand_type=self.grant_type
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
         )
 
-        self.assertEqual(kinde_client.login(), self.login_url)
+        self.assertEqual(kinde_client.get_login_url(), self.login_url)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_register(self, auth_session_mock):
-        kinde_client = self._create_kindle_client(
-            auth_session_mock, grand_type=self.grant_type
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
         )
 
-        self.assertEqual(kinde_client.register(), self.registration_url)
+        self.assertEqual(kinde_client.get_register_url(), self.registration_url)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_create_org(self, auth_session_mock):
-        kinde_client = self._create_kindle_client(
-            auth_session_mock, grand_type=self.grant_type
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
         )
 
         self.assertEqual(kinde_client.create_org(), self.create_org_url)
@@ -127,8 +137,9 @@ class TestKindeApiClientAutorizationCode(BaseTestCase):
         fake_auth_response = "TEST"
         fake_access_token = {"access_token": "123456789123456789"}
         auth_session_mock.return_value.fetch_token.return_value = fake_access_token
-        kinde_client = self._create_kindle_client(
-            auth_session_mock, grand_type=self.grant_type
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
         )
 
         kinde_client.fetch_token(authorization_response=fake_auth_response)
@@ -142,18 +153,18 @@ class TestKindeApiClientAutorizationCode(BaseTestCase):
         )
 
 
-class TestKindeApiClientAutorizationCodeWithPKCE(BaseTestCase):
+class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
     def setUp(self):
         super().setUp()
-        self.grant_type = GrantType.AUTORIZATION_CODE_WITH_PKCE
+        self.grant_type = GrantType.AUTHORIZATION_CODE_WITH_PKCE
         self.code_verifier = "CODE_VERIFIER"
         self.code_challenge_method = "S256"
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_with_pkce_create_client(self, auth_session_mock):
-        kinde_client = self._create_kindle_client(
+        kinde_client = self._create_kinde_client(
             auth_session_mock,
-            grand_type=self.grant_type,
+            grant_type=self.grant_type,
             code_verifier=self.code_verifier,
         )
 
@@ -162,6 +173,7 @@ class TestKindeApiClientAutorizationCodeWithPKCE(BaseTestCase):
             self.client_secret,
             scope=self.scope,
             token_endpoint=kinde_client.token_endpoint,
+            redirect_uri=self.callback_url,
             code_challenge_method=self.code_challenge_method,
         )
         auth_session_mock.return_value.create_authorization_url.assert_called_with(
@@ -173,33 +185,33 @@ class TestKindeApiClientAutorizationCodeWithPKCE(BaseTestCase):
         self, auth_session_mock
     ):
         with self.assertRaises(KindeConfigurationException):
-            self._create_kindle_client(auth_session_mock, grand_type=self.grant_type)
+            self._create_kinde_client(auth_session_mock, grant_type=self.grant_type)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_with_pkce_login(self, auth_session_mock):
-        kinde_client = self._create_kindle_client(
+        kinde_client = self._create_kinde_client(
             auth_session_mock,
-            grand_type=self.grant_type,
+            grant_type=self.grant_type,
             code_verifier=self.code_verifier,
         )
 
-        self.assertEqual(kinde_client.login(), self.login_url)
+        self.assertEqual(kinde_client.get_login_url(), self.login_url)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_with_pkce_register(self, auth_session_mock):
-        kinde_client = self._create_kindle_client(
+        kinde_client = self._create_kinde_client(
             auth_session_mock,
-            grand_type=self.grant_type,
+            grant_type=self.grant_type,
             code_verifier=self.code_verifier,
         )
 
-        self.assertEqual(kinde_client.register(), self.registration_url)
+        self.assertEqual(kinde_client.get_register_url(), self.registration_url)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_with_pkce_create_org(self, auth_session_mock):
-        kinde_client = self._create_kindle_client(
+        kinde_client = self._create_kinde_client(
             auth_session_mock,
-            grand_type=self.grant_type,
+            grant_type=self.grant_type,
             code_verifier=self.code_verifier,
         )
 
@@ -210,9 +222,9 @@ class TestKindeApiClientAutorizationCodeWithPKCE(BaseTestCase):
         fake_auth_response = "TEST"
         fake_access_token = {"access_token": "123456789123456789"}
         auth_session_mock.return_value.fetch_token.return_value = fake_access_token
-        kinde_client = self._create_kindle_client(
+        kinde_client = self._create_kinde_client(
             auth_session_mock,
-            grand_type=self.grant_type,
+            grant_type=self.grant_type,
             code_verifier=self.code_verifier,
         )
 

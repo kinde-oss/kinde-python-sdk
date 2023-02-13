@@ -1,0 +1,26 @@
+[project]
+name = "kinde-python-sdk"
+version = "1.0.0"
+authors = [
+    { name = "Your Name", email = "you@yourdomain.com" },
+]
+description = "SDK for Kinde API"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+]
+dependencies = [
+    "urllib3 ~=1.26.14",
+    "python-dateutil ~=2.8.2",
+    "Authlib ~=1.2.0",
+    "requests ~=2.28.2",
+    "pyjwt ~=2.6.0",
+]

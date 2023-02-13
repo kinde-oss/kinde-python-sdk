@@ -45,7 +45,10 @@ class KindeApiClient(ApiClient):
         self.client_id = client_id
         self.client_secret = client_secret
         self.grant_type = grant_type
-        self.scope = scope
+        if self.grant_type == GrantType.CLIENT_CREDENTIALS:
+            self.scope = ""
+        else:
+            self.scope = scope
         self.code_verifier = code_verifier
         self.audience = audience
         self.org_code = org_code
@@ -102,6 +105,8 @@ class KindeApiClient(ApiClient):
     def fetch_token(self, authorization_response: Optional[str] = None) -> None:
         if self.grant_type == GrantType.CLIENT_CREDENTIALS:
             params = {"grant_type": "client_credentials"}
+            if self.audience:
+                params["audience"] = self.audience
         else:
             if authorization_response is None:
                 raise KindeConfigurationException(

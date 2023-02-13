@@ -24,6 +24,15 @@ You need a Kinde domain to get started, e.g. `yourapp.kinde.com`.
 
 Kinde comes with a production environment, but you can set up other environments if you want to. Note that each environment needs to be set up independently, so you need to use the Environment subdomain in the code block above for those new environments.
 
+## Installing Kinde Python SDK and Supported Versions
+
+Clone this repository and install dependencies by running:
+
+```console
+$ pip install -r requirements.txt
+```
+Kinde Python SDK officially supports Python 3.7+.
+
 ## Configure your app
 
 **Environment variables**
@@ -166,6 +175,33 @@ Parameter "redirect_to" - URL to your site where redirect from the authorization
 ```python
 kinde_client.logout(redirect_to=redirect_to)
 ```
+
+## Scope
+
+By default the Kinde Python SDK requests the following scopes:
+
+-   profile
+-   email
+-   offline
+-   openid
+
+You can override this by passing scope into the KindeApiClient e.g.
+
+```python
+KindeApiClient(..., scope="profile email")
+```
+
+## Audience
+
+An `audience` is the intended recipient of an access token - for example the API for your application. The audience argument can be passed to the Kinde client to request an audience be added to the provided token.
+
+The audience of a token is the intended recipient of the token.
+
+```python
+KindeApiClient(..., audience="api.example.com/v1")
+```
+
+For details on how to connect, see [Register an API](https://kinde.com/docs/developer-tools/register-an-api/)
 
 ## Getting user details
 

@@ -55,7 +55,7 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
             self.client_id,
             self.client_secret,
             redirect_uri=self.callback_url,
-            scope=self.scope,
+            scope="",
             token_endpoint=kinde_client.token_endpoint,
         )
         auth_session_mock.return_value.create_authorization_url.assert_called_with(

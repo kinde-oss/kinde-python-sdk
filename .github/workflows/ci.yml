@@ -62,4 +62,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Test with unittest
-        run:  python -m unittest kinde_sdk.test
+        run:  python -m unittest

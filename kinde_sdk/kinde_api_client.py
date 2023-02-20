@@ -120,7 +120,8 @@ class KindeApiClient(ApiClient):
         self._clear_decoded_tokens()
 
     def refresh_token(self) -> None:
-        if refresh_token := self.__access_token_obj.get("refresh_token"):
+        refresh_token = self.__access_token_obj.get("refresh_token")
+        if refresh_token:
             self.__access_token_obj = self.client.refresh_token(
                 self.token_endpoint,
                 refresh_token=refresh_token,
@@ -165,7 +166,8 @@ class KindeApiClient(ApiClient):
                     "When grant_type is CLIENT_CREDENTIALS use fetch_token().\n"
                     'For other grant_type use "get_login_url()" or "get_register_url()".'
                 )
-            if token := self.__access_token_obj.get(token_name):
+            token = self.__access_token_obj.get(token_name)
+            if token:
                 self.__decoded_tokens[token_name] = jwt.decode(
                     token, options={"verify_signature": False}
                 )

@@ -1,11 +1,11 @@
 # kinde_sdk.model.users.Users
 
-Array of users
+Array of users.
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-list, tuple,  | tuple,  | Array of users |
+list, tuple,  | tuple,  | Array of users. |
 
 ### Tuple Items
 Class Name | Input Type | Accessed Type | Description | Notes

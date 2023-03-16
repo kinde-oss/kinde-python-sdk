@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 Delete environment feature flag override
 
-Delete environment feature flag override
+Delete environment feature flag override.
 
 ### Example
 
@@ -88,7 +88,7 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#delete_environement_feature_flag_override.ApiResponseFor200) | Feature flag deleted successfully
+200 | [ApiResponseFor200](#delete_environement_feature_flag_override.ApiResponseFor200) | Feature flag deleted successfully.
 400 | [ApiResponseFor400](#delete_environement_feature_flag_override.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_environement_feature_flag_override.ApiResponseFor403) | Invalid credentials.
 
@@ -137,7 +137,7 @@ headers | Unset | headers were not defined |
 
 Delete all environment feature flag overrides
 
-Delete all environment feature flag overrides
+Delete all environment feature flag overrides.
 
 ### Example
 
@@ -184,7 +184,7 @@ This endpoint does not need any parameter.
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#delete_environement_feature_flag_overrides.ApiResponseFor200) | Feature flag overrides deleted successfully
+200 | [ApiResponseFor200](#delete_environement_feature_flag_overrides.ApiResponseFor200) | Feature flag overrides deleted successfully.
 400 | [ApiResponseFor400](#delete_environement_feature_flag_overrides.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_environement_feature_flag_overrides.ApiResponseFor403) | Invalid credentials.
 
@@ -233,7 +233,7 @@ headers | Unset | headers were not defined |
 
 Update environment feature flag override
 
-Update environment feature flag override
+Update environment feature flag override.
 
 ### Example
 

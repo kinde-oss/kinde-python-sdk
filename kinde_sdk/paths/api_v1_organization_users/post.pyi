@@ -25,6 +25,8 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
+from kinde_sdk.model.error_response import ErrorResponse
+
 # Query params
 CodeSchema = schemas.StrSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
@@ -167,9 +169,10 @@ request_body_any_type = api_client.RequestBody(
 class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
     class MetaOapg:
         class properties:
+            code = schemas.StrSchema
             message = schemas.StrSchema
 
-            class users_add(schemas.ListSchema):
+            class users_added(schemas.ListSchema):
                 class MetaOapg:
                     items = schemas.StrSchema
                 def __new__(
@@ -189,7 +192,7 @@ class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
                         ],
                     ],
                     _configuration: typing.Optional[schemas.Configuration] = None,
-                ) -> "users_add":
+                ) -> "users_added":
                     return super().__new__(
                         cls,
                         _arg,
@@ -198,25 +201,31 @@ class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
                 def __getitem__(self, i: int) -> MetaOapg.items:
                     return super().__getitem__(i)
             __annotations__ = {
+                "code": code,
                 "message": message,
-                "users_add": users_add,
+                "users_added": users_added,
             }
+    @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["code"]
+    ) -> MetaOapg.properties.code: ...
     @typing.overload
     def __getitem__(
         self, name: typing_extensions.Literal["message"]
     ) -> MetaOapg.properties.message: ...
     @typing.overload
     def __getitem__(
-        self, name: typing_extensions.Literal["users_add"]
-    ) -> MetaOapg.properties.users_add: ...
+        self, name: typing_extensions.Literal["users_added"]
+    ) -> MetaOapg.properties.users_added: ...
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     def __getitem__(
         self,
         name: typing.Union[
             typing_extensions.Literal[
+                "code",
                 "message",
-                "users_add",
+                "users_added",
             ],
             str,
         ],
@@ -225,12 +234,16 @@ class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
         return super().__getitem__(name)
     @typing.overload
     def get_item_oapg(
+        self, name: typing_extensions.Literal["code"]
+    ) -> typing.Union[MetaOapg.properties.code, schemas.Unset]: ...
+    @typing.overload
+    def get_item_oapg(
         self, name: typing_extensions.Literal["message"]
     ) -> typing.Union[MetaOapg.properties.message, schemas.Unset]: ...
     @typing.overload
     def get_item_oapg(
-        self, name: typing_extensions.Literal["users_add"]
-    ) -> typing.Union[MetaOapg.properties.users_add, schemas.Unset]: ...
+        self, name: typing_extensions.Literal["users_added"]
+    ) -> typing.Union[MetaOapg.properties.users_added, schemas.Unset]: ...
     @typing.overload
     def get_item_oapg(
         self, name: str
@@ -239,8 +252,9 @@ class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
         self,
         name: typing.Union[
             typing_extensions.Literal[
+                "code",
                 "message",
-                "users_add",
+                "users_added",
             ],
             str,
         ],
@@ -252,11 +266,14 @@ class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
             dict,
             frozendict.frozendict,
         ],
+        code: typing.Union[
+            MetaOapg.properties.code, str, schemas.Unset
+        ] = schemas.unset,
         message: typing.Union[
             MetaOapg.properties.message, str, schemas.Unset
         ] = schemas.unset,
-        users_add: typing.Union[
-            MetaOapg.properties.users_add, list, tuple, schemas.Unset
+        users_added: typing.Union[
+            MetaOapg.properties.users_added, list, tuple, schemas.Unset
         ] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[
@@ -279,8 +296,9 @@ class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
         return super().__new__(
             cls,
             *_args,
+            code=code,
             message=message,
-            users_add=users_add,
+            users_added=users_added,
             _configuration=_configuration,
             **kwargs,
         )
@@ -311,15 +329,23 @@ class ApiResponseFor204(api_client.ApiResponse):
 _response_for_204 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor204,
 )
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
 
 @dataclass
 class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+    ]
     headers: schemas.Unset = schemas.unset
 
 _response_for_400 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor400,
+    content={
+        "application/json": api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson
+        ),
+    },
 )
 
 @dataclass
@@ -330,16 +356,6 @@ class ApiResponseFor403(api_client.ApiResponse):
 
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
-)
-
-@dataclass
-class ApiResponseFor404(api_client.ApiResponse):
-    response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
-    headers: schemas.Unset = schemas.unset
-
-_response_for_404 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor404,
 )
 _all_accept_content_types = ("application/json",)
 

@@ -33,13 +33,13 @@ class OrganizationUser(schemas.DictSchema):
 
     class MetaOapg:
         class properties:
-            user_id = schemas.IntSchema
+            id = schemas.StrSchema
             email = schemas.StrSchema
             full_name = schemas.StrSchema
             last_name = schemas.StrSchema
             first_name = schemas.StrSchema
             __annotations__ = {
-                "user_id": user_id,
+                "id": id,
                 "email": email,
                 "full_name": full_name,
                 "last_name": last_name,
@@ -48,8 +48,8 @@ class OrganizationUser(schemas.DictSchema):
 
     @typing.overload
     def __getitem__(
-        self, name: typing_extensions.Literal["user_id"]
-    ) -> MetaOapg.properties.user_id:
+        self, name: typing_extensions.Literal["id"]
+    ) -> MetaOapg.properties.id:
         ...
 
     @typing.overload
@@ -84,7 +84,7 @@ class OrganizationUser(schemas.DictSchema):
         self,
         name: typing.Union[
             typing_extensions.Literal[
-                "user_id",
+                "id",
                 "email",
                 "full_name",
                 "last_name",
@@ -98,8 +98,8 @@ class OrganizationUser(schemas.DictSchema):
 
     @typing.overload
     def get_item_oapg(
-        self, name: typing_extensions.Literal["user_id"]
-    ) -> typing.Union[MetaOapg.properties.user_id, schemas.Unset]:
+        self, name: typing_extensions.Literal["id"]
+    ) -> typing.Union[MetaOapg.properties.id, schemas.Unset]:
         ...
 
     @typing.overload
@@ -136,7 +136,7 @@ class OrganizationUser(schemas.DictSchema):
         self,
         name: typing.Union[
             typing_extensions.Literal[
-                "user_id",
+                "id",
                 "email",
                 "full_name",
                 "last_name",
@@ -153,9 +153,7 @@ class OrganizationUser(schemas.DictSchema):
             dict,
             frozendict.frozendict,
         ],
-        user_id: typing.Union[
-            MetaOapg.properties.user_id, decimal.Decimal, int, schemas.Unset
-        ] = schemas.unset,
+        id: typing.Union[MetaOapg.properties.id, str, schemas.Unset] = schemas.unset,
         email: typing.Union[
             MetaOapg.properties.email, str, schemas.Unset
         ] = schemas.unset,
@@ -189,7 +187,7 @@ class OrganizationUser(schemas.DictSchema):
         return super().__new__(
             cls,
             *_args,
-            user_id=user_id,
+            id=id,
             email=email,
             full_name=full_name,
             last_name=last_name,

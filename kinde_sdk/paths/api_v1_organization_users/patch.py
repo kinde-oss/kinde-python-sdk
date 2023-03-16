@@ -25,6 +25,8 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
+from kinde_sdk.model.error_response import ErrorResponse
+
 from . import path
 
 # Query params
@@ -345,29 +347,25 @@ _response_for_200 = api_client.OpenApiResponse(
         ),
     },
 )
-
-
-@dataclass
-class ApiResponseFor204(api_client.ApiResponse):
-    response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
-    headers: schemas.Unset = schemas.unset
-
-
-_response_for_204 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor204,
-)
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
 
 
 @dataclass
 class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+    ]
     headers: schemas.Unset = schemas.unset
 
 
 _response_for_400 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor400,
+    content={
+        "application/json": api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson
+        ),
+    },
 )
 
 
@@ -381,24 +379,10 @@ class ApiResponseFor403(api_client.ApiResponse):
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
-
-
-@dataclass
-class ApiResponseFor404(api_client.ApiResponse):
-    response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
-    headers: schemas.Unset = schemas.unset
-
-
-_response_for_404 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor404,
-)
 _status_code_to_response = {
     "200": _response_for_200,
-    "204": _response_for_204,
     "400": _response_for_400,
     "403": _response_for_403,
-    "404": _response_for_404,
 }
 _all_accept_content_types = ("application/json",)
 
@@ -419,7 +403,7 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200, ApiResponseFor204,]:
+    ) -> typing.Union[ApiResponseFor200,]:
         ...
 
     @typing.overload
@@ -437,7 +421,7 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200, ApiResponseFor204,]:
+    ) -> typing.Union[ApiResponseFor200,]:
         ...
 
     @typing.overload
@@ -473,11 +457,7 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[
-        ApiResponseFor200,
-        ApiResponseFor204,
-        api_client.ApiResponseWithoutDeserialization,
-    ]:
+    ) -> typing.Union[ApiResponseFor200, api_client.ApiResponseWithoutDeserialization,]:
         ...
 
     def _remove_organization_users_oapg(
@@ -586,7 +566,7 @@ class RemoveOrganizationUsers(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200, ApiResponseFor204,]:
+    ) -> typing.Union[ApiResponseFor200,]:
         ...
 
     @typing.overload
@@ -604,7 +584,7 @@ class RemoveOrganizationUsers(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200, ApiResponseFor204,]:
+    ) -> typing.Union[ApiResponseFor200,]:
         ...
 
     @typing.overload
@@ -640,11 +620,7 @@ class RemoveOrganizationUsers(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[
-        ApiResponseFor200,
-        ApiResponseFor204,
-        api_client.ApiResponseWithoutDeserialization,
-    ]:
+    ) -> typing.Union[ApiResponseFor200, api_client.ApiResponseWithoutDeserialization,]:
         ...
 
     def remove_organization_users(
@@ -691,7 +667,7 @@ class ApiForpatch(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200, ApiResponseFor204,]:
+    ) -> typing.Union[ApiResponseFor200,]:
         ...
 
     @typing.overload
@@ -709,7 +685,7 @@ class ApiForpatch(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200, ApiResponseFor204,]:
+    ) -> typing.Union[ApiResponseFor200,]:
         ...
 
     @typing.overload
@@ -745,11 +721,7 @@ class ApiForpatch(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[
-        ApiResponseFor200,
-        ApiResponseFor204,
-        api_client.ApiResponseWithoutDeserialization,
-    ]:
+    ) -> typing.Union[ApiResponseFor200, api_client.ApiResponseWithoutDeserialization,]:
         ...
 
     def patch(

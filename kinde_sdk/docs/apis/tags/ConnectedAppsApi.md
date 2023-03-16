@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 Get Connected App URL
 
-Get a URL that authenticates and authorizes a user to a third-party connected app
+Get a URL that authenticates and authorizes a user to a third-party connected app.
 
 ### Example
 
@@ -132,7 +132,7 @@ headers | Unset | headers were not defined |
 
 Get Connected App Token
 
-Get an access token that can be used to call the third-party provider linked to the connected app
+Get an access token that can be used to call the third-party provider linked to the connected app.
 
 ### Example
 
@@ -206,7 +206,7 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#get_connected_app_token.ApiResponseFor200) | An access token that can be used to query a third-party provider, as well as the token&#x27;s expiry time.
-400 | [ApiResponseFor400](#get_connected_app_token.ApiResponseFor400) | The session id provided points to an invalid session
+400 | [ApiResponseFor400](#get_connected_app_token.ApiResponseFor400) | The session id provided points to an invalid session.
 403 | [ApiResponseFor403](#get_connected_app_token.ApiResponseFor403) | Invalid credentials.
 
 #### get_connected_app_token.ApiResponseFor200
@@ -248,7 +248,7 @@ headers | Unset | headers were not defined |
 
 Revoke Connected App Token
 
-Revoke the tokens linked to the connected app session
+Revoke the tokens linked to the connected app session.
 
 ### Example
 
@@ -322,9 +322,9 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#revoke_connected_app_token.ApiResponseFor200) | An access token that can be used to query a third-party provider, as well as the token&#x27;s expiry time.
-400 | [ApiResponseFor400](#revoke_connected_app_token.ApiResponseFor400) | The
+400 | [ApiResponseFor400](#revoke_connected_app_token.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#revoke_connected_app_token.ApiResponseFor403) | Invalid credentials.
-405 | [ApiResponseFor405](#revoke_connected_app_token.ApiResponseFor405) | Invalid HTTP method used
+405 | [ApiResponseFor405](#revoke_connected_app_token.ApiResponseFor405) | Invalid HTTP method used.
 
 #### revoke_connected_app_token.ApiResponseFor200
 Name | Type | Description  | Notes

@@ -26,6 +26,7 @@ import frozendict  # noqa: F401
 from kinde_sdk import schemas  # noqa: F401
 
 from kinde_sdk.model.organization_user import OrganizationUser
+from kinde_sdk.model.error_response import ErrorResponse
 
 from . import path
 
@@ -178,7 +179,178 @@ request_query_code = api_client.QueryParameter(
 _auth = [
     "kindeBearerAuth",
 ]
-SchemaFor200ResponseBodyApplicationJson = OrganizationUser
+
+
+class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
+    class MetaOapg:
+        class properties:
+            code = schemas.StrSchema
+            message = schemas.StrSchema
+
+            class organization_users(schemas.ListSchema):
+                class MetaOapg:
+                    @staticmethod
+                    def items() -> typing.Type["OrganizationUser"]:
+                        return OrganizationUser
+
+                def __new__(
+                    cls,
+                    _arg: typing.Union[
+                        typing.Tuple["OrganizationUser"],
+                        typing.List["OrganizationUser"],
+                    ],
+                    _configuration: typing.Optional[schemas.Configuration] = None,
+                ) -> "organization_users":
+                    return super().__new__(
+                        cls,
+                        _arg,
+                        _configuration=_configuration,
+                    )
+
+                def __getitem__(self, i: int) -> "OrganizationUser":
+                    return super().__getitem__(i)
+
+            next_token = schemas.StrSchema
+            __annotations__ = {
+                "code": code,
+                "message": message,
+                "organization_users": organization_users,
+                "next_token": next_token,
+            }
+
+    @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["code"]
+    ) -> MetaOapg.properties.code:
+        ...
+
+    @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["message"]
+    ) -> MetaOapg.properties.message:
+        ...
+
+    @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["organization_users"]
+    ) -> MetaOapg.properties.organization_users:
+        ...
+
+    @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["next_token"]
+    ) -> MetaOapg.properties.next_token:
+        ...
+
+    @typing.overload
+    def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema:
+        ...
+
+    def __getitem__(
+        self,
+        name: typing.Union[
+            typing_extensions.Literal[
+                "code",
+                "message",
+                "organization_users",
+                "next_token",
+            ],
+            str,
+        ],
+    ):
+        # dict_instance[name] accessor
+        return super().__getitem__(name)
+
+    @typing.overload
+    def get_item_oapg(
+        self, name: typing_extensions.Literal["code"]
+    ) -> typing.Union[MetaOapg.properties.code, schemas.Unset]:
+        ...
+
+    @typing.overload
+    def get_item_oapg(
+        self, name: typing_extensions.Literal["message"]
+    ) -> typing.Union[MetaOapg.properties.message, schemas.Unset]:
+        ...
+
+    @typing.overload
+    def get_item_oapg(
+        self, name: typing_extensions.Literal["organization_users"]
+    ) -> typing.Union[MetaOapg.properties.organization_users, schemas.Unset]:
+        ...
+
+    @typing.overload
+    def get_item_oapg(
+        self, name: typing_extensions.Literal["next_token"]
+    ) -> typing.Union[MetaOapg.properties.next_token, schemas.Unset]:
+        ...
+
+    @typing.overload
+    def get_item_oapg(
+        self, name: str
+    ) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]:
+        ...
+
+    def get_item_oapg(
+        self,
+        name: typing.Union[
+            typing_extensions.Literal[
+                "code",
+                "message",
+                "organization_users",
+                "next_token",
+            ],
+            str,
+        ],
+    ):
+        return super().get_item_oapg(name)
+
+    def __new__(
+        cls,
+        *_args: typing.Union[
+            dict,
+            frozendict.frozendict,
+        ],
+        code: typing.Union[
+            MetaOapg.properties.code, str, schemas.Unset
+        ] = schemas.unset,
+        message: typing.Union[
+            MetaOapg.properties.message, str, schemas.Unset
+        ] = schemas.unset,
+        organization_users: typing.Union[
+            MetaOapg.properties.organization_users, list, tuple, schemas.Unset
+        ] = schemas.unset,
+        next_token: typing.Union[
+            MetaOapg.properties.next_token, str, schemas.Unset
+        ] = schemas.unset,
+        _configuration: typing.Optional[schemas.Configuration] = None,
+        **kwargs: typing.Union[
+            schemas.AnyTypeSchema,
+            dict,
+            frozendict.frozendict,
+            str,
+            date,
+            datetime,
+            uuid.UUID,
+            int,
+            float,
+            decimal.Decimal,
+            None,
+            list,
+            tuple,
+            bytes,
+        ],
+    ) -> "SchemaFor200ResponseBodyApplicationJson":
+        return super().__new__(
+            cls,
+            *_args,
+            code=code,
+            message=message,
+            organization_users=organization_users,
+            next_token=next_token,
+            _configuration=_configuration,
+            **kwargs,
+        )
 
 
 @dataclass
@@ -198,6 +370,26 @@ _response_for_200 = api_client.OpenApiResponse(
         ),
     },
 )
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
+
+
+@dataclass
+class ApiResponseFor400(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+    ]
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_400 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor400,
+    content={
+        "application/json": api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson
+        ),
+    },
+)
 
 
 @dataclass
@@ -212,6 +404,7 @@ _response_for_403 = api_client.OpenApiResponse(
 )
 _status_code_to_response = {
     "200": _response_for_200,
+    "400": _response_for_400,
     "403": _response_for_403,
 }
 _all_accept_content_types = ("application/json",)

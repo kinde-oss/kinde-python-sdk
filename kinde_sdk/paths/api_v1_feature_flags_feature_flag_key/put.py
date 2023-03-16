@@ -156,16 +156,17 @@ request_query_default_value = api_client.QueryParameter(
 )
 # Path params
 FeatureFlagKeySchema = schemas.StrSchema
-RequestRequiredPathParams = typing_extensions.TypedDict("RequestRequiredPathParams", {})
-RequestOptionalPathParams = typing_extensions.TypedDict(
-    "RequestOptionalPathParams",
+RequestRequiredPathParams = typing_extensions.TypedDict(
+    "RequestRequiredPathParams",
     {
         "feature_flag_key": typing.Union[
             FeatureFlagKeySchema,
             str,
         ],
     },
-    total=False,
+)
+RequestOptionalPathParams = typing_extensions.TypedDict(
+    "RequestOptionalPathParams", {}, total=False
 )
 
 
@@ -177,6 +178,7 @@ request_path_feature_flag_key = api_client.PathParameter(
     name="feature_flag_key",
     style=api_client.ParameterStyle.SIMPLE,
     schema=FeatureFlagKeySchema,
+    required=True,
 )
 _auth = [
     "kindeBearerAuth",

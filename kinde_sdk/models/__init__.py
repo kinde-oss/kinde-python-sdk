@@ -14,6 +14,7 @@
 from kinde_sdk.model.api_result import ApiResult
 from kinde_sdk.model.connected_apps_access_token import ConnectedAppsAccessToken
 from kinde_sdk.model.connected_apps_auth_url import ConnectedAppsAuthUrl
+from kinde_sdk.model.error import Error
 from kinde_sdk.model.error_response import ErrorResponse
 from kinde_sdk.model.organization import Organization
 from kinde_sdk.model.organization_user import OrganizationUser

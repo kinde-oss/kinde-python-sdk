@@ -28,6 +28,7 @@ Add existing users to an organization.
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -131,9 +132,8 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#add_organization_users.ApiResponseFor200) | Users successfully added.
 204 | [ApiResponseFor204](#add_organization_users.ApiResponseFor204) | No users added.
-400 | [ApiResponseFor400](#add_organization_users.ApiResponseFor400) | Invalid request query string. Code is not provided.
+400 | [ApiResponseFor400](#add_organization_users.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#add_organization_users.ApiResponseFor403) | Invalid credentials.
-404 | [ApiResponseFor404](#add_organization_users.ApiResponseFor404) | No organization with that code.
 
 #### add_organization_users.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -152,11 +152,12 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**message** | str,  | str,  |  | [optional]
-**[users_add](#users_add)** | list, tuple,  | tuple,  |  | [optional]
+**code** | str,  | str,  | Response code. | [optional]
+**message** | str,  | str,  | Response message. | [optional]
+**[users_added](#users_added)** | list, tuple,  | tuple,  |  | [optional]
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
-# users_add
+# users_added
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
@@ -179,17 +180,16 @@ headers | Unset | headers were not defined |
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### add_organization_users.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### add_organization_users.ApiResponseFor404
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -216,6 +216,7 @@ Creates a user record and optionally zero or more identities for the user. An ex
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.error_response import ErrorResponse
 from kinde_sdk.model.user_identity import UserIdentity
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
@@ -285,24 +286,24 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**[profile](#profile)** | dict, frozendict.frozendict,  | frozendict.frozendict,  | Basic information required to create a user | [optional]
+**[profile](#profile)** | dict, frozendict.frozendict,  | frozendict.frozendict,  | Basic information required to create a user. | [optional]
 **[identities](#identities)** | list, tuple,  | tuple,  | Array of identities to assign to the created user | [optional]
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 # profile
 
-Basic information required to create a user
+Basic information required to create a user.
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-dict, frozendict.frozendict,  | frozendict.frozendict,  | Basic information required to create a user |
+dict, frozendict.frozendict,  | frozendict.frozendict,  | Basic information required to create a user. |
 
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**given_name** | str,  | str,  | User&#x27;s first name | [optional]
-**family_name** | str,  | str,  | User&#x27;s last name | [optional]
+**given_name** | str,  | str,  | User&#x27;s first name. | [optional]
+**family_name** | str,  | str,  | User&#x27;s last name. | [optional]
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 # identities
@@ -317,37 +318,37 @@ list, tuple,  | tuple,  | Array of identities to assign to the created user |
 ### Tuple Items
 Class Name | Input Type | Accessed Type | Description | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
-[items](#items) | dict, frozendict.frozendict,  | frozendict.frozendict,  | The result of the user creation operation |
+[items](#items) | dict, frozendict.frozendict,  | frozendict.frozendict,  | The result of the user creation operation. |
 
 # items
 
-The result of the user creation operation
+The result of the user creation operation.
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-dict, frozendict.frozendict,  | frozendict.frozendict,  | The result of the user creation operation |
+dict, frozendict.frozendict,  | frozendict.frozendict,  | The result of the user creation operation. |
 
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**type** | str,  | str,  | The type of identity to create, for e.g. email | [optional]
-**[details](#details)** | dict, frozendict.frozendict,  | frozendict.frozendict,  | Additional details required to create the user | [optional]
+**type** | str,  | str,  | The type of identity to create, for e.g. email. | [optional]
+**[details](#details)** | dict, frozendict.frozendict,  | frozendict.frozendict,  | Additional details required to create the user. | [optional]
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 # details
 
-Additional details required to create the user
+Additional details required to create the user.
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-dict, frozendict.frozendict,  | frozendict.frozendict,  | Additional details required to create the user |
+dict, frozendict.frozendict,  | frozendict.frozendict,  | Additional details required to create the user. |
 
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**email** | str,  | str,  | The email address of the user | [optional]
+**email** | str,  | str,  | The email address of the user. | [optional]
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 ### Return Types, Responses
@@ -356,6 +357,7 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#create_user.ApiResponseFor200) | User successfully created.
+400 | [ApiResponseFor400](#create_user.ApiResponseFor400) | Error creating user.
 403 | [ApiResponseFor403](#create_user.ApiResponseFor403) | Invalid credentials.
 
 #### create_user.ApiResponseFor200
@@ -375,8 +377,8 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**id** | str,  | str,  | Unique id of the user in Kinde | [optional]
-**created** | bool,  | BoolClass,  | True if the user was successfully created | [optional]
+**id** | str,  | str,  | Unique id of the user in Kinde. | [optional]
+**created** | bool,  | BoolClass,  | True if the user was successfully created. | [optional]
 **[identities](#identities)** | list, tuple,  | tuple,  |  | [optional]
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
@@ -391,6 +393,19 @@ list, tuple,  | tuple,  |  |
 Class Name | Input Type | Accessed Type | Description | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 [**UserIdentity**]({{complexTypePrefix}}UserIdentity.md) | [**UserIdentity**]({{complexTypePrefix}}UserIdentity.md) | [**UserIdentity**]({{complexTypePrefix}}UserIdentity.md) |  |
+
+#### create_user.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### create_user.ApiResponseFor403
 Name | Type | Description  | Notes
@@ -407,11 +422,11 @@ headers | Unset | headers were not defined |
 
 # **deleteuser**
 <a name="deleteuser"></a>
-> deleteuser()
+> SuccessResponse deleteuser()
 
 Delete User
 
-Delete a user record
+Delete a user record.
 
 ### Example
 
@@ -419,6 +434,8 @@ Delete a user record
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -449,6 +466,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         api_response = api_instance.deleteuser(
             query_params=query_params,
         )
+        pprint(api_response)
     except kinde_sdk.ApiException as e:
         print("Exception when calling UsersApi->deleteuser: %s\n" % e)
 ```
@@ -457,6 +475,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 query_params | RequestQueryParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
 timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
 skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
@@ -481,33 +500,37 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-204 | [ApiResponseFor204](#deleteuser.ApiResponseFor204) | User successfully deleted.
-400 | [ApiResponseFor400](#deleteuser.ApiResponseFor400) | Id is not provided.
+200 | [ApiResponseFor200](#deleteuser.ApiResponseFor200) | User successfully deleted.
+400 | [ApiResponseFor400](#deleteuser.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#deleteuser.ApiResponseFor403) | Invalid credentials.
-404 | [ApiResponseFor404](#deleteuser.ApiResponseFor404) | User not found.
 
-#### deleteuser.ApiResponseFor204
+#### deleteuser.ApiResponseFor200
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  |
+
 
 #### deleteuser.ApiResponseFor400
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### deleteuser.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### deleteuser.ApiResponseFor404
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -522,11 +545,11 @@ headers | Unset | headers were not defined |
 
 # **get_organization_users**
 <a name="get_organization_users"></a>
-> OrganizationUser get_organization_users()
+> {str: (bool, date, datetime, dict, float, int, list, str, none_type)} get_organization_users()
 
 List Organization Users
 
-Get users in an organizaiton.
+Get users in an organization.
 
 ### Example
 
@@ -535,6 +558,7 @@ Get users in an organizaiton.
 import kinde_sdk
 from kinde_sdk.apis.tags import users_api
 from kinde_sdk.model.organization_user import OrganizationUser
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -626,7 +650,8 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#get_organization_users.ApiResponseFor200) | A succesful response with a list of organization users or an empty list
+200 | [ApiResponseFor200](#get_organization_users.ApiResponseFor200) | A succesful response with a list of organization users or an empty list.
+400 | [ApiResponseFor400](#get_organization_users.ApiResponseFor400) | Error creating user
 403 | [ApiResponseFor403](#get_organization_users.ApiResponseFor403) | Invalid credentials.
 
 #### get_organization_users.ApiResponseFor200
@@ -637,9 +662,44 @@ body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor200ResponseBodyApplicationJson
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
+
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**code** | str,  | str,  | Response code. | [optional]
+**message** | str,  | str,  | Response message. | [optional]
+**[organization_users](#organization_users)** | list, tuple,  | tuple,  |  | [optional]
+**next_token** | str,  | str,  | Pagination token. | [optional]
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
+
+# organization_users
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+list, tuple,  | tuple,  |  |
+
+### Tuple Items
+Class Name | Input Type | Accessed Type | Description | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+[**OrganizationUser**]({{complexTypePrefix}}OrganizationUser.md) | [**OrganizationUser**]({{complexTypePrefix}}OrganizationUser.md) | [**OrganizationUser**]({{complexTypePrefix}}OrganizationUser.md) |  |
+
+#### get_organization_users.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**OrganizationUser**](../../models/OrganizationUser.md) |  |
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
 
 
 #### get_organization_users.ApiResponseFor403
@@ -661,7 +721,7 @@ headers | Unset | headers were not defined |
 
 Get User
 
-Retrieve a user record
+Retrieve a user record.
 
 ### Example
 
@@ -670,6 +730,7 @@ Retrieve a user record
 import kinde_sdk
 from kinde_sdk.apis.tags import users_api
 from kinde_sdk.model.user import User
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -735,9 +796,8 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#get_user_data.ApiResponseFor200) | User successfully updated.
-400 | [ApiResponseFor400](#get_user_data.ApiResponseFor400) | Id is not provided.
+400 | [ApiResponseFor400](#get_user_data.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#get_user_data.ApiResponseFor403) | Invalid credentials.
-404 | [ApiResponseFor404](#get_user_data.ApiResponseFor404) | User not found.
 
 #### get_user_data.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -756,17 +816,16 @@ Type | Description  | Notes
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### get_user_data.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### get_user_data.ApiResponseFor404
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -781,7 +840,7 @@ headers | Unset | headers were not defined |
 
 # **get_users**
 <a name="get_users"></a>
-> Users get_users()
+> {str: (bool, date, datetime, dict, float, int, list, str, none_type)} get_users()
 
 List Users
 
@@ -793,7 +852,7 @@ The returned list can be sorted by full name or email address in ascending or de
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import users_api
-from kinde_sdk.model.users import Users
+from kinde_sdk.model.user import User
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -896,10 +955,32 @@ body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor200ResponseBodyApplicationJson
-Type | Description  | Notes
-------------- | ------------- | -------------
-[**Users**](../../models/Users.md) |  |
 
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
+
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**code** | str,  | str,  | Response code. | [optional]
+**message** | str,  | str,  | Response message. | [optional]
+**[users](#users)** | list, tuple,  | tuple,  |  | [optional]
+**next_token** | str,  | str,  | Pagination token. | [optional]
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
+
+# users
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+list, tuple,  | tuple,  |  |
+
+### Tuple Items
+Class Name | Input Type | Accessed Type | Description | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+[**User**]({{complexTypePrefix}}User.md) | [**User**]({{complexTypePrefix}}User.md) | [**User**]({{complexTypePrefix}}User.md) |  |
 
 #### get_users.ApiResponseFor403
 Name | Type | Description  | Notes
@@ -928,6 +1009,7 @@ Remove existing users from an organization.
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -1030,10 +1112,8 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#remove_organization_users.ApiResponseFor200) | Users successfully removed.
-204 | [ApiResponseFor204](#remove_organization_users.ApiResponseFor204) | No users removed.
-400 | [ApiResponseFor400](#remove_organization_users.ApiResponseFor400) | Invalid request query string. Code is not provided.
+400 | [ApiResponseFor400](#remove_organization_users.ApiResponseFor400) | Error creating user.
 403 | [ApiResponseFor403](#remove_organization_users.ApiResponseFor403) | Invalid credentials.
-404 | [ApiResponseFor404](#remove_organization_users.ApiResponseFor404) | No organization with that code.
 
 #### remove_organization_users.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -1068,28 +1148,20 @@ Class Name | Input Type | Accessed Type | Description | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 items | str,  | str,  |  |
 
-#### remove_organization_users.ApiResponseFor204
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
 #### remove_organization_users.ApiResponseFor400
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### remove_organization_users.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### remove_organization_users.ApiResponseFor404
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -1108,7 +1180,7 @@ headers | Unset | headers were not defined |
 
 Update User
 
-Update a user record
+Update a user record.
 
 ### Example
 
@@ -1117,6 +1189,7 @@ Update a user record
 import kinde_sdk
 from kinde_sdk.apis.tags import users_api
 from kinde_sdk.model.user import User
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -1197,8 +1270,8 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**given_name** | str,  | str,  | User&#x27;s first name | [optional]
-**family_name** | str,  | str,  | User&#x27;s last name | [optional]
+**given_name** | str,  | str,  | User&#x27;s first name. | [optional]
+**family_name** | str,  | str,  | User&#x27;s last name. | [optional]
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 ### query_params
@@ -1222,9 +1295,8 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#update_user.ApiResponseFor200) | User successfully updated.
-400 | [ApiResponseFor400](#update_user.ApiResponseFor400) | Id is not provided.
+400 | [ApiResponseFor400](#update_user.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#update_user.ApiResponseFor403) | Invalid credentials.
-404 | [ApiResponseFor404](#update_user.ApiResponseFor404) | User not found.
 
 #### update_user.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -1243,17 +1315,16 @@ Type | Description  | Notes
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### update_user.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### update_user.ApiResponseFor404
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

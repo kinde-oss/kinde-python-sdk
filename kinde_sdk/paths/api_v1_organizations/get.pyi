@@ -25,7 +25,7 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
-from kinde_sdk.model.organizations import Organizations
+from kinde_sdk.model.organization import Organization
 
 # Query params
 
@@ -151,7 +151,150 @@ request_query_next_token = api_client.QueryParameter(
     schema=NextTokenSchema,
     explode=True,
 )
-SchemaFor200ResponseBodyApplicationJson = Organizations
+
+class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
+    class MetaOapg:
+        class properties:
+            code = schemas.StrSchema
+            message = schemas.StrSchema
+
+            class organizations(schemas.ListSchema):
+                class MetaOapg:
+                    @staticmethod
+                    def items() -> typing.Type["Organization"]:
+                        return Organization
+                def __new__(
+                    cls,
+                    _arg: typing.Union[
+                        typing.Tuple["Organization"], typing.List["Organization"]
+                    ],
+                    _configuration: typing.Optional[schemas.Configuration] = None,
+                ) -> "organizations":
+                    return super().__new__(
+                        cls,
+                        _arg,
+                        _configuration=_configuration,
+                    )
+                def __getitem__(self, i: int) -> "Organization":
+                    return super().__getitem__(i)
+            next_token = schemas.StrSchema
+            __annotations__ = {
+                "code": code,
+                "message": message,
+                "organizations": organizations,
+                "next_token": next_token,
+            }
+    @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["code"]
+    ) -> MetaOapg.properties.code: ...
+    @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["message"]
+    ) -> MetaOapg.properties.message: ...
+    @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["organizations"]
+    ) -> MetaOapg.properties.organizations: ...
+    @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["next_token"]
+    ) -> MetaOapg.properties.next_token: ...
+    @typing.overload
+    def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
+    def __getitem__(
+        self,
+        name: typing.Union[
+            typing_extensions.Literal[
+                "code",
+                "message",
+                "organizations",
+                "next_token",
+            ],
+            str,
+        ],
+    ):
+        # dict_instance[name] accessor
+        return super().__getitem__(name)
+    @typing.overload
+    def get_item_oapg(
+        self, name: typing_extensions.Literal["code"]
+    ) -> typing.Union[MetaOapg.properties.code, schemas.Unset]: ...
+    @typing.overload
+    def get_item_oapg(
+        self, name: typing_extensions.Literal["message"]
+    ) -> typing.Union[MetaOapg.properties.message, schemas.Unset]: ...
+    @typing.overload
+    def get_item_oapg(
+        self, name: typing_extensions.Literal["organizations"]
+    ) -> typing.Union[MetaOapg.properties.organizations, schemas.Unset]: ...
+    @typing.overload
+    def get_item_oapg(
+        self, name: typing_extensions.Literal["next_token"]
+    ) -> typing.Union[MetaOapg.properties.next_token, schemas.Unset]: ...
+    @typing.overload
+    def get_item_oapg(
+        self, name: str
+    ) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
+    def get_item_oapg(
+        self,
+        name: typing.Union[
+            typing_extensions.Literal[
+                "code",
+                "message",
+                "organizations",
+                "next_token",
+            ],
+            str,
+        ],
+    ):
+        return super().get_item_oapg(name)
+    def __new__(
+        cls,
+        *_args: typing.Union[
+            dict,
+            frozendict.frozendict,
+        ],
+        code: typing.Union[
+            MetaOapg.properties.code, str, schemas.Unset
+        ] = schemas.unset,
+        message: typing.Union[
+            MetaOapg.properties.message, str, schemas.Unset
+        ] = schemas.unset,
+        organizations: typing.Union[
+            MetaOapg.properties.organizations, list, tuple, schemas.Unset
+        ] = schemas.unset,
+        next_token: typing.Union[
+            MetaOapg.properties.next_token, str, schemas.Unset
+        ] = schemas.unset,
+        _configuration: typing.Optional[schemas.Configuration] = None,
+        **kwargs: typing.Union[
+            schemas.AnyTypeSchema,
+            dict,
+            frozendict.frozendict,
+            str,
+            date,
+            datetime,
+            uuid.UUID,
+            int,
+            float,
+            decimal.Decimal,
+            None,
+            list,
+            tuple,
+            bytes,
+        ],
+    ) -> "SchemaFor200ResponseBodyApplicationJson":
+        return super().__new__(
+            cls,
+            *_args,
+            code=code,
+            message=message,
+            organizations=organizations,
+            next_token=next_token,
+            _configuration=_configuration,
+            **kwargs,
+        )
 
 @dataclass
 class ApiResponseFor200(api_client.ApiResponse):

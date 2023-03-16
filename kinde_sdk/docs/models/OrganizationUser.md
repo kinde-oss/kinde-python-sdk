@@ -8,7 +8,7 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**user_id** | decimal.Decimal, int,  | decimal.Decimal,  |  | [optional]
+**id** | str,  | str,  |  | [optional]
 **email** | str,  | str,  |  | [optional]
 **full_name** | str,  | str,  |  | [optional]
 **last_name** | str,  | str,  |  | [optional]

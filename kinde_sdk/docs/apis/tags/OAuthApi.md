@@ -14,7 +14,7 @@ Method | HTTP request | Description
 
 Returns the details of the currently logged in user
 
-Contains the id, names and email of the currently logged in user
+Contains the id, names and email of the currently logged in user.
 
 ### Example
 
@@ -60,7 +60,7 @@ This endpoint does not need any parameter.
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#get_user.ApiResponseFor200) | Details of logged in user V1
+200 | [ApiResponseFor200](#get_user.ApiResponseFor200) | Details of logged in user V1.
 403 | [ApiResponseFor403](#get_user.ApiResponseFor403) | Invalid credentials.
 
 #### get_user.ApiResponseFor200
@@ -95,7 +95,7 @@ headers | Unset | headers were not defined |
 
 Returns the details of the currently logged in user
 
-Contains the id, names, profile picture URL and email of the currently logged in user
+Contains the id, names, profile picture URL and email of the currently logged in user.
 
 ### Example
 
@@ -141,7 +141,7 @@ This endpoint does not need any parameter.
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#get_user_profile_v2.ApiResponseFor200) | Details of logged in user V2
+200 | [ApiResponseFor200](#get_user_profile_v2.ApiResponseFor200) | Details of logged in user V2.
 403 | [ApiResponseFor403](#get_user_profile_v2.ApiResponseFor403) | Invalid credentials.
 
 #### get_user_profile_v2.ApiResponseFor200

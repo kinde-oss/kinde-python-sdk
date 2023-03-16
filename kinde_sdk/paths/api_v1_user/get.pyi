@@ -26,6 +26,7 @@ import frozendict  # noqa: F401
 from kinde_sdk import schemas  # noqa: F401
 
 from kinde_sdk.model.user import User
+from kinde_sdk.model.error_response import ErrorResponse
 
 # Query params
 IdSchema = schemas.StrSchema
@@ -70,15 +71,23 @@ _response_for_200 = api_client.OpenApiResponse(
         ),
     },
 )
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
 
 @dataclass
 class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+    ]
     headers: schemas.Unset = schemas.unset
 
 _response_for_400 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor400,
+    content={
+        "application/json": api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson
+        ),
+    },
 )
 
 @dataclass
@@ -89,16 +98,6 @@ class ApiResponseFor403(api_client.ApiResponse):
 
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
-)
-
-@dataclass
-class ApiResponseFor404(api_client.ApiResponse):
-    response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
-    headers: schemas.Unset = schemas.unset
-
-_response_for_404 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor404,
 )
 _all_accept_content_types = ("application/json",)
 

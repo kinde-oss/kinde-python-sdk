@@ -32,7 +32,23 @@ class ErrorResponse(schemas.DictSchema):
 
     class MetaOapg:
         class properties:
-            errors = schemas.Schema
+            class errors(schemas.ListSchema):
+                class MetaOapg:
+                    @staticmethod
+                    def items() -> typing.Type["Error"]:
+                        return Error
+                def __new__(
+                    cls,
+                    _arg: typing.Union[typing.Tuple["Error"], typing.List["Error"]],
+                    _configuration: typing.Optional[schemas.Configuration] = None,
+                ) -> "errors":
+                    return super().__new__(
+                        cls,
+                        _arg,
+                        _configuration=_configuration,
+                    )
+                def __getitem__(self, i: int) -> "Error":
+                    return super().__getitem__(i)
             __annotations__ = {
                 "errors": errors,
             }
@@ -77,7 +93,9 @@ class ErrorResponse(schemas.DictSchema):
             dict,
             frozendict.frozendict,
         ],
-        errors: typing.Union[MetaOapg.properties.errors, schemas.Unset] = schemas.unset,
+        errors: typing.Union[
+            MetaOapg.properties.errors, list, tuple, schemas.Unset
+        ] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[
             schemas.AnyTypeSchema,
@@ -103,3 +121,5 @@ class ErrorResponse(schemas.DictSchema):
             _configuration=_configuration,
             **kwargs,
         )
+
+from kinde_sdk.model.error import Error

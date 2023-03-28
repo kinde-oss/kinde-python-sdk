@@ -71,7 +71,7 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
             grant_type=self.grant_type,
         )
 
-        kinde_client._fetch_token()
+        kinde_client.fetch_token()
 
         token_endpoint = kinde_client.token_endpoint
         auth_session_mock.return_value.fetch_token.assert_called_with(
@@ -142,7 +142,7 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
             grant_type=self.grant_type,
         )
 
-        kinde_client._fetch_token(authorization_response=fake_auth_response)
+        kinde_client.fetch_token(authorization_response=fake_auth_response)
 
         token_endpoint = kinde_client.token_endpoint
         auth_session_mock.return_value.fetch_token.assert_called_with(
@@ -228,7 +228,7 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             code_verifier=self.code_verifier,
         )
 
-        kinde_client._fetch_token(authorization_response=fake_auth_response)
+        kinde_client.fetch_token(authorization_response=fake_auth_response)
 
         token_endpoint = kinde_client.token_endpoint
         auth_session_mock.return_value.fetch_token.assert_called_with(

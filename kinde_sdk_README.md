@@ -107,6 +107,7 @@ Class | Method | HTTP request | Description
  - [ApiResult](kinde_sdk/docs/models/ApiResult.md)
  - [ConnectedAppsAccessToken](kinde_sdk/docs/models/ConnectedAppsAccessToken.md)
  - [ConnectedAppsAuthUrl](kinde_sdk/docs/models/ConnectedAppsAuthUrl.md)
+ - [Error](kinde_sdk/docs/models/Error.md)
  - [ErrorResponse](kinde_sdk/docs/models/ErrorResponse.md)
  - [Organization](kinde_sdk/docs/models/Organization.md)
  - [OrganizationUser](kinde_sdk/docs/models/OrganizationUser.md)

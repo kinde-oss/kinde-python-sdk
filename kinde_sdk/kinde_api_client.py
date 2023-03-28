@@ -169,7 +169,7 @@ class KindeApiClient(ApiClient):
             else:
                 raise KindeTokenException(f"Token {token_name} doesn't exist.")
 
-    def _fetch_token(self, authorization_response: Optional[str] = None) -> None:
+    def fetch_token(self, authorization_response: Optional[str] = None) -> None:
         if self.grant_type == GrantType.CLIENT_CREDENTIALS:
             params = {"grant_type": "client_credentials"}
             if self.audience:
@@ -189,7 +189,7 @@ class KindeApiClient(ApiClient):
     def _get_or_refresh_access_token(self) -> None:
         if self.grant_type == GrantType.CLIENT_CREDENTIALS:
             if not self.__access_token_obj or self.__access_token_obj.is_expired():
-                self._fetch_token()
+                self.fetch_token()
         else:
             if not self.__access_token_obj:
                 raise KindeLoginException(

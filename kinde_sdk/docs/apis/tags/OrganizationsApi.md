@@ -29,6 +29,7 @@ Add existing users to an organization.
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -132,9 +133,8 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#add_organization_users.ApiResponseFor200) | Users successfully added.
 204 | [ApiResponseFor204](#add_organization_users.ApiResponseFor204) | No users added.
-400 | [ApiResponseFor400](#add_organization_users.ApiResponseFor400) | Invalid request query string. Code is not provided.
+400 | [ApiResponseFor400](#add_organization_users.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#add_organization_users.ApiResponseFor403) | Invalid credentials.
-404 | [ApiResponseFor404](#add_organization_users.ApiResponseFor404) | No organization with that code.
 
 #### add_organization_users.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -153,11 +153,12 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**message** | str,  | str,  |  | [optional]
-**[users_add](#users_add)** | list, tuple,  | tuple,  |  | [optional]
+**code** | str,  | str,  | Response code. | [optional]
+**message** | str,  | str,  | Response message. | [optional]
+**[users_added](#users_added)** | list, tuple,  | tuple,  |  | [optional]
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
-# users_add
+# users_added
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
@@ -180,17 +181,16 @@ headers | Unset | headers were not defined |
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### add_organization_users.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### add_organization_users.ApiResponseFor404
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -217,6 +217,7 @@ Create an organization.
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -241,7 +242,9 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     # example passing only optional values
     body = dict(
         name="name_example",
-        feature_flags=dict(),
+        feature_flags=dict(
+            "str": "str",
+        ),
     )
     try:
         # Create Organization
@@ -257,6 +260,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 body | typing.Union[SchemaForRequestBodyApplicationJson, Unset] | optional, default is unset |
 content_type | str | optional, default is 'application/json' | Selects the schema and serialization of the request body
+accept_content_types | typing.Tuple[str] | default is ('application/json', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
 timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
 skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
@@ -286,6 +290,11 @@ Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 dict, frozendict.frozendict,  | frozendict.frozendict,  | The organization&#x27;s feature flag settings. |
 
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**any_string_name** | str,  | str,  | any string name can be used but the value must be the correct type Value of the feature flag. | [optional] must be one of ["str", "int", "bool", ]
+
 ### Return Types, Responses
 
 Code | Class | Description
@@ -293,7 +302,7 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 201 | [ApiResponseFor201](#create_organization.ApiResponseFor201) | Organization successfully created.
 403 | [ApiResponseFor403](#create_organization.ApiResponseFor403) | Invalid credentials.
-404 | [ApiResponseFor404](#create_organization.ApiResponseFor404) | Invalid request body. Name is not provided.
+400 | [ApiResponseFor400](#create_organization.ApiResponseFor400) | Error creating user.
 500 | [ApiResponseFor500](#create_organization.ApiResponseFor500) | Could not create organization.
 
 #### create_organization.ApiResponseFor201
@@ -310,12 +319,18 @@ response | urllib3.HTTPResponse | Raw response |
 body | Unset | body was not defined |
 headers | Unset | headers were not defined |
 
-#### create_organization.ApiResponseFor404
+#### create_organization.ApiResponseFor400
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### create_organization.ApiResponseFor500
 Name | Type | Description  | Notes
@@ -336,7 +351,7 @@ headers | Unset | headers were not defined |
 
 Delete organization feature flag override
 
-Delete organization feature flag override
+Delete organization feature flag override.
 
 ### Example
 
@@ -418,7 +433,7 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#delete_organization_feature_flag_override.ApiResponseFor200) | Feature flag override successfully deleted
+200 | [ApiResponseFor200](#delete_organization_feature_flag_override.ApiResponseFor200) | Feature flag override successfully deleted.
 400 | [ApiResponseFor400](#delete_organization_feature_flag_override.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_organization_feature_flag_override.ApiResponseFor403) | Invalid credentials.
 
@@ -467,7 +482,7 @@ headers | Unset | headers were not defined |
 
 Delete all organization feature flag overrides
 
-Delete all organization feature flag overrides
+Delete all organization feature flag overrides.
 
 ### Example
 
@@ -540,7 +555,7 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#delete_organization_feature_flag_overrides.ApiResponseFor200) | Feature flag overrides successfully deleted
+200 | [ApiResponseFor200](#delete_organization_feature_flag_overrides.ApiResponseFor200) | Feature flag overrides successfully deleted.
 400 | [ApiResponseFor400](#delete_organization_feature_flag_overrides.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_organization_feature_flag_overrides.ApiResponseFor403) | Invalid credentials.
 
@@ -585,7 +600,7 @@ headers | Unset | headers were not defined |
 
 # **get_orgainzations**
 <a name="get_orgainzations"></a>
-> Organizations get_orgainzations()
+> {str: (bool, date, datetime, dict, float, int, list, str, none_type)} get_orgainzations()
 
 List Organizations
 
@@ -597,7 +612,7 @@ Get a list of organizations.
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import organizations_api
-from kinde_sdk.model.organizations import Organizations
+from kinde_sdk.model.organization import Organization
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -680,7 +695,7 @@ None, str,  | NoneClass, str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#get_orgainzations.ApiResponseFor200) | A succesful response with a list of organizations or an empty list
+200 | [ApiResponseFor200](#get_orgainzations.ApiResponseFor200) | A successful response with a list of organizations or an empty list.
 403 | [ApiResponseFor403](#get_orgainzations.ApiResponseFor403) | Invalid credentials.
 
 #### get_orgainzations.ApiResponseFor200
@@ -691,10 +706,32 @@ body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor200ResponseBodyApplicationJson
-Type | Description  | Notes
-------------- | ------------- | -------------
-[**Organizations**](../../models/Organizations.md) |  |
 
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
+
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**code** | str,  | str,  | Response code. | [optional]
+**message** | str,  | str,  | Response message. | [optional]
+**[organizations](#organizations)** | list, tuple,  | tuple,  |  | [optional]
+**next_token** | str,  | str,  | Pagination token. | [optional]
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
+
+# organizations
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+list, tuple,  | tuple,  |  |
+
+### Tuple Items
+Class Name | Input Type | Accessed Type | Description | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+[**Organization**]({{complexTypePrefix}}Organization.md) | [**Organization**]({{complexTypePrefix}}Organization.md) | [**Organization**]({{complexTypePrefix}}Organization.md) |  |
 
 #### get_orgainzations.ApiResponseFor403
 Name | Type | Description  | Notes
@@ -724,6 +761,7 @@ Gets an organization given the organization's code.
 import kinde_sdk
 from kinde_sdk.apis.tags import organizations_api
 from kinde_sdk.model.organization import Organization
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -789,9 +827,8 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#get_organization.ApiResponseFor200) | Organization successfully retrieved.
-400 | [ApiResponseFor400](#get_organization.ApiResponseFor400) | Invalid request query string. Code is not provided.
+400 | [ApiResponseFor400](#get_organization.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#get_organization.ApiResponseFor403) | Invalid credentials.
-404 | [ApiResponseFor404](#get_organization.ApiResponseFor404) | Organization not found.
 
 #### get_organization.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -810,17 +847,16 @@ Type | Description  | Notes
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### get_organization.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### get_organization.ApiResponseFor404
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -835,11 +871,11 @@ headers | Unset | headers were not defined |
 
 # **get_organization_users**
 <a name="get_organization_users"></a>
-> OrganizationUser get_organization_users()
+> {str: (bool, date, datetime, dict, float, int, list, str, none_type)} get_organization_users()
 
 List Organization Users
 
-Get users in an organizaiton.
+Get users in an organization.
 
 ### Example
 
@@ -848,6 +884,7 @@ Get users in an organizaiton.
 import kinde_sdk
 from kinde_sdk.apis.tags import organizations_api
 from kinde_sdk.model.organization_user import OrganizationUser
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -939,7 +976,8 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#get_organization_users.ApiResponseFor200) | A succesful response with a list of organization users or an empty list
+200 | [ApiResponseFor200](#get_organization_users.ApiResponseFor200) | A succesful response with a list of organization users or an empty list.
+400 | [ApiResponseFor400](#get_organization_users.ApiResponseFor400) | Error creating user
 403 | [ApiResponseFor403](#get_organization_users.ApiResponseFor403) | Invalid credentials.
 
 #### get_organization_users.ApiResponseFor200
@@ -950,9 +988,44 @@ body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor200ResponseBodyApplicationJson
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
+
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**code** | str,  | str,  | Response code. | [optional]
+**message** | str,  | str,  | Response message. | [optional]
+**[organization_users](#organization_users)** | list, tuple,  | tuple,  |  | [optional]
+**next_token** | str,  | str,  | Pagination token. | [optional]
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
+
+# organization_users
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+list, tuple,  | tuple,  |  |
+
+### Tuple Items
+Class Name | Input Type | Accessed Type | Description | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+[**OrganizationUser**]({{complexTypePrefix}}OrganizationUser.md) | [**OrganizationUser**]({{complexTypePrefix}}OrganizationUser.md) | [**OrganizationUser**]({{complexTypePrefix}}OrganizationUser.md) |  |
+
+#### get_organization_users.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**OrganizationUser**](../../models/OrganizationUser.md) |  |
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
 
 
 #### get_organization_users.ApiResponseFor403
@@ -982,6 +1055,7 @@ Remove existing users from an organization.
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -1084,10 +1158,8 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#remove_organization_users.ApiResponseFor200) | Users successfully removed.
-204 | [ApiResponseFor204](#remove_organization_users.ApiResponseFor204) | No users removed.
-400 | [ApiResponseFor400](#remove_organization_users.ApiResponseFor400) | Invalid request query string. Code is not provided.
+400 | [ApiResponseFor400](#remove_organization_users.ApiResponseFor400) | Error creating user.
 403 | [ApiResponseFor403](#remove_organization_users.ApiResponseFor403) | Invalid credentials.
-404 | [ApiResponseFor404](#remove_organization_users.ApiResponseFor404) | No organization with that code.
 
 #### remove_organization_users.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -1122,28 +1194,20 @@ Class Name | Input Type | Accessed Type | Description | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 items | str,  | str,  |  |
 
-#### remove_organization_users.ApiResponseFor204
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
 #### remove_organization_users.ApiResponseFor400
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  |
+
 
 #### remove_organization_users.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### remove_organization_users.ApiResponseFor404
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -1162,7 +1226,7 @@ headers | Unset | headers were not defined |
 
 Update organization feature flag override
 
-Update organization feature flag override
+Update organization feature flag override.
 
 ### Example
 
@@ -1264,7 +1328,7 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#update_organization_feature_flag_override.ApiResponseFor200) | Feature flag override successfully updated
+200 | [ApiResponseFor200](#update_organization_feature_flag_override.ApiResponseFor200) | Feature flag override successfully updated.
 400 | [ApiResponseFor400](#update_organization_feature_flag_override.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#update_organization_feature_flag_override.ApiResponseFor403) | Invalid credentials.
 

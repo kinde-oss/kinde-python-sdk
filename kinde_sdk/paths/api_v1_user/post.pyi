@@ -25,6 +25,7 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
+from kinde_sdk.model.error_response import ErrorResponse
 from kinde_sdk.model.user_identity import UserIdentity
 
 # body param
@@ -578,6 +579,24 @@ _response_for_200 = api_client.OpenApiResponse(
     content={
         "application/json": api_client.MediaType(
             schema=SchemaFor200ResponseBodyApplicationJson
+        ),
+    },
+)
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
+
+@dataclass
+class ApiResponseFor400(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+    ]
+    headers: schemas.Unset = schemas.unset
+
+_response_for_400 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor400,
+    content={
+        "application/json": api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson
         ),
     },
 )

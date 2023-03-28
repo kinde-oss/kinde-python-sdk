@@ -29,7 +29,7 @@ class Users(schemas.ListSchema):
 
     Do not edit the class manually.
 
-    Array of users
+    Array of users.
     """
 
     class MetaOapg:

@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 Create a new feature flag
 
-Create feature flag
+Create feature flag.
 
 ### Example
 
@@ -256,7 +256,7 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#delete_feature_flag.ApiResponseFor200) | Feature flag successfully updated
+200 | [ApiResponseFor200](#delete_feature_flag.ApiResponseFor200) | Feature flag successfully updated.
 400 | [ApiResponseFor400](#delete_feature_flag.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_feature_flag.ApiResponseFor403) | Invalid credentials.
 
@@ -301,11 +301,11 @@ headers | Unset | headers were not defined |
 
 # **update_feature_flag**
 <a name="update_feature_flag"></a>
-> SuccessResponse update_feature_flag(namedescriptionkeytypeallow_override_leveldefault_value)
+> SuccessResponse update_feature_flag(feature_flag_keynamedescriptionkeytypeallow_override_leveldefault_value)
 
 Update a feature flag
 
-Update feature flag
+Update feature flag.
 
 ### Example
 
@@ -337,27 +337,6 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     api_instance = feature_flags_api.FeatureFlagsApi(api_client)
 
     # example passing only required values which don't have defaults set
-    path_params = {
-    }
-    query_params = {
-        'name': "name_example",
-        'description': "description_example",
-        'key': "key_example",
-        'type': "str",
-        'allow_override_level': "env",
-        'default_value': "default_value_example",
-    }
-    try:
-        # Update a feature flag
-        api_response = api_instance.update_feature_flag(
-            path_params=path_params,
-            query_params=query_params,
-        )
-        pprint(api_response)
-    except kinde_sdk.ApiException as e:
-        print("Exception when calling FeatureFlagsApi->update_feature_flag: %s\n" % e)
-
-    # example passing only optional values
     path_params = {
         'feature_flag_key': "feature_flag_key_example",
     }
@@ -450,7 +429,7 @@ str,  | str,  |  |
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
-feature_flag_key | FeatureFlagKeySchema | | optional
+feature_flag_key | FeatureFlagKeySchema | |
 
 # FeatureFlagKeySchema
 
@@ -464,7 +443,7 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#update_feature_flag.ApiResponseFor200) | Feature flag successfully updated
+200 | [ApiResponseFor200](#update_feature_flag.ApiResponseFor200) | Feature flag successfully updated.
 400 | [ApiResponseFor400](#update_feature_flag.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#update_feature_flag.ApiResponseFor403) | Invalid credentials.
 

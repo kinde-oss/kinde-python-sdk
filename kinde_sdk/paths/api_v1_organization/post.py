@@ -25,6 +25,8 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
+from kinde_sdk.model.error_response import ErrorResponse
+
 from . import path
 
 # body param
@@ -34,7 +36,65 @@ class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
     class MetaOapg:
         class properties:
             name = schemas.StrSchema
-            feature_flags = schemas.DictSchema
+
+            class feature_flags(schemas.DictSchema):
+                class MetaOapg:
+                    class additional_properties(schemas.EnumBase, schemas.StrSchema):
+                        class MetaOapg:
+                            enum_value_to_name = {
+                                "str": "STR",
+                                "int": "INT",
+                                "bool": "BOOL",
+                            }
+
+                        @schemas.classproperty
+                        def STR(cls):
+                            return cls("str")
+
+                        @schemas.classproperty
+                        def INT(cls):
+                            return cls("int")
+
+                        @schemas.classproperty
+                        def BOOL(cls):
+                            return cls("bool")
+
+                def __getitem__(
+                    self,
+                    name: typing.Union[
+                        str,
+                    ],
+                ) -> MetaOapg.additional_properties:
+                    # dict_instance[name] accessor
+                    return super().__getitem__(name)
+
+                def get_item_oapg(
+                    self,
+                    name: typing.Union[
+                        str,
+                    ],
+                ) -> MetaOapg.additional_properties:
+                    return super().get_item_oapg(name)
+
+                def __new__(
+                    cls,
+                    *_args: typing.Union[
+                        dict,
+                        frozendict.frozendict,
+                    ],
+                    _configuration: typing.Optional[schemas.Configuration] = None,
+                    **kwargs: typing.Union[
+                        MetaOapg.additional_properties,
+                        str,
+                    ],
+                ) -> "feature_flags":
+                    return super().__new__(
+                        cls,
+                        *_args,
+                        _configuration=_configuration,
+                        **kwargs,
+                    )
+
             __annotations__ = {
                 "name": name,
                 "feature_flags": feature_flags,
@@ -176,17 +236,25 @@ class ApiResponseFor403(api_client.ApiResponse):
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
 
 
 @dataclass
-class ApiResponseFor404(api_client.ApiResponse):
+class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+    ]
     headers: schemas.Unset = schemas.unset
 
 
-_response_for_404 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor404,
+_response_for_400 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor400,
+    content={
+        "application/json": api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson
+        ),
+    },
 )
 
 
@@ -203,9 +271,10 @@ _response_for_500 = api_client.OpenApiResponse(
 _status_code_to_response = {
     "201": _response_for_201,
     "403": _response_for_403,
-    "404": _response_for_404,
+    "400": _response_for_400,
     "500": _response_for_500,
 }
+_all_accept_content_types = ("application/json",)
 
 
 class BaseApi(api_client.Api):
@@ -219,6 +288,7 @@ class BaseApi(api_client.Api):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
@@ -235,6 +305,7 @@ class BaseApi(api_client.Api):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
@@ -252,6 +323,7 @@ class BaseApi(api_client.Api):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization:
@@ -267,6 +339,7 @@ class BaseApi(api_client.Api):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
@@ -282,6 +355,7 @@ class BaseApi(api_client.Api):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
@@ -296,6 +370,9 @@ class BaseApi(api_client.Api):
 
         _headers = HTTPHeaderDict()
         # TODO add cookie handling
+        if accept_content_types:
+            for accept_content_type in accept_content_types:
+                _headers.add("Accept", accept_content_type)
 
         _fields = None
         _body = None
@@ -355,6 +432,7 @@ class CreateOrganization(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
@@ -371,6 +449,7 @@ class CreateOrganization(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
@@ -388,6 +467,7 @@ class CreateOrganization(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization:
@@ -403,6 +483,7 @@ class CreateOrganization(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
@@ -418,6 +499,7 @@ class CreateOrganization(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
@@ -425,6 +507,7 @@ class CreateOrganization(BaseApi):
         return self._create_organization_oapg(
             body=body,
             content_type=content_type,
+            accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
             skip_deserialization=skip_deserialization,
@@ -444,6 +527,7 @@ class ApiForpost(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
@@ -460,6 +544,7 @@ class ApiForpost(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
@@ -477,6 +562,7 @@ class ApiForpost(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization:
@@ -492,6 +578,7 @@ class ApiForpost(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
@@ -507,6 +594,7 @@ class ApiForpost(BaseApi):
             frozendict.frozendict,
             schemas.Unset,
         ] = schemas.unset,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
@@ -514,6 +602,7 @@ class ApiForpost(BaseApi):
         return self._create_organization_oapg(
             body=body,
             content_type=content_type,
+            accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
             skip_deserialization=skip_deserialization,

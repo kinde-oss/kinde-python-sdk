@@ -1,6 +1,7 @@
 .github/workflows/ci.yml
-.openapi-generator-ignore
+.gitignore
 .pre-commit-config.yaml
+LICENSE
 README.md
 kinde_sdk/__init__.py
 kinde_sdk/api_client.py
@@ -21,6 +22,7 @@ kinde_sdk/docs/apis/tags/UsersApi.md
 kinde_sdk/docs/models/ApiResult.md
 kinde_sdk/docs/models/ConnectedAppsAccessToken.md
 kinde_sdk/docs/models/ConnectedAppsAuthUrl.md
+kinde_sdk/docs/models/Error.md
 kinde_sdk/docs/models/ErrorResponse.md
 kinde_sdk/docs/models/Organization.md
 kinde_sdk/docs/models/OrganizationUser.md
@@ -42,6 +44,8 @@ kinde_sdk/model/connected_apps_access_token.py
 kinde_sdk/model/connected_apps_access_token.pyi
 kinde_sdk/model/connected_apps_auth_url.py
 kinde_sdk/model/connected_apps_auth_url.pyi
+kinde_sdk/model/error.py
+kinde_sdk/model/error.pyi
 kinde_sdk/model/error_response.py
 kinde_sdk/model/error_response.pyi
 kinde_sdk/model/organization.py
@@ -73,6 +77,7 @@ kinde_sdk/test/test_models/__init__.py
 kinde_sdk/test/test_models/test_api_result.py
 kinde_sdk/test/test_models/test_connected_apps_access_token.py
 kinde_sdk/test/test_models/test_connected_apps_auth_url.py
+kinde_sdk/test/test_models/test_error.py
 kinde_sdk/test/test_models/test_error_response.py
 kinde_sdk/test/test_models/test_organization.py
 kinde_sdk/test/test_models/test_organization_user.py
@@ -85,4 +90,5 @@ kinde_sdk/test/test_models/test_user_profile.py
 kinde_sdk/test/test_models/test_user_profile_v2.py
 kinde_sdk/test/test_models/test_users.py
 kinde_sdk_README.md
+pyproject.toml
 requirements.txt

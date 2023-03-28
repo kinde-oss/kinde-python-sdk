@@ -9,6 +9,7 @@
 from dataclasses import dataclass
 import typing_extensions
 import urllib3
+from urllib3._collections import HTTPHeaderDict
 
 from kinde_sdk import api_client, exceptions
 from datetime import date, datetime  # noqa: F401
@@ -23,6 +24,9 @@ import uuid  # noqa: F401
 import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
+
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
 
 from . import path
 
@@ -56,29 +60,45 @@ request_query_id = api_client.QueryParameter(
 _auth = [
     "kindeBearerAuth",
 ]
+SchemaFor200ResponseBodyApplicationJson = SuccessResponse
 
 
 @dataclass
-class ApiResponseFor204(api_client.ApiResponse):
+class ApiResponseFor200(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor200ResponseBodyApplicationJson,
+    ]
     headers: schemas.Unset = schemas.unset
 
 
-_response_for_204 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor204,
+_response_for_200 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor200,
+    content={
+        "application/json": api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJson
+        ),
+    },
 )
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
 
 
 @dataclass
 class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+    ]
     headers: schemas.Unset = schemas.unset
 
 
 _response_for_400 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor400,
+    content={
+        "application/json": api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson
+        ),
+    },
 )
 
 
@@ -92,24 +112,12 @@ class ApiResponseFor403(api_client.ApiResponse):
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
-
-
-@dataclass
-class ApiResponseFor404(api_client.ApiResponse):
-    response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
-    headers: schemas.Unset = schemas.unset
-
-
-_response_for_404 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor404,
-)
 _status_code_to_response = {
-    "204": _response_for_204,
+    "200": _response_for_200,
     "400": _response_for_400,
     "403": _response_for_403,
-    "404": _response_for_404,
 }
+_all_accept_content_types = ("application/json",)
 
 
 class BaseApi(api_client.Api):
@@ -117,10 +125,11 @@ class BaseApi(api_client.Api):
     def _deleteuser_oapg(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor204,]:
+    ) -> typing.Union[ApiResponseFor200,]:
         ...
 
     @typing.overload
@@ -128,6 +137,7 @@ class BaseApi(api_client.Api):
         self,
         skip_deserialization: typing_extensions.Literal[True],
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization:
@@ -137,15 +147,17 @@ class BaseApi(api_client.Api):
     def _deleteuser_oapg(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor204, api_client.ApiResponseWithoutDeserialization,]:
+    ) -> typing.Union[ApiResponseFor200, api_client.ApiResponseWithoutDeserialization,]:
         ...
 
     def _deleteuser_oapg(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
@@ -171,11 +183,17 @@ class BaseApi(api_client.Api):
             )
             for serialized_value in serialized_data.values():
                 used_path += serialized_value
+
+        _headers = HTTPHeaderDict()
         # TODO add cookie handling
+        if accept_content_types:
+            for accept_content_type in accept_content_types:
+                _headers.add("Accept", accept_content_type)
 
         response = self.api_client.call_api(
             resource_path=used_path,
             method="delete".upper(),
+            headers=_headers,
             auth_settings=_auth,
             stream=stream,
             timeout=timeout,
@@ -213,10 +231,11 @@ class Deleteuser(BaseApi):
     def deleteuser(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor204,]:
+    ) -> typing.Union[ApiResponseFor200,]:
         ...
 
     @typing.overload
@@ -224,6 +243,7 @@ class Deleteuser(BaseApi):
         self,
         skip_deserialization: typing_extensions.Literal[True],
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization:
@@ -233,21 +253,24 @@ class Deleteuser(BaseApi):
     def deleteuser(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor204, api_client.ApiResponseWithoutDeserialization,]:
+    ) -> typing.Union[ApiResponseFor200, api_client.ApiResponseWithoutDeserialization,]:
         ...
 
     def deleteuser(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
     ):
         return self._deleteuser_oapg(
             query_params=query_params,
+            accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
             skip_deserialization=skip_deserialization,
@@ -261,10 +284,11 @@ class ApiFordelete(BaseApi):
     def delete(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor204,]:
+    ) -> typing.Union[ApiResponseFor200,]:
         ...
 
     @typing.overload
@@ -272,6 +296,7 @@ class ApiFordelete(BaseApi):
         self,
         skip_deserialization: typing_extensions.Literal[True],
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization:
@@ -281,21 +306,24 @@ class ApiFordelete(BaseApi):
     def delete(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor204, api_client.ApiResponseWithoutDeserialization,]:
+    ) -> typing.Union[ApiResponseFor200, api_client.ApiResponseWithoutDeserialization,]:
         ...
 
     def delete(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
     ):
         return self._deleteuser_oapg(
             query_params=query_params,
+            accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
             skip_deserialization=skip_deserialization,

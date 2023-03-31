@@ -22,51 +22,6 @@ To be able to use it, you will need these dependencies in your own package that 
 * certifi
 * python-dateutil
 
-## Getting Started
-
-In your own code, to use this library to connect and interact with kinde-sdk,
-you can run the following:
-
-```python
-
-import time
-import kinde_sdk
-from pprint import pprint
-from kinde_sdk.apis.tags import connected_apps_api
-from kinde_sdk.model.api_result import ApiResult
-from kinde_sdk.model.connected_apps_access_token import ConnectedAppsAccessToken
-from kinde_sdk.model.connected_apps_auth_url import ConnectedAppsAuthUrl
-# Defining the host is optional and defaults to https://app.kinde.com
-# See configuration.py for a list of all supported configuration parameters.
-configuration = kinde_sdk.Configuration(
-    host = "https://app.kinde.com"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure Bearer authorization (JWT): kindeBearerAuth
-configuration = kinde_sdk.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
-# Enter a context with an instance of the API client
-with kinde_sdk.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = connected_apps_api.ConnectedAppsApi(api_client)
-    key_code_ref = "key_code_ref_example" # str | The unique key code reference of the connected app to authenticate against.
-user_id = 1 # int | The id of the user that needs to authenticate to the third-party connected app.
-
-    try:
-        # Get Connected App URL
-        api_response = api_instance.get_connected_app_auth_url(key_code_refuser_id)
-        pprint(api_response)
-    except kinde_sdk.ApiException as e:
-        print("Exception when calling ConnectedAppsApi->get_connected_app_auth_url: %s\n" % e)
-```
-
 ## Documentation for API Endpoints
 
 All URIs are relative to *https://app.kinde.com*
@@ -88,9 +43,9 @@ Class | Method | HTTP request | Description
 *OrganizationsApi* | [**create_organization**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#create_organization) | **post** /api/v1/organization | Create Organization
 *OrganizationsApi* | [**delete_organization_feature_flag_override**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#delete_organization_feature_flag_override) | **delete** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Delete organization feature flag override
 *OrganizationsApi* | [**delete_organization_feature_flag_overrides**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#delete_organization_feature_flag_overrides) | **delete** /api/v1/organizations/{org_code}/feature_flags | Delete all organization feature flag overrides
-*OrganizationsApi* | [**get_orgainzations**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_orgainzations) | **get** /api/v1/organizations | List Organizations
 *OrganizationsApi* | [**get_organization**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_organization) | **get** /api/v1/organization | Get Organization
 *OrganizationsApi* | [**get_organization_users**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_organization_users) | **get** /api/v1/organization/users | List Organization Users
+*OrganizationsApi* | [**get_organizations**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_organizations) | **get** /api/v1/organizations | List Organizations
 *OrganizationsApi* | [**remove_organization_users**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#remove_organization_users) | **patch** /api/v1/organization/users | Remove Users from an Organization
 *OrganizationsApi* | [**update_organization_feature_flag_override**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#update_organization_feature_flag_override) | **patch** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Update organization feature flag override
 *UsersApi* | [**add_organization_users**](kinde_sdk/docs/apis/tags/UsersApi.md#add_organization_users) | **post** /api/v1/organization/users | Assign Users to an Organization

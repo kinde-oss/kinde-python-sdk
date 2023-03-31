@@ -18,9 +18,9 @@ from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags_feature_flag_ke
 from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags.delete import (
     DeleteOrganizationFeatureFlagOverrides,
 )
-from kinde_sdk.paths.api_v1_organizations.get import GetOrgainzations
 from kinde_sdk.paths.api_v1_organization.get import GetOrganization
 from kinde_sdk.paths.api_v1_organization_users.get import GetOrganizationUsers
+from kinde_sdk.paths.api_v1_organizations.get import GetOrganizations
 from kinde_sdk.paths.api_v1_organization_users.patch import RemoveOrganizationUsers
 from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags_feature_flag_key.patch import (
     UpdateOrganizationFeatureFlagOverride,
@@ -32,9 +32,9 @@ class OrganizationsApi(
     CreateOrganization,
     DeleteOrganizationFeatureFlagOverride,
     DeleteOrganizationFeatureFlagOverrides,
-    GetOrgainzations,
     GetOrganization,
     GetOrganizationUsers,
+    GetOrganizations,
     RemoveOrganizationUsers,
     UpdateOrganizationFeatureFlagOverride,
 ):

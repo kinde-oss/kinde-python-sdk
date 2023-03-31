@@ -586,6 +586,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         'page_size': 1,
         'next_token': "next_token_example",
         'code': "code_example",
+        'permissions': "permissions_example",
     }
     try:
         # List Organization Users
@@ -615,6 +616,7 @@ sort | SortSchema | | optional
 page_size | PageSizeSchema | | optional
 next_token | NextTokenSchema | | optional
 code | CodeSchema | | optional
+permissions | PermissionsSchema | | optional
 
 
 # SortSchema
@@ -639,6 +641,13 @@ Input Type | Accessed Type | Description | Notes
 None, str,  | NoneClass, str,  |  |
 
 # CodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  |
+
+# PermissionsSchema
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
@@ -1217,6 +1226,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     body = dict(
         given_name="given_name_example",
         family_name="family_name_example",
+        is_suspended=True,
     )
     try:
         # Update User
@@ -1235,6 +1245,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     body = dict(
         given_name="given_name_example",
         family_name="family_name_example",
+        is_suspended=True,
     )
     try:
         # Update User
@@ -1272,6 +1283,7 @@ Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
 **given_name** | str,  | str,  | User&#x27;s first name. | [optional]
 **family_name** | str,  | str,  | User&#x27;s last name. | [optional]
+**is_suspended** | bool,  | BoolClass,  | Whether the user is currently suspended or not. | [optional]
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 ### query_params

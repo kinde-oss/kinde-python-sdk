@@ -65,9 +65,11 @@ class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
         class properties:
             given_name = schemas.StrSchema
             family_name = schemas.StrSchema
+            is_suspended = schemas.BoolSchema
             __annotations__ = {
                 "given_name": given_name,
                 "family_name": family_name,
+                "is_suspended": is_suspended,
             }
 
     @typing.overload
@@ -83,6 +85,12 @@ class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
         ...
 
     @typing.overload
+    def __getitem__(
+        self, name: typing_extensions.Literal["is_suspended"]
+    ) -> MetaOapg.properties.is_suspended:
+        ...
+
+    @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema:
         ...
 
@@ -92,6 +100,7 @@ class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
             typing_extensions.Literal[
                 "given_name",
                 "family_name",
+                "is_suspended",
             ],
             str,
         ],
@@ -113,6 +122,12 @@ class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
 
     @typing.overload
     def get_item_oapg(
+        self, name: typing_extensions.Literal["is_suspended"]
+    ) -> typing.Union[MetaOapg.properties.is_suspended, schemas.Unset]:
+        ...
+
+    @typing.overload
+    def get_item_oapg(
         self, name: str
     ) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]:
         ...
@@ -123,6 +138,7 @@ class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
             typing_extensions.Literal[
                 "given_name",
                 "family_name",
+                "is_suspended",
             ],
             str,
         ],
@@ -140,6 +156,9 @@ class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
         ] = schemas.unset,
         family_name: typing.Union[
             MetaOapg.properties.family_name, str, schemas.Unset
+        ] = schemas.unset,
+        is_suspended: typing.Union[
+            MetaOapg.properties.is_suspended, bool, schemas.Unset
         ] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[
@@ -164,6 +183,7 @@ class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
             *_args,
             given_name=given_name,
             family_name=family_name,
+            is_suspended=is_suspended,
             _configuration=_configuration,
             **kwargs,
         )

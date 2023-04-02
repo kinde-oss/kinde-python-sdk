@@ -9,9 +9,9 @@ Method | HTTP request | Description
 [**create_organization**](#create_organization) | **post** /api/v1/organization | Create Organization
 [**delete_organization_feature_flag_override**](#delete_organization_feature_flag_override) | **delete** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Delete organization feature flag override
 [**delete_organization_feature_flag_overrides**](#delete_organization_feature_flag_overrides) | **delete** /api/v1/organizations/{org_code}/feature_flags | Delete all organization feature flag overrides
-[**get_orgainzations**](#get_orgainzations) | **get** /api/v1/organizations | List Organizations
 [**get_organization**](#get_organization) | **get** /api/v1/organization | Get Organization
 [**get_organization_users**](#get_organization_users) | **get** /api/v1/organization/users | List Organization Users
+[**get_organizations**](#get_organizations) | **get** /api/v1/organizations | List Organizations
 [**remove_organization_users**](#remove_organization_users) | **patch** /api/v1/organization/users | Remove Users from an Organization
 [**update_organization_feature_flag_override**](#update_organization_feature_flag_override) | **patch** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Update organization feature flag override
 
@@ -598,154 +598,6 @@ headers | Unset | headers were not defined |
 
 [[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
 
-# **get_orgainzations**
-<a name="get_orgainzations"></a>
-> {str: (bool, date, datetime, dict, float, int, list, str, none_type)} get_orgainzations()
-
-List Organizations
-
-Get a list of organizations.
-
-### Example
-
-* Bearer (JWT) Authentication (kindeBearerAuth):
-```python
-import kinde_sdk
-from kinde_sdk.apis.tags import organizations_api
-from kinde_sdk.model.organization import Organization
-from pprint import pprint
-# Defining the host is optional and defaults to https://app.kinde.com
-# See configuration.py for a list of all supported configuration parameters.
-configuration = kinde_sdk.Configuration(
-    host = "https://app.kinde.com"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure Bearer authorization (JWT): kindeBearerAuth
-configuration = kinde_sdk.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-# Enter a context with an instance of the API client
-with kinde_sdk.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = organizations_api.OrganizationsApi(api_client)
-
-    # example passing only optional values
-    query_params = {
-        'sort': "name_asc",
-        'page_size': 1,
-        'next_token': "next_token_example",
-    }
-    try:
-        # List Organizations
-        api_response = api_instance.get_orgainzations(
-            query_params=query_params,
-        )
-        pprint(api_response)
-    except kinde_sdk.ApiException as e:
-        print("Exception when calling OrganizationsApi->get_orgainzations: %s\n" % e)
-```
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-query_params | RequestQueryParams | |
-accept_content_types | typing.Tuple[str] | default is ('application/json', ) | Tells the server the content type(s) that are accepted by the client
-stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
-timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
-skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
-
-### query_params
-#### RequestQueryParams
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-sort | SortSchema | | optional
-page_size | PageSizeSchema | | optional
-next_token | NextTokenSchema | | optional
-
-
-# SortSchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-None, str,  | NoneClass, str,  |  | must be one of ["name_asc", "name_desc", "email_asc", "email_desc", ]
-
-# PageSizeSchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-None, decimal.Decimal, int,  | NoneClass, decimal.Decimal,  |  |
-
-# NextTokenSchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-None, str,  | NoneClass, str,  |  |
-
-### Return Types, Responses
-
-Code | Class | Description
-------------- | ------------- | -------------
-n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#get_orgainzations.ApiResponseFor200) | A successful response with a list of organizations or an empty list.
-403 | [ApiResponseFor403](#get_orgainzations.ApiResponseFor403) | Invalid credentials.
-
-#### get_orgainzations.ApiResponseFor200
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
-headers | Unset | headers were not defined |
-
-# SchemaFor200ResponseBodyApplicationJson
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
-
-### Dictionary Keys
-Key | Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | ------------- | -------------
-**code** | str,  | str,  | Response code. | [optional]
-**message** | str,  | str,  | Response message. | [optional]
-**[organizations](#organizations)** | list, tuple,  | tuple,  |  | [optional]
-**next_token** | str,  | str,  | Pagination token. | [optional]
-**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
-
-# organizations
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-list, tuple,  | tuple,  |  |
-
-### Tuple Items
-Class Name | Input Type | Accessed Type | Description | Notes
-------------- | ------------- | ------------- | ------------- | -------------
-[**Organization**]({{complexTypePrefix}}Organization.md) | [**Organization**]({{complexTypePrefix}}Organization.md) | [**Organization**]({{complexTypePrefix}}Organization.md) |  |
-
-#### get_orgainzations.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-### Authorization
-
-[kindeBearerAuth](../../../README.md#kindeBearerAuth)
-
-[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
-
 # **get_organization**
 <a name="get_organization"></a>
 > Organization get_organization()
@@ -912,6 +764,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         'page_size': 1,
         'next_token': "next_token_example",
         'code': "code_example",
+        'permissions': "permissions_example",
     }
     try:
         # List Organization Users
@@ -941,6 +794,7 @@ sort | SortSchema | | optional
 page_size | PageSizeSchema | | optional
 next_token | NextTokenSchema | | optional
 code | CodeSchema | | optional
+permissions | PermissionsSchema | | optional
 
 
 # SortSchema
@@ -965,6 +819,13 @@ Input Type | Accessed Type | Description | Notes
 None, str,  | NoneClass, str,  |  |
 
 # CodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  |
+
+# PermissionsSchema
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
@@ -1029,6 +890,154 @@ Type | Description  | Notes
 
 
 #### get_organization_users.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **get_organizations**
+<a name="get_organizations"></a>
+> {str: (bool, date, datetime, dict, float, int, list, str, none_type)} get_organizations()
+
+List Organizations
+
+Get a list of organizations.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.organization import Organization
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = organizations_api.OrganizationsApi(api_client)
+
+    # example passing only optional values
+    query_params = {
+        'sort': "name_asc",
+        'page_size': 1,
+        'next_token': "next_token_example",
+    }
+    try:
+        # List Organizations
+        api_response = api_instance.get_organizations(
+            query_params=query_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->get_organizations: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+query_params | RequestQueryParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### query_params
+#### RequestQueryParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+sort | SortSchema | | optional
+page_size | PageSizeSchema | | optional
+next_token | NextTokenSchema | | optional
+
+
+# SortSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+None, str,  | NoneClass, str,  |  | must be one of ["name_asc", "name_desc", "email_asc", "email_desc", ]
+
+# PageSizeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+None, decimal.Decimal, int,  | NoneClass, decimal.Decimal,  |  |
+
+# NextTokenSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+None, str,  | NoneClass, str,  |  |
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#get_organizations.ApiResponseFor200) | A successful response with a list of organizations or an empty list.
+403 | [ApiResponseFor403](#get_organizations.ApiResponseFor403) | Invalid credentials.
+
+#### get_organizations.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
+
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**code** | str,  | str,  | Response code. | [optional]
+**message** | str,  | str,  | Response message. | [optional]
+**[organizations](#organizations)** | list, tuple,  | tuple,  |  | [optional]
+**next_token** | str,  | str,  | Pagination token. | [optional]
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
+
+# organizations
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+list, tuple,  | tuple,  |  |
+
+### Tuple Items
+Class Name | Input Type | Accessed Type | Description | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+[**Organization**]({{complexTypePrefix}}Organization.md) | [**Organization**]({{complexTypePrefix}}Organization.md) | [**Organization**]({{complexTypePrefix}}Organization.md) |  |
+
+#### get_organizations.ApiResponseFor403
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

@@ -106,6 +106,7 @@ class NextTokenSchema(
         )
 
 CodeSchema = schemas.StrSchema
+PermissionsSchema = schemas.StrSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     "RequestRequiredQueryParams", {}
 )
@@ -130,6 +131,10 @@ RequestOptionalQueryParams = typing_extensions.TypedDict(
         ],
         "code": typing.Union[
             CodeSchema,
+            str,
+        ],
+        "permissions": typing.Union[
+            PermissionsSchema,
             str,
         ],
     },
@@ -161,6 +166,12 @@ request_query_code = api_client.QueryParameter(
     name="code",
     style=api_client.ParameterStyle.FORM,
     schema=CodeSchema,
+    explode=True,
+)
+request_query_permissions = api_client.QueryParameter(
+    name="permissions",
+    style=api_client.ParameterStyle.FORM,
+    schema=PermissionsSchema,
     explode=True,
 )
 
@@ -409,6 +420,7 @@ class BaseApi(api_client.Api):
             request_query_page_size,
             request_query_next_token,
             request_query_code,
+            request_query_permissions,
         ):
             parameter_data = query_params.get(parameter.name, schemas.unset)
             if parameter_data is schemas.unset:

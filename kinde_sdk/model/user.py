@@ -38,7 +38,24 @@ class User(schemas.DictSchema):
             last_name = schemas.StrSchema
             first_name = schemas.StrSchema
             is_suspended = schemas.BoolSchema
-            picture = schemas.StrSchema
+
+            class picture(
+                schemas.StrBase, schemas.NoneBase, schemas.Schema, schemas.NoneStrMixin
+            ):
+                def __new__(
+                    cls,
+                    *_args: typing.Union[
+                        None,
+                        str,
+                    ],
+                    _configuration: typing.Optional[schemas.Configuration] = None,
+                ) -> "picture":
+                    return super().__new__(
+                        cls,
+                        *_args,
+                        _configuration=_configuration,
+                    )
+
             __annotations__ = {
                 "id": id,
                 "email": email,
@@ -183,7 +200,7 @@ class User(schemas.DictSchema):
             MetaOapg.properties.is_suspended, bool, schemas.Unset
         ] = schemas.unset,
         picture: typing.Union[
-            MetaOapg.properties.picture, str, schemas.Unset
+            MetaOapg.properties.picture, None, str, schemas.Unset
         ] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[

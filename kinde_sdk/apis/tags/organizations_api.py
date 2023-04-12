@@ -12,19 +12,13 @@
 
 from kinde_sdk.paths.api_v1_organization_users.post import AddOrganizationUsers
 from kinde_sdk.paths.api_v1_organization.post import CreateOrganization
-from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags_feature_flag_key.delete import (
-    DeleteOrganizationFeatureFlagOverride,
-)
-from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags.delete import (
-    DeleteOrganizationFeatureFlagOverrides,
-)
+from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags_feature_flag_key.delete import DeleteOrganizationFeatureFlagOverride
+from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags.delete import DeleteOrganizationFeatureFlagOverrides
 from kinde_sdk.paths.api_v1_organization.get import GetOrganization
 from kinde_sdk.paths.api_v1_organization_users.get import GetOrganizationUsers
 from kinde_sdk.paths.api_v1_organizations.get import GetOrganizations
 from kinde_sdk.paths.api_v1_organization_users.patch import RemoveOrganizationUsers
-from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags_feature_flag_key.patch import (
-    UpdateOrganizationFeatureFlagOverride,
-)
+from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags_feature_flag_key.patch import UpdateOrganizationFeatureFlagOverride
 
 
 class OrganizationsApi(
@@ -43,5 +37,4 @@ class OrganizationsApi(
 
     Do not edit the class manually.
     """
-
     pass

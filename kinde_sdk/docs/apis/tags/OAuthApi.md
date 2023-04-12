@@ -14,7 +14,7 @@ Method | HTTP request | Description
 
 Returns the details of the currently logged in user
 
-Contains the id, names and email of the currently logged in user.
+Contains the id, names and email of the currently logged in user. 
 
 ### Example
 
@@ -73,7 +73,7 @@ headers | Unset | headers were not defined |
 # SchemaFor200ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**UserProfile**](../../models/UserProfile.md) |  |
+[**UserProfile**](../../models/UserProfile.md) |  | 
 
 
 #### get_user.ApiResponseFor403
@@ -95,7 +95,7 @@ headers | Unset | headers were not defined |
 
 Returns the details of the currently logged in user
 
-Contains the id, names, profile picture URL and email of the currently logged in user.
+Contains the id, names, profile picture URL and email of the currently logged in user. 
 
 ### Example
 
@@ -154,7 +154,7 @@ headers | Unset | headers were not defined |
 # SchemaFor200ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**UserProfileV2**](../../models/UserProfileV2.md) |  |
+[**UserProfileV2**](../../models/UserProfileV2.md) |  | 
 
 
 #### get_user_profile_v2.ApiResponseFor403
@@ -169,3 +169,4 @@ headers | Unset | headers were not defined |
 [kindeBearerAuth](../../../README.md#kindeBearerAuth)
 
 [[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+

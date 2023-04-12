@@ -1,10 +1,10 @@
 [project]
 name = "kinde-python-sdk"
-version = "1.0.0"
+version = "1.1.0"
 authors = [
-    { name = "Your Name", email = "you@yourdomain.com" },
+    { name = "Kinde Engineering", email = "engineering@kinde.com" },
 ]
-description = "SDK for Kinde API"
+description = "Connect your app to the Kinde platform"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
@@ -27,3 +27,8 @@ dependencies = [
     "frozendict ~=2.3.5",
     "certifi ~=2022.12.7",
 ]
+[project.urls]
+"Homepage" = "https://github.com/kinde-oss/kinde-python-sdk"
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

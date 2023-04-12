@@ -30,20 +30,22 @@ from kinde_sdk.model.api_result import ApiResult
 # Query params
 SessionIdSchema = schemas.StrSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
-    "RequestRequiredQueryParams",
+    'RequestRequiredQueryParams',
     {
-        "session_id": typing.Union[
-            SessionIdSchema,
-            str,
-        ],
-    },
+        'session_id': typing.Union[SessionIdSchema, str, ],
+    }
 )
 RequestOptionalQueryParams = typing_extensions.TypedDict(
-    "RequestOptionalQueryParams", {}, total=False
+    'RequestOptionalQueryParams',
+    {
+    },
+    total=False
 )
+
 
 class RequestQueryParams(RequestRequiredQueryParams, RequestOptionalQueryParams):
     pass
+
 
 request_query_session_id = api_client.QueryParameter(
     name="session_id",
@@ -53,78 +55,102 @@ request_query_session_id = api_client.QueryParameter(
     explode=True,
 )
 SchemaFor200ResponseBodyApplicationJson = ApiResult
+SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = ApiResult
+
 
 @dataclass
 class ApiResponseFor200(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
         SchemaFor200ResponseBodyApplicationJson,
+        SchemaFor200ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
+
 
 _response_for_200 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor200,
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaFor200ResponseBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
     },
 )
 SchemaFor400ResponseBodyApplicationJson = ApiResult
+SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ApiResult
+
 
 @dataclass
 class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
         SchemaFor400ResponseBodyApplicationJson,
+        SchemaFor400ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
+
 
 _response_for_400 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor400,
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaFor400ResponseBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
     },
 )
 SchemaFor403ResponseBodyApplicationJson = ApiResult
+SchemaFor403ResponseBodyApplicationJsonCharsetutf8 = ApiResult
+
 
 @dataclass
 class ApiResponseFor403(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
         SchemaFor403ResponseBodyApplicationJson,
+        SchemaFor403ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
+
 
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaFor403ResponseBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaFor403ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor403ResponseBodyApplicationJsonCharsetutf8),
     },
 )
 SchemaFor405ResponseBodyApplicationJson = ApiResult
+SchemaFor405ResponseBodyApplicationJsonCharsetutf8 = ApiResult
+
 
 @dataclass
 class ApiResponseFor405(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
         SchemaFor405ResponseBodyApplicationJson,
+        SchemaFor405ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
+
 
 _response_for_405 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor405,
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaFor405ResponseBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaFor405ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor405ResponseBodyApplicationJsonCharsetutf8),
     },
 )
-_all_accept_content_types = ("application/json",)
+_all_accept_content_types = (
+    'application/json',
+    'application/json; charset=utf-8',
+)
+
 
 class BaseApi(api_client.Api):
     @typing.overload
@@ -135,7 +161,10 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200,]: ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+    ]: ...
+
     @typing.overload
     def _revoke_connected_app_token_oapg(
         self,
@@ -145,6 +174,7 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization: ...
+
     @typing.overload
     def _revoke_connected_app_token_oapg(
         self,
@@ -157,6 +187,7 @@ class BaseApi(api_client.Api):
         ApiResponseFor200,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
+
     def _revoke_connected_app_token_oapg(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
@@ -175,15 +206,15 @@ class BaseApi(api_client.Api):
         used_path = path.value
 
         prefix_separator_iterator = None
-        for parameter in (request_query_session_id,):
+        for parameter in (
+            request_query_session_id,
+        ):
             parameter_data = query_params.get(parameter.name, schemas.unset)
             if parameter_data is schemas.unset:
                 continue
             if prefix_separator_iterator is None:
                 prefix_separator_iterator = parameter.get_prefix_separator_iterator()
-            serialized_data = parameter.serialize(
-                parameter_data, prefix_separator_iterator
-            )
+            serialized_data = parameter.serialize(parameter_data, prefix_separator_iterator)
             for serialized_value in serialized_data.values():
                 used_path += serialized_value
 
@@ -191,11 +222,11 @@ class BaseApi(api_client.Api):
         # TODO add cookie handling
         if accept_content_types:
             for accept_content_type in accept_content_types:
-                _headers.add("Accept", accept_content_type)
+                _headers.add('Accept', accept_content_type)
 
         response = self.api_client.call_api(
             resource_path=used_path,
-            method="post".upper(),
+            method='post'.upper(),
             headers=_headers,
             auth_settings=_auth,
             stream=stream,
@@ -203,28 +234,23 @@ class BaseApi(api_client.Api):
         )
 
         if skip_deserialization:
-            api_response = api_client.ApiResponseWithoutDeserialization(
-                response=response
-            )
+            api_response = api_client.ApiResponseWithoutDeserialization(response=response)
         else:
             response_for_status = _status_code_to_response.get(str(response.status))
             if response_for_status:
-                api_response = response_for_status.deserialize(
-                    response, self.api_client.configuration
-                )
+                api_response = response_for_status.deserialize(response, self.api_client.configuration)
             else:
-                api_response = api_client.ApiResponseWithoutDeserialization(
-                    response=response
-                )
+                api_response = api_client.ApiResponseWithoutDeserialization(response=response)
 
         if not 200 <= response.status <= 299:
             raise exceptions.ApiException(
                 status=response.status,
                 reason=response.reason,
-                api_response=api_response,
+                api_response=api_response
             )
 
         return api_response
+
 
 class RevokeConnectedAppToken(BaseApi):
     # this class is used by api classes that refer to endpoints with operationId fn names
@@ -237,7 +263,10 @@ class RevokeConnectedAppToken(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200,]: ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+    ]: ...
+
     @typing.overload
     def revoke_connected_app_token(
         self,
@@ -247,6 +276,7 @@ class RevokeConnectedAppToken(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization: ...
+
     @typing.overload
     def revoke_connected_app_token(
         self,
@@ -259,6 +289,7 @@ class RevokeConnectedAppToken(BaseApi):
         ApiResponseFor200,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
+
     def revoke_connected_app_token(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
@@ -272,8 +303,9 @@ class RevokeConnectedAppToken(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
+
 
 class ApiForpost(BaseApi):
     # this class is used by api classes that refer to endpoints by path and http method names
@@ -286,7 +318,10 @@ class ApiForpost(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200,]: ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+    ]: ...
+
     @typing.overload
     def post(
         self,
@@ -296,6 +331,7 @@ class ApiForpost(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization: ...
+
     @typing.overload
     def post(
         self,
@@ -308,6 +344,7 @@ class ApiForpost(BaseApi):
         ApiResponseFor200,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
+
     def post(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
@@ -321,5 +358,7 @@ class ApiForpost(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
+
+

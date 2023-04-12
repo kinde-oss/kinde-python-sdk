@@ -23,7 +23,6 @@ class TestApiV1EnvironmentFeatureFlags(ApiTestMixin, unittest.TestCase):
     ApiV1EnvironmentFeatureFlags unit test stubs
         Delete all environment feature flag overrides  # noqa: E501
     """
-
     _configuration = configuration.Configuration()
 
     def setUp(self):
@@ -36,5 +35,9 @@ class TestApiV1EnvironmentFeatureFlags(ApiTestMixin, unittest.TestCase):
     response_status = 200
 
 
-if __name__ == "__main__":
+
+
+
+
+if __name__ == '__main__':
     unittest.main()

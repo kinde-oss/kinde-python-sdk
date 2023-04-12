@@ -64,7 +64,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 query_params | RequestQueryParams | |
-accept_content_types | typing.Tuple[str] | default is ('application/json', ) | Tells the server the content type(s) that are accepted by the client
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
 timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
 skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
@@ -74,8 +74,8 @@ skip_deserialization | bool | default is False | when True, headers and body wil
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
-key_code_ref | KeyCodeRefSchema | |
-user_id | UserIdSchema | |
+key_code_ref | KeyCodeRefSchema | | 
+user_id | UserIdSchema | | 
 
 
 # KeyCodeRefSchema
@@ -83,14 +83,14 @@ user_id | UserIdSchema | |
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-str,  | str,  |  |
+str,  | str,  |  | 
 
 # UserIdSchema
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-decimal.Decimal, int,  | decimal.Decimal,  |  |
+decimal.Decimal, int,  | decimal.Decimal,  |  | 
 
 ### Return Types, Responses
 
@@ -104,13 +104,19 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor200ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ConnectedAppsAuthUrl**](../../models/ConnectedAppsAuthUrl.md) |  |
+[**ConnectedAppsAuthUrl**](../../models/ConnectedAppsAuthUrl.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ConnectedAppsAuthUrl**](../../models/ConnectedAppsAuthUrl.md) |  | 
 
 
 #### get_connected_app_auth_url.ApiResponseFor403
@@ -180,7 +186,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 query_params | RequestQueryParams | |
-accept_content_types | typing.Tuple[str] | default is ('application/json', ) | Tells the server the content type(s) that are accepted by the client
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
 timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
 skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
@@ -190,7 +196,7 @@ skip_deserialization | bool | default is False | when True, headers and body wil
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
-session_id | SessionIdSchema | |
+session_id | SessionIdSchema | | 
 
 
 # SessionIdSchema
@@ -198,7 +204,7 @@ session_id | SessionIdSchema | |
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-str,  | str,  |  |
+str,  | str,  |  | 
 
 ### Return Types, Responses
 
@@ -213,13 +219,19 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor200ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ConnectedAppsAccessToken**](../../models/ConnectedAppsAccessToken.md) |  |
+[**ConnectedAppsAccessToken**](../../models/ConnectedAppsAccessToken.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ConnectedAppsAccessToken**](../../models/ConnectedAppsAccessToken.md) |  | 
 
 
 #### get_connected_app_token.ApiResponseFor400
@@ -296,7 +308,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 query_params | RequestQueryParams | |
-accept_content_types | typing.Tuple[str] | default is ('application/json', ) | Tells the server the content type(s) that are accepted by the client
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
 timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
 skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
@@ -306,7 +318,7 @@ skip_deserialization | bool | default is False | when True, headers and body wil
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
-session_id | SessionIdSchema | |
+session_id | SessionIdSchema | | 
 
 
 # SessionIdSchema
@@ -314,7 +326,7 @@ session_id | SessionIdSchema | |
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-str,  | str,  |  |
+str,  | str,  |  | 
 
 ### Return Types, Responses
 
@@ -330,52 +342,76 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor200ResponseBodyApplicationJson, ] |  |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor200ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  |
+[**ApiResult**](../../models/ApiResult.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ApiResult**](../../models/ApiResult.md) |  | 
 
 
 #### revoke_connected_app_token.ApiResponseFor400
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor400ResponseBodyApplicationJson, ] |  |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor400ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  |
+[**ApiResult**](../../models/ApiResult.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ApiResult**](../../models/ApiResult.md) |  | 
 
 
 #### revoke_connected_app_token.ApiResponseFor403
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor403ResponseBodyApplicationJson, ] |  |
+body | typing.Union[SchemaFor403ResponseBodyApplicationJson, SchemaFor403ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor403ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  |
+[**ApiResult**](../../models/ApiResult.md) |  | 
+
+
+# SchemaFor403ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ApiResult**](../../models/ApiResult.md) |  | 
 
 
 #### revoke_connected_app_token.ApiResponseFor405
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor405ResponseBodyApplicationJson, ] |  |
+body | typing.Union[SchemaFor405ResponseBodyApplicationJson, SchemaFor405ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor405ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  |
+[**ApiResult**](../../models/ApiResult.md) |  | 
+
+
+# SchemaFor405ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ApiResult**](../../models/ApiResult.md) |  | 
 
 
 ### Authorization
@@ -383,3 +419,4 @@ Type | Description  | Notes
 [kindeBearerAuth](../../../README.md#kindeBearerAuth)
 
 [[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+

@@ -32,166 +32,109 @@ from . import path
 # body param
 
 
-class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
+class SchemaForRequestBodyApplicationJson(
+    schemas.DictSchema
+):
+
+
     class MetaOapg:
+        
         class properties:
             name = schemas.StrSchema
-
-            class feature_flags(schemas.DictSchema):
+            
+            
+            class feature_flags(
+                schemas.DictSchema
+            ):
+            
+            
                 class MetaOapg:
-                    class additional_properties(schemas.EnumBase, schemas.StrSchema):
+                    
+                    
+                    class additional_properties(
+                        schemas.EnumBase,
+                        schemas.StrSchema
+                    ):
+                    
+                    
                         class MetaOapg:
                             enum_value_to_name = {
                                 "str": "STR",
                                 "int": "INT",
                                 "bool": "BOOL",
                             }
-
+                        
                         @schemas.classproperty
                         def STR(cls):
                             return cls("str")
-
+                        
                         @schemas.classproperty
                         def INT(cls):
                             return cls("int")
-
+                        
                         @schemas.classproperty
                         def BOOL(cls):
                             return cls("bool")
-
-                def __getitem__(
-                    self,
-                    name: typing.Union[
-                        str,
-                    ],
-                ) -> MetaOapg.additional_properties:
+                
+                def __getitem__(self, name: typing.Union[str, ]) -> MetaOapg.additional_properties:
                     # dict_instance[name] accessor
                     return super().__getitem__(name)
-
-                def get_item_oapg(
-                    self,
-                    name: typing.Union[
-                        str,
-                    ],
-                ) -> MetaOapg.additional_properties:
+                
+                def get_item_oapg(self, name: typing.Union[str, ]) -> MetaOapg.additional_properties:
                     return super().get_item_oapg(name)
-
+            
                 def __new__(
                     cls,
-                    *_args: typing.Union[
-                        dict,
-                        frozendict.frozendict,
-                    ],
+                    *_args: typing.Union[dict, frozendict.frozendict, ],
                     _configuration: typing.Optional[schemas.Configuration] = None,
-                    **kwargs: typing.Union[
-                        MetaOapg.additional_properties,
-                        str,
-                    ],
-                ) -> "feature_flags":
+                    **kwargs: typing.Union[MetaOapg.additional_properties, str, ],
+                ) -> 'feature_flags':
                     return super().__new__(
                         cls,
                         *_args,
                         _configuration=_configuration,
                         **kwargs,
                     )
-
             __annotations__ = {
                 "name": name,
                 "feature_flags": feature_flags,
             }
-
+    
     @typing.overload
-    def __getitem__(
-        self, name: typing_extensions.Literal["name"]
-    ) -> MetaOapg.properties.name:
-        ...
-
+    def __getitem__(self, name: typing_extensions.Literal["name"]) -> MetaOapg.properties.name: ...
+    
     @typing.overload
-    def __getitem__(
-        self, name: typing_extensions.Literal["feature_flags"]
-    ) -> MetaOapg.properties.feature_flags:
-        ...
-
+    def __getitem__(self, name: typing_extensions.Literal["feature_flags"]) -> MetaOapg.properties.feature_flags: ...
+    
     @typing.overload
-    def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema:
-        ...
-
-    def __getitem__(
-        self,
-        name: typing.Union[
-            typing_extensions.Literal[
-                "name",
-                "feature_flags",
-            ],
-            str,
-        ],
-    ):
+    def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
+    
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["name", "feature_flags", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
-
+    
+    
     @typing.overload
-    def get_item_oapg(
-        self, name: typing_extensions.Literal["name"]
-    ) -> typing.Union[MetaOapg.properties.name, schemas.Unset]:
-        ...
-
+    def get_item_oapg(self, name: typing_extensions.Literal["name"]) -> typing.Union[MetaOapg.properties.name, schemas.Unset]: ...
+    
     @typing.overload
-    def get_item_oapg(
-        self, name: typing_extensions.Literal["feature_flags"]
-    ) -> typing.Union[MetaOapg.properties.feature_flags, schemas.Unset]:
-        ...
-
+    def get_item_oapg(self, name: typing_extensions.Literal["feature_flags"]) -> typing.Union[MetaOapg.properties.feature_flags, schemas.Unset]: ...
+    
     @typing.overload
-    def get_item_oapg(
-        self, name: str
-    ) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]:
-        ...
-
-    def get_item_oapg(
-        self,
-        name: typing.Union[
-            typing_extensions.Literal[
-                "name",
-                "feature_flags",
-            ],
-            str,
-        ],
-    ):
+    def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
+    
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["name", "feature_flags", ], str]):
         return super().get_item_oapg(name)
+    
 
     def __new__(
         cls,
-        *_args: typing.Union[
-            dict,
-            frozendict.frozendict,
-        ],
-        name: typing.Union[
-            MetaOapg.properties.name, str, schemas.Unset
-        ] = schemas.unset,
-        feature_flags: typing.Union[
-            MetaOapg.properties.feature_flags,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        *_args: typing.Union[dict, frozendict.frozendict, ],
+        name: typing.Union[MetaOapg.properties.name, str, schemas.Unset] = schemas.unset,
+        feature_flags: typing.Union[MetaOapg.properties.feature_flags, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
-        **kwargs: typing.Union[
-            schemas.AnyTypeSchema,
-            dict,
-            frozendict.frozendict,
-            str,
-            date,
-            datetime,
-            uuid.UUID,
-            int,
-            float,
-            decimal.Decimal,
-            None,
-            list,
-            tuple,
-            bytes,
-        ],
-    ) -> "SchemaForRequestBodyApplicationJson":
+        **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
+    ) -> 'SchemaForRequestBodyApplicationJson':
         return super().__new__(
             cls,
             *_args,
@@ -204,13 +147,12 @@ class SchemaForRequestBodyApplicationJson(schemas.DictSchema):
 
 request_body_any_type = api_client.RequestBody(
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaForRequestBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaForRequestBodyApplicationJson),
     },
 )
 _auth = [
-    "kindeBearerAuth",
+    'kindeBearerAuth',
 ]
 
 
@@ -237,6 +179,7 @@ _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
 SchemaFor400ResponseBodyApplicationJson = ErrorResponse
+SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
 
 @dataclass
@@ -244,6 +187,7 @@ class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
         SchemaFor400ResponseBodyApplicationJson,
+        SchemaFor400ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
 
@@ -251,9 +195,10 @@ class ApiResponseFor400(api_client.ApiResponse):
 _response_for_400 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor400,
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaFor400ResponseBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
     },
 )
 
@@ -269,12 +214,15 @@ _response_for_500 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor500,
 )
 _status_code_to_response = {
-    "201": _response_for_201,
-    "403": _response_for_403,
-    "400": _response_for_400,
-    "500": _response_for_500,
+    '201': _response_for_201,
+    '403': _response_for_403,
+    '400': _response_for_400,
+    '500': _response_for_500,
 }
-_all_accept_content_types = ("application/json",)
+_all_accept_content_types = (
+    'application/json',
+    'application/json; charset=utf-8',
+)
 
 
 class BaseApi(api_client.Api):
@@ -282,79 +230,58 @@ class BaseApi(api_client.Api):
     def _create_organization_oapg(
         self,
         content_type: typing_extensions.Literal["application/json"] = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor201,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
 
     @typing.overload
     def _create_organization_oapg(
         self,
         content_type: str = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor201,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
+
 
     @typing.overload
     def _create_organization_oapg(
         self,
         skip_deserialization: typing_extensions.Literal[True],
         content_type: str = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
-    ) -> api_client.ApiResponseWithoutDeserialization:
-        ...
+    ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
     def _create_organization_oapg(
         self,
         content_type: str = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor201, api_client.ApiResponseWithoutDeserialization,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+        api_client.ApiResponseWithoutDeserialization,
+    ]: ...
 
     def _create_organization_oapg(
         self,
-        content_type: str = "application/json",
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        content_type: str = 'application/json',
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -372,20 +299,20 @@ class BaseApi(api_client.Api):
         # TODO add cookie handling
         if accept_content_types:
             for accept_content_type in accept_content_types:
-                _headers.add("Accept", accept_content_type)
+                _headers.add('Accept', accept_content_type)
 
         _fields = None
         _body = None
         if body is not schemas.unset:
             serialized_data = request_body_any_type.serialize(body, content_type)
-            _headers.add("Content-Type", content_type)
-            if "fields" in serialized_data:
-                _fields = serialized_data["fields"]
-            elif "body" in serialized_data:
-                _body = serialized_data["body"]
+            _headers.add('Content-Type', content_type)
+            if 'fields' in serialized_data:
+                _fields = serialized_data['fields']
+            elif 'body' in serialized_data:
+                _body = serialized_data['body']
         response = self.api_client.call_api(
             resource_path=used_path,
-            method="post".upper(),
+            method='post'.upper(),
             headers=_headers,
             fields=_fields,
             body=_body,
@@ -395,25 +322,19 @@ class BaseApi(api_client.Api):
         )
 
         if skip_deserialization:
-            api_response = api_client.ApiResponseWithoutDeserialization(
-                response=response
-            )
+            api_response = api_client.ApiResponseWithoutDeserialization(response=response)
         else:
             response_for_status = _status_code_to_response.get(str(response.status))
             if response_for_status:
-                api_response = response_for_status.deserialize(
-                    response, self.api_client.configuration
-                )
+                api_response = response_for_status.deserialize(response, self.api_client.configuration)
             else:
-                api_response = api_client.ApiResponseWithoutDeserialization(
-                    response=response
-                )
+                api_response = api_client.ApiResponseWithoutDeserialization(response=response)
 
         if not 200 <= response.status <= 299:
             raise exceptions.ApiException(
                 status=response.status,
                 reason=response.reason,
-                api_response=api_response,
+                api_response=api_response
             )
 
         return api_response
@@ -426,79 +347,58 @@ class CreateOrganization(BaseApi):
     def create_organization(
         self,
         content_type: typing_extensions.Literal["application/json"] = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor201,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
 
     @typing.overload
     def create_organization(
         self,
         content_type: str = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor201,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
+
 
     @typing.overload
     def create_organization(
         self,
         skip_deserialization: typing_extensions.Literal[True],
         content_type: str = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
-    ) -> api_client.ApiResponseWithoutDeserialization:
-        ...
+    ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
     def create_organization(
         self,
         content_type: str = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor201, api_client.ApiResponseWithoutDeserialization,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+        api_client.ApiResponseWithoutDeserialization,
+    ]: ...
 
     def create_organization(
         self,
-        content_type: str = "application/json",
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        content_type: str = 'application/json',
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -510,7 +410,7 @@ class CreateOrganization(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
 
 
@@ -521,79 +421,58 @@ class ApiForpost(BaseApi):
     def post(
         self,
         content_type: typing_extensions.Literal["application/json"] = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor201,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
 
     @typing.overload
     def post(
         self,
         content_type: str = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor201,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
+
 
     @typing.overload
     def post(
         self,
         skip_deserialization: typing_extensions.Literal[True],
         content_type: str = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
-    ) -> api_client.ApiResponseWithoutDeserialization:
-        ...
+    ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
     def post(
         self,
         content_type: str = ...,
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor201, api_client.ApiResponseWithoutDeserialization,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+        api_client.ApiResponseWithoutDeserialization,
+    ]: ...
 
     def post(
         self,
-        content_type: str = "application/json",
-        body: typing.Union[
-            SchemaForRequestBodyApplicationJson,
-            dict,
-            frozendict.frozendict,
-            schemas.Unset,
-        ] = schemas.unset,
+        content_type: str = 'application/json',
+        body: typing.Union[SchemaForRequestBodyApplicationJson, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -605,5 +484,7 @@ class ApiForpost(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
+
+

@@ -23,7 +23,6 @@ class TestApiV1OrganizationUsers(ApiTestMixin, unittest.TestCase):
     ApiV1OrganizationUsers unit test stubs
         Remove Users from an Organization  # noqa: E501
     """
-
     _configuration = configuration.Configuration()
 
     def setUp(self):
@@ -36,5 +35,9 @@ class TestApiV1OrganizationUsers(ApiTestMixin, unittest.TestCase):
     response_status = 200
 
 
-if __name__ == "__main__":
+
+
+
+
+if __name__ == '__main__':
     unittest.main()

@@ -11,9 +11,7 @@
 """
 
 from kinde_sdk.paths.api_v1_feature_flags.post import CreateFeatureFlag
-from kinde_sdk.paths.api_v1_feature_flags_feature_flag_key.delete import (
-    DeleteFeatureFlag,
-)
+from kinde_sdk.paths.api_v1_feature_flags_feature_flag_key.delete import DeleteFeatureFlag
 from kinde_sdk.paths.api_v1_feature_flags_feature_flag_key.put import UpdateFeatureFlag
 
 
@@ -27,5 +25,4 @@ class FeatureFlagsApi(
 
     Do not edit the class manually.
     """
-
     pass

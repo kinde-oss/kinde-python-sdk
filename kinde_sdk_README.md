@@ -22,6 +22,51 @@ To be able to use it, you will need these dependencies in your own package that 
 * certifi
 * python-dateutil
 
+## Getting Started
+
+In your own code, to use this library to connect and interact with kinde-sdk,
+you can run the following:
+
+```python
+
+import time
+import kinde_sdk
+from pprint import pprint
+from kinde_sdk.apis.tags import connected_apps_api
+from kinde_sdk.model.api_result import ApiResult
+from kinde_sdk.model.connected_apps_access_token import ConnectedAppsAccessToken
+from kinde_sdk.model.connected_apps_auth_url import ConnectedAppsAuthUrl
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = connected_apps_api.ConnectedAppsApi(api_client)
+    key_code_ref = "key_code_ref_example" # str | The unique key code reference of the connected app to authenticate against.
+user_id = 1 # int | The id of the user that needs to authenticate to the third-party connected app.
+
+    try:
+        # Get Connected App URL
+        api_response = api_instance.get_connected_app_auth_url(key_code_refuser_id)
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling ConnectedAppsApi->get_connected_app_auth_url: %s\n" % e)
+```
+
 ## Documentation for API Endpoints
 
 All URIs are relative to *https://app.kinde.com*
@@ -59,21 +104,27 @@ Class | Method | HTTP request | Description
 
 ## Documentation For Models
 
+ - [AddOrganizationUsersResponse](kinde_sdk/docs/models/AddOrganizationUsersResponse.md)
  - [ApiResult](kinde_sdk/docs/models/ApiResult.md)
  - [ConnectedAppsAccessToken](kinde_sdk/docs/models/ConnectedAppsAccessToken.md)
  - [ConnectedAppsAuthUrl](kinde_sdk/docs/models/ConnectedAppsAuthUrl.md)
+ - [CreateUserResponse](kinde_sdk/docs/models/CreateUserResponse.md)
  - [Error](kinde_sdk/docs/models/Error.md)
  - [ErrorResponse](kinde_sdk/docs/models/ErrorResponse.md)
+ - [GetOrganizationsResponse](kinde_sdk/docs/models/GetOrganizationsResponse.md)
+ - [GetOrganizationsUsersResponse](kinde_sdk/docs/models/GetOrganizationsUsersResponse.md)
  - [Organization](kinde_sdk/docs/models/Organization.md)
  - [OrganizationUser](kinde_sdk/docs/models/OrganizationUser.md)
  - [OrganizationUsers](kinde_sdk/docs/models/OrganizationUsers.md)
  - [Organizations](kinde_sdk/docs/models/Organizations.md)
+ - [RemoveOrganizationUsersResponse](kinde_sdk/docs/models/RemoveOrganizationUsersResponse.md)
  - [SuccessResponse](kinde_sdk/docs/models/SuccessResponse.md)
  - [User](kinde_sdk/docs/models/User.md)
  - [UserIdentity](kinde_sdk/docs/models/UserIdentity.md)
  - [UserProfile](kinde_sdk/docs/models/UserProfile.md)
  - [UserProfileV2](kinde_sdk/docs/models/UserProfileV2.md)
  - [Users](kinde_sdk/docs/models/Users.md)
+ - [UsersResponse](kinde_sdk/docs/models/UsersResponse.md)
 
 ## Documentation For Authorization
 

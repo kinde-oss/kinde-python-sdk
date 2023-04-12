@@ -23,7 +23,6 @@ class TestApiV1Organization(ApiTestMixin, unittest.TestCase):
     ApiV1Organization unit test stubs
         Create Organization  # noqa: E501
     """
-
     _configuration = configuration.Configuration()
 
     def setUp(self):
@@ -34,8 +33,8 @@ class TestApiV1Organization(ApiTestMixin, unittest.TestCase):
         pass
 
     response_status = 201
-    response_body = ""
+    response_body = ''
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

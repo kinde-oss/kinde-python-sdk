@@ -18,13 +18,7 @@ class PathValues(str, enum.Enum):
     API_V1_CONNECTED_APPS_REVOKE = "/api/v1/connected_apps/revoke"
     API_V1_FEATURE_FLAGS = "/api/v1/feature_flags"
     API_V1_FEATURE_FLAGS_FEATURE_FLAG_KEY = "/api/v1/feature_flags/{feature_flag_key}"
-    API_V1_ORGANIZATIONS_ORG_CODE_FEATURE_FLAGS = (
-        "/api/v1/organizations/{org_code}/feature_flags"
-    )
-    API_V1_ORGANIZATIONS_ORG_CODE_FEATURE_FLAGS_FEATURE_FLAG_KEY = (
-        "/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}"
-    )
+    API_V1_ORGANIZATIONS_ORG_CODE_FEATURE_FLAGS = "/api/v1/organizations/{org_code}/feature_flags"
+    API_V1_ORGANIZATIONS_ORG_CODE_FEATURE_FLAGS_FEATURE_FLAG_KEY = "/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}"
     API_V1_ENVIRONMENT_FEATURE_FLAGS_ = "/api/v1/environment/feature_flags/"
-    API_V1_ENVIRONMENT_FEATURE_FLAGS_FEATURE_FLAG_KEY = (
-        "/api/v1/environment/feature_flags/{feature_flag_key}"
-    )
+    API_V1_ENVIRONMENT_FEATURE_FLAGS_FEATURE_FLAG_KEY = "/api/v1/environment/feature_flags/{feature_flag_key}"

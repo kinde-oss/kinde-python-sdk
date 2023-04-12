@@ -12,9 +12,7 @@ from unittest.mock import patch
 import urllib3
 
 import kinde_sdk
-from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags import (
-    delete,
-)  # noqa: E501
+from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags import delete  # noqa: E501
 from kinde_sdk import configuration, schemas, api_client
 
 from .. import ApiTestMixin
@@ -25,7 +23,6 @@ class TestApiV1OrganizationsOrgCodeFeatureFlags(ApiTestMixin, unittest.TestCase)
     ApiV1OrganizationsOrgCodeFeatureFlags unit test stubs
         Delete all organization feature flag overrides  # noqa: E501
     """
-
     _configuration = configuration.Configuration()
 
     def setUp(self):
@@ -38,5 +35,9 @@ class TestApiV1OrganizationsOrgCodeFeatureFlags(ApiTestMixin, unittest.TestCase)
     response_status = 200
 
 
-if __name__ == "__main__":
+
+
+
+
+if __name__ == '__main__':
     unittest.main()

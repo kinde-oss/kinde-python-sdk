@@ -23,7 +23,6 @@ class TestOauth2V2UserProfile(ApiTestMixin, unittest.TestCase):
     Oauth2V2UserProfile unit test stubs
         Returns the details of the currently logged in user  # noqa: E501
     """
-
     _configuration = configuration.Configuration()
 
     def setUp(self):
@@ -36,5 +35,7 @@ class TestOauth2V2UserProfile(ApiTestMixin, unittest.TestCase):
     response_status = 200
 
 
-if __name__ == "__main__":
+
+
+if __name__ == '__main__':
     unittest.main()

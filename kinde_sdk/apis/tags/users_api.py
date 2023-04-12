@@ -35,5 +35,4 @@ class UsersApi(
 
     Do not edit the class manually.
     """
-
     pass

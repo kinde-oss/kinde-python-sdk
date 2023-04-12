@@ -25,7 +25,7 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
-from kinde_sdk.model.user import User
+from kinde_sdk.model.users_response import UsersResponse
 
 from . import path
 
@@ -37,8 +37,10 @@ class SortSchema(
     schemas.StrBase,
     schemas.NoneBase,
     schemas.Schema,
-    schemas.NoneStrMixin,
+    schemas.NoneStrMixin
 ):
+
+
     class MetaOapg:
         enum_value_to_name = {
             "name_asc": "NAME_ASC",
@@ -46,31 +48,29 @@ class SortSchema(
             "email_asc": "EMAIL_ASC",
             "email_desc": "EMAIL_DESC",
         }
-
+    
     @schemas.classproperty
     def NAME_ASC(cls):
         return cls("name_asc")
-
+    
     @schemas.classproperty
     def NAME_DESC(cls):
         return cls("name_desc")
-
+    
     @schemas.classproperty
     def EMAIL_ASC(cls):
         return cls("email_asc")
-
+    
     @schemas.classproperty
     def EMAIL_DESC(cls):
         return cls("email_desc")
 
+
     def __new__(
         cls,
-        *_args: typing.Union[
-            None,
-            str,
-        ],
+        *_args: typing.Union[None, str, ],
         _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> "SortSchema":
+    ) -> 'SortSchema':
         return super().__new__(
             cls,
             *_args,
@@ -79,17 +79,18 @@ class SortSchema(
 
 
 class PageSizeSchema(
-    schemas.IntBase, schemas.NoneBase, schemas.Schema, schemas.NoneDecimalMixin
+    schemas.IntBase,
+    schemas.NoneBase,
+    schemas.Schema,
+    schemas.NoneDecimalMixin
 ):
+
+
     def __new__(
         cls,
-        *_args: typing.Union[
-            None,
-            decimal.Decimal,
-            int,
-        ],
+        *_args: typing.Union[None, decimal.Decimal, int, ],
         _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> "PageSizeSchema":
+    ) -> 'PageSizeSchema':
         return super().__new__(
             cls,
             *_args,
@@ -98,16 +99,18 @@ class PageSizeSchema(
 
 
 class UserIdSchema(
-    schemas.StrBase, schemas.NoneBase, schemas.Schema, schemas.NoneStrMixin
+    schemas.StrBase,
+    schemas.NoneBase,
+    schemas.Schema,
+    schemas.NoneStrMixin
 ):
+
+
     def __new__(
         cls,
-        *_args: typing.Union[
-            None,
-            str,
-        ],
+        *_args: typing.Union[None, str, ],
         _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> "UserIdSchema":
+    ) -> 'UserIdSchema':
         return super().__new__(
             cls,
             *_args,
@@ -116,52 +119,37 @@ class UserIdSchema(
 
 
 class NextTokenSchema(
-    schemas.StrBase, schemas.NoneBase, schemas.Schema, schemas.NoneStrMixin
+    schemas.StrBase,
+    schemas.NoneBase,
+    schemas.Schema,
+    schemas.NoneStrMixin
 ):
+
+
     def __new__(
         cls,
-        *_args: typing.Union[
-            None,
-            str,
-        ],
+        *_args: typing.Union[None, str, ],
         _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> "NextTokenSchema":
+    ) -> 'NextTokenSchema':
         return super().__new__(
             cls,
             *_args,
             _configuration=_configuration,
         )
-
-
 RequestRequiredQueryParams = typing_extensions.TypedDict(
-    "RequestRequiredQueryParams", {}
+    'RequestRequiredQueryParams',
+    {
+    }
 )
 RequestOptionalQueryParams = typing_extensions.TypedDict(
-    "RequestOptionalQueryParams",
+    'RequestOptionalQueryParams',
     {
-        "sort": typing.Union[
-            SortSchema,
-            None,
-            str,
-        ],
-        "page_size": typing.Union[
-            PageSizeSchema,
-            None,
-            decimal.Decimal,
-            int,
-        ],
-        "user_id": typing.Union[
-            UserIdSchema,
-            None,
-            str,
-        ],
-        "next_token": typing.Union[
-            NextTokenSchema,
-            None,
-            str,
-        ],
+        'sort': typing.Union[SortSchema, None, str, ],
+        'page_size': typing.Union[PageSizeSchema, None, decimal.Decimal, int, ],
+        'user_id': typing.Union[UserIdSchema, None, str, ],
+        'next_token': typing.Union[NextTokenSchema, None, str, ],
     },
-    total=False,
+    total=False
 )
 
 
@@ -194,177 +182,10 @@ request_query_next_token = api_client.QueryParameter(
     explode=True,
 )
 _auth = [
-    "kindeBearerAuth",
+    'kindeBearerAuth',
 ]
-
-
-class SchemaFor200ResponseBodyApplicationJson(schemas.DictSchema):
-    class MetaOapg:
-        class properties:
-            code = schemas.StrSchema
-            message = schemas.StrSchema
-
-            class users(schemas.ListSchema):
-                class MetaOapg:
-                    @staticmethod
-                    def items() -> typing.Type["User"]:
-                        return User
-
-                def __new__(
-                    cls,
-                    _arg: typing.Union[typing.Tuple["User"], typing.List["User"]],
-                    _configuration: typing.Optional[schemas.Configuration] = None,
-                ) -> "users":
-                    return super().__new__(
-                        cls,
-                        _arg,
-                        _configuration=_configuration,
-                    )
-
-                def __getitem__(self, i: int) -> "User":
-                    return super().__getitem__(i)
-
-            next_token = schemas.StrSchema
-            __annotations__ = {
-                "code": code,
-                "message": message,
-                "users": users,
-                "next_token": next_token,
-            }
-
-    @typing.overload
-    def __getitem__(
-        self, name: typing_extensions.Literal["code"]
-    ) -> MetaOapg.properties.code:
-        ...
-
-    @typing.overload
-    def __getitem__(
-        self, name: typing_extensions.Literal["message"]
-    ) -> MetaOapg.properties.message:
-        ...
-
-    @typing.overload
-    def __getitem__(
-        self, name: typing_extensions.Literal["users"]
-    ) -> MetaOapg.properties.users:
-        ...
-
-    @typing.overload
-    def __getitem__(
-        self, name: typing_extensions.Literal["next_token"]
-    ) -> MetaOapg.properties.next_token:
-        ...
-
-    @typing.overload
-    def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema:
-        ...
-
-    def __getitem__(
-        self,
-        name: typing.Union[
-            typing_extensions.Literal[
-                "code",
-                "message",
-                "users",
-                "next_token",
-            ],
-            str,
-        ],
-    ):
-        # dict_instance[name] accessor
-        return super().__getitem__(name)
-
-    @typing.overload
-    def get_item_oapg(
-        self, name: typing_extensions.Literal["code"]
-    ) -> typing.Union[MetaOapg.properties.code, schemas.Unset]:
-        ...
-
-    @typing.overload
-    def get_item_oapg(
-        self, name: typing_extensions.Literal["message"]
-    ) -> typing.Union[MetaOapg.properties.message, schemas.Unset]:
-        ...
-
-    @typing.overload
-    def get_item_oapg(
-        self, name: typing_extensions.Literal["users"]
-    ) -> typing.Union[MetaOapg.properties.users, schemas.Unset]:
-        ...
-
-    @typing.overload
-    def get_item_oapg(
-        self, name: typing_extensions.Literal["next_token"]
-    ) -> typing.Union[MetaOapg.properties.next_token, schemas.Unset]:
-        ...
-
-    @typing.overload
-    def get_item_oapg(
-        self, name: str
-    ) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]:
-        ...
-
-    def get_item_oapg(
-        self,
-        name: typing.Union[
-            typing_extensions.Literal[
-                "code",
-                "message",
-                "users",
-                "next_token",
-            ],
-            str,
-        ],
-    ):
-        return super().get_item_oapg(name)
-
-    def __new__(
-        cls,
-        *_args: typing.Union[
-            dict,
-            frozendict.frozendict,
-        ],
-        code: typing.Union[
-            MetaOapg.properties.code, str, schemas.Unset
-        ] = schemas.unset,
-        message: typing.Union[
-            MetaOapg.properties.message, str, schemas.Unset
-        ] = schemas.unset,
-        users: typing.Union[
-            MetaOapg.properties.users, list, tuple, schemas.Unset
-        ] = schemas.unset,
-        next_token: typing.Union[
-            MetaOapg.properties.next_token, str, schemas.Unset
-        ] = schemas.unset,
-        _configuration: typing.Optional[schemas.Configuration] = None,
-        **kwargs: typing.Union[
-            schemas.AnyTypeSchema,
-            dict,
-            frozendict.frozendict,
-            str,
-            date,
-            datetime,
-            uuid.UUID,
-            int,
-            float,
-            decimal.Decimal,
-            None,
-            list,
-            tuple,
-            bytes,
-        ],
-    ) -> "SchemaFor200ResponseBodyApplicationJson":
-        return super().__new__(
-            cls,
-            *_args,
-            code=code,
-            message=message,
-            users=users,
-            next_token=next_token,
-            _configuration=_configuration,
-            **kwargs,
-        )
+SchemaFor200ResponseBodyApplicationJson = UsersResponse
+SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = UsersResponse
 
 
 @dataclass
@@ -372,6 +193,7 @@ class ApiResponseFor200(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
         SchemaFor200ResponseBodyApplicationJson,
+        SchemaFor200ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
 
@@ -379,9 +201,10 @@ class ApiResponseFor200(api_client.ApiResponse):
 _response_for_200 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor200,
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaFor200ResponseBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
     },
 )
 
@@ -397,10 +220,13 @@ _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
 _status_code_to_response = {
-    "200": _response_for_200,
-    "403": _response_for_403,
+    '200': _response_for_200,
+    '403': _response_for_403,
 }
-_all_accept_content_types = ("application/json",)
+_all_accept_content_types = (
+    'application/json',
+    'application/json; charset=utf-8',
+)
 
 
 class BaseApi(api_client.Api):
@@ -412,8 +238,9 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+    ]: ...
 
     @typing.overload
     def _get_users_oapg(
@@ -423,8 +250,7 @@ class BaseApi(api_client.Api):
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
-    ) -> api_client.ApiResponseWithoutDeserialization:
-        ...
+    ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
     def _get_users_oapg(
@@ -434,8 +260,10 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor200, api_client.ApiResponseWithoutDeserialization,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+        api_client.ApiResponseWithoutDeserialization,
+    ]: ...
 
     def _get_users_oapg(
         self,
@@ -466,9 +294,7 @@ class BaseApi(api_client.Api):
                 continue
             if prefix_separator_iterator is None:
                 prefix_separator_iterator = parameter.get_prefix_separator_iterator()
-            serialized_data = parameter.serialize(
-                parameter_data, prefix_separator_iterator
-            )
+            serialized_data = parameter.serialize(parameter_data, prefix_separator_iterator)
             for serialized_value in serialized_data.values():
                 used_path += serialized_value
 
@@ -476,11 +302,11 @@ class BaseApi(api_client.Api):
         # TODO add cookie handling
         if accept_content_types:
             for accept_content_type in accept_content_types:
-                _headers.add("Accept", accept_content_type)
+                _headers.add('Accept', accept_content_type)
 
         response = self.api_client.call_api(
             resource_path=used_path,
-            method="get".upper(),
+            method='get'.upper(),
             headers=_headers,
             auth_settings=_auth,
             stream=stream,
@@ -488,25 +314,19 @@ class BaseApi(api_client.Api):
         )
 
         if skip_deserialization:
-            api_response = api_client.ApiResponseWithoutDeserialization(
-                response=response
-            )
+            api_response = api_client.ApiResponseWithoutDeserialization(response=response)
         else:
             response_for_status = _status_code_to_response.get(str(response.status))
             if response_for_status:
-                api_response = response_for_status.deserialize(
-                    response, self.api_client.configuration
-                )
+                api_response = response_for_status.deserialize(response, self.api_client.configuration)
             else:
-                api_response = api_client.ApiResponseWithoutDeserialization(
-                    response=response
-                )
+                api_response = api_client.ApiResponseWithoutDeserialization(response=response)
 
         if not 200 <= response.status <= 299:
             raise exceptions.ApiException(
                 status=response.status,
                 reason=response.reason,
-                api_response=api_response,
+                api_response=api_response
             )
 
         return api_response
@@ -523,8 +343,9 @@ class GetUsers(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+    ]: ...
 
     @typing.overload
     def get_users(
@@ -534,8 +355,7 @@ class GetUsers(BaseApi):
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
-    ) -> api_client.ApiResponseWithoutDeserialization:
-        ...
+    ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
     def get_users(
@@ -545,8 +365,10 @@ class GetUsers(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor200, api_client.ApiResponseWithoutDeserialization,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+        api_client.ApiResponseWithoutDeserialization,
+    ]: ...
 
     def get_users(
         self,
@@ -561,7 +383,7 @@ class GetUsers(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
 
 
@@ -576,8 +398,9 @@ class ApiForget(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+    ]: ...
 
     @typing.overload
     def get(
@@ -587,8 +410,7 @@ class ApiForget(BaseApi):
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
-    ) -> api_client.ApiResponseWithoutDeserialization:
-        ...
+    ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
     def get(
@@ -598,8 +420,10 @@ class ApiForget(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor200, api_client.ApiResponseWithoutDeserialization,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+        api_client.ApiResponseWithoutDeserialization,
+    ]: ...
 
     def get(
         self,
@@ -614,5 +438,7 @@ class ApiForget(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
+
+

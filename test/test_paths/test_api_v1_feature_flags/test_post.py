@@ -23,7 +23,6 @@ class TestApiV1FeatureFlags(ApiTestMixin, unittest.TestCase):
     ApiV1FeatureFlags unit test stubs
         Create a new feature flag  # noqa: E501
     """
-
     _configuration = configuration.Configuration()
 
     def setUp(self):
@@ -36,5 +35,9 @@ class TestApiV1FeatureFlags(ApiTestMixin, unittest.TestCase):
     response_status = 201
 
 
-if __name__ == "__main__":
+
+
+
+
+if __name__ == '__main__':
     unittest.main()

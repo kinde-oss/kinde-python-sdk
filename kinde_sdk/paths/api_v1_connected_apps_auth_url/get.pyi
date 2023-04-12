@@ -31,25 +31,23 @@ from kinde_sdk.model.connected_apps_auth_url import ConnectedAppsAuthUrl
 KeyCodeRefSchema = schemas.StrSchema
 UserIdSchema = schemas.IntSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
-    "RequestRequiredQueryParams",
+    'RequestRequiredQueryParams',
     {
-        "key_code_ref": typing.Union[
-            KeyCodeRefSchema,
-            str,
-        ],
-        "user_id": typing.Union[
-            UserIdSchema,
-            decimal.Decimal,
-            int,
-        ],
-    },
+        'key_code_ref': typing.Union[KeyCodeRefSchema, str, ],
+        'user_id': typing.Union[UserIdSchema, decimal.Decimal, int, ],
+    }
 )
 RequestOptionalQueryParams = typing_extensions.TypedDict(
-    "RequestOptionalQueryParams", {}, total=False
+    'RequestOptionalQueryParams',
+    {
+    },
+    total=False
 )
+
 
 class RequestQueryParams(RequestRequiredQueryParams, RequestOptionalQueryParams):
     pass
+
 
 request_query_key_code_ref = api_client.QueryParameter(
     name="key_code_ref",
@@ -66,23 +64,29 @@ request_query_user_id = api_client.QueryParameter(
     explode=True,
 )
 SchemaFor200ResponseBodyApplicationJson = ConnectedAppsAuthUrl
+SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = ConnectedAppsAuthUrl
+
 
 @dataclass
 class ApiResponseFor200(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
         SchemaFor200ResponseBodyApplicationJson,
+        SchemaFor200ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
+
 
 _response_for_200 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor200,
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaFor200ResponseBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
     },
 )
+
 
 @dataclass
 class ApiResponseFor403(api_client.ApiResponse):
@@ -90,10 +94,15 @@ class ApiResponseFor403(api_client.ApiResponse):
     body: schemas.Unset = schemas.unset
     headers: schemas.Unset = schemas.unset
 
+
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
-_all_accept_content_types = ("application/json",)
+_all_accept_content_types = (
+    'application/json',
+    'application/json; charset=utf-8',
+)
+
 
 class BaseApi(api_client.Api):
     @typing.overload
@@ -104,7 +113,10 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200,]: ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+    ]: ...
+
     @typing.overload
     def _get_connected_app_auth_url_oapg(
         self,
@@ -114,6 +126,7 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization: ...
+
     @typing.overload
     def _get_connected_app_auth_url_oapg(
         self,
@@ -126,6 +139,7 @@ class BaseApi(api_client.Api):
         ApiResponseFor200,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
+
     def _get_connected_app_auth_url_oapg(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
@@ -153,9 +167,7 @@ class BaseApi(api_client.Api):
                 continue
             if prefix_separator_iterator is None:
                 prefix_separator_iterator = parameter.get_prefix_separator_iterator()
-            serialized_data = parameter.serialize(
-                parameter_data, prefix_separator_iterator
-            )
+            serialized_data = parameter.serialize(parameter_data, prefix_separator_iterator)
             for serialized_value in serialized_data.values():
                 used_path += serialized_value
 
@@ -163,11 +175,11 @@ class BaseApi(api_client.Api):
         # TODO add cookie handling
         if accept_content_types:
             for accept_content_type in accept_content_types:
-                _headers.add("Accept", accept_content_type)
+                _headers.add('Accept', accept_content_type)
 
         response = self.api_client.call_api(
             resource_path=used_path,
-            method="get".upper(),
+            method='get'.upper(),
             headers=_headers,
             auth_settings=_auth,
             stream=stream,
@@ -175,28 +187,23 @@ class BaseApi(api_client.Api):
         )
 
         if skip_deserialization:
-            api_response = api_client.ApiResponseWithoutDeserialization(
-                response=response
-            )
+            api_response = api_client.ApiResponseWithoutDeserialization(response=response)
         else:
             response_for_status = _status_code_to_response.get(str(response.status))
             if response_for_status:
-                api_response = response_for_status.deserialize(
-                    response, self.api_client.configuration
-                )
+                api_response = response_for_status.deserialize(response, self.api_client.configuration)
             else:
-                api_response = api_client.ApiResponseWithoutDeserialization(
-                    response=response
-                )
+                api_response = api_client.ApiResponseWithoutDeserialization(response=response)
 
         if not 200 <= response.status <= 299:
             raise exceptions.ApiException(
                 status=response.status,
                 reason=response.reason,
-                api_response=api_response,
+                api_response=api_response
             )
 
         return api_response
+
 
 class GetConnectedAppAuthUrl(BaseApi):
     # this class is used by api classes that refer to endpoints with operationId fn names
@@ -209,7 +216,10 @@ class GetConnectedAppAuthUrl(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200,]: ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+    ]: ...
+
     @typing.overload
     def get_connected_app_auth_url(
         self,
@@ -219,6 +229,7 @@ class GetConnectedAppAuthUrl(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization: ...
+
     @typing.overload
     def get_connected_app_auth_url(
         self,
@@ -231,6 +242,7 @@ class GetConnectedAppAuthUrl(BaseApi):
         ApiResponseFor200,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
+
     def get_connected_app_auth_url(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
@@ -244,8 +256,9 @@ class GetConnectedAppAuthUrl(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
+
 
 class ApiForget(BaseApi):
     # this class is used by api classes that refer to endpoints by path and http method names
@@ -258,7 +271,10 @@ class ApiForget(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor200,]: ...
+    ) -> typing.Union[
+        ApiResponseFor200,
+    ]: ...
+
     @typing.overload
     def get(
         self,
@@ -268,6 +284,7 @@ class ApiForget(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization: ...
+
     @typing.overload
     def get(
         self,
@@ -280,6 +297,7 @@ class ApiForget(BaseApi):
         ApiResponseFor200,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
+
     def get(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
@@ -293,5 +311,7 @@ class ApiForget(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
+
+

@@ -9,7 +9,7 @@ from kinde_sdk.apis.tags.o_auth_api import OAuthApi
 from kinde_sdk.apis.tags.organizations_api import OrganizationsApi
 
 TagToApi = typing_extensions.TypedDict(
-    "TagToApi",
+    'TagToApi',
     {
         TagValues.USERS: UsersApi,
         TagValues.CONNECTED_APPS: ConnectedAppsApi,
@@ -17,7 +17,7 @@ TagToApi = typing_extensions.TypedDict(
         TagValues.FEATURE_FLAGS: FeatureFlagsApi,
         TagValues.OAUTH: OAuthApi,
         TagValues.ORGANIZATIONS: OrganizationsApi,
-    },
+    }
 )
 
 tag_to_api = TagToApi(

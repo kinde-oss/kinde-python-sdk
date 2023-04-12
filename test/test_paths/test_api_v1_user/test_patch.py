@@ -23,7 +23,6 @@ class TestApiV1User(ApiTestMixin, unittest.TestCase):
     ApiV1User unit test stubs
         Update User  # noqa: E501
     """
-
     _configuration = configuration.Configuration()
 
     def setUp(self):
@@ -36,5 +35,11 @@ class TestApiV1User(ApiTestMixin, unittest.TestCase):
     response_status = 200
 
 
-if __name__ == "__main__":
+
+
+
+
+
+
+if __name__ == '__main__':
     unittest.main()

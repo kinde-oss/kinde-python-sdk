@@ -36,75 +36,68 @@ DescriptionSchema = schemas.StrSchema
 KeySchema = schemas.StrSchema
 
 
-class TypeSchema(schemas.EnumBase, schemas.StrSchema):
+class TypeSchema(
+    schemas.EnumBase,
+    schemas.StrSchema
+):
+
+
     class MetaOapg:
         enum_value_to_name = {
             "str": "STR",
             "int": "INT",
             "bool": "BOOL",
         }
-
+    
     @schemas.classproperty
     def STR(cls):
         return cls("str")
-
+    
     @schemas.classproperty
     def INT(cls):
         return cls("int")
-
+    
     @schemas.classproperty
     def BOOL(cls):
         return cls("bool")
 
 
-class AllowOverrideLevelSchema(schemas.EnumBase, schemas.StrSchema):
+class AllowOverrideLevelSchema(
+    schemas.EnumBase,
+    schemas.StrSchema
+):
+
+
     class MetaOapg:
         enum_value_to_name = {
             "env": "ENV",
             "org": "ORG",
         }
-
+    
     @schemas.classproperty
     def ENV(cls):
         return cls("env")
-
+    
     @schemas.classproperty
     def ORG(cls):
         return cls("org")
-
-
 DefaultValueSchema = schemas.StrSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
-    "RequestRequiredQueryParams",
+    'RequestRequiredQueryParams',
     {
-        "name": typing.Union[
-            NameSchema,
-            str,
-        ],
-        "description": typing.Union[
-            DescriptionSchema,
-            str,
-        ],
-        "key": typing.Union[
-            KeySchema,
-            str,
-        ],
-        "type": typing.Union[
-            TypeSchema,
-            str,
-        ],
-        "allow_override_level": typing.Union[
-            AllowOverrideLevelSchema,
-            str,
-        ],
-        "default_value": typing.Union[
-            DefaultValueSchema,
-            str,
-        ],
-    },
+        'name': typing.Union[NameSchema, str, ],
+        'description': typing.Union[DescriptionSchema, str, ],
+        'key': typing.Union[KeySchema, str, ],
+        'type': typing.Union[TypeSchema, str, ],
+        'allow_override_level': typing.Union[AllowOverrideLevelSchema, str, ],
+        'default_value': typing.Union[DefaultValueSchema, str, ],
+    }
 )
 RequestOptionalQueryParams = typing_extensions.TypedDict(
-    "RequestOptionalQueryParams", {}, total=False
+    'RequestOptionalQueryParams',
+    {
+    },
+    total=False
 )
 
 
@@ -155,9 +148,10 @@ request_query_default_value = api_client.QueryParameter(
     explode=True,
 )
 _auth = [
-    "kindeBearerAuth",
+    'kindeBearerAuth',
 ]
 SchemaFor201ResponseBodyApplicationJson = SuccessResponse
+SchemaFor201ResponseBodyApplicationJsonCharsetutf8 = SuccessResponse
 
 
 @dataclass
@@ -165,6 +159,7 @@ class ApiResponseFor201(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
         SchemaFor201ResponseBodyApplicationJson,
+        SchemaFor201ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
 
@@ -172,12 +167,14 @@ class ApiResponseFor201(api_client.ApiResponse):
 _response_for_201 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor201,
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaFor201ResponseBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaFor201ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor201ResponseBodyApplicationJsonCharsetutf8),
     },
 )
 SchemaFor400ResponseBodyApplicationJson = ErrorResponse
+SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
 
 @dataclass
@@ -185,6 +182,7 @@ class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
         SchemaFor400ResponseBodyApplicationJson,
+        SchemaFor400ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
 
@@ -192,9 +190,10 @@ class ApiResponseFor400(api_client.ApiResponse):
 _response_for_400 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor400,
     content={
-        "application/json": api_client.MediaType(
-            schema=SchemaFor400ResponseBodyApplicationJson
-        ),
+        'application/json': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
     },
 )
 
@@ -210,11 +209,14 @@ _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
 _status_code_to_response = {
-    "201": _response_for_201,
-    "400": _response_for_400,
-    "403": _response_for_403,
+    '201': _response_for_201,
+    '400': _response_for_400,
+    '403': _response_for_403,
 }
-_all_accept_content_types = ("application/json",)
+_all_accept_content_types = (
+    'application/json',
+    'application/json; charset=utf-8',
+)
 
 
 class BaseApi(api_client.Api):
@@ -226,8 +228,9 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor201,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
 
     @typing.overload
     def _create_feature_flag_oapg(
@@ -237,8 +240,7 @@ class BaseApi(api_client.Api):
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
-    ) -> api_client.ApiResponseWithoutDeserialization:
-        ...
+    ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
     def _create_feature_flag_oapg(
@@ -248,8 +250,10 @@ class BaseApi(api_client.Api):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor201, api_client.ApiResponseWithoutDeserialization,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+        api_client.ApiResponseWithoutDeserialization,
+    ]: ...
 
     def _create_feature_flag_oapg(
         self,
@@ -282,9 +286,7 @@ class BaseApi(api_client.Api):
                 continue
             if prefix_separator_iterator is None:
                 prefix_separator_iterator = parameter.get_prefix_separator_iterator()
-            serialized_data = parameter.serialize(
-                parameter_data, prefix_separator_iterator
-            )
+            serialized_data = parameter.serialize(parameter_data, prefix_separator_iterator)
             for serialized_value in serialized_data.values():
                 used_path += serialized_value
 
@@ -292,11 +294,11 @@ class BaseApi(api_client.Api):
         # TODO add cookie handling
         if accept_content_types:
             for accept_content_type in accept_content_types:
-                _headers.add("Accept", accept_content_type)
+                _headers.add('Accept', accept_content_type)
 
         response = self.api_client.call_api(
             resource_path=used_path,
-            method="post".upper(),
+            method='post'.upper(),
             headers=_headers,
             auth_settings=_auth,
             stream=stream,
@@ -304,25 +306,19 @@ class BaseApi(api_client.Api):
         )
 
         if skip_deserialization:
-            api_response = api_client.ApiResponseWithoutDeserialization(
-                response=response
-            )
+            api_response = api_client.ApiResponseWithoutDeserialization(response=response)
         else:
             response_for_status = _status_code_to_response.get(str(response.status))
             if response_for_status:
-                api_response = response_for_status.deserialize(
-                    response, self.api_client.configuration
-                )
+                api_response = response_for_status.deserialize(response, self.api_client.configuration)
             else:
-                api_response = api_client.ApiResponseWithoutDeserialization(
-                    response=response
-                )
+                api_response = api_client.ApiResponseWithoutDeserialization(response=response)
 
         if not 200 <= response.status <= 299:
             raise exceptions.ApiException(
                 status=response.status,
                 reason=response.reason,
-                api_response=api_response,
+                api_response=api_response
             )
 
         return api_response
@@ -339,8 +335,9 @@ class CreateFeatureFlag(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor201,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
 
     @typing.overload
     def create_feature_flag(
@@ -350,8 +347,7 @@ class CreateFeatureFlag(BaseApi):
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
-    ) -> api_client.ApiResponseWithoutDeserialization:
-        ...
+    ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
     def create_feature_flag(
@@ -361,8 +357,10 @@ class CreateFeatureFlag(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor201, api_client.ApiResponseWithoutDeserialization,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+        api_client.ApiResponseWithoutDeserialization,
+    ]: ...
 
     def create_feature_flag(
         self,
@@ -377,7 +375,7 @@ class CreateFeatureFlag(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
 
 
@@ -392,8 +390,9 @@ class ApiForpost(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
-    ) -> typing.Union[ApiResponseFor201,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
 
     @typing.overload
     def post(
@@ -403,8 +402,7 @@ class ApiForpost(BaseApi):
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
-    ) -> api_client.ApiResponseWithoutDeserialization:
-        ...
+    ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
     def post(
@@ -414,8 +412,10 @@ class ApiForpost(BaseApi):
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
-    ) -> typing.Union[ApiResponseFor201, api_client.ApiResponseWithoutDeserialization,]:
-        ...
+    ) -> typing.Union[
+        ApiResponseFor201,
+        api_client.ApiResponseWithoutDeserialization,
+    ]: ...
 
     def post(
         self,
@@ -430,5 +430,7 @@ class ApiForpost(BaseApi):
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
-            skip_deserialization=skip_deserialization,
+            skip_deserialization=skip_deserialization
         )
+
+

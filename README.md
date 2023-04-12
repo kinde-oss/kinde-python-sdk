@@ -1,7 +1,6 @@
 # Kinde Python SDK
 
-The Kinde Python SDK allows developers to integrate with Composable Commerce APIs using Python native interfaces, models
-and helpers instead of manually using the HTTP and JSON API.
+The Kinde Python SDK allows developers to quickly and securely integrate a new or an existing Python application to the Kinde platform.
 
 ## Register for Kinde
 

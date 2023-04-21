@@ -239,8 +239,9 @@ Result:
 {
     id: id_token.sub,
     given_name: id_token.given_name,
-    family_name: id_token.family_name
-    email: id_token.email
+    family_name: id_token.family_name,
+    email: id_token.email,
+    picture: id_token.picture
 }
 ```
 
@@ -249,10 +250,10 @@ Result:
 We have provided a helper to grab any claim from your id or access tokens. The helper defaults to access tokens.
 
 ```python
-kinde_client.get_claim("aud")
+kinde_client.get_claim("aud")["value"]
 # ["api.stakesocial.com/v1"]
 
-kinde_client.get_claim("given_name", "id_token")
+kinde_client.get_claim("given_name", "id_token")["value"]
 # "David"
 ```
 

@@ -10,6 +10,7 @@ from kinde_sdk.kinde_api_client import (
     KindeRetrieveException,
     KindeTokenException,
 )
+from kinde_sdk import __version__
 from authlib.oauth2.rfc6749 import OAuth2Token
 
 
@@ -24,8 +25,12 @@ class BaseTestCase(TestCase):
         self.create_org_url = f"{self.registration_url}&is_create_org=true"
         self.scope = "openid profile email offline"
         self.state = "state"
-        self.fake_access_token = jwt.encode(self._get_decoded_token(), "secret", algorithm="HS256")
-        self.fake_id_token = jwt.encode(self._get_user_details(), "secret", algorithm="HS256")
+        self.fake_access_token = jwt.encode(
+            self._get_decoded_token(), "secret", algorithm="HS256"
+        )
+        self.fake_id_token = jwt.encode(
+            self._get_user_details(), "secret", algorithm="HS256"
+        )
 
     def _create_kinde_client(self, auth_session_mock, grant_type, **kwargs):
         auth_session_mock.return_value.create_authorization_url.return_value = [
@@ -50,68 +55,56 @@ class BaseTestCase(TestCase):
             "azp": "123456789",
             "exp": 9999999999,
             "feature_flags": {
-                "competitions_limit": {
-                    "t": "i",
-                    "v": 5
-                },
-                "is_dark_mode": {
-                    "t": "b",
-                    "v": True
-                },
-                "name": {
-                    "t": "s",
-                    "v": "pink"
-                },
-                "theme": {
-                    "t": "s",
-                    "v": "pink"
-                }
+                "competitions_limit": {"t": "i", "v": 5},
+                "is_dark_mode": {"t": "b", "v": True},
+                "name": {"t": "s", "v": "pink"},
+                "theme": {"t": "s", "v": "pink"},
             },
             "iat": 9999999999,
             "iss": "https://user-dev.au.kinde.com",
             "jti": "12345678-1234-1234-1234-123456789101",
             "org_code": "org_12345678901",
             "permissions": [],
-            "scp": [
-                "openid",
-                "profile",
-                "email",
-                "offline"
-            ],
-            "sub": "kp:1234567890"
+            "scp": ["openid", "profile", "email", "offline"],
+            "sub": "kp:1234567890",
         }
 
-    def _get_token(self, params = {}):
-        return OAuth2Token(params={
-            "access_token":	self.fake_access_token,
-            "expires_in": 9999999999,
-            "scope": "openid profile email offline",
-            "token_type": "bearer",
-            "expires_at": 9999999999,
-            **params
-        })
+    def _get_token(self, params={}):
+        return OAuth2Token(
+            params={
+                "access_token": self.fake_access_token,
+                "expires_in": 9999999999,
+                "scope": "openid profile email offline",
+                "token_type": "bearer",
+                "expires_at": 9999999999,
+                **params,
+            }
+        )
 
     def _get_token_authorization_code(self):
-        return self._get_token({
-            "id_token": self.fake_id_token,
-            "refresh_token": "refresh_token"
-        })
+        return self._get_token(
+            {"id_token": self.fake_id_token, "refresh_token": "refresh_token"}
+        )
 
     def _get_token_authorization_code_expired(self):
-        return self._get_token({
-            "expires_in": 1,
-            "expires_at": 1,
-            "id_token": self.fake_id_token,
-            "refresh_token": "refresh_token"
-        })
+        return self._get_token(
+            {
+                "expires_in": 1,
+                "expires_at": 1,
+                "id_token": self.fake_id_token,
+                "refresh_token": "refresh_token",
+            }
+        )
 
     def _get_token_authorization_code_invalid(self):
-        return self._get_token({
-            "expires_in": 1,
-            "expires_at": 1,
-            "id_token": self.fake_id_token,
-            "refresh_token": ""
-        })
+        return self._get_token(
+            {
+                "expires_in": 1,
+                "expires_at": 1,
+                "id_token": self.fake_id_token,
+                "refresh_token": "",
+            }
+        )
 
     def _get_user_details(self):
         return {
@@ -119,7 +112,7 @@ class BaseTestCase(TestCase):
             "given_name": "given_name",
             "family_name": "family_name",
             "email": "given_name@example.com",
-            "picture": "picture_url"
+            "picture": "picture_url",
         }
 
 
@@ -158,18 +151,23 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
 
         token_endpoint = kinde_client.token_endpoint
         auth_session_mock.return_value.fetch_token.assert_called_with(
-            token_endpoint, grant_type=GrantType.CLIENT_CREDENTIALS.value
+            token_endpoint,
+            grant_type=GrantType.CLIENT_CREDENTIALS.value,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Kinde-SDK": "/".join(("Python", __version__)),
+            },
         )
         self.assertEqual(
             kinde_client.configuration.access_token, self._get_token()["access_token"]
         )
-        
+
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_client_credentials_get_claim(self, auth_session_mock):
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         org_code_expected = {
             "name": "org_code",
-            "value": self._get_decoded_token()["org_code"]
+            "value": self._get_decoded_token()["org_code"],
         }
         kinde_client = self._create_kinde_client(
             auth_session_mock,
@@ -177,7 +175,7 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         )
 
         kinde_client.fetch_token()
-        
+
         org_code = kinde_client.get_claim("org_code")
         self.assertEqual(org_code, org_code_expected)
 
@@ -193,7 +191,9 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         kinde_client.fetch_token()
 
         flag = kinde_client.get_flag(fake_flag)["value"]
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_client_credentials_get_flag_not_exist_has_default(self, auth_session_mock):
@@ -248,10 +248,14 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         kinde_client.fetch_token()
         flag = kinde_client.get_boolean_flag(fake_flag)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_boolean_flag_success_has_default(self, auth_session_mock):
+    def test_client_credentials_get_boolean_flag_success_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -262,10 +266,14 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         kinde_client.fetch_token()
         flag = kinde_client.get_boolean_flag(fake_flag, default_value=False)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_boolean_flag_not_exist_has_default(self, auth_session_mock):
+    def test_client_credentials_get_boolean_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "new_feature"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -279,7 +287,9 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         self.assertEqual(flag, False)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_boolean_flag_not_exist_no_default(self, auth_session_mock):
+    def test_client_credentials_get_boolean_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "competitions_limit"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -293,7 +303,9 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
             kinde_client.get_boolean_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_boolean_flag_wrong_type_has_default(self, auth_session_mock):
+    def test_client_credentials_get_boolean_flag_wrong_type_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "theme"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -318,10 +330,14 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         kinde_client.fetch_token()
         flag = kinde_client.get_string_flag(fake_flag)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_string_flag_success_has_default(self, auth_session_mock):
+    def test_client_credentials_get_string_flag_success_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "theme"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -332,10 +348,14 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         kinde_client.fetch_token()
         flag = kinde_client.get_string_flag(fake_flag, default_value="orange")
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_string_flag_not_exist_has_default(self, auth_session_mock):
+    def test_client_credentials_get_string_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "cta_color"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -349,7 +369,9 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         self.assertEqual(flag, "blue")
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_string_flag_not_exist_no_default(self, auth_session_mock):
+    def test_client_credentials_get_string_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "cta_color"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -363,7 +385,9 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
             kinde_client.get_string_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_string_flag_wrong_type_has_default(self, auth_session_mock):
+    def test_client_credentials_get_string_flag_wrong_type_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -388,10 +412,14 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         kinde_client.fetch_token()
         flag = kinde_client.get_integer_flag(fake_flag)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_integer_flag_success_has_default(self, auth_session_mock):
+    def test_client_credentials_get_integer_flag_success_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "competitions_limit"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -402,10 +430,14 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         kinde_client.fetch_token()
         flag = kinde_client.get_integer_flag(fake_flag, default_value=3)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_integer_flag_not_exist_has_default(self, auth_session_mock):
+    def test_client_credentials_get_integer_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "team_count"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -419,7 +451,9 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         self.assertEqual(flag, 2)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_integer_flag_not_exist_no_default(self, auth_session_mock):
+    def test_client_credentials_get_integer_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "team_count"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -433,7 +467,9 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
             kinde_client.get_integer_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_client_credentials_get_integer_flag_wrong_type_has_default(self, auth_session_mock):
+    def test_client_credentials_get_integer_flag_wrong_type_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
         kinde_client = self._create_kinde_client(
@@ -500,7 +536,9 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_fetch_token(self, auth_session_mock):
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -510,19 +548,27 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
 
         token_endpoint = kinde_client.token_endpoint
         auth_session_mock.return_value.fetch_token.assert_called_with(
-            token_endpoint, authorization_response="TEST"
+            token_endpoint,
+            authorization_response="TEST",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Kinde-SDK": "/".join(("Python", __version__)),
+            },
         )
         self.assertEqual(
-            kinde_client.configuration.access_token, self._get_token_authorization_code()["access_token"]
+            kinde_client.configuration.access_token,
+            self._get_token_authorization_code()["access_token"],
         )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_get_claim(self, auth_session_mock):
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         org_code_expected = {
             "name": "org_code",
-            "value": self._get_decoded_token()["org_code"]
+            "value": self._get_decoded_token()["org_code"],
         }
         kinde_client = self._create_kinde_client(
             auth_session_mock,
@@ -538,7 +584,9 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
     def test_authorization_code_get_user_details(self, auth_session_mock):
         user_details_key = ["id", "given_name", "family_name", "email", "picture"]
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -553,7 +601,9 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
     def test_authorization_code_get_flag_success(self, auth_session_mock):
         fake_flag = "theme"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -562,13 +612,17 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
 
         flag = kinde_client.get_flag(fake_flag)["value"]
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_get_flag_not_exist_has_default(self, auth_session_mock):
         fake_flag = "new_feature"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -583,7 +637,9 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
     def test_authorization_code_get_flag_wrong_flag_type(self, auth_session_mock):
         fake_flag = "competitions_limit"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -598,7 +654,9 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
     def test_authorization_code_get_flag_not_exist_no_default(self, auth_session_mock):
         fake_flag = "new_feature"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -613,7 +671,9 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
     def test_authorization_code_get_boolean_flag_success(self, auth_session_mock):
         fake_flag = "is_dark_mode"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -622,13 +682,19 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_boolean_flag(fake_flag)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_boolean_flag_success_has_default(self, auth_session_mock):
+    def test_authorization_code_get_boolean_flag_success_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -637,13 +703,19 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_boolean_flag(fake_flag, default_value=False)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_boolean_flag_not_exist_has_default(self, auth_session_mock):
+    def test_authorization_code_get_boolean_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "new_feature"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -655,10 +727,14 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         self.assertEqual(flag, False)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_boolean_flag_not_exist_no_default(self, auth_session_mock):
+    def test_authorization_code_get_boolean_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "competitions_limit"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -670,10 +746,14 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
             kinde_client.get_boolean_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_boolean_flag_wrong_type_has_default(self, auth_session_mock):
+    def test_authorization_code_get_boolean_flag_wrong_type_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "theme"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -688,7 +768,9 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
     def test_authorization_code_get_string_flag_success(self, auth_session_mock):
         fake_flag = "theme"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -697,13 +779,19 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_string_flag(fake_flag)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_string_flag_success_has_default(self, auth_session_mock):
+    def test_authorization_code_get_string_flag_success_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "theme"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -712,13 +800,19 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_string_flag(fake_flag, default_value="orange")
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_string_flag_not_exist_has_default(self, auth_session_mock):
+    def test_authorization_code_get_string_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "cta_color"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -730,10 +824,14 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         self.assertEqual(flag, "blue")
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_string_flag_not_exist_no_default(self, auth_session_mock):
+    def test_authorization_code_get_string_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "cta_color"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -745,10 +843,14 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
             kinde_client.get_string_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_string_flag_wrong_type_has_default(self, auth_session_mock):
+    def test_authorization_code_get_string_flag_wrong_type_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -763,7 +865,9 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
     def test_authorization_code_get_integer_flag_success(self, auth_session_mock):
         fake_flag = "competitions_limit"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -772,13 +876,19 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_integer_flag(fake_flag)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_integer_flag_success_has_default(self, auth_session_mock):
+    def test_authorization_code_get_integer_flag_success_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "competitions_limit"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -787,13 +897,19 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_integer_flag(fake_flag, default_value=3)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_integer_flag_not_exist_has_default(self, auth_session_mock):
+    def test_authorization_code_get_integer_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "team_count"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -805,10 +921,14 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         self.assertEqual(flag, 2)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_integer_flag_not_exist_no_default(self, auth_session_mock):
+    def test_authorization_code_get_integer_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "team_count"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -820,10 +940,14 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
             kinde_client.get_integer_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_integer_flag_wrong_type_has_default(self, auth_session_mock):
+    def test_authorization_code_get_integer_flag_wrong_type_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -835,9 +959,13 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
             kinde_client.get_integer_flag(fake_flag, default_value=False)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_or_refresh_access_token_expired_access_token(self, auth_session_mock):
+    def test_authorization_code_get_or_refresh_access_token_expired_access_token(
+        self, auth_session_mock
+    ):
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code_expired()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code_expired()
+        )
 
         kinde_client = self._create_kinde_client(
             auth_session_mock,
@@ -848,9 +976,13 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         kinde_client._get_or_refresh_access_token()
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_get_or_refresh_access_token_expired_access_refresh_token(self, auth_session_mock):
+    def test_authorization_code_get_or_refresh_access_token_expired_access_refresh_token(
+        self, auth_session_mock
+    ):
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code_invalid()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code_invalid()
+        )
 
         kinde_client = self._create_kinde_client(
             auth_session_mock,
@@ -929,7 +1061,9 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_with_pkce_fetch_token(self, auth_session_mock):
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -943,18 +1077,25 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             token_endpoint,
             authorization_response="TEST",
             code_verifier=self.code_verifier,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Kinde-SDK": "/".join(("Python", __version__)),
+            },
         )
         self.assertEqual(
-            kinde_client.configuration.access_token, self._get_token_authorization_code()["access_token"]
+            kinde_client.configuration.access_token,
+            self._get_token_authorization_code()["access_token"],
         )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_with_pkce_get_claim(self, auth_session_mock):
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         org_code_expected = {
             "name": "org_code",
-            "value": self._get_decoded_token()["org_code"]
+            "value": self._get_decoded_token()["org_code"],
         }
         kinde_client = self._create_kinde_client(
             auth_session_mock,
@@ -971,7 +1112,9 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
     def test_authorization_code_with_pkce_get_user_details(self, auth_session_mock):
         user_details_key = ["id", "given_name", "family_name", "email", "picture"]
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -987,7 +1130,9 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
     def test_authorization_code_with_pkce_get_flag_success(self, auth_session_mock):
         fake_flag = "theme"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -997,13 +1142,19 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
 
         flag = kinde_client.get_flag(fake_flag)["value"]
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_flag_not_exist_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "new_feature"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1016,10 +1167,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             kinde_client.get_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_flag_wrong_flag_type(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_flag_wrong_flag_type(
+        self, auth_session_mock
+    ):
         fake_flag = "competitions_limit"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1032,10 +1187,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             kinde_client.get_flag(fake_flag, default_value=3, flag_type="s")["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_flag_not_exist_no_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "new_feature"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1048,10 +1207,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             kinde_client.get_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_boolean_flag_success(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_boolean_flag_success(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1061,13 +1224,19 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_boolean_flag(fake_flag)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_boolean_flag_success_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_boolean_flag_success_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1077,13 +1246,19 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_boolean_flag(fake_flag, default_value=False)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_boolean_flag_not_exist_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_boolean_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "new_feature"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1096,10 +1271,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         self.assertEqual(flag, False)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_boolean_flag_not_exist_no_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_boolean_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "competitions_limit"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1112,10 +1291,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             kinde_client.get_boolean_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_boolean_flag_wrong_type_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_boolean_flag_wrong_type_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "theme"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1128,10 +1311,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             kinde_client.get_boolean_flag(fake_flag, default_value=False)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_string_flag_success(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_string_flag_success(
+        self, auth_session_mock
+    ):
         fake_flag = "theme"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1141,13 +1328,19 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_string_flag(fake_flag)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_string_flag_success_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_string_flag_success_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "theme"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1157,13 +1350,19 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_string_flag(fake_flag, default_value="orange")
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_string_flag_not_exist_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_string_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "cta_color"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1176,10 +1375,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         self.assertEqual(flag, "blue")
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_string_flag_not_exist_no_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_string_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "cta_color"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1192,10 +1395,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             kinde_client.get_string_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_string_flag_wrong_type_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_string_flag_wrong_type_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1208,10 +1415,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             kinde_client.get_string_flag(fake_flag, default_value=False)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_integer_flag_success(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_integer_flag_success(
+        self, auth_session_mock
+    ):
         fake_flag = "competitions_limit"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1221,13 +1432,19 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_integer_flag(fake_flag)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_integer_flag_success_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_integer_flag_success_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "competitions_limit"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1237,13 +1454,19 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         flag = kinde_client.get_integer_flag(fake_flag, default_value=3)
 
-        self.assertEqual(flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"])
+        self.assertEqual(
+            flag, self._get_decoded_token()["feature_flags"][fake_flag]["v"]
+        )
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_integer_flag_not_exist_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_integer_flag_not_exist_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "team_count"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1256,10 +1479,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         self.assertEqual(flag, 2)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_integer_flag_not_exist_no_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_integer_flag_not_exist_no_default(
+        self, auth_session_mock
+    ):
         fake_flag = "team_count"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1272,10 +1499,14 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             kinde_client.get_integer_flag(fake_flag)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_integer_flag_wrong_type_has_default(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_integer_flag_wrong_type_has_default(
+        self, auth_session_mock
+    ):
         fake_flag = "is_dark_mode"
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code()
+        )
         kinde_client = self._create_kinde_client(
             auth_session_mock,
             grant_type=self.grant_type,
@@ -1288,9 +1519,13 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
             kinde_client.get_integer_flag(fake_flag, default_value=False)["value"]
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_or_refresh_access_token_expired_access_token(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_or_refresh_access_token_expired_access_token(
+        self, auth_session_mock
+    ):
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code_expired()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code_expired()
+        )
 
         kinde_client = self._create_kinde_client(
             auth_session_mock,
@@ -1302,9 +1537,13 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         kinde_client._get_or_refresh_access_token()
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
-    def test_authorization_code_with_pkce_get_or_refresh_access_token_expired_access_refresh_token(self, auth_session_mock):
+    def test_authorization_code_with_pkce_get_or_refresh_access_token_expired_access_refresh_token(
+        self, auth_session_mock
+    ):
         fake_auth_response = "TEST"
-        auth_session_mock.return_value.fetch_token.return_value = self._get_token_authorization_code_invalid()
+        auth_session_mock.return_value.fetch_token.return_value = (
+            self._get_token_authorization_code_invalid()
+        )
 
         kinde_client = self._create_kinde_client(
             auth_session_mock,

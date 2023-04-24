@@ -10,6 +10,7 @@ from kinde_sdk.exceptions import (
     KindeTokenException,
     KindeRetrieveException,
 )
+from kinde_sdk import __version__ as kinde_sdk_version
 
 
 class FlagType(Enum):
@@ -110,11 +111,7 @@ class KindeApiClient(ApiClient):
         return f"{self.logout_endpoint}?redirect={redirect_to}"
 
     def is_authenticated(self) -> bool:
-        if self.__access_token_obj:
-            if self.__access_token_obj.is_expired():
-                self._refresh_token()
-            return True
-        return False
+        return self.__access_token_obj and not self.__access_token_obj.is_expired()
 
     def create_org(self) -> str:
         return self.create_org_url
@@ -126,10 +123,7 @@ class KindeApiClient(ApiClient):
             )
         self._decode_token_if_needed(token_name)
         value = self.__decoded_tokens[token_name].get(key)
-        return {
-            "name": key,
-            "value": value
-        }
+        return {"name": key, "value": value}
 
     def get_permission(self, permission: str) -> Dict[str, Any]:
         return {
@@ -154,7 +148,7 @@ class KindeApiClient(ApiClient):
             "given_name": self.get_claim("given_name", "id_token")["value"],
             "family_name": self.get_claim("family_name", "id_token")["value"],
             "email": self.get_claim("email", "id_token")["value"],
-            "picture": self.get_claim("picture", "id_token")["value"]
+            "picture": self.get_claim("picture", "id_token")["value"],
         }
 
     def get_user_organizations(self) -> Dict[str, List[str]]:
@@ -162,23 +156,28 @@ class KindeApiClient(ApiClient):
             "org_codes": self.get_claim("org_codes", "id_token")["value"],
         }
 
-    def get_flag(self, code: str, default_value: Any = None, flag_type: str = "") -> Any:
+    def get_flag(
+        self, code: str, default_value: Any = None, flag_type: str = ""
+    ) -> Any:
         flags = self.get_claim("feature_flags")["value"]
         flag = {}
-        result_flag = {}
 
         if code not in list(flags.keys()):
             if default_value is None:
-                raise KindeRetrieveException(f"Flag {code} was not found, and no default value has been provided")                
+                raise KindeRetrieveException(
+                    f"Flag {code} was not found, and no default value has been provided"
+                )
         else:
             flag = flags[code]
-            if flag_type and flag["t"] and flag_type != flag["t"]:
-                raise KindeRetrieveException(f"Flag {code} is of type {FlagType[flag['t']].value} - requested type {FlagType[flag_type].value}")
+            if flag_type and flag.get("t") and flag_type != flag.get("t"):
+                raise KindeRetrieveException(
+                    f"Flag {code} is of type {FlagType[flag.get('t')].value} - requested type {FlagType[flag_type].value}"
+                )
 
-        result_flag = {            
+        result_flag = {
             "code": code,
-            "value": flag["v"] if flag else default_value,
-            "is_default": not bool(flag)
+            "value": flag.get("v") if flag else default_value,
+            "is_default": not bool(flag),
         }
         flag_type = flag["t"] if flag else flag_type
         if flag_type:
@@ -187,13 +186,13 @@ class KindeApiClient(ApiClient):
         return result_flag
 
     def get_boolean_flag(self, code: str, default_value: Any = None) -> bool:
-        return self.get_flag(code, default_value, 'b')["value"]
+        return self.get_flag(code, default_value, "b")["value"]
 
     def get_string_flag(self, code: str, default_value: Any = None) -> str:
-        return self.get_flag(code, default_value, 's')["value"]
+        return self.get_flag(code, default_value, "s")["value"]
 
     def get_integer_flag(self, code: str, default_value: Any = None) -> int:
-        return self.get_flag(code, default_value, 'i')["value"]
+        return self.get_flag(code, default_value, "i")["value"]
 
     def call_api(self, *args, **kwargs) -> Any:
         self._get_or_refresh_access_token()
@@ -232,14 +231,14 @@ class KindeApiClient(ApiClient):
             params = {"authorization_response": authorization_response}
         if self.grant_type == GrantType.AUTHORIZATION_CODE_WITH_PKCE:
             params["code_verifier"] = self.code_verifier
-            # TODO: headers
 
         self.__access_token_obj = self.client.fetch_token(
-            self.token_endpoint, 
-            # headers={
-                # 'Kinde-SDK': "/".join("Python", self.version)
-            # },
-            **params
+            self.token_endpoint,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Kinde-SDK": "/".join(("Python", kinde_sdk_version)),
+            },
+            **params,
         )
         self.configuration.access_token = self.__access_token_obj.get("access_token")
         self._clear_decoded_tokens()
@@ -260,16 +259,18 @@ class KindeApiClient(ApiClient):
         refresh_token = self.__access_token_obj.get("refresh_token")
 
         if refresh_token:
-            # TODO: headers
             self.__access_token_obj = self.client.refresh_token(
                 self.token_endpoint,
-                # headers={
-                    # 'Kinde-SDK': "/".join("Python", self.version)
-                # },
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Kinde-SDK": "/".join(("Python", kinde_sdk_version)),
+                },
                 refresh_token=refresh_token,
             )
             if not self.__access_token_obj:
-                raise KindeTokenException('"Access token" and "Refresh token" are invalid.')
+                raise KindeTokenException(
+                    '"Access token" and "Refresh token" are invalid.'
+                )
 
             self.configuration.access_token = self.__access_token_obj.get(
                 "access_token"

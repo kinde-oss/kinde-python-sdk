@@ -38,6 +38,7 @@ class UserProfileV2(
         
         class properties:
             id = schemas.StrSchema
+            sub = schemas.StrSchema
             
             
             class provided_id(
@@ -65,6 +66,7 @@ class UserProfileV2(
             email = schemas.StrSchema
             __annotations__ = {
                 "id": id,
+                "sub": sub,
                 "provided_id": provided_id,
                 "name": name,
                 "given_name": given_name,
@@ -75,6 +77,9 @@ class UserProfileV2(
     
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["id"]) -> MetaOapg.properties.id: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["sub"]) -> MetaOapg.properties.sub: ...
     
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["provided_id"]) -> MetaOapg.properties.provided_id: ...
@@ -97,13 +102,16 @@ class UserProfileV2(
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "name", "given_name", "family_name", "updated_at", "email", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "sub", "provided_id", "name", "given_name", "family_name", "updated_at", "email", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
     
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["id"]) -> typing.Union[MetaOapg.properties.id, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["sub"]) -> typing.Union[MetaOapg.properties.sub, schemas.Unset]: ...
     
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["provided_id"]) -> typing.Union[MetaOapg.properties.provided_id, schemas.Unset]: ...
@@ -126,7 +134,7 @@ class UserProfileV2(
     @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "name", "given_name", "family_name", "updated_at", "email", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "sub", "provided_id", "name", "given_name", "family_name", "updated_at", "email", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -134,6 +142,7 @@ class UserProfileV2(
         cls,
         *_args: typing.Union[dict, frozendict.frozendict, ],
         id: typing.Union[MetaOapg.properties.id, str, schemas.Unset] = schemas.unset,
+        sub: typing.Union[MetaOapg.properties.sub, str, schemas.Unset] = schemas.unset,
         provided_id: typing.Union[MetaOapg.properties.provided_id, None, str, schemas.Unset] = schemas.unset,
         name: typing.Union[MetaOapg.properties.name, str, schemas.Unset] = schemas.unset,
         given_name: typing.Union[MetaOapg.properties.given_name, str, schemas.Unset] = schemas.unset,
@@ -147,6 +156,7 @@ class UserProfileV2(
             cls,
             *_args,
             id=id,
+            sub=sub,
             provided_id=provided_id,
             name=name,
             given_name=given_name,

@@ -8,7 +8,8 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**id** | str,  | str,  | Unique id of the user in Kinde. | [optional] 
+**id** | str,  | str,  | Unique id of the user in Kinde (deprecated). | [optional] 
+**sub** | str,  | str,  | Unique id of the user in Kinde. | [optional] 
 **provided_id** | None, str,  | NoneClass, str,  | Value of the user&#x27;s id in a third-party system when the user is imported into Kinde. | [optional] 
 **name** | str,  | str,  | Users&#x27;s first and last name separated by a space. | [optional] 
 **given_name** | str,  | str,  | User&#x27;s first name. | [optional] 

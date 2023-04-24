@@ -211,6 +211,7 @@ class KindeApiClient(ApiClient):
                     'For other grant_type use "get_login_url()" or "get_register_url()".'
                 )
             token = self.__access_token_obj.get(token_name)
+
             if token:
                 self.__decoded_tokens[token_name] = jwt.decode(
                     token, options={"verify_signature": False}
@@ -232,6 +233,7 @@ class KindeApiClient(ApiClient):
         if self.grant_type == GrantType.AUTHORIZATION_CODE_WITH_PKCE:
             params["code_verifier"] = self.code_verifier
             # TODO: headers
+
         self.__access_token_obj = self.client.fetch_token(
             self.token_endpoint, 
             # headers={
@@ -256,6 +258,7 @@ class KindeApiClient(ApiClient):
 
     def _refresh_token(self) -> None:
         refresh_token = self.__access_token_obj.get("refresh_token")
+
         if refresh_token:
             # TODO: headers
             self.__access_token_obj = self.client.refresh_token(
@@ -272,3 +275,5 @@ class KindeApiClient(ApiClient):
                 "access_token"
             )
             self._clear_decoded_tokens()
+        else:
+            raise KindeTokenException('"Access token" and "Refresh token" are invalid.')

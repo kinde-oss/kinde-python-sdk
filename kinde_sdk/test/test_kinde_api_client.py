@@ -180,6 +180,23 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         self.assertEqual(org_code, org_code_expected)
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
+    def test_client_credentials_get_claim_error(self, auth_session_mock):
+        auth_session_mock.return_value.fetch_token.return_value = self._get_token()
+        org_code_expected = {
+            "name": "org_code",
+            "value": self._get_decoded_token()["org_code"],
+        }
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
+        )
+
+        kinde_client.fetch_token()
+
+        with self.assertRaises(KindeTokenException):
+            kinde_client.get_claim("org_code", "not_exist")
+
+    @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_client_credentials_get_flag_success(self, auth_session_mock):
         fake_flag = "theme"
         auth_session_mock.return_value.fetch_token.return_value = self._get_token()
@@ -482,6 +499,21 @@ class TestKindeApiClientClientCredentials(BaseTestCase):
         with self.assertRaises(KindeRetrieveException):
             kinde_client.get_integer_flag(fake_flag, default_value=False)["value"]
 
+    @patch("kinde_sdk.kinde_api_client.OAuth2Session")
+    def test_client_credentials_is_authenticated(
+        self, auth_session_mock
+    ):
+        auth_session_mock.return_value.fetch_token.return_value = self._get_token()
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
+        )
+
+        kinde_client.fetch_token()
+
+        is_authenticated = kinde_client.is_authenticated()
+        self.assertTrue(is_authenticated)
+
 
 class TestKindeApiClientAuthorizationCode(BaseTestCase):
     def setUp(self):
@@ -579,6 +611,20 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
 
         org_code = kinde_client.get_claim("org_code")
         self.assertEqual(org_code, org_code_expected)
+
+    @patch("kinde_sdk.kinde_api_client.OAuth2Session")
+    def test_authorization_code_get_claim_error(self, auth_session_mock):
+        fake_auth_response = "TEST"
+        auth_session_mock.return_value.fetch_token.return_value = self._get_token()
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
+        )
+
+        kinde_client.fetch_token(authorization_response=fake_auth_response)
+
+        with self.assertRaises(KindeTokenException):
+            kinde_client.get_claim("org_code", "not_exist")
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_get_user_details(self, auth_session_mock):
@@ -993,6 +1039,22 @@ class TestKindeApiClientAuthorizationCode(BaseTestCase):
         with self.assertRaises(KindeTokenException):
             kinde_client._get_or_refresh_access_token()
 
+    @patch("kinde_sdk.kinde_api_client.OAuth2Session")
+    def test_authorization_code_is_authenticated(
+        self, auth_session_mock
+    ):
+        fake_auth_response = "TEST"
+        auth_session_mock.return_value.fetch_token.return_value = self._get_token()
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
+        )
+
+        kinde_client.fetch_token(authorization_response=fake_auth_response)
+
+        is_authenticated = kinde_client.is_authenticated()
+        self.assertTrue(is_authenticated)
+
 
 class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
     def setUp(self):
@@ -1107,6 +1169,21 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
 
         org_code = kinde_client.get_claim("org_code")
         self.assertEqual(org_code, org_code_expected)
+
+    @patch("kinde_sdk.kinde_api_client.OAuth2Session")
+    def test_authorization_code_with_pkce_get_claim_error(self, auth_session_mock):
+        fake_auth_response = "TEST"
+        auth_session_mock.return_value.fetch_token.return_value = self._get_token()
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
+            code_verifier=self.code_verifier,
+        )
+
+        kinde_client.fetch_token(authorization_response=fake_auth_response)
+
+        with self.assertRaises(KindeTokenException):
+            kinde_client.get_claim("org_code", "not_exist")
 
     @patch("kinde_sdk.kinde_api_client.OAuth2Session")
     def test_authorization_code_with_pkce_get_user_details(self, auth_session_mock):
@@ -1554,3 +1631,20 @@ class TestKindeApiClientAuthorizationCodeWithPKCE(BaseTestCase):
         kinde_client.fetch_token(authorization_response=fake_auth_response)
         with self.assertRaises(KindeTokenException):
             kinde_client._get_or_refresh_access_token()
+    
+    @patch("kinde_sdk.kinde_api_client.OAuth2Session")
+    def test_authorization_code_with_pkce_is_authenticated(
+        self, auth_session_mock
+    ):
+        fake_auth_response = "TEST"
+        auth_session_mock.return_value.fetch_token.return_value = self._get_token()
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
+            code_verifier=self.code_verifier,
+        )
+
+        kinde_client.fetch_token(authorization_response=fake_auth_response)
+
+        is_authenticated = kinde_client.is_authenticated()
+        self.assertTrue(is_authenticated)

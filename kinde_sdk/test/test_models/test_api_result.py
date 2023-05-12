@@ -14,14 +14,23 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.api_result import ApiResult
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestApiResult(unittest.TestCase):
     """ApiResult unit test stubs"""
 
-    _configuration = configuration.Configuration()
+    def test_api_result(self):
+        inst = ApiResult({})
+        with self.assertRaises(KeyError):
+            inst["result"]
+        assert inst.get_item_oapg("result") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.result
 
+        inst = ApiResult(result="")
+        result = inst["result"]
+        assert result == ""
 
 if __name__ == "__main__":
     unittest.main()

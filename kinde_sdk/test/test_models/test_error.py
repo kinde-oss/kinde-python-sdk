@@ -14,13 +14,23 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.error import Error
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestError(unittest.TestCase):
     """Error unit test stubs"""
 
-    _configuration = configuration.Configuration()
+    def test_error(self):
+        inst = Error({})
+        with self.assertRaises(KeyError):
+            inst["code"]
+        assert inst.get_item_oapg("code") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.code
+
+        inst = Error(code="")
+        code = inst["code"]
+        assert code == ""
 
 
 if __name__ == "__main__":

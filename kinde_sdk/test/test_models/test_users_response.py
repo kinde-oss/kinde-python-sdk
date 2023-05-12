@@ -14,12 +14,22 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.users_response import UsersResponse
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestUsersResponse(unittest.TestCase):
     """UsersResponse unit test stubs"""
-    _configuration = configuration.Configuration()
+    def test_users_response(self):
+        inst = UsersResponse({})
+        with self.assertRaises(KeyError):
+            inst["code"]
+        assert inst.get_item_oapg("code") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.code
+
+        inst = UsersResponse(code="")
+        code = inst["code"]
+        assert code == ""
 
 
 if __name__ == '__main__':

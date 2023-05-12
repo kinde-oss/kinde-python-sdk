@@ -1,11 +1,15 @@
+import collections
 import json
 import typing
+import unittest
 
 import urllib3
 from urllib3._collections import HTTPHeaderDict
 
+ParamTestCase = collections.namedtuple('ParamTestCase', 'payload expected_serialization explode', defaults=[False])
 
-class ApiTestMixin:
+
+class ApiTestMixin(unittest.TestCase):
     json_content_type = 'application/json'
     user_agent = 'OpenAPI-Generator/1.0.0/python'
 
@@ -16,13 +20,14 @@ class ApiTestMixin:
         url: str,
         method: str = 'POST',
         body: typing.Optional[bytes] = None,
-        content_type: typing.Optional[str] = None,
-        accept_content_type: typing.Optional[str] = None,
+        content_type: typing.Optional[str] = 'application/json',
+        accept_content_type: typing.Optional[str] = 'application/json',
         stream: bool = False,
+        headers: typing.Optional[typing.Dict] = None
     ):
-        headers = {
-            'User-Agent': cls.user_agent
-        }
+        if headers is None:
+            headers = {}
+        headers['User-Agent'] = cls.user_agent
         if accept_content_type:
             headers['Accept'] = accept_content_type
         if content_type:
@@ -51,7 +56,8 @@ class ApiTestMixin:
         status: int = 200,
         content_type: str = json_content_type,
         headers: typing.Optional[typing.Dict[str, str]] = None,
-        preload_content: bool = True
+        preload_content: bool = True,
+        reason: typing.Optional[str] = None
     ) -> urllib3.HTTPResponse:
         if headers is None:
             headers = {}
@@ -60,7 +66,8 @@ class ApiTestMixin:
             body,
             headers=headers,
             status=status,
-            preload_content=preload_content
+            preload_content=preload_content,
+            reason=reason
         )
 
     @staticmethod

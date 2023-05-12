@@ -159,7 +159,7 @@ class KindeApiClient(ApiClient):
     def get_flag(
         self, code: str, default_value: Any = None, flag_type: str = ""
     ) -> Any:
-        flags = self.get_claim("feature_flags")["value"]
+        flags = self.get_claim("feature_flags")["value"] or {}
         flag = {}
 
         if code not in list(flags.keys()):

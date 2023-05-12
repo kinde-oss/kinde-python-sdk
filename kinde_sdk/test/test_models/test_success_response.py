@@ -14,14 +14,23 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.success_response import SuccessResponse
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestSuccessResponse(unittest.TestCase):
     """SuccessResponse unit test stubs"""
 
-    _configuration = configuration.Configuration()
+    def test_success_response(self):
+        inst = SuccessResponse({})
+        with self.assertRaises(KeyError):
+            inst["message"]
+        assert inst.get_item_oapg("message") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.message
 
+        inst = SuccessResponse(message="success")
+        message = inst["message"]
+        assert message == "success"
 
 if __name__ == "__main__":
     unittest.main()

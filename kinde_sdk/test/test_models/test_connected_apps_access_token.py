@@ -14,14 +14,23 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.connected_apps_access_token import ConnectedAppsAccessToken
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestConnectedAppsAccessToken(unittest.TestCase):
     """ConnectedAppsAccessToken unit test stubs"""
 
-    _configuration = configuration.Configuration()
+    def test_connected_apps_access_token(self):
+        inst = ConnectedAppsAccessToken({})
+        with self.assertRaises(KeyError):
+            inst["access_token"]
+        assert inst.get_item_oapg("access_token") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.access_token
 
+        inst = ConnectedAppsAccessToken(access_token="")
+        access_token = inst["access_token"]
+        assert access_token == ""
 
 if __name__ == "__main__":
     unittest.main()

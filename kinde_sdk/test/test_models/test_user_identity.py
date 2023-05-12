@@ -14,13 +14,23 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.user_identity import UserIdentity
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestUserIdentity(unittest.TestCase):
     """UserIdentity unit test stubs"""
 
-    _configuration = configuration.Configuration()
+    def test_user_identity(self):
+        inst = UserIdentity({})
+        with self.assertRaises(KeyError):
+            inst["type"]
+        assert inst.get_item_oapg("type") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.type
+
+        inst = UserIdentity(type="")
+        type = inst["type"]
+        assert type == ""
 
 
 if __name__ == "__main__":

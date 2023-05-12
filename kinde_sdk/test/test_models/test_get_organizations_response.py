@@ -14,12 +14,23 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.get_organizations_response import GetOrganizationsResponse
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestGetOrganizationsResponse(unittest.TestCase):
     """GetOrganizationsResponse unit test stubs"""
-    _configuration = configuration.Configuration()
+    
+    def test_get_organizations_response(self):
+        inst = GetOrganizationsResponse({})
+        with self.assertRaises(KeyError):
+            inst["code"]
+        assert inst.get_item_oapg("code") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.code
+
+        inst = GetOrganizationsResponse(code="")
+        code = inst["code"]
+        assert code == ""
 
 
 if __name__ == '__main__':

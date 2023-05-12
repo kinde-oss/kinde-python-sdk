@@ -14,12 +14,23 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.remove_organization_users_response import RemoveOrganizationUsersResponse
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestRemoveOrganizationUsersResponse(unittest.TestCase):
     """RemoveOrganizationUsersResponse unit test stubs"""
-    _configuration = configuration.Configuration()
+
+    def test_remove_organization_users_response(self):
+        inst = RemoveOrganizationUsersResponse({})
+        with self.assertRaises(KeyError):
+            inst["message"]
+        assert inst.get_item_oapg("message") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.message
+
+        inst = RemoveOrganizationUsersResponse(message="success")
+        message = inst["message"]
+        assert message == "success"
 
 
 if __name__ == '__main__':

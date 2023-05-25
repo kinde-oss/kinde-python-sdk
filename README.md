@@ -239,8 +239,9 @@ Result:
 {
     id: id_token.sub,
     given_name: id_token.given_name,
-    family_name: id_token.family_name
-    email: id_token.email
+    family_name: id_token.family_name,
+    email: id_token.email,
+    picture: id_token.picture
 }
 ```
 
@@ -250,10 +251,183 @@ We have provided a helper to grab any claim from your id or access tokens. The h
 
 ```python
 kinde_client.get_claim("aud")
-# ["api.stakesocial.com/v1"]
+# {
+#   "name": "aud",
+#   "value": ["api.stakesocial.com/v1"]
+# }
 
 kinde_client.get_claim("given_name", "id_token")
-# "David"
+# {
+#   "name": "given_name",
+#   "value": "David"
+# }
+```
+
+## Feature Flags
+
+Get feature_flags claim of the access token.
+
+Sample data
+
+```python
+feature_flags: {
+  theme: {
+    t: "s",
+    v: "pink"
+  },
+  is_dark_mode: {
+    t: "b",
+    v: true
+  },
+  competitions_limit: {
+    t: "i",
+    v: 5
+  }
+}
+```
+In order to minimize the payload in the token we have used single letter keys / values where possible. The single letters represent the following:
+
+t = type
+
+v = value
+
+s = string
+
+b = boolean
+
+i = integer
+
+We provide helper functions to more easily access feature flags:
+
+```python
+
+# Get a flag from the feature_flags claim of the access_token.
+#   @param {string} code - The name of the flag.
+#   @param {obj} [defaultValue] - A fallback value if the flag isn't found.
+#   @param {'s'|'b'|'i'|undefined} [flagType] - The data type of the flag
+#   (integer / boolean / string).
+#   @return {object} Flag details.
+
+kinde_client.get_flag(code, defaultValue, flagType)
+
+# Example usage:
+
+kinde_client.get_flag("theme")
+# {
+#   "code": "theme",
+#   "type": "string",
+#   "value": "pink",
+#   "is_default": false // whether the fallback value had to be used
+# }
+
+# If flag does not exist, default value provided
+kinde_client.get_flag("create_competition", default_value=False)
+# {
+#   "code": "create_competition",
+#   "value": false,
+#   "is_default": true
+# }
+
+kinde_client.get_flag("competitions_limit", default_value=3, flat_type='i')
+# {
+#   "code": "competitions_limit",
+#   "type": "integer",
+#   "value": 5,
+#   "is_default": false
+# }
+```
+
+If flag_type is provided and not the same as the flag value, an error will be raise.
+
+#### Get boolean flag
+
+Get a boolean flag from the feature_flags claim of the access_token.
+
+```python
+
+# Get a boolean flag from the feature_flags claim of the access_token.
+#   @param {string} code - The name of the flag.
+#   @param {bool} [defaultValue] - A fallback value if the flag isn't found.
+#   @return {bool}
+
+kinde_client.get_boolean_flag(code, defaultValue)
+
+# Example usage:
+
+kinde_client.get_boolean_flag("is_dark_mode")
+# True
+
+kinde_client.get_boolean_flag("is_dark_mode", False)
+# False
+
+kinde_client.get_boolean_flag("new_feature", False)
+# False (flag does not exist so falls back to default)
+
+kinde_client.get_boolean_flag("new_feature")
+# Error - flag does not exist and no default provided
+
+kinde_client.get_boolean_flag("theme", False)
+# Error - Flag "theme" is of type string not boolean
+```
+
+#### Get string flag
+
+Get a string flag from the feature_flags claim of the access_token.
+
+```python
+# Get a string flag from the feature_flags claim of the access_token.
+#   @param {string} code - The name of the flag.
+#   @param {string} [defaultValue] - A fallback value if the flag isn't found.
+#   @return {string}
+
+kinde_client.get_string_flag(code, defaultValue)
+
+# Example usage:
+
+kinde_client.get_string_flag("theme")
+# "pink"
+
+kinde_client.get_string_flag("theme", "orange")
+# "pink"
+
+kinde_client.get_string_flag("cta_color", "blue")
+# "blue" (flag does not exist so falls back to default)
+
+kinde_client.get_string_flag("cta_color")
+# Error - flag does not exist and no default provided
+
+kinde_client.get_string_flag("is_dark_mode", False)
+# Error - Flag "is_dark_mode" is of type boolean not string
+```
+
+#### Get integer flag
+
+Get a integer flag from the feature_flags claim of the access_token.
+
+```python
+# Get an integer flag from the feature_flags claim of the access_token.
+#   @param {string} code - The name of the flag.
+#   @param {int} [defaultValue] - A fallback value if the flag isn't found.
+#   @return {int}
+
+kinde_client.get_tnteger_flag(code, defaultValue)
+
+# Example usage:
+
+kinde_client.get_integer_flag("competitions_limit")
+# 5
+
+kinde_client.get_integer_flag("competitions_limit", 3)
+# 5
+
+kinde_client.get_integer_flag("team_count", 2)
+# 2 (flag does not exist so falls back to default)
+
+kinde_client.get_integer_flag("team_count")
+# Error - flag does not exist and no default provided
+
+kinde_client.get_integer_flag("is_dark_mode", False)
+# Error - Flag "is_dark_mode" is of type boolean not integer
 ```
 
 ## Get user information from API
@@ -294,13 +468,17 @@ except ApiException as e:
 | logout                 | Logs the user out of Kinde                                                             |                                 | kinde_client.logout()                              | 'https://your_kinde_domain.kinde.com/logout'                                                  |
 | is_authenticated       | Check if user is authenticated                                                         |                                 | kinde_client.is_authenticated()                    | True                                                                                          |
 | create_org             | Constructs redirect url for creating an organization                                   |                                 | kinde_client.create_org()                          | 'https://your_kinde_domain.kinde.com/login&start_page=registration&is_create_org=true'        |
-| get_claim              | Gets a claim from an access or id token                                                | key: string, token_name: string | kinde_client.get_claim('given\_name', 'id\_token') | 'David'                                                                                       |
+| get_claim              | Gets a claim from an access or id token                                                | key: string, token_name: string | kinde_client.get_claim('given\_name', 'id\_token') | {'name': 'given\_name', 'value': 'David'}                                                                                       |
 | get_permission         | Returns the state of a given permission                                                | permission: string              | kinde_client.get_permission('read:todos')          | \{'org_code': 'org\_1234', 'is_granted': True\}                                               |
 | get_permissions        | Returns all permissions for the current user for the organization they are logged into |                                 | kinde_client.get_permissions()                     | \{'org_code':'org\_1234', 'permissions': \['create:todos', 'update:todos', 'read:todos'\]\}   |
 | get_organization       | Get details for the organization your user is logged into                              |                                 | kinde_client.get_organization()                    | \{'org_code': 'org\_1234'\}                                                                   |
-| get_user_details       | Returns the profile for the current user                                               |                                 | kinde_client.get_user_details()                    | \{'given\_name': 'Dave', 'id': 'abcdef', 'family\_name': 'Smith', 'email': 'dave@smith.com'\} |
+| get_user_details       | Returns the profile for the current user                                               |                                 | kinde_client.get_user_details()                    | \{'given\_name': 'Dave', 'id': 'abcdef', 'family\_name': 'Smith', 'email': 'dave@smith.com', 'picture': '<https://google-avatar.com/12455>'\} |
 | get_user_organizations | Gets an array of all organizations the user has access to                              |                                 | kinde_client.get_user_organizations()              | \{'org_codes': ['org\_1234', 'org\_2345']\}                                                   |
-
+| get_flag          | Returns feature_flags claim of the access_token                                                        | code: string, default_value: any (optional), flag_type: str (optional)                               | kinde_client.get_flag("theme")                       | {"code": "theme","type": "string","value": "pink","is_default": False}                                               |
+| get_boolean_flag          | Returns a boolean flag from the feature_flags claim of the access_token                                                        | code: string, default_value: any (optional)                               | kinde_client.get_boolean_flag("is_dark_mode")                       | True
+| get_string_flag          | Returns a string flag from the feature_flags claim of the access_token                                                        | code: string, default_value: any (optional)                               | kinde_client.get_string_flag("theme")                       | "pink"
+| get_integer_flag          | Returns an integer flag from the feature_flags claim of the access_token                                                        | code: string, default_value: any (optional)                               | kinde_client.get_integer_flag("competitions_limit")                       | 5
+| call_api                 | Returns deserialized data | resource_path: string, method: string, headers: optional, body: optional, fields: optional, auth_settings: optional, async_req: optional, stream: optional, timeout: optional, host: optional | kinde_client.call_api("/api/v1/user", "GET") | <urllib3.response.HTTPResponse> object
 If you need help connecting to Kinde, please contact us at [support@kinde.com](mailto:support@kinde.com).
 
 ## Autogenerated API reference

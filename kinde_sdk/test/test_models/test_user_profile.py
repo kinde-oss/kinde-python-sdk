@@ -14,13 +14,23 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.user_profile import UserProfile
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestUserProfile(unittest.TestCase):
     """UserProfile unit test stubs"""
 
-    _configuration = configuration.Configuration()
+    def test_user_profile(self):
+        inst = UserProfile({})
+        with self.assertRaises(KeyError):
+            inst["id"]
+        assert inst.get_item_oapg("id") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.id
+
+        inst = UserProfile(id="")
+        id = inst["id"]
+        assert id == ""
 
 
 if __name__ == "__main__":

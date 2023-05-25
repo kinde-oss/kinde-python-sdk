@@ -158,3 +158,7 @@ class KindeLoginException(Exception):
 
 class KindeTokenException(Exception):
     pass
+
+
+class KindeRetrieveException(Exception):
+    pass

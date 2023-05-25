@@ -26,6 +26,7 @@ import frozendict  # noqa: F401
 from kinde_sdk import schemas  # noqa: F401
 
 from kinde_sdk.model.connected_apps_access_token import ConnectedAppsAccessToken
+from kinde_sdk.model.error_response import ErrorResponse
 
 from . import path
 
@@ -82,29 +83,51 @@ _response_for_200 = api_client.OpenApiResponse(
             schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
     },
 )
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
+SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
 
 @dataclass
 class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+        SchemaFor400ResponseBodyApplicationJsonCharsetutf8,
+    ]
     headers: schemas.Unset = schemas.unset
 
 
 _response_for_400 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor400,
+    content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
+    },
 )
+SchemaFor403ResponseBodyApplicationJson = ErrorResponse
+SchemaFor403ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
 
 @dataclass
 class ApiResponseFor403(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor403ResponseBodyApplicationJson,
+        SchemaFor403ResponseBodyApplicationJsonCharsetutf8,
+    ]
     headers: schemas.Unset = schemas.unset
 
 
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
+    content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor403ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor403ResponseBodyApplicationJsonCharsetutf8),
+    },
 )
 _status_code_to_response = {
     '200': _response_for_200,

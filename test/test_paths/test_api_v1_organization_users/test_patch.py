@@ -12,7 +12,6 @@ from unittest.mock import patch
 import urllib3
 
 import kinde_sdk
-from kinde_sdk.paths.api_v1_organization_users import patch  # noqa: E501
 from kinde_sdk import configuration, schemas, api_client
 
 from .. import ApiTestMixin

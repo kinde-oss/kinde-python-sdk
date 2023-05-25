@@ -24,6 +24,7 @@ Get a URL that authenticates and authorizes a user to a third-party connected ap
 import kinde_sdk
 from kinde_sdk.apis.tags import connected_apps_api
 from kinde_sdk.model.connected_apps_auth_url import ConnectedAppsAuthUrl
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -48,7 +49,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     query_params = {
         'key_code_ref': "key_code_ref_example",
-        'user_id': 1,
+        'user_id': "user_id_example",
     }
     try:
         # Get Connected App URL
@@ -90,7 +91,7 @@ str,  | str,  |  |
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-decimal.Decimal, int,  | decimal.Decimal,  |  | 
+str,  | str,  |  | 
 
 ### Return Types, Responses
 
@@ -98,6 +99,8 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#get_connected_app_auth_url.ApiResponseFor200) | A URL that can be used to authenticate and a session id to identify this authentication session.
+400 | [ApiResponseFor400](#get_connected_app_auth_url.ApiResponseFor400) | Error retrieving connected app auth url.
+404 | [ApiResponseFor404](#get_connected_app_auth_url.ApiResponseFor404) | Error retrieving connected app auth url.
 403 | [ApiResponseFor403](#get_connected_app_auth_url.ApiResponseFor403) | Invalid credentials.
 
 #### get_connected_app_auth_url.ApiResponseFor200
@@ -117,6 +120,44 @@ Type | Description  | Notes
 Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ConnectedAppsAuthUrl**](../../models/ConnectedAppsAuthUrl.md) |  | 
+
+
+#### get_connected_app_auth_url.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### get_connected_app_auth_url.ApiResponseFor404
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor404ResponseBodyApplicationJson, SchemaFor404ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor404ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor404ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
 
 #### get_connected_app_auth_url.ApiResponseFor403
@@ -147,6 +188,7 @@ Get an access token that can be used to call the third-party provider linked to 
 import kinde_sdk
 from kinde_sdk.apis.tags import connected_apps_api
 from kinde_sdk.model.connected_apps_access_token import ConnectedAppsAccessToken
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -238,15 +280,39 @@ Type | Description  | Notes
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
 
 #### get_connected_app_token.ApiResponseFor403
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor403ResponseBodyApplicationJson, SchemaFor403ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor403ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor403ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
 
 ### Authorization
 
@@ -256,7 +322,7 @@ headers | Unset | headers were not defined |
 
 # **revoke_connected_app_token**
 <a name="revoke_connected_app_token"></a>
-> ApiResult revoke_connected_app_token(session_id)
+> SuccessResponse revoke_connected_app_token(session_id)
 
 Revoke Connected App Token
 
@@ -268,7 +334,8 @@ Revoke the tokens linked to the connected app session.
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import connected_apps_api
-from kinde_sdk.model.api_result import ApiResult
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -348,13 +415,13 @@ headers | Unset | headers were not defined |
 # SchemaFor200ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  | 
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
 
 
 # SchemaFor200ResponseBodyApplicationJsonCharsetutf8
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  | 
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
 
 
 #### revoke_connected_app_token.ApiResponseFor400
@@ -367,13 +434,13 @@ headers | Unset | headers were not defined |
 # SchemaFor400ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  | 
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
 
 # SchemaFor400ResponseBodyApplicationJsonCharsetutf8
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  | 
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
 
 #### revoke_connected_app_token.ApiResponseFor403
@@ -386,33 +453,21 @@ headers | Unset | headers were not defined |
 # SchemaFor403ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  | 
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
 
 # SchemaFor403ResponseBodyApplicationJsonCharsetutf8
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  | 
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
 
 #### revoke_connected_app_token.ApiResponseFor405
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor405ResponseBodyApplicationJson, SchemaFor405ResponseBodyApplicationJsonCharsetutf8, ] |  |
+body | Unset | body was not defined |
 headers | Unset | headers were not defined |
-
-# SchemaFor405ResponseBodyApplicationJson
-Type | Description  | Notes
-------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  | 
-
-
-# SchemaFor405ResponseBodyApplicationJsonCharsetutf8
-Type | Description  | Notes
-------------- | ------------- | -------------
-[**ApiResult**](../../models/ApiResult.md) |  | 
-
 
 ### Authorization
 

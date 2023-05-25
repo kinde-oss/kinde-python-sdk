@@ -25,7 +25,8 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
-from kinde_sdk.model.api_result import ApiResult
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
 
 # Query params
 SessionIdSchema = schemas.StrSchema
@@ -54,8 +55,8 @@ request_query_session_id = api_client.QueryParameter(
     required=True,
     explode=True,
 )
-SchemaFor200ResponseBodyApplicationJson = ApiResult
-SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = ApiResult
+SchemaFor200ResponseBodyApplicationJson = SuccessResponse
+SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = SuccessResponse
 
 
 @dataclass
@@ -77,8 +78,8 @@ _response_for_200 = api_client.OpenApiResponse(
             schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
     },
 )
-SchemaFor400ResponseBodyApplicationJson = ApiResult
-SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ApiResult
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
+SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
 
 @dataclass
@@ -100,8 +101,8 @@ _response_for_400 = api_client.OpenApiResponse(
             schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
     },
 )
-SchemaFor403ResponseBodyApplicationJson = ApiResult
-SchemaFor403ResponseBodyApplicationJsonCharsetutf8 = ApiResult
+SchemaFor403ResponseBodyApplicationJson = ErrorResponse
+SchemaFor403ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
 
 @dataclass
@@ -123,28 +124,17 @@ _response_for_403 = api_client.OpenApiResponse(
             schema=SchemaFor403ResponseBodyApplicationJsonCharsetutf8),
     },
 )
-SchemaFor405ResponseBodyApplicationJson = ApiResult
-SchemaFor405ResponseBodyApplicationJsonCharsetutf8 = ApiResult
 
 
 @dataclass
 class ApiResponseFor405(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: typing.Union[
-        SchemaFor405ResponseBodyApplicationJson,
-        SchemaFor405ResponseBodyApplicationJsonCharsetutf8,
-    ]
+    body: schemas.Unset = schemas.unset
     headers: schemas.Unset = schemas.unset
 
 
 _response_for_405 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor405,
-    content={
-        'application/json': api_client.MediaType(
-            schema=SchemaFor405ResponseBodyApplicationJson),
-        'application/json; charset=utf-8': api_client.MediaType(
-            schema=SchemaFor405ResponseBodyApplicationJsonCharsetutf8),
-    },
 )
 _all_accept_content_types = (
     'application/json',

@@ -26,17 +26,18 @@ import frozendict  # noqa: F401
 from kinde_sdk import schemas  # noqa: F401
 
 from kinde_sdk.model.connected_apps_auth_url import ConnectedAppsAuthUrl
+from kinde_sdk.model.error_response import ErrorResponse
 
 from . import path
 
 # Query params
 KeyCodeRefSchema = schemas.StrSchema
-UserIdSchema = schemas.IntSchema
+UserIdSchema = schemas.StrSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     'RequestRequiredQueryParams',
     {
         'key_code_ref': typing.Union[KeyCodeRefSchema, str, ],
-        'user_id': typing.Union[UserIdSchema, decimal.Decimal, int, ],
+        'user_id': typing.Union[UserIdSchema, str, ],
     }
 )
 RequestOptionalQueryParams = typing_extensions.TypedDict(
@@ -91,6 +92,52 @@ _response_for_200 = api_client.OpenApiResponse(
             schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
     },
 )
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
+SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
+
+
+@dataclass
+class ApiResponseFor400(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+        SchemaFor400ResponseBodyApplicationJsonCharsetutf8,
+    ]
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_400 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor400,
+    content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
+    },
+)
+SchemaFor404ResponseBodyApplicationJson = ErrorResponse
+SchemaFor404ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
+
+
+@dataclass
+class ApiResponseFor404(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: typing.Union[
+        SchemaFor404ResponseBodyApplicationJson,
+        SchemaFor404ResponseBodyApplicationJsonCharsetutf8,
+    ]
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_404 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor404,
+    content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor404ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor404ResponseBodyApplicationJsonCharsetutf8),
+    },
+)
 
 
 @dataclass
@@ -105,6 +152,8 @@ _response_for_403 = api_client.OpenApiResponse(
 )
 _status_code_to_response = {
     '200': _response_for_200,
+    '400': _response_for_400,
+    '404': _response_for_404,
     '403': _response_for_403,
 }
 _all_accept_content_types = (

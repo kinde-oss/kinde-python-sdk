@@ -14,12 +14,23 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.add_organization_users_response import AddOrganizationUsersResponse
-from kinde_sdk import configuration
+from kinde_sdk import schemas
 
 
 class TestAddOrganizationUsersResponse(unittest.TestCase):
     """AddOrganizationUsersResponse unit test stubs"""
-    _configuration = configuration.Configuration()
+
+    def test_add_organization_users_response(self):
+        inst = AddOrganizationUsersResponse({})
+        with self.assertRaises(KeyError):
+            inst["users_added"]
+        assert inst.get_item_oapg("users_added") is schemas.unset
+        with self.assertRaises(AttributeError):
+            inst.users_added
+
+        inst = AddOrganizationUsersResponse(users_added=[])
+        users_added = inst["users_added"]
+        assert users_added == ()
 
 
 if __name__ == '__main__':

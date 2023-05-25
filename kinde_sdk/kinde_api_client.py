@@ -8,7 +8,15 @@ from kinde_sdk.exceptions import (
     KindeConfigurationException,
     KindeLoginException,
     KindeTokenException,
+    KindeRetrieveException,
 )
+from kinde_sdk import __version__ as kinde_sdk_version
+
+
+class FlagType(Enum):
+    s = "string"
+    i = "integer"
+    b = "boolean"
 
 
 class GrantType(Enum):
@@ -114,37 +122,77 @@ class KindeApiClient(ApiClient):
                 f"Please use only tokens from the list: {self.TOKEN_NAMES}"
             )
         self._decode_token_if_needed(token_name)
-        return self.__decoded_tokens[token_name].get(key)
+        value = self.__decoded_tokens[token_name].get(key)
+        return {"name": key, "value": value}
 
     def get_permission(self, permission: str) -> Dict[str, Any]:
         return {
-            "org_code": self.get_claim("org_code"),
-            "is_granted": permission in self.get_claim("permissions"),
+            "org_code": self.get_claim("org_code")["value"],
+            "is_granted": permission in self.get_claim("permissions")["value"],
         }
 
     def get_permissions(self) -> Dict[str, Any]:
         return {
-            "org_code": self.get_claim("org_code"),
-            "permissions": self.get_claim("permissions"),
+            "org_code": self.get_claim("org_code")["value"],
+            "permissions": self.get_claim("permissions")["value"],
         }
 
     def get_organization(self) -> Dict[str, str]:
         return {
-            "org_code": self.get_claim("org_code"),
+            "org_code": self.get_claim("org_code")["value"],
         }
 
     def get_user_details(self) -> Dict[str, str]:
         return {
-            "id": self.get_claim("sub", "id_token"),
-            "given_name": self.get_claim("given_name", "id_token"),
-            "family_name": self.get_claim("family_name", "id_token"),
-            "email": self.get_claim("email", "id_token"),
+            "id": self.get_claim("sub", "id_token")["value"],
+            "given_name": self.get_claim("given_name", "id_token")["value"],
+            "family_name": self.get_claim("family_name", "id_token")["value"],
+            "email": self.get_claim("email", "id_token")["value"],
+            "picture": self.get_claim("picture", "id_token")["value"],
         }
 
     def get_user_organizations(self) -> Dict[str, List[str]]:
         return {
-            "org_codes": self.get_claim("org_codes", "id_token"),
+            "org_codes": self.get_claim("org_codes", "id_token")["value"],
         }
+
+    def get_flag(
+        self, code: str, default_value: Any = None, flag_type: str = ""
+    ) -> Any:
+        flags = self.get_claim("feature_flags")["value"] or {}
+        flag = {}
+
+        if code not in list(flags.keys()):
+            if default_value is None:
+                raise KindeRetrieveException(
+                    f"Flag {code} was not found, and no default value has been provided"
+                )
+        else:
+            flag = flags[code]
+            if flag_type and flag.get("t") and flag_type != flag.get("t"):
+                raise KindeRetrieveException(
+                    f"Flag {code} is of type {FlagType[flag.get('t')].value} - requested type {FlagType[flag_type].value}"
+                )
+
+        result_flag = {
+            "code": code,
+            "value": flag.get("v") if flag else default_value,
+            "is_default": not bool(flag),
+        }
+        flag_type = flag["t"] if flag else flag_type
+        if flag_type:
+            result_flag["type"] = FlagType[flag_type].value
+
+        return result_flag
+
+    def get_boolean_flag(self, code: str, default_value: Any = None) -> bool:
+        return self.get_flag(code, default_value, "b")["value"]
+
+    def get_string_flag(self, code: str, default_value: Any = None) -> str:
+        return self.get_flag(code, default_value, "s")["value"]
+
+    def get_integer_flag(self, code: str, default_value: Any = None) -> int:
+        return self.get_flag(code, default_value, "i")["value"]
 
     def call_api(self, *args, **kwargs) -> Any:
         self._get_or_refresh_access_token()
@@ -162,6 +210,7 @@ class KindeApiClient(ApiClient):
                     'For other grant_type use "get_login_url()" or "get_register_url()".'
                 )
             token = self.__access_token_obj.get(token_name)
+
             if token:
                 self.__decoded_tokens[token_name] = jwt.decode(
                     token, options={"verify_signature": False}
@@ -182,7 +231,15 @@ class KindeApiClient(ApiClient):
             params = {"authorization_response": authorization_response}
         if self.grant_type == GrantType.AUTHORIZATION_CODE_WITH_PKCE:
             params["code_verifier"] = self.code_verifier
-        self.__access_token_obj = self.client.fetch_token(self.token_endpoint, **params)
+
+        self.__access_token_obj = self.client.fetch_token(
+            self.token_endpoint,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Kinde-SDK": "/".join(("Python", kinde_sdk_version)),
+            },
+            **params,
+        )
         self.configuration.access_token = self.__access_token_obj.get("access_token")
         self._clear_decoded_tokens()
 
@@ -200,12 +257,24 @@ class KindeApiClient(ApiClient):
 
     def _refresh_token(self) -> None:
         refresh_token = self.__access_token_obj.get("refresh_token")
+
         if refresh_token:
             self.__access_token_obj = self.client.refresh_token(
                 self.token_endpoint,
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Kinde-SDK": "/".join(("Python", kinde_sdk_version)),
+                },
                 refresh_token=refresh_token,
             )
+            if not self.__access_token_obj:
+                raise KindeTokenException(
+                    '"Access token" and "Refresh token" are invalid.'
+                )
+
             self.configuration.access_token = self.__access_token_obj.get(
                 "access_token"
             )
             self._clear_decoded_tokens()
+        else:
+            raise KindeTokenException('"Access token" and "Refresh token" are invalid.')

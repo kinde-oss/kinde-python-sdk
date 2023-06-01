@@ -111,7 +111,11 @@ class KindeApiClient(ApiClient):
         return f"{self.logout_endpoint}?redirect={redirect_to}"
 
     def is_authenticated(self) -> bool:
-        return self.__access_token_obj and not self.__access_token_obj.is_expired()
+        if self.__access_token_obj:
+            if self.__access_token_obj.is_expired():
+                self._refresh_token()
+            return True
+        return False
 
     def create_org(self) -> str:
         return self.create_org_url

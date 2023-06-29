@@ -119,7 +119,22 @@ class SchemaForRequestBodyApplicationJson(
                         class MetaOapg:
                             
                             class properties:
-                                type = schemas.StrSchema
+                                
+                                
+                                class type(
+                                    schemas.EnumBase,
+                                    schemas.StrSchema
+                                ):
+                                
+                                
+                                    class MetaOapg:
+                                        enum_value_to_name = {
+                                            "email": "EMAIL",
+                                        }
+                                    
+                                    @schemas.classproperty
+                                    def EMAIL(cls):
+                                        return cls("email")
                                 
                                 
                                 class details(

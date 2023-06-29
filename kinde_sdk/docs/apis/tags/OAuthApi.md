@@ -5,14 +5,14 @@ All URIs are relative to *https://app.kinde.com*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**get_user**](#get_user) | **get** /oauth2/user_profile | Returns the details of the currently logged in user
+[**get_user**](#get_user) | **get** /oauth2/user_profile | Get User Profile
 [**get_user_profile_v2**](#get_user_profile_v2) | **get** /oauth2/v2/user_profile | Returns the details of the currently logged in user
 
 # **get_user**
 <a name="get_user"></a>
 > UserProfile get_user()
 
-Returns the details of the currently logged in user
+Get User Profile
 
 Contains the id, names and email of the currently logged in user. 
 
@@ -46,7 +46,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 
     # example, this endpoint has no required or optional parameters
     try:
-        # Returns the details of the currently logged in user
+        # Get User Profile
         api_response = api_instance.get_user()
         pprint(api_response)
     except kinde_sdk.ApiException as e:

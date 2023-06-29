@@ -22,103 +22,97 @@ To be able to use it, you will need these dependencies in your own package that 
 * certifi
 * python-dateutil
 
-## Getting Started
-
-In your own code, to use this library to connect and interact with kinde-sdk,
-you can run the following:
-
-```python
-
-import time
-import kinde_sdk
-from pprint import pprint
-from kinde_sdk.apis.tags import connected_apps_api
-from kinde_sdk.model.api_result import ApiResult
-from kinde_sdk.model.connected_apps_access_token import ConnectedAppsAccessToken
-from kinde_sdk.model.connected_apps_auth_url import ConnectedAppsAuthUrl
-# Defining the host is optional and defaults to https://app.kinde.com
-# See configuration.py for a list of all supported configuration parameters.
-configuration = kinde_sdk.Configuration(
-    host = "https://app.kinde.com"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure Bearer authorization (JWT): kindeBearerAuth
-configuration = kinde_sdk.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
-# Enter a context with an instance of the API client
-with kinde_sdk.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = connected_apps_api.ConnectedAppsApi(api_client)
-    key_code_ref = "key_code_ref_example" # str | The unique key code reference of the connected app to authenticate against.
-user_id = 1 # int | The id of the user that needs to authenticate to the third-party connected app.
-
-    try:
-        # Get Connected App URL
-        api_response = api_instance.get_connected_app_auth_url(key_code_refuser_id)
-        pprint(api_response)
-    except kinde_sdk.ApiException as e:
-        print("Exception when calling ConnectedAppsApi->get_connected_app_auth_url: %s\n" % e)
-```
-
 ## Documentation for API Endpoints
 
 All URIs are relative to *https://app.kinde.com*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*BusinessApi* | [**get_business**](kinde_sdk/docs/apis/tags/BusinessApi.md#get_business) | **get** /api/v1/business | List business details
+*BusinessApi* | [**update_business**](kinde_sdk/docs/apis/tags/BusinessApi.md#update_business) | **patch** /api/v1/business | Update business details
+*CallbacksApi* | [**add_redirect_callback_urls**](kinde_sdk/docs/apis/tags/CallbacksApi.md#add_redirect_callback_urls) | **post** /api/v1/applications/{app_id}/auth_redirect_urls | Add Redirect Callback URLs
+*CallbacksApi* | [**delete_callback_urls**](kinde_sdk/docs/apis/tags/CallbacksApi.md#delete_callback_urls) | **delete** /api/v1/applications/{app_id}/auth_redirect_urls | Delete Callback URLs
+*CallbacksApi* | [**get_callback_urls**](kinde_sdk/docs/apis/tags/CallbacksApi.md#get_callback_urls) | **get** /api/v1/applications/{app_id}/auth_redirect_urls | List Callback URLs
+*CallbacksApi* | [**replace_redirect_callback_urls**](kinde_sdk/docs/apis/tags/CallbacksApi.md#replace_redirect_callback_urls) | **put** /api/v1/applications/{app_id}/auth_redirect_urls | Replace Redirect Callback URLs
 *ConnectedAppsApi* | [**get_connected_app_auth_url**](kinde_sdk/docs/apis/tags/ConnectedAppsApi.md#get_connected_app_auth_url) | **get** /api/v1/connected_apps/auth_url | Get Connected App URL
 *ConnectedAppsApi* | [**get_connected_app_token**](kinde_sdk/docs/apis/tags/ConnectedAppsApi.md#get_connected_app_token) | **get** /api/v1/connected_apps/token | Get Connected App Token
 *ConnectedAppsApi* | [**revoke_connected_app_token**](kinde_sdk/docs/apis/tags/ConnectedAppsApi.md#revoke_connected_app_token) | **post** /api/v1/connected_apps/revoke | Revoke Connected App Token
-*EnvironmentsApi* | [**delete_environement_feature_flag_override**](kinde_sdk/docs/apis/tags/EnvironmentsApi.md#delete_environement_feature_flag_override) | **delete** /api/v1/environment/feature_flags/{feature_flag_key} | Delete environment feature flag override
-*EnvironmentsApi* | [**delete_environement_feature_flag_overrides**](kinde_sdk/docs/apis/tags/EnvironmentsApi.md#delete_environement_feature_flag_overrides) | **delete** /api/v1/environment/feature_flags/ | Delete all environment feature flag overrides
-*EnvironmentsApi* | [**update_environement_feature_flag_override**](kinde_sdk/docs/apis/tags/EnvironmentsApi.md#update_environement_feature_flag_override) | **patch** /api/v1/environment/feature_flags/{feature_flag_key} | Update environment feature flag override
-*FeatureFlagsApi* | [**create_feature_flag**](kinde_sdk/docs/apis/tags/FeatureFlagsApi.md#create_feature_flag) | **post** /api/v1/feature_flags | Create a new feature flag
-*FeatureFlagsApi* | [**delete_feature_flag**](kinde_sdk/docs/apis/tags/FeatureFlagsApi.md#delete_feature_flag) | **delete** /api/v1/feature_flags/{feature_flag_key} | Delete a feature flag
-*FeatureFlagsApi* | [**update_feature_flag**](kinde_sdk/docs/apis/tags/FeatureFlagsApi.md#update_feature_flag) | **put** /api/v1/feature_flags/{feature_flag_key} | Update a feature flag
-*OAuthApi* | [**get_user**](kinde_sdk/docs/apis/tags/OAuthApi.md#get_user) | **get** /oauth2/user_profile | Returns the details of the currently logged in user
+*EnvironmentsApi* | [**delete_environement_feature_flag_override**](kinde_sdk/docs/apis/tags/EnvironmentsApi.md#delete_environement_feature_flag_override) | **delete** /api/v1/environment/feature_flags/{feature_flag_key} | Delete Environment Feature Flag Override
+*EnvironmentsApi* | [**delete_environement_feature_flag_overrides**](kinde_sdk/docs/apis/tags/EnvironmentsApi.md#delete_environement_feature_flag_overrides) | **delete** /api/v1/environment/feature_flags | Delete Environment Feature Flag Overrides
+*EnvironmentsApi* | [**get_environement_feature_flags**](kinde_sdk/docs/apis/tags/EnvironmentsApi.md#get_environement_feature_flags) | **get** /api/v1/environment/feature_flags | List Environment Feature Flags
+*EnvironmentsApi* | [**update_environement_feature_flag_override**](kinde_sdk/docs/apis/tags/EnvironmentsApi.md#update_environement_feature_flag_override) | **patch** /api/v1/environment/feature_flags/{feature_flag_key} | Update Environment Feature Flag Override
+*FeatureFlagsApi* | [**create_feature_flag**](kinde_sdk/docs/apis/tags/FeatureFlagsApi.md#create_feature_flag) | **post** /api/v1/feature_flags | Create Feature Flag
+*FeatureFlagsApi* | [**delete_feature_flag**](kinde_sdk/docs/apis/tags/FeatureFlagsApi.md#delete_feature_flag) | **delete** /api/v1/feature_flags/{feature_flag_key} | Delete Feature Flag
+*FeatureFlagsApi* | [**update_feature_flag**](kinde_sdk/docs/apis/tags/FeatureFlagsApi.md#update_feature_flag) | **put** /api/v1/feature_flags/{feature_flag_key} | Replace Feature Flag
+*IndustriesApi* | [**get_industries**](kinde_sdk/docs/apis/tags/IndustriesApi.md#get_industries) | **get** /api/v1/industries | List industries and industry keys.
+*OAuthApi* | [**get_user**](kinde_sdk/docs/apis/tags/OAuthApi.md#get_user) | **get** /oauth2/user_profile | Get User Profile
 *OAuthApi* | [**get_user_profile_v2**](kinde_sdk/docs/apis/tags/OAuthApi.md#get_user_profile_v2) | **get** /oauth2/v2/user_profile | Returns the details of the currently logged in user
-*OrganizationsApi* | [**add_organization_users**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#add_organization_users) | **post** /api/v1/organization/users | Assign Users to an Organization
+*OrganizationsApi* | [**add_organization_users**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#add_organization_users) | **post** /api/v1/organizations/{org_code}/users | Add Organization Users
 *OrganizationsApi* | [**create_organization**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#create_organization) | **post** /api/v1/organization | Create Organization
-*OrganizationsApi* | [**delete_organization_feature_flag_override**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#delete_organization_feature_flag_override) | **delete** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Delete organization feature flag override
-*OrganizationsApi* | [**delete_organization_feature_flag_overrides**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#delete_organization_feature_flag_overrides) | **delete** /api/v1/organizations/{org_code}/feature_flags | Delete all organization feature flag overrides
+*OrganizationsApi* | [**create_organization_user_role**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#create_organization_user_role) | **post** /api/v1/organizations/{org_code}/users/{user_id}/roles | Add Organization User Role
+*OrganizationsApi* | [**delete_organization_feature_flag_override**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#delete_organization_feature_flag_override) | **delete** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Delete Organization Feature Flag Override
+*OrganizationsApi* | [**delete_organization_feature_flag_overrides**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#delete_organization_feature_flag_overrides) | **delete** /api/v1/organizations/{org_code}/feature_flags | Delete Organization Feature Flag Overrides
+*OrganizationsApi* | [**delete_organization_user_role**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#delete_organization_user_role) | **delete** /api/v1/organizations/{org_code}/users/{user_id}/roles/{role_id} | Delete Organization User Role
 *OrganizationsApi* | [**get_organization**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_organization) | **get** /api/v1/organization | Get Organization
-*OrganizationsApi* | [**get_organization_users**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_organization_users) | **get** /api/v1/organization/users | List Organization Users
+*OrganizationsApi* | [**get_organization_feature_flags**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_organization_feature_flags) | **get** /api/v1/organizations/{org_code}/feature_flags | List Organization Feature Flags
+*OrganizationsApi* | [**get_organization_user_roles**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_organization_user_roles) | **get** /api/v1/organizations/{org_code}/users/{user_id}/roles | List Organization User Roles
+*OrganizationsApi* | [**get_organization_users**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_organization_users) | **get** /api/v1/organizations/{org_code}/users | List Organization Users
 *OrganizationsApi* | [**get_organizations**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#get_organizations) | **get** /api/v1/organizations | List Organizations
-*OrganizationsApi* | [**remove_organization_users**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#remove_organization_users) | **patch** /api/v1/organization/users | Remove Users from an Organization
-*OrganizationsApi* | [**update_organization_feature_flag_override**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#update_organization_feature_flag_override) | **patch** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Update organization feature flag override
-*UsersApi* | [**add_organization_users**](kinde_sdk/docs/apis/tags/UsersApi.md#add_organization_users) | **post** /api/v1/organization/users | Assign Users to an Organization
+*OrganizationsApi* | [**remove_organization_user**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#remove_organization_user) | **delete** /api/v1/organizations/{org_code}/users/{user_id} | Remove Organization User
+*OrganizationsApi* | [**update_organization**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#update_organization) | **patch** /api/v1/organization/{org_code} | Update Organization
+*OrganizationsApi* | [**update_organization_feature_flag_override**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#update_organization_feature_flag_override) | **patch** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Update Organization Feature Flag Override
+*OrganizationsApi* | [**update_organization_users**](kinde_sdk/docs/apis/tags/OrganizationsApi.md#update_organization_users) | **patch** /api/v1/organizations/{org_code}/users | Update Organization Users
+*PermissionsApi* | [**create_permission**](kinde_sdk/docs/apis/tags/PermissionsApi.md#create_permission) | **post** /api/v1/permissions | Create Permission
+*PermissionsApi* | [**get_permissions**](kinde_sdk/docs/apis/tags/PermissionsApi.md#get_permissions) | **get** /api/v1/permissions | List Permissions
+*PermissionsApi* | [**update_permissions**](kinde_sdk/docs/apis/tags/PermissionsApi.md#update_permissions) | **patch** /api/v1/permissions/{permission_id} | Update Permission
+*RolesApi* | [**create_role**](kinde_sdk/docs/apis/tags/RolesApi.md#create_role) | **post** /api/v1/role | Create Role
+*RolesApi* | [**get_roles**](kinde_sdk/docs/apis/tags/RolesApi.md#get_roles) | **get** /api/v1/roles | List Roles
+*RolesApi* | [**update_roles**](kinde_sdk/docs/apis/tags/RolesApi.md#update_roles) | **patch** /api/v1/roles/{role_id} | Update Role
+*SubscribersApi* | [**create_subscriber**](kinde_sdk/docs/apis/tags/SubscribersApi.md#create_subscriber) | **post** /api/v1/subscribers | Create Subscriber
+*SubscribersApi* | [**get_subscriber**](kinde_sdk/docs/apis/tags/SubscribersApi.md#get_subscriber) | **get** /api/v1/subscribers/{subscriber_id} | Get Subscriber
+*SubscribersApi* | [**get_subscribers**](kinde_sdk/docs/apis/tags/SubscribersApi.md#get_subscribers) | **get** /api/v1/subscribers | List Subscribers
+*TimezonesApi* | [**get_timezones**](kinde_sdk/docs/apis/tags/TimezonesApi.md#get_timezones) | **get** /api/v1/timezones | List timezones and timezone IDs.
 *UsersApi* | [**create_user**](kinde_sdk/docs/apis/tags/UsersApi.md#create_user) | **post** /api/v1/user | Create User
-*UsersApi* | [**deleteuser**](kinde_sdk/docs/apis/tags/UsersApi.md#deleteuser) | **delete** /api/v1/user | Delete User
-*UsersApi* | [**get_organization_users**](kinde_sdk/docs/apis/tags/UsersApi.md#get_organization_users) | **get** /api/v1/organization/users | List Organization Users
+*UsersApi* | [**delete_user**](kinde_sdk/docs/apis/tags/UsersApi.md#delete_user) | **delete** /api/v1/user | Delete User
 *UsersApi* | [**get_user_data**](kinde_sdk/docs/apis/tags/UsersApi.md#get_user_data) | **get** /api/v1/user | Get User
 *UsersApi* | [**get_users**](kinde_sdk/docs/apis/tags/UsersApi.md#get_users) | **get** /api/v1/users | List Users
-*UsersApi* | [**remove_organization_users**](kinde_sdk/docs/apis/tags/UsersApi.md#remove_organization_users) | **patch** /api/v1/organization/users | Remove Users from an Organization
 *UsersApi* | [**update_user**](kinde_sdk/docs/apis/tags/UsersApi.md#update_user) | **patch** /api/v1/user | Update User
 
 ## Documentation For Models
 
  - [AddOrganizationUsersResponse](kinde_sdk/docs/models/AddOrganizationUsersResponse.md)
  - [ApiResult](kinde_sdk/docs/models/ApiResult.md)
+ - [Application](kinde_sdk/docs/models/Application.md)
  - [ConnectedAppsAccessToken](kinde_sdk/docs/models/ConnectedAppsAccessToken.md)
  - [ConnectedAppsAuthUrl](kinde_sdk/docs/models/ConnectedAppsAuthUrl.md)
+ - [CreateOrganizationResponse](kinde_sdk/docs/models/CreateOrganizationResponse.md)
+ - [CreateSubscriberSuccessResponse](kinde_sdk/docs/models/CreateSubscriberSuccessResponse.md)
  - [CreateUserResponse](kinde_sdk/docs/models/CreateUserResponse.md)
  - [Error](kinde_sdk/docs/models/Error.md)
  - [ErrorResponse](kinde_sdk/docs/models/ErrorResponse.md)
+ - [GetApplicationsResponse](kinde_sdk/docs/models/GetApplicationsResponse.md)
+ - [GetEnvironmentFeatureFlagsResponse](kinde_sdk/docs/models/GetEnvironmentFeatureFlagsResponse.md)
+ - [GetOrganizationFeatureFlagsResponse](kinde_sdk/docs/models/GetOrganizationFeatureFlagsResponse.md)
+ - [GetOrganizationUsersResponse](kinde_sdk/docs/models/GetOrganizationUsersResponse.md)
  - [GetOrganizationsResponse](kinde_sdk/docs/models/GetOrganizationsResponse.md)
- - [GetOrganizationsUsersResponse](kinde_sdk/docs/models/GetOrganizationsUsersResponse.md)
+ - [GetOrganizationsUserRolesResponse](kinde_sdk/docs/models/GetOrganizationsUserRolesResponse.md)
+ - [GetRedirectCallbackUrlsResponse](kinde_sdk/docs/models/GetRedirectCallbackUrlsResponse.md)
+ - [GetRolesResponse](kinde_sdk/docs/models/GetRolesResponse.md)
+ - [GetSubscriberResponse](kinde_sdk/docs/models/GetSubscriberResponse.md)
+ - [GetSubscribersResponse](kinde_sdk/docs/models/GetSubscribersResponse.md)
  - [Organization](kinde_sdk/docs/models/Organization.md)
  - [OrganizationUser](kinde_sdk/docs/models/OrganizationUser.md)
+ - [OrganizationUserRole](kinde_sdk/docs/models/OrganizationUserRole.md)
  - [OrganizationUsers](kinde_sdk/docs/models/OrganizationUsers.md)
  - [Organizations](kinde_sdk/docs/models/Organizations.md)
- - [RemoveOrganizationUsersResponse](kinde_sdk/docs/models/RemoveOrganizationUsersResponse.md)
+ - [Permissions](kinde_sdk/docs/models/Permissions.md)
+ - [RedirectCallbackUrls](kinde_sdk/docs/models/RedirectCallbackUrls.md)
+ - [Role](kinde_sdk/docs/models/Role.md)
+ - [Roles](kinde_sdk/docs/models/Roles.md)
+ - [Subscriber](kinde_sdk/docs/models/Subscriber.md)
+ - [SubscribersSubscriber](kinde_sdk/docs/models/SubscribersSubscriber.md)
  - [SuccessResponse](kinde_sdk/docs/models/SuccessResponse.md)
+ - [UpdateOrganizationUsersResponse](kinde_sdk/docs/models/UpdateOrganizationUsersResponse.md)
  - [User](kinde_sdk/docs/models/User.md)
  - [UserIdentity](kinde_sdk/docs/models/UserIdentity.md)
  - [UserProfile](kinde_sdk/docs/models/UserProfile.md)
@@ -136,6 +130,13 @@ Class | Method | HTTP request | Description
 
 ## Author
 
+support@kinde.com
+support@kinde.com
+support@kinde.com
+support@kinde.com
+support@kinde.com
+support@kinde.com
+support@kinde.com
 support@kinde.com
 support@kinde.com
 support@kinde.com

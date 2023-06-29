@@ -7,8 +7,15 @@ import enum
 
 class TagValues(str, enum.Enum):
     USERS = "Users"
+    BUSINESS = "Business"
+    CALLBACKS = "Callbacks"
     CONNECTED_APPS = "Connected Apps"
     ENVIRONMENTS = "Environments"
     FEATURE_FLAGS = "Feature Flags"
+    INDUSTRIES = "Industries"
     OAUTH = "OAuth"
     ORGANIZATIONS = "Organizations"
+    PERMISSIONS = "Permissions"
+    ROLES = "Roles"
+    SUBSCRIBERS = "Subscribers"
+    TIMEZONES = "Timezones"

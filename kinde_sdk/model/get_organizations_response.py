@@ -41,7 +41,7 @@ class GetOrganizationsResponse(
             message = schemas.StrSchema
             
             
-            class organizations(
+            class roles(
                 schemas.ListSchema
             ):
             
@@ -49,27 +49,27 @@ class GetOrganizationsResponse(
                 class MetaOapg:
                     
                     @staticmethod
-                    def items() -> typing.Type['Organization']:
-                        return Organization
+                    def items() -> typing.Type['Role']:
+                        return Role
             
                 def __new__(
                     cls,
-                    _arg: typing.Union[typing.Tuple['Organization'], typing.List['Organization']],
+                    _arg: typing.Union[typing.Tuple['Role'], typing.List['Role']],
                     _configuration: typing.Optional[schemas.Configuration] = None,
-                ) -> 'organizations':
+                ) -> 'roles':
                     return super().__new__(
                         cls,
                         _arg,
                         _configuration=_configuration,
                     )
             
-                def __getitem__(self, i: int) -> 'Organization':
+                def __getitem__(self, i: int) -> 'Role':
                     return super().__getitem__(i)
             next_token = schemas.StrSchema
             __annotations__ = {
                 "code": code,
                 "message": message,
-                "organizations": organizations,
+                "roles": roles,
                 "next_token": next_token,
             }
     
@@ -80,7 +80,7 @@ class GetOrganizationsResponse(
     def __getitem__(self, name: typing_extensions.Literal["message"]) -> MetaOapg.properties.message: ...
     
     @typing.overload
-    def __getitem__(self, name: typing_extensions.Literal["organizations"]) -> MetaOapg.properties.organizations: ...
+    def __getitem__(self, name: typing_extensions.Literal["roles"]) -> MetaOapg.properties.roles: ...
     
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["next_token"]) -> MetaOapg.properties.next_token: ...
@@ -88,7 +88,7 @@ class GetOrganizationsResponse(
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["code", "message", "organizations", "next_token", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["code", "message", "roles", "next_token", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -100,7 +100,7 @@ class GetOrganizationsResponse(
     def get_item_oapg(self, name: typing_extensions.Literal["message"]) -> typing.Union[MetaOapg.properties.message, schemas.Unset]: ...
     
     @typing.overload
-    def get_item_oapg(self, name: typing_extensions.Literal["organizations"]) -> typing.Union[MetaOapg.properties.organizations, schemas.Unset]: ...
+    def get_item_oapg(self, name: typing_extensions.Literal["roles"]) -> typing.Union[MetaOapg.properties.roles, schemas.Unset]: ...
     
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["next_token"]) -> typing.Union[MetaOapg.properties.next_token, schemas.Unset]: ...
@@ -108,7 +108,7 @@ class GetOrganizationsResponse(
     @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["code", "message", "organizations", "next_token", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["code", "message", "roles", "next_token", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -117,7 +117,7 @@ class GetOrganizationsResponse(
         *_args: typing.Union[dict, frozendict.frozendict, ],
         code: typing.Union[MetaOapg.properties.code, str, schemas.Unset] = schemas.unset,
         message: typing.Union[MetaOapg.properties.message, str, schemas.Unset] = schemas.unset,
-        organizations: typing.Union[MetaOapg.properties.organizations, list, tuple, schemas.Unset] = schemas.unset,
+        roles: typing.Union[MetaOapg.properties.roles, list, tuple, schemas.Unset] = schemas.unset,
         next_token: typing.Union[MetaOapg.properties.next_token, str, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
@@ -127,10 +127,10 @@ class GetOrganizationsResponse(
             *_args,
             code=code,
             message=message,
-            organizations=organizations,
+            roles=roles,
             next_token=next_token,
             _configuration=_configuration,
             **kwargs,
         )
 
-from kinde_sdk.model.organization import Organization
+from kinde_sdk.model.role import Role

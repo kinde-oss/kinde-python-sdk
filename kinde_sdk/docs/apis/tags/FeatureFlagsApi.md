@@ -5,15 +5,15 @@ All URIs are relative to *https://app.kinde.com*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_feature_flag**](#create_feature_flag) | **post** /api/v1/feature_flags | Create a new feature flag
-[**delete_feature_flag**](#delete_feature_flag) | **delete** /api/v1/feature_flags/{feature_flag_key} | Delete a feature flag
-[**update_feature_flag**](#update_feature_flag) | **put** /api/v1/feature_flags/{feature_flag_key} | Update a feature flag
+[**create_feature_flag**](#create_feature_flag) | **post** /api/v1/feature_flags | Create Feature Flag
+[**delete_feature_flag**](#delete_feature_flag) | **delete** /api/v1/feature_flags/{feature_flag_key} | Delete Feature Flag
+[**update_feature_flag**](#update_feature_flag) | **put** /api/v1/feature_flags/{feature_flag_key} | Replace Feature Flag
 
 # **create_feature_flag**
 <a name="create_feature_flag"></a>
-> SuccessResponse create_feature_flag(namedescriptionkeytypeallow_override_leveldefault_value)
+> SuccessResponse create_feature_flag(any_type)
 
-Create a new feature flag
+Create Feature Flag
 
 Create feature flag.
 
@@ -47,18 +47,18 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     api_instance = feature_flags_api.FeatureFlagsApi(api_client)
 
     # example passing only required values which don't have defaults set
-    query_params = {
-        'name': "name_example",
-        'description': "description_example",
-        'key': "key_example",
-        'type': "str",
-        'allow_override_level': "env",
-        'default_value': "default_value_example",
-    }
+    body = dict(
+        name="name_example",
+        description="description_example",
+        key="key_example",
+        type="str",
+        allow_override_level="env",
+        default_value="default_value_example",
+    )
     try:
-        # Create a new feature flag
+        # Create Feature Flag
         api_response = api_instance.create_feature_flag(
-            query_params=query_params,
+            body=body,
         )
         pprint(api_response)
     except kinde_sdk.ApiException as e:
@@ -68,66 +68,32 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
-query_params | RequestQueryParams | |
+body | typing.Union[SchemaForRequestBodyApplicationJson] | required |
+content_type | str | optional, default is 'application/json' | Selects the schema and serialization of the request body
 accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
 timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
 skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
 
-### query_params
-#### RequestQueryParams
+### body
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-name | NameSchema | | 
-description | DescriptionSchema | | 
-key | KeySchema | | 
-type | TypeSchema | | 
-allow_override_level | AllowOverrideLevelSchema | | 
-default_value | DefaultValueSchema | | 
-
-
-# NameSchema
+# SchemaForRequestBodyApplicationJson
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-str,  | str,  |  | 
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  | 
 
-# DescriptionSchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-str,  | str,  |  | 
-
-# KeySchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-str,  | str,  |  | 
-
-# TypeSchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-str,  | str,  |  | must be one of ["str", "int", "bool", ] 
-
-# AllowOverrideLevelSchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-str,  | str,  |  | must be one of ["env", "org", ] 
-
-# DefaultValueSchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-str,  | str,  |  | 
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**name** | str,  | str,  | The name of the flag. | 
+**default_value** | str,  | str,  | Default value for the flag used by environments and organizations. | 
+**type** | str,  | str,  | The variable type. | must be one of ["str", "int", "bool", ] 
+**key** | str,  | str,  | The flag identifier to use in code. | 
+**description** | str,  | str,  | Description of the flag purpose. | [optional] 
+**allow_override_level** | str,  | str,  | Allow the flag to be overridden at a different level. | [optional] must be one of ["env", "org", ] 
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 ### Return Types, Responses
 
@@ -193,7 +159,7 @@ headers | Unset | headers were not defined |
 <a name="delete_feature_flag"></a>
 > SuccessResponse delete_feature_flag(feature_flag_key)
 
-Delete a feature flag
+Delete Feature Flag
 
 Delete feature flag
 
@@ -231,7 +197,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         'feature_flag_key': "feature_flag_key_example",
     }
     try:
-        # Delete a feature flag
+        # Delete Feature Flag
         api_response = api_instance.delete_feature_flag(
             path_params=path_params,
         )
@@ -325,9 +291,9 @@ headers | Unset | headers were not defined |
 
 # **update_feature_flag**
 <a name="update_feature_flag"></a>
-> SuccessResponse update_feature_flag(feature_flag_keynamedescriptionkeytypeallow_override_leveldefault_value)
+> SuccessResponse update_feature_flag(feature_flag_keynamedescriptiontypeallow_override_leveldefault_value)
 
-Update a feature flag
+Replace Feature Flag
 
 Update feature flag.
 
@@ -367,13 +333,12 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     query_params = {
         'name': "name_example",
         'description': "description_example",
-        'key': "key_example",
         'type': "str",
         'allow_override_level': "env",
         'default_value': "default_value_example",
     }
     try:
-        # Update a feature flag
+        # Replace Feature Flag
         api_response = api_instance.update_feature_flag(
             path_params=path_params,
             query_params=query_params,
@@ -400,7 +365,6 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 name | NameSchema | | 
 description | DescriptionSchema | | 
-key | KeySchema | | 
 type | TypeSchema | | 
 allow_override_level | AllowOverrideLevelSchema | | 
 default_value | DefaultValueSchema | | 
@@ -414,13 +378,6 @@ Input Type | Accessed Type | Description | Notes
 str,  | str,  |  | 
 
 # DescriptionSchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-str,  | str,  |  | 
-
-# KeySchema
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes

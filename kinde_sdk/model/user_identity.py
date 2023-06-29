@@ -49,22 +49,17 @@ class UserIdentity(
                     
                     class properties:
                         created = schemas.BoolSchema
-                        identity_id = schemas.IntSchema
                         __annotations__ = {
                             "created": created,
-                            "identity_id": identity_id,
                         }
                 
                 @typing.overload
                 def __getitem__(self, name: typing_extensions.Literal["created"]) -> MetaOapg.properties.created: ...
                 
                 @typing.overload
-                def __getitem__(self, name: typing_extensions.Literal["identity_id"]) -> MetaOapg.properties.identity_id: ...
-                
-                @typing.overload
                 def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
                 
-                def __getitem__(self, name: typing.Union[typing_extensions.Literal["created", "identity_id", ], str]):
+                def __getitem__(self, name: typing.Union[typing_extensions.Literal["created", ], str]):
                     # dict_instance[name] accessor
                     return super().__getitem__(name)
                 
@@ -73,12 +68,9 @@ class UserIdentity(
                 def get_item_oapg(self, name: typing_extensions.Literal["created"]) -> typing.Union[MetaOapg.properties.created, schemas.Unset]: ...
                 
                 @typing.overload
-                def get_item_oapg(self, name: typing_extensions.Literal["identity_id"]) -> typing.Union[MetaOapg.properties.identity_id, schemas.Unset]: ...
-                
-                @typing.overload
                 def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
                 
-                def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["created", "identity_id", ], str]):
+                def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["created", ], str]):
                     return super().get_item_oapg(name)
                 
             
@@ -86,7 +78,6 @@ class UserIdentity(
                     cls,
                     *_args: typing.Union[dict, frozendict.frozendict, ],
                     created: typing.Union[MetaOapg.properties.created, bool, schemas.Unset] = schemas.unset,
-                    identity_id: typing.Union[MetaOapg.properties.identity_id, decimal.Decimal, int, schemas.Unset] = schemas.unset,
                     _configuration: typing.Optional[schemas.Configuration] = None,
                     **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
                 ) -> 'result':
@@ -94,7 +85,6 @@ class UserIdentity(
                         cls,
                         *_args,
                         created=created,
-                        identity_id=identity_id,
                         _configuration=_configuration,
                         **kwargs,
                     )

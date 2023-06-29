@@ -134,6 +134,26 @@ class NextTokenSchema(
             *_args,
             _configuration=_configuration,
         )
+
+
+class EmailSchema(
+    schemas.StrBase,
+    schemas.NoneBase,
+    schemas.Schema,
+    schemas.NoneStrMixin
+):
+
+
+    def __new__(
+        cls,
+        *_args: typing.Union[None, str, ],
+        _configuration: typing.Optional[schemas.Configuration] = None,
+    ) -> 'EmailSchema':
+        return super().__new__(
+            cls,
+            *_args,
+            _configuration=_configuration,
+        )
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     'RequestRequiredQueryParams',
     {
@@ -146,6 +166,7 @@ RequestOptionalQueryParams = typing_extensions.TypedDict(
         'page_size': typing.Union[PageSizeSchema, None, decimal.Decimal, int, ],
         'user_id': typing.Union[UserIdSchema, None, str, ],
         'next_token': typing.Union[NextTokenSchema, None, str, ],
+        'email': typing.Union[EmailSchema, None, str, ],
     },
     total=False
 )
@@ -177,6 +198,12 @@ request_query_next_token = api_client.QueryParameter(
     name="next_token",
     style=api_client.ParameterStyle.FORM,
     schema=NextTokenSchema,
+    explode=True,
+)
+request_query_email = api_client.QueryParameter(
+    name="email",
+    style=api_client.ParameterStyle.FORM,
+    schema=EmailSchema,
     explode=True,
 )
 SchemaFor200ResponseBodyApplicationJson = UsersResponse
@@ -279,6 +306,7 @@ class BaseApi(api_client.Api):
             request_query_page_size,
             request_query_user_id,
             request_query_next_token,
+            request_query_email,
         ):
             parameter_data = query_params.get(parameter.name, schemas.unset)
             if parameter_data is schemas.unset:

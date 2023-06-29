@@ -33,7 +33,6 @@ from . import path
 # Query params
 NameSchema = schemas.StrSchema
 DescriptionSchema = schemas.StrSchema
-KeySchema = schemas.StrSchema
 
 
 class TypeSchema(
@@ -87,7 +86,6 @@ RequestRequiredQueryParams = typing_extensions.TypedDict(
     {
         'name': typing.Union[NameSchema, str, ],
         'description': typing.Union[DescriptionSchema, str, ],
-        'key': typing.Union[KeySchema, str, ],
         'type': typing.Union[TypeSchema, str, ],
         'allow_override_level': typing.Union[AllowOverrideLevelSchema, str, ],
         'default_value': typing.Union[DefaultValueSchema, str, ],
@@ -116,13 +114,6 @@ request_query_description = api_client.QueryParameter(
     name="description",
     style=api_client.ParameterStyle.FORM,
     schema=DescriptionSchema,
-    required=True,
-    explode=True,
-)
-request_query_key = api_client.QueryParameter(
-    name="key",
-    style=api_client.ParameterStyle.FORM,
-    schema=KeySchema,
     required=True,
     explode=True,
 )
@@ -294,7 +285,7 @@ class BaseApi(api_client.Api):
         skip_deserialization: bool = False,
     ):
         """
-        Update a feature flag
+        Replace Feature Flag
         :param skip_deserialization: If true then api_response.response will be set but
             api_response.body and api_response.headers will not be deserialized into schema
             class instances
@@ -320,7 +311,6 @@ class BaseApi(api_client.Api):
         for parameter in (
             request_query_name,
             request_query_description,
-            request_query_key,
             request_query_type,
             request_query_allow_override_level,
             request_query_default_value,

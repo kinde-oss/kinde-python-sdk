@@ -68,10 +68,12 @@ class SchemaForRequestBodyApplicationJson(
             given_name = schemas.StrSchema
             family_name = schemas.StrSchema
             is_suspended = schemas.BoolSchema
+            is_password_reset_requested = schemas.BoolSchema
             __annotations__ = {
                 "given_name": given_name,
                 "family_name": family_name,
                 "is_suspended": is_suspended,
+                "is_password_reset_requested": is_password_reset_requested,
             }
     
     @typing.overload
@@ -84,9 +86,12 @@ class SchemaForRequestBodyApplicationJson(
     def __getitem__(self, name: typing_extensions.Literal["is_suspended"]) -> MetaOapg.properties.is_suspended: ...
     
     @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["is_password_reset_requested"]) -> MetaOapg.properties.is_password_reset_requested: ...
+    
+    @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["given_name", "family_name", "is_suspended", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["given_name", "family_name", "is_suspended", "is_password_reset_requested", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -101,9 +106,12 @@ class SchemaForRequestBodyApplicationJson(
     def get_item_oapg(self, name: typing_extensions.Literal["is_suspended"]) -> typing.Union[MetaOapg.properties.is_suspended, schemas.Unset]: ...
     
     @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["is_password_reset_requested"]) -> typing.Union[MetaOapg.properties.is_password_reset_requested, schemas.Unset]: ...
+    
+    @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["given_name", "family_name", "is_suspended", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["given_name", "family_name", "is_suspended", "is_password_reset_requested", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -113,6 +121,7 @@ class SchemaForRequestBodyApplicationJson(
         given_name: typing.Union[MetaOapg.properties.given_name, str, schemas.Unset] = schemas.unset,
         family_name: typing.Union[MetaOapg.properties.family_name, str, schemas.Unset] = schemas.unset,
         is_suspended: typing.Union[MetaOapg.properties.is_suspended, bool, schemas.Unset] = schemas.unset,
+        is_password_reset_requested: typing.Union[MetaOapg.properties.is_password_reset_requested, bool, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
     ) -> 'SchemaForRequestBodyApplicationJson':
@@ -122,6 +131,7 @@ class SchemaForRequestBodyApplicationJson(
             given_name=given_name,
             family_name=family_name,
             is_suspended=is_suspended,
+            is_password_reset_requested=is_password_reset_requested,
             _configuration=_configuration,
             **kwargs,
         )

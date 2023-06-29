@@ -28,107 +28,156 @@ from kinde_sdk import schemas  # noqa: F401
 from kinde_sdk.model.success_response import SuccessResponse
 from kinde_sdk.model.error_response import ErrorResponse
 
-# Query params
-NameSchema = schemas.StrSchema
-DescriptionSchema = schemas.StrSchema
-KeySchema = schemas.StrSchema
+# body param
 
 
-class TypeSchema(
-    schemas.EnumBase,
-    schemas.StrSchema
+class SchemaForRequestBodyApplicationJson(
+    schemas.DictSchema
 ):
-    
-    @schemas.classproperty
-    def STR(cls):
-        return cls("str")
-    
-    @schemas.classproperty
-    def INT(cls):
-        return cls("int")
-    
-    @schemas.classproperty
-    def BOOL(cls):
-        return cls("bool")
 
 
-class AllowOverrideLevelSchema(
-    schemas.EnumBase,
-    schemas.StrSchema
-):
+    class MetaOapg:
+        required = {
+            "name",
+            "default_value",
+            "type",
+            "key",
+        }
+        
+        class properties:
+            name = schemas.StrSchema
+            description = schemas.StrSchema
+            key = schemas.StrSchema
+            
+            
+            class type(
+                schemas.EnumBase,
+                schemas.StrSchema
+            ):
+                
+                @schemas.classproperty
+                def STR(cls):
+                    return cls("str")
+                
+                @schemas.classproperty
+                def INT(cls):
+                    return cls("int")
+                
+                @schemas.classproperty
+                def BOOL(cls):
+                    return cls("bool")
+            
+            
+            class allow_override_level(
+                schemas.EnumBase,
+                schemas.StrSchema
+            ):
+                
+                @schemas.classproperty
+                def ENV(cls):
+                    return cls("env")
+                
+                @schemas.classproperty
+                def ORG(cls):
+                    return cls("org")
+            default_value = schemas.StrSchema
+            __annotations__ = {
+                "name": name,
+                "description": description,
+                "key": key,
+                "type": type,
+                "allow_override_level": allow_override_level,
+                "default_value": default_value,
+            }
     
-    @schemas.classproperty
-    def ENV(cls):
-        return cls("env")
+    name: MetaOapg.properties.name
+    default_value: MetaOapg.properties.default_value
+    type: MetaOapg.properties.type
+    key: MetaOapg.properties.key
     
-    @schemas.classproperty
-    def ORG(cls):
-        return cls("org")
-DefaultValueSchema = schemas.StrSchema
-RequestRequiredQueryParams = typing_extensions.TypedDict(
-    'RequestRequiredQueryParams',
-    {
-        'name': typing.Union[NameSchema, str, ],
-        'description': typing.Union[DescriptionSchema, str, ],
-        'key': typing.Union[KeySchema, str, ],
-        'type': typing.Union[TypeSchema, str, ],
-        'allow_override_level': typing.Union[AllowOverrideLevelSchema, str, ],
-        'default_value': typing.Union[DefaultValueSchema, str, ],
-    }
-)
-RequestOptionalQueryParams = typing_extensions.TypedDict(
-    'RequestOptionalQueryParams',
-    {
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["name"]) -> MetaOapg.properties.name: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["description"]) -> MetaOapg.properties.description: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["key"]) -> MetaOapg.properties.key: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["type"]) -> MetaOapg.properties.type: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["allow_override_level"]) -> MetaOapg.properties.allow_override_level: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["default_value"]) -> MetaOapg.properties.default_value: ...
+    
+    @typing.overload
+    def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
+    
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["name", "description", "key", "type", "allow_override_level", "default_value", ], str]):
+        # dict_instance[name] accessor
+        return super().__getitem__(name)
+    
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["name"]) -> MetaOapg.properties.name: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["description"]) -> typing.Union[MetaOapg.properties.description, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["key"]) -> MetaOapg.properties.key: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["type"]) -> MetaOapg.properties.type: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["allow_override_level"]) -> typing.Union[MetaOapg.properties.allow_override_level, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["default_value"]) -> MetaOapg.properties.default_value: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
+    
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["name", "description", "key", "type", "allow_override_level", "default_value", ], str]):
+        return super().get_item_oapg(name)
+    
+
+    def __new__(
+        cls,
+        *_args: typing.Union[dict, frozendict.frozendict, ],
+        name: typing.Union[MetaOapg.properties.name, str, ],
+        default_value: typing.Union[MetaOapg.properties.default_value, str, ],
+        type: typing.Union[MetaOapg.properties.type, str, ],
+        key: typing.Union[MetaOapg.properties.key, str, ],
+        description: typing.Union[MetaOapg.properties.description, str, schemas.Unset] = schemas.unset,
+        allow_override_level: typing.Union[MetaOapg.properties.allow_override_level, str, schemas.Unset] = schemas.unset,
+        _configuration: typing.Optional[schemas.Configuration] = None,
+        **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
+    ) -> 'SchemaForRequestBodyApplicationJson':
+        return super().__new__(
+            cls,
+            *_args,
+            name=name,
+            default_value=default_value,
+            type=type,
+            key=key,
+            description=description,
+            allow_override_level=allow_override_level,
+            _configuration=_configuration,
+            **kwargs,
+        )
+
+
+request_body_any_type = api_client.RequestBody(
+    content={
+        'application/json': api_client.MediaType(
+            schema=SchemaForRequestBodyApplicationJson),
     },
-    total=False
-)
-
-
-class RequestQueryParams(RequestRequiredQueryParams, RequestOptionalQueryParams):
-    pass
-
-
-request_query_name = api_client.QueryParameter(
-    name="name",
-    style=api_client.ParameterStyle.FORM,
-    schema=NameSchema,
     required=True,
-    explode=True,
-)
-request_query_description = api_client.QueryParameter(
-    name="description",
-    style=api_client.ParameterStyle.FORM,
-    schema=DescriptionSchema,
-    required=True,
-    explode=True,
-)
-request_query_key = api_client.QueryParameter(
-    name="key",
-    style=api_client.ParameterStyle.FORM,
-    schema=KeySchema,
-    required=True,
-    explode=True,
-)
-request_query_type = api_client.QueryParameter(
-    name="type",
-    style=api_client.ParameterStyle.FORM,
-    schema=TypeSchema,
-    required=True,
-    explode=True,
-)
-request_query_allow_override_level = api_client.QueryParameter(
-    name="allow_override_level",
-    style=api_client.ParameterStyle.FORM,
-    schema=AllowOverrideLevelSchema,
-    required=True,
-    explode=True,
-)
-request_query_default_value = api_client.QueryParameter(
-    name="default_value",
-    style=api_client.ParameterStyle.FORM,
-    schema=DefaultValueSchema,
-    required=True,
-    explode=True,
 )
 SchemaFor201ResponseBodyApplicationJson = SuccessResponse
 SchemaFor201ResponseBodyApplicationJsonCharsetutf8 = SuccessResponse
@@ -198,7 +247,8 @@ class BaseApi(api_client.Api):
     @typing.overload
     def _create_feature_flag_oapg(
         self,
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: typing_extensions.Literal["application/json"] = ...,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -210,8 +260,23 @@ class BaseApi(api_client.Api):
     @typing.overload
     def _create_feature_flag_oapg(
         self,
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: str = ...,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
+        stream: bool = False,
+        timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
+        skip_deserialization: typing_extensions.Literal[False] = ...,
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
+
+
+    @typing.overload
+    def _create_feature_flag_oapg(
+        self,
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
         skip_deserialization: typing_extensions.Literal[True],
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        content_type: str = ...,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -220,7 +285,8 @@ class BaseApi(api_client.Api):
     @typing.overload
     def _create_feature_flag_oapg(
         self,
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: str = ...,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -232,38 +298,20 @@ class BaseApi(api_client.Api):
 
     def _create_feature_flag_oapg(
         self,
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: str = 'application/json',
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
     ):
         """
-        Create a new feature flag
+        Create Feature Flag
         :param skip_deserialization: If true then api_response.response will be set but
             api_response.body and api_response.headers will not be deserialized into schema
             class instances
         """
-        self._verify_typed_dict_inputs_oapg(RequestQueryParams, query_params)
         used_path = path.value
-
-        prefix_separator_iterator = None
-        for parameter in (
-            request_query_name,
-            request_query_description,
-            request_query_key,
-            request_query_type,
-            request_query_allow_override_level,
-            request_query_default_value,
-        ):
-            parameter_data = query_params.get(parameter.name, schemas.unset)
-            if parameter_data is schemas.unset:
-                continue
-            if prefix_separator_iterator is None:
-                prefix_separator_iterator = parameter.get_prefix_separator_iterator()
-            serialized_data = parameter.serialize(parameter_data, prefix_separator_iterator)
-            for serialized_value in serialized_data.values():
-                used_path += serialized_value
 
         _headers = HTTPHeaderDict()
         # TODO add cookie handling
@@ -271,10 +319,23 @@ class BaseApi(api_client.Api):
             for accept_content_type in accept_content_types:
                 _headers.add('Accept', accept_content_type)
 
+        if body is schemas.unset:
+            raise exceptions.ApiValueError(
+                'The required body parameter has an invalid value of: unset. Set a valid value instead')
+        _fields = None
+        _body = None
+        serialized_data = request_body_any_type.serialize(body, content_type)
+        _headers.add('Content-Type', content_type)
+        if 'fields' in serialized_data:
+            _fields = serialized_data['fields']
+        elif 'body' in serialized_data:
+            _body = serialized_data['body']
         response = self.api_client.call_api(
             resource_path=used_path,
             method='post'.upper(),
             headers=_headers,
+            fields=_fields,
+            body=_body,
             auth_settings=_auth,
             stream=stream,
             timeout=timeout,
@@ -305,7 +366,8 @@ class CreateFeatureFlag(BaseApi):
     @typing.overload
     def create_feature_flag(
         self,
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: typing_extensions.Literal["application/json"] = ...,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -317,8 +379,23 @@ class CreateFeatureFlag(BaseApi):
     @typing.overload
     def create_feature_flag(
         self,
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: str = ...,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
+        stream: bool = False,
+        timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
+        skip_deserialization: typing_extensions.Literal[False] = ...,
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
+
+
+    @typing.overload
+    def create_feature_flag(
+        self,
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
         skip_deserialization: typing_extensions.Literal[True],
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        content_type: str = ...,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -327,7 +404,8 @@ class CreateFeatureFlag(BaseApi):
     @typing.overload
     def create_feature_flag(
         self,
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: str = ...,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -339,14 +417,16 @@ class CreateFeatureFlag(BaseApi):
 
     def create_feature_flag(
         self,
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: str = 'application/json',
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
     ):
         return self._create_feature_flag_oapg(
-            query_params=query_params,
+            body=body,
+            content_type=content_type,
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
@@ -360,7 +440,8 @@ class ApiForpost(BaseApi):
     @typing.overload
     def post(
         self,
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: typing_extensions.Literal["application/json"] = ...,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -372,8 +453,23 @@ class ApiForpost(BaseApi):
     @typing.overload
     def post(
         self,
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: str = ...,
+        accept_content_types: typing.Tuple[str] = _all_accept_content_types,
+        stream: bool = False,
+        timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
+        skip_deserialization: typing_extensions.Literal[False] = ...,
+    ) -> typing.Union[
+        ApiResponseFor201,
+    ]: ...
+
+
+    @typing.overload
+    def post(
+        self,
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
         skip_deserialization: typing_extensions.Literal[True],
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        content_type: str = ...,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -382,7 +478,8 @@ class ApiForpost(BaseApi):
     @typing.overload
     def post(
         self,
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: str = ...,
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -394,14 +491,16 @@ class ApiForpost(BaseApi):
 
     def post(
         self,
-        query_params: RequestQueryParams = frozendict.frozendict(),
+        body: typing.Union[SchemaForRequestBodyApplicationJson,dict, frozendict.frozendict, ],
+        content_type: str = 'application/json',
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
     ):
         return self._create_feature_flag_oapg(
-            query_params=query_params,
+            body=body,
+            content_type=content_type,
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,

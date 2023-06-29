@@ -25,6 +25,7 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
+from kinde_sdk.model.create_organization_response import CreateOrganizationResponse
 from kinde_sdk.model.error_response import ErrorResponse
 
 # body param
@@ -85,9 +86,19 @@ class SchemaForRequestBodyApplicationJson(
                         _configuration=_configuration,
                         **kwargs,
                     )
+            external_id = schemas.StrSchema
+            background_color = schemas.StrSchema
+            button_color = schemas.StrSchema
+            button_text_color = schemas.StrSchema
+            link_color = schemas.StrSchema
             __annotations__ = {
                 "name": name,
                 "feature_flags": feature_flags,
+                "external_id": external_id,
+                "background_color": background_color,
+                "button_color": button_color,
+                "button_text_color": button_text_color,
+                "link_color": link_color,
             }
     
     @typing.overload
@@ -97,9 +108,24 @@ class SchemaForRequestBodyApplicationJson(
     def __getitem__(self, name: typing_extensions.Literal["feature_flags"]) -> MetaOapg.properties.feature_flags: ...
     
     @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["external_id"]) -> MetaOapg.properties.external_id: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["background_color"]) -> MetaOapg.properties.background_color: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["button_color"]) -> MetaOapg.properties.button_color: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["button_text_color"]) -> MetaOapg.properties.button_text_color: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["link_color"]) -> MetaOapg.properties.link_color: ...
+    
+    @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["name", "feature_flags", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["name", "feature_flags", "external_id", "background_color", "button_color", "button_text_color", "link_color", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -111,9 +137,24 @@ class SchemaForRequestBodyApplicationJson(
     def get_item_oapg(self, name: typing_extensions.Literal["feature_flags"]) -> typing.Union[MetaOapg.properties.feature_flags, schemas.Unset]: ...
     
     @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["external_id"]) -> typing.Union[MetaOapg.properties.external_id, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["background_color"]) -> typing.Union[MetaOapg.properties.background_color, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["button_color"]) -> typing.Union[MetaOapg.properties.button_color, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["button_text_color"]) -> typing.Union[MetaOapg.properties.button_text_color, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["link_color"]) -> typing.Union[MetaOapg.properties.link_color, schemas.Unset]: ...
+    
+    @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["name", "feature_flags", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["name", "feature_flags", "external_id", "background_color", "button_color", "button_text_color", "link_color", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -122,6 +163,11 @@ class SchemaForRequestBodyApplicationJson(
         *_args: typing.Union[dict, frozendict.frozendict, ],
         name: typing.Union[MetaOapg.properties.name, str, schemas.Unset] = schemas.unset,
         feature_flags: typing.Union[MetaOapg.properties.feature_flags, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
+        external_id: typing.Union[MetaOapg.properties.external_id, str, schemas.Unset] = schemas.unset,
+        background_color: typing.Union[MetaOapg.properties.background_color, str, schemas.Unset] = schemas.unset,
+        button_color: typing.Union[MetaOapg.properties.button_color, str, schemas.Unset] = schemas.unset,
+        button_text_color: typing.Union[MetaOapg.properties.button_text_color, str, schemas.Unset] = schemas.unset,
+        link_color: typing.Union[MetaOapg.properties.link_color, str, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
     ) -> 'SchemaForRequestBodyApplicationJson':
@@ -130,6 +176,11 @@ class SchemaForRequestBodyApplicationJson(
             *_args,
             name=name,
             feature_flags=feature_flags,
+            external_id=external_id,
+            background_color=background_color,
+            button_color=button_color,
+            button_text_color=button_text_color,
+            link_color=link_color,
             _configuration=_configuration,
             **kwargs,
         )
@@ -141,17 +192,24 @@ request_body_any_type = api_client.RequestBody(
             schema=SchemaForRequestBodyApplicationJson),
     },
 )
+SchemaFor200ResponseBodyApplicationJson = CreateOrganizationResponse
 
 
 @dataclass
-class ApiResponseFor201(api_client.ApiResponse):
+class ApiResponseFor200(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor200ResponseBodyApplicationJson,
+    ]
     headers: schemas.Unset = schemas.unset
 
 
-_response_for_201 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor201,
+_response_for_200 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor200,
+    content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJson),
+    },
 )
 
 
@@ -217,7 +275,7 @@ class BaseApi(api_client.Api):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor201,
+        ApiResponseFor200,
     ]: ...
 
     @typing.overload
@@ -230,7 +288,7 @@ class BaseApi(api_client.Api):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor201,
+        ApiResponseFor200,
     ]: ...
 
 
@@ -255,7 +313,7 @@ class BaseApi(api_client.Api):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
     ) -> typing.Union[
-        ApiResponseFor201,
+        ApiResponseFor200,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
 
@@ -334,7 +392,7 @@ class CreateOrganization(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor201,
+        ApiResponseFor200,
     ]: ...
 
     @typing.overload
@@ -347,7 +405,7 @@ class CreateOrganization(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor201,
+        ApiResponseFor200,
     ]: ...
 
 
@@ -372,7 +430,7 @@ class CreateOrganization(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
     ) -> typing.Union[
-        ApiResponseFor201,
+        ApiResponseFor200,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
 
@@ -408,7 +466,7 @@ class ApiForpost(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor201,
+        ApiResponseFor200,
     ]: ...
 
     @typing.overload
@@ -421,7 +479,7 @@ class ApiForpost(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor201,
+        ApiResponseFor200,
     ]: ...
 
 
@@ -446,7 +504,7 @@ class ApiForpost(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
     ) -> typing.Union[
-        ApiResponseFor201,
+        ApiResponseFor200,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
 

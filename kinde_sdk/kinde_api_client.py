@@ -127,6 +127,8 @@ class KindeApiClient(ApiClient):
             )
         self._decode_token_if_needed(token_name)
         value = self.__decoded_tokens[token_name].get(key)
+        if value is None:
+            print(f"The claimed value of '{key}' does not exist in your token")
         return {"name": key, "value": value}
 
     def get_permission(self, permission: str) -> Dict[str, Any]:

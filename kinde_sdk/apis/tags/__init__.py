@@ -7,6 +7,8 @@ import enum
 
 class TagValues(str, enum.Enum):
     USERS = "Users"
+    APIS = "APIs"
+    APPLICATIONS = "Applications"
     BUSINESS = "Business"
     CALLBACKS = "Callbacks"
     CONNECTED_APPS = "Connected Apps"

@@ -110,6 +110,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 201 | [ApiResponseFor201](#create_subscriber.ApiResponseFor201) | Subscriber successfully created
 400 | [ApiResponseFor400](#create_subscriber.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#create_subscriber.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#create_subscriber.ApiResponseFor429) | Request was throttled.
 
 #### create_subscriber.ApiResponseFor201
 Name | Type | Description  | Notes
@@ -149,6 +150,13 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
+
+#### create_subscriber.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
 
 ### Authorization
 
@@ -238,6 +246,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#get_subscriber.ApiResponseFor200) | Subscriber successfully retrieved.
 400 | [ApiResponseFor400](#get_subscriber.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#get_subscriber.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_subscriber.ApiResponseFor429) | Request was throttled.
 
 #### get_subscriber.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -277,6 +286,13 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
+
+#### get_subscriber.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
 
 ### Authorization
 
@@ -384,6 +400,7 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#get_subscribers.ApiResponseFor200) | Subscriber successfully retrieved.
 403 | [ApiResponseFor403](#get_subscribers.ApiResponseFor403) | Bad request.
+429 | [ApiResponseFor429](#get_subscribers.ApiResponseFor429) | Request was throttled.
 
 #### get_subscribers.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -410,6 +427,13 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
+
+#### get_subscribers.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
 
 ### Authorization
 

@@ -7,12 +7,16 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**add_organization_users**](#add_organization_users) | **post** /api/v1/organizations/{org_code}/users | Add Organization Users
 [**create_organization**](#create_organization) | **post** /api/v1/organization | Create Organization
+[**create_organization_user_permission**](#create_organization_user_permission) | **post** /api/v1/organizations/{org_code}/users/{user_id}/permissions | Add Organization User Permission
 [**create_organization_user_role**](#create_organization_user_role) | **post** /api/v1/organizations/{org_code}/users/{user_id}/roles | Add Organization User Role
+[**delete_organization**](#delete_organization) | **delete** /api/v1/organization/{org_code} | Delete Organization
 [**delete_organization_feature_flag_override**](#delete_organization_feature_flag_override) | **delete** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Delete Organization Feature Flag Override
 [**delete_organization_feature_flag_overrides**](#delete_organization_feature_flag_overrides) | **delete** /api/v1/organizations/{org_code}/feature_flags | Delete Organization Feature Flag Overrides
+[**delete_organization_user_permission**](#delete_organization_user_permission) | **delete** /api/v1/organizations/{org_code}/users/{user_id}/permissions/{permission_id} | Delete Organization User Permission
 [**delete_organization_user_role**](#delete_organization_user_role) | **delete** /api/v1/organizations/{org_code}/users/{user_id}/roles/{role_id} | Delete Organization User Role
 [**get_organization**](#get_organization) | **get** /api/v1/organization | Get Organization
 [**get_organization_feature_flags**](#get_organization_feature_flags) | **get** /api/v1/organizations/{org_code}/feature_flags | List Organization Feature Flags
+[**get_organization_user_permissions**](#get_organization_user_permissions) | **get** /api/v1/organizations/{org_code}/users/{user_id}/permissions | List Organization User Permissions
 [**get_organization_user_roles**](#get_organization_user_roles) | **get** /api/v1/organizations/{org_code}/users/{user_id}/roles | List Organization User Roles
 [**get_organization_users**](#get_organization_users) | **get** /api/v1/organizations/{org_code}/users | List Organization Users
 [**get_organizations**](#get_organizations) | **get** /api/v1/organizations | List Organizations
@@ -205,6 +209,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 204 | [ApiResponseFor204](#add_organization_users.ApiResponseFor204) | No users added.
 400 | [ApiResponseFor400](#add_organization_users.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#add_organization_users.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#add_organization_users.ApiResponseFor429) | Request was throttled.
 
 #### add_organization_users.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -252,6 +257,13 @@ Type | Description  | Notes
 
 
 #### add_organization_users.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### add_organization_users.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -376,6 +388,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#create_organization.ApiResponseFor200) | Organization successfully created.
 403 | [ApiResponseFor403](#create_organization.ApiResponseFor403) | Invalid credentials.
 400 | [ApiResponseFor400](#create_organization.ApiResponseFor400) | Error creating user.
+429 | [ApiResponseFor429](#create_organization.ApiResponseFor429) | Request was throttled.
 500 | [ApiResponseFor500](#create_organization.ApiResponseFor500) | Could not create organization.
 
 #### create_organization.ApiResponseFor200
@@ -417,7 +430,165 @@ Type | Description  | Notes
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
 
+#### create_organization.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
 #### create_organization.ApiResponseFor500
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **create_organization_user_permission**
+<a name="create_organization_user_permission"></a>
+> SuccessResponse create_organization_user_permission(org_codeuser_idany_type)
+
+Add Organization User Permission
+
+Add permission to an organization user.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.success_response import SuccessResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = organizations_api.OrganizationsApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'org_code': "org_code_example",
+        'user_id': "user_id_example",
+    }
+    body = dict(
+        permission_id="permission_id_example",
+    )
+    try:
+        # Add Organization User Permission
+        api_response = api_instance.create_organization_user_permission(
+            path_params=path_params,
+            body=body,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->create_organization_user_permission: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+body | typing.Union[SchemaForRequestBodyApplicationJson] | required |
+path_params | RequestPathParams | |
+content_type | str | optional, default is 'application/json' | Selects the schema and serialization of the request body
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### body
+
+# SchemaForRequestBodyApplicationJson
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  | 
+
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**permission_id** | str,  | str,  | The permission id. | [optional] 
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+org_code | OrgCodeSchema | | 
+user_id | UserIdSchema | | 
+
+# OrgCodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+# UserIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#create_organization_user_permission.ApiResponseFor200) | User permission successfully updated.
+403 | [ApiResponseFor403](#create_organization_user_permission.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#create_organization_user_permission.ApiResponseFor429) | Request was throttled.
+
+#### create_organization_user_permission.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### create_organization_user_permission.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### create_organization_user_permission.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -538,8 +709,9 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-200 | [ApiResponseFor200](#create_organization_user_role.ApiResponseFor200) | User successfully removed from
+200 | [ApiResponseFor200](#create_organization_user_role.ApiResponseFor200) | Role successfully added.
 403 | [ApiResponseFor403](#create_organization_user_role.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#create_organization_user_role.ApiResponseFor429) | Request was throttled.
 
 #### create_organization_user_role.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -561,6 +733,141 @@ Type | Description  | Notes
 
 
 #### create_organization_user_role.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### create_organization_user_role.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **delete_organization**
+<a name="delete_organization"></a>
+> delete_organization(org_code)
+
+Delete Organization
+
+Delete an organization.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = organizations_api.OrganizationsApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'org_code': "org_code_example",
+    }
+    try:
+        # Delete Organization
+        api_response = api_instance.delete_organization(
+            path_params=path_params,
+        )
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->delete_organization: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+org_code | OrgCodeSchema | | 
+
+# OrgCodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#delete_organization.ApiResponseFor200) | Organization successfully deleted.
+403 | [ApiResponseFor403](#delete_organization.ApiResponseFor403) | Invalid credentials.
+400 | [ApiResponseFor400](#delete_organization.ApiResponseFor400) | Error deleting organization.
+429 | [ApiResponseFor429](#delete_organization.ApiResponseFor429) | Request was throttled.
+
+#### delete_organization.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_organization.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_organization.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### delete_organization.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -664,6 +971,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#delete_organization_feature_flag_override.ApiResponseFor200) | Feature flag override successfully deleted.
 400 | [ApiResponseFor400](#delete_organization_feature_flag_override.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_organization_feature_flag_override.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#delete_organization_feature_flag_override.ApiResponseFor429) | Request was throttled.
 
 #### delete_organization_feature_flag_override.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -704,6 +1012,13 @@ Type | Description  | Notes
 
 
 #### delete_organization_feature_flag_override.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_organization_feature_flag_override.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -798,6 +1113,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#delete_organization_feature_flag_overrides.ApiResponseFor200) | Feature flag overrides successfully deleted.
 400 | [ApiResponseFor400](#delete_organization_feature_flag_overrides.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_organization_feature_flag_overrides.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#delete_organization_feature_flag_overrides.ApiResponseFor429) | Request was throttled.
 
 #### delete_organization_feature_flag_overrides.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -838,6 +1154,173 @@ Type | Description  | Notes
 
 
 #### delete_organization_feature_flag_overrides.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_organization_feature_flag_overrides.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **delete_organization_user_permission**
+<a name="delete_organization_user_permission"></a>
+> SuccessResponse delete_organization_user_permission(org_codeuser_idpermission_id)
+
+Delete Organization User Permission
+
+Delete permission for an organization user.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = organizations_api.OrganizationsApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'org_code': "org_code_example",
+        'user_id': "user_id_example",
+        'permission_id': "permission_id_example",
+    }
+    try:
+        # Delete Organization User Permission
+        api_response = api_instance.delete_organization_user_permission(
+            path_params=path_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->delete_organization_user_permission: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+org_code | OrgCodeSchema | | 
+user_id | UserIdSchema | | 
+permission_id | PermissionIdSchema | | 
+
+# OrgCodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+# UserIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+# PermissionIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#delete_organization_user_permission.ApiResponseFor200) | User successfully removed.
+400 | [ApiResponseFor400](#delete_organization_user_permission.ApiResponseFor400) | Error creating user.
+403 | [ApiResponseFor403](#delete_organization_user_permission.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#delete_organization_user_permission.ApiResponseFor429) | Request was throttled.
+
+#### delete_organization_user_permission.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### delete_organization_user_permission.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### delete_organization_user_permission.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_organization_user_permission.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -950,6 +1433,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#delete_organization_user_role.ApiResponseFor200) | User successfully removed.
 400 | [ApiResponseFor400](#delete_organization_user_role.ApiResponseFor400) | Error creating user.
 403 | [ApiResponseFor403](#delete_organization_user_role.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#delete_organization_user_role.ApiResponseFor429) | Request was throttled.
 
 #### delete_organization_user_role.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -990,6 +1474,13 @@ Type | Description  | Notes
 
 
 #### delete_organization_user_role.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_organization_user_role.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -1085,6 +1576,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#get_organization.ApiResponseFor200) | Organization successfully retrieved.
 400 | [ApiResponseFor400](#get_organization.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#get_organization.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_organization.ApiResponseFor429) | Request was throttled.
 
 #### get_organization.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -1125,6 +1617,13 @@ Type | Description  | Notes
 
 
 #### get_organization.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_organization.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -1219,6 +1718,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#get_organization_feature_flags.ApiResponseFor200) | Feature flag overrides successfully returned.
 400 | [ApiResponseFor400](#get_organization_feature_flags.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#get_organization_feature_flags.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_organization_feature_flags.ApiResponseFor429) | Request was throttled.
 
 #### get_organization_feature_flags.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -1259,6 +1759,180 @@ Type | Description  | Notes
 
 
 #### get_organization_feature_flags.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_organization_feature_flags.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **get_organization_user_permissions**
+<a name="get_organization_user_permissions"></a>
+> GetOrganizationsUserPermissionsResponse get_organization_user_permissions(org_codeuser_id)
+
+List Organization User Permissions
+
+Get permissions for an organization user.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.get_organizations_user_permissions_response import GetOrganizationsUserPermissionsResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = organizations_api.OrganizationsApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'org_code': "org_code_example",
+        'user_id': "user_id_example",
+    }
+    query_params = {
+    }
+    try:
+        # List Organization User Permissions
+        api_response = api_instance.get_organization_user_permissions(
+            path_params=path_params,
+            query_params=query_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->get_organization_user_permissions: %s\n" % e)
+
+    # example passing only optional values
+    path_params = {
+        'org_code': "org_code_example",
+        'user_id': "user_id_example",
+    }
+    query_params = {
+        'expand': "expand_example",
+    }
+    try:
+        # List Organization User Permissions
+        api_response = api_instance.get_organization_user_permissions(
+            path_params=path_params,
+            query_params=query_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->get_organization_user_permissions: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+query_params | RequestQueryParams | |
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### query_params
+#### RequestQueryParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+expand | ExpandSchema | | optional
+
+
+# ExpandSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+None, str,  | NoneClass, str,  |  | 
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+org_code | OrgCodeSchema | | 
+user_id | UserIdSchema | | 
+
+# OrgCodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+# UserIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#get_organization_user_permissions.ApiResponseFor200) | A successful response with a list of user permissions.
+403 | [ApiResponseFor403](#get_organization_user_permissions.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_organization_user_permissions.ApiResponseFor429) | Request was throttled.
+
+#### get_organization_user_permissions.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetOrganizationsUserPermissionsResponse**](../../models/GetOrganizationsUserPermissionsResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetOrganizationsUserPermissionsResponse**](../../models/GetOrganizationsUserPermissionsResponse.md) |  | 
+
+
+#### get_organization_user_permissions.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_organization_user_permissions.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -1360,6 +2034,7 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#get_organization_user_roles.ApiResponseFor200) | A successful response with a list of user roles.
 403 | [ApiResponseFor403](#get_organization_user_roles.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_organization_user_roles.ApiResponseFor429) | Request was throttled.
 
 #### get_organization_user_roles.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -1381,6 +2056,13 @@ Type | Description  | Notes
 
 
 #### get_organization_user_roles.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_organization_user_roles.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -1455,6 +2137,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         'page_size': 1,
         'next_token': "next_token_example",
         'permissions': "permissions_example",
+        'roles': "roles_example",
     }
     try:
         # List Organization Users
@@ -1486,6 +2169,7 @@ sort | SortSchema | | optional
 page_size | PageSizeSchema | | optional
 next_token | NextTokenSchema | | optional
 permissions | PermissionsSchema | | optional
+roles | RolesSchema | | optional
 
 
 # SortSchema
@@ -1516,6 +2200,13 @@ Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 str,  | str,  |  | 
 
+# RolesSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
 ### path_params
 #### RequestPathParams
 
@@ -1538,6 +2229,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#get_organization_users.ApiResponseFor200) | A successful response with a list of organization users or an empty list.
 400 | [ApiResponseFor400](#get_organization_users.ApiResponseFor400) | Error creating user
 403 | [ApiResponseFor403](#get_organization_users.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_organization_users.ApiResponseFor429) | Request was throttled.
 
 #### get_organization_users.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -1578,6 +2270,13 @@ Type | Description  | Notes
 
 
 #### get_organization_users.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_organization_users.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -1689,6 +2388,7 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#get_organizations.ApiResponseFor200) | A successful response with a list of organizations or an empty list.
 403 | [ApiResponseFor403](#get_organizations.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_organizations.ApiResponseFor429) | Request was throttled.
 
 #### get_organizations.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -1710,6 +2410,13 @@ Type | Description  | Notes
 
 
 #### get_organizations.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_organizations.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -1813,6 +2520,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#remove_organization_user.ApiResponseFor200) | User successfully removed from organization
 400 | [ApiResponseFor400](#remove_organization_user.ApiResponseFor400) | Error removing user
 403 | [ApiResponseFor403](#remove_organization_user.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#remove_organization_user.ApiResponseFor429) | Request was throttled.
 
 #### remove_organization_user.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -1859,6 +2567,13 @@ response | urllib3.HTTPResponse | Raw response |
 body | Unset | body was not defined |
 headers | Unset | headers were not defined |
 
+#### remove_organization_user.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
 ### Authorization
 
 [kindeBearerAuth](../../../README.md#kindeBearerAuth)
@@ -1867,7 +2582,7 @@ headers | Unset | headers were not defined |
 
 # **update_organization**
 <a name="update_organization"></a>
-> update_organization(org_code)
+> SuccessResponse update_organization(org_code)
 
 Update Organization
 
@@ -1879,6 +2594,7 @@ Update an organization.
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.success_response import SuccessResponse
 from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
@@ -1910,6 +2626,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         api_response = api_instance.update_organization(
             path_params=path_params,
         )
+        pprint(api_response)
     except kinde_sdk.ApiException as e:
         print("Exception when calling OrganizationsApi->update_organization: %s\n" % e)
 
@@ -1931,6 +2648,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
             path_params=path_params,
             body=body,
         )
+        pprint(api_response)
     except kinde_sdk.ApiException as e:
         print("Exception when calling OrganizationsApi->update_organization: %s\n" % e)
 ```
@@ -1988,13 +2706,26 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#update_organization.ApiResponseFor200) | Organization successfully updated.
 403 | [ApiResponseFor403](#update_organization.ApiResponseFor403) | Invalid credentials.
 400 | [ApiResponseFor400](#update_organization.ApiResponseFor400) | Error updating organization.
+429 | [ApiResponseFor429](#update_organization.ApiResponseFor429) | Request was throttled.
 
 #### update_organization.ApiResponseFor200
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
 
 #### update_organization.ApiResponseFor403
 Name | Type | Description  | Notes
@@ -2021,6 +2752,13 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
+
+#### update_organization.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
 
 ### Authorization
 
@@ -2139,6 +2877,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#update_organization_feature_flag_override.ApiResponseFor200) | Feature flag override successfully updated.
 400 | [ApiResponseFor400](#update_organization_feature_flag_override.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#update_organization_feature_flag_override.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_organization_feature_flag_override.ApiResponseFor429) | Request was throttled.
 
 #### update_organization_feature_flag_override.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -2179,6 +2918,13 @@ Type | Description  | Notes
 
 
 #### update_organization_feature_flag_override.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_organization_feature_flag_override.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -2293,17 +3039,17 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**[users](#users)** | list, tuple,  | tuple,  | Users to be added to the organization. | [optional] 
+**[users](#users)** | list, tuple,  | tuple,  | Users to add, update or remove from the organization. | [optional] 
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 # users
 
-Users to be added to the organization.
+Users to add, update or remove from the organization.
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-list, tuple,  | tuple,  | Users to be added to the organization. | 
+list, tuple,  | tuple,  | Users to add, update or remove from the organization. | 
 
 ### Tuple Items
 Class Name | Input Type | Accessed Type | Description | Notes
@@ -2374,8 +3120,9 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#update_organization_users.ApiResponseFor200) | Users successfully removed.
-400 | [ApiResponseFor400](#update_organization_users.ApiResponseFor400) | Error creating user.
+400 | [ApiResponseFor400](#update_organization_users.ApiResponseFor400) | Error updating organization user.
 403 | [ApiResponseFor403](#update_organization_users.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_organization_users.ApiResponseFor429) | Request was throttled.
 
 #### update_organization_users.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -2416,6 +3163,13 @@ Type | Description  | Notes
 
 
 #### update_organization_users.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_organization_users.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

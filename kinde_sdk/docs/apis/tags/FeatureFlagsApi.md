@@ -103,6 +103,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 201 | [ApiResponseFor201](#create_feature_flag.ApiResponseFor201) | Feature flag successfully created
 400 | [ApiResponseFor400](#create_feature_flag.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#create_feature_flag.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#create_feature_flag.ApiResponseFor429) | Request was throttled.
 
 #### create_feature_flag.ApiResponseFor201
 Name | Type | Description  | Notes
@@ -143,6 +144,13 @@ Type | Description  | Notes
 
 
 #### create_feature_flag.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### create_feature_flag.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -237,6 +245,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#delete_feature_flag.ApiResponseFor200) | Feature flag successfully updated.
 400 | [ApiResponseFor400](#delete_feature_flag.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_feature_flag.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#delete_feature_flag.ApiResponseFor429) | Request was throttled.
 
 #### delete_feature_flag.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -277,6 +286,13 @@ Type | Description  | Notes
 
 
 #### delete_feature_flag.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_feature_flag.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -427,6 +443,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#update_feature_flag.ApiResponseFor200) | Feature flag successfully updated.
 400 | [ApiResponseFor400](#update_feature_flag.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#update_feature_flag.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_feature_flag.ApiResponseFor429) | Request was throttled.
 
 #### update_feature_flag.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -467,6 +484,13 @@ Type | Description  | Notes
 
 
 #### update_feature_flag.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_feature_flag.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

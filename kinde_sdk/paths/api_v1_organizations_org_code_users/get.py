@@ -118,6 +118,7 @@ class NextTokenSchema(
             _configuration=_configuration,
         )
 PermissionsSchema = schemas.StrSchema
+RolesSchema = schemas.StrSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     'RequestRequiredQueryParams',
     {
@@ -130,6 +131,7 @@ RequestOptionalQueryParams = typing_extensions.TypedDict(
         'page_size': typing.Union[PageSizeSchema, None, decimal.Decimal, int, ],
         'next_token': typing.Union[NextTokenSchema, None, str, ],
         'permissions': typing.Union[PermissionsSchema, str, ],
+        'roles': typing.Union[RolesSchema, str, ],
     },
     total=False
 )
@@ -161,6 +163,12 @@ request_query_permissions = api_client.QueryParameter(
     name="permissions",
     style=api_client.ParameterStyle.FORM,
     schema=PermissionsSchema,
+    explode=True,
+)
+request_query_roles = api_client.QueryParameter(
+    name="roles",
+    style=api_client.ParameterStyle.FORM,
+    schema=RolesSchema,
     explode=True,
 )
 # Path params
@@ -250,10 +258,23 @@ class ApiResponseFor403(api_client.ApiResponse):
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
+
+
+@dataclass
+class ApiResponseFor429(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_429 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor429,
+)
 _status_code_to_response = {
     '200': _response_for_200,
     '400': _response_for_400,
     '403': _response_for_403,
+    '429': _response_for_429,
 }
 _all_accept_content_types = (
     'application/json',
@@ -338,6 +359,7 @@ class BaseApi(api_client.Api):
             request_query_page_size,
             request_query_next_token,
             request_query_permissions,
+            request_query_roles,
         ):
             parameter_data = query_params.get(parameter.name, schemas.unset)
             if parameter_data is schemas.unset:

@@ -37,5 +37,7 @@ class TestApiV1ApplicationsAppIdAuthRedirectUrls(ApiTestMixin, unittest.TestCase
 
 
 
+
+
 if __name__ == '__main__':
     unittest.main()

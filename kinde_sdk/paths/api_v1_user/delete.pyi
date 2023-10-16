@@ -30,15 +30,17 @@ from kinde_sdk.model.error_response import ErrorResponse
 
 # Query params
 IdSchema = schemas.StrSchema
+IsDeleteProfileSchema = schemas.BoolSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     'RequestRequiredQueryParams',
     {
+        'id': typing.Union[IdSchema, str, ],
     }
 )
 RequestOptionalQueryParams = typing_extensions.TypedDict(
     'RequestOptionalQueryParams',
     {
-        'id': typing.Union[IdSchema, str, ],
+        'is_delete_profile': typing.Union[IsDeleteProfileSchema, bool, ],
     },
     total=False
 )
@@ -52,6 +54,13 @@ request_query_id = api_client.QueryParameter(
     name="id",
     style=api_client.ParameterStyle.FORM,
     schema=IdSchema,
+    required=True,
+    explode=True,
+)
+request_query_is_delete_profile = api_client.QueryParameter(
+    name="is_delete_profile",
+    style=api_client.ParameterStyle.FORM,
+    schema=IsDeleteProfileSchema,
     explode=True,
 )
 SchemaFor200ResponseBodyApplicationJson = SuccessResponse
@@ -111,6 +120,18 @@ class ApiResponseFor403(api_client.ApiResponse):
 
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
+)
+
+
+@dataclass
+class ApiResponseFor429(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_429 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor429,
 )
 _all_accept_content_types = (
     'application/json',
@@ -174,6 +195,7 @@ class BaseApi(api_client.Api):
         prefix_separator_iterator = None
         for parameter in (
             request_query_id,
+            request_query_is_delete_profile,
         ):
             parameter_data = query_params.get(parameter.name, schemas.unset)
             if parameter_data is schemas.unset:

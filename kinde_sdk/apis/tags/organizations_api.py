@@ -12,12 +12,16 @@
 
 from kinde_sdk.paths.api_v1_organizations_org_code_users.post import AddOrganizationUsers
 from kinde_sdk.paths.api_v1_organization.post import CreateOrganization
+from kinde_sdk.paths.api_v1_organizations_org_code_users_user_id_permissions.post import CreateOrganizationUserPermission
 from kinde_sdk.paths.api_v1_organizations_org_code_users_user_id_roles.post import CreateOrganizationUserRole
+from kinde_sdk.paths.api_v1_organization_org_code.delete import DeleteOrganization
 from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags_feature_flag_key.delete import DeleteOrganizationFeatureFlagOverride
 from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags.delete import DeleteOrganizationFeatureFlagOverrides
+from kinde_sdk.paths.api_v1_organizations_org_code_users_user_id_permissions_permission_id.delete import DeleteOrganizationUserPermission
 from kinde_sdk.paths.api_v1_organizations_org_code_users_user_id_roles_role_id.delete import DeleteOrganizationUserRole
 from kinde_sdk.paths.api_v1_organization.get import GetOrganization
 from kinde_sdk.paths.api_v1_organizations_org_code_feature_flags.get import GetOrganizationFeatureFlags
+from kinde_sdk.paths.api_v1_organizations_org_code_users_user_id_permissions.get import GetOrganizationUserPermissions
 from kinde_sdk.paths.api_v1_organizations_org_code_users_user_id_roles.get import GetOrganizationUserRoles
 from kinde_sdk.paths.api_v1_organizations_org_code_users.get import GetOrganizationUsers
 from kinde_sdk.paths.api_v1_organizations.get import GetOrganizations
@@ -30,12 +34,16 @@ from kinde_sdk.paths.api_v1_organizations_org_code_users.patch import UpdateOrga
 class OrganizationsApi(
     AddOrganizationUsers,
     CreateOrganization,
+    CreateOrganizationUserPermission,
     CreateOrganizationUserRole,
+    DeleteOrganization,
     DeleteOrganizationFeatureFlagOverride,
     DeleteOrganizationFeatureFlagOverrides,
+    DeleteOrganizationUserPermission,
     DeleteOrganizationUserRole,
     GetOrganization,
     GetOrganizationFeatureFlags,
+    GetOrganizationUserPermissions,
     GetOrganizationUserRoles,
     GetOrganizationUsers,
     GetOrganizations,

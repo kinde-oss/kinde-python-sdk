@@ -92,6 +92,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#delete_environement_feature_flag_override.ApiResponseFor200) | Feature flag deleted successfully.
 400 | [ApiResponseFor400](#delete_environement_feature_flag_override.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_environement_feature_flag_override.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#delete_environement_feature_flag_override.ApiResponseFor429) | Request was throttled.
 
 #### delete_environement_feature_flag_override.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -132,6 +133,13 @@ Type | Description  | Notes
 
 
 #### delete_environement_feature_flag_override.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_environement_feature_flag_override.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -200,6 +208,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#delete_environement_feature_flag_overrides.ApiResponseFor200) | Feature flag overrides deleted successfully.
 400 | [ApiResponseFor400](#delete_environement_feature_flag_overrides.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#delete_environement_feature_flag_overrides.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#delete_environement_feature_flag_overrides.ApiResponseFor429) | Request was throttled.
 
 #### delete_environement_feature_flag_overrides.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -240,6 +249,13 @@ Type | Description  | Notes
 
 
 #### delete_environement_feature_flag_overrides.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_environement_feature_flag_overrides.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -308,6 +324,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#get_environement_feature_flags.ApiResponseFor200) | Feature flags retrieved successfully.
 400 | [ApiResponseFor400](#get_environement_feature_flags.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#get_environement_feature_flags.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_environement_feature_flags.ApiResponseFor429) | Request was throttled.
 
 #### get_environement_feature_flags.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -348,6 +365,13 @@ Type | Description  | Notes
 
 
 #### get_environement_feature_flags.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_environement_feature_flags.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -463,6 +487,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#update_environement_feature_flag_override.ApiResponseFor200) | Feature flag override successful
 400 | [ApiResponseFor400](#update_environement_feature_flag_override.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#update_environement_feature_flag_override.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_environement_feature_flag_override.ApiResponseFor429) | Request was throttled.
 
 #### update_environement_feature_flag_override.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -503,6 +528,13 @@ Type | Description  | Notes
 
 
 #### update_environement_feature_flag_override.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_environement_feature_flag_override.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

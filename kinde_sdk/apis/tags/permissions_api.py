@@ -11,12 +11,14 @@
 """
 
 from kinde_sdk.paths.api_v1_permissions.post import CreatePermission
+from kinde_sdk.paths.api_v1_permissions_permission_id.delete import DeletePermission
 from kinde_sdk.paths.api_v1_permissions.get import GetPermissions
 from kinde_sdk.paths.api_v1_permissions_permission_id.patch import UpdatePermissions
 
 
 class PermissionsApi(
     CreatePermission,
+    DeletePermission,
     GetPermissions,
     UpdatePermissions,
 ):

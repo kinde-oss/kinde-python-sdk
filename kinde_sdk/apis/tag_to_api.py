@@ -2,6 +2,8 @@ import typing_extensions
 
 from kinde_sdk.apis.tags import TagValues
 from kinde_sdk.apis.tags.users_api import UsersApi
+from kinde_sdk.apis.tags.apis_api import APIsApi
+from kinde_sdk.apis.tags.applications_api import ApplicationsApi
 from kinde_sdk.apis.tags.business_api import BusinessApi
 from kinde_sdk.apis.tags.callbacks_api import CallbacksApi
 from kinde_sdk.apis.tags.connected_apps_api import ConnectedAppsApi
@@ -19,6 +21,8 @@ TagToApi = typing_extensions.TypedDict(
     'TagToApi',
     {
         TagValues.USERS: UsersApi,
+        TagValues.APIS: APIsApi,
+        TagValues.APPLICATIONS: ApplicationsApi,
         TagValues.BUSINESS: BusinessApi,
         TagValues.CALLBACKS: CallbacksApi,
         TagValues.CONNECTED_APPS: ConnectedAppsApi,
@@ -37,6 +41,8 @@ TagToApi = typing_extensions.TypedDict(
 tag_to_api = TagToApi(
     {
         TagValues.USERS: UsersApi,
+        TagValues.APIS: APIsApi,
+        TagValues.APPLICATIONS: ApplicationsApi,
         TagValues.BUSINESS: BusinessApi,
         TagValues.CALLBACKS: CallbacksApi,
         TagValues.CONNECTED_APPS: ConnectedAppsApi,

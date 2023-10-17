@@ -39,32 +39,11 @@ class User(
         class properties:
             id = schemas.StrSchema
             provided_id = schemas.StrSchema
-            email = schemas.StrSchema
+            preferred_email = schemas.StrSchema
             last_name = schemas.StrSchema
             first_name = schemas.StrSchema
-            full_name = schemas.StrSchema
             is_suspended = schemas.BoolSchema
             picture = schemas.StrSchema
-            
-            
-            class is_password_reset_requested(
-                schemas.BoolBase,
-                schemas.NoneBase,
-                schemas.Schema,
-                schemas.NoneBoolMixin
-            ):
-            
-            
-                def __new__(
-                    cls,
-                    *_args: typing.Union[None, bool, ],
-                    _configuration: typing.Optional[schemas.Configuration] = None,
-                ) -> 'is_password_reset_requested':
-                    return super().__new__(
-                        cls,
-                        *_args,
-                        _configuration=_configuration,
-                    )
             
             
             class total_sign_ins(
@@ -148,13 +127,11 @@ class User(
             __annotations__ = {
                 "id": id,
                 "provided_id": provided_id,
-                "email": email,
+                "preferred_email": preferred_email,
                 "last_name": last_name,
                 "first_name": first_name,
-                "full_name": full_name,
                 "is_suspended": is_suspended,
                 "picture": picture,
-                "is_password_reset_requested": is_password_reset_requested,
                 "total_sign_ins": total_sign_ins,
                 "failed_sign_ins": failed_sign_ins,
                 "last_signed_in": last_signed_in,
@@ -168,7 +145,7 @@ class User(
     def __getitem__(self, name: typing_extensions.Literal["provided_id"]) -> MetaOapg.properties.provided_id: ...
     
     @typing.overload
-    def __getitem__(self, name: typing_extensions.Literal["email"]) -> MetaOapg.properties.email: ...
+    def __getitem__(self, name: typing_extensions.Literal["preferred_email"]) -> MetaOapg.properties.preferred_email: ...
     
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["last_name"]) -> MetaOapg.properties.last_name: ...
@@ -177,16 +154,10 @@ class User(
     def __getitem__(self, name: typing_extensions.Literal["first_name"]) -> MetaOapg.properties.first_name: ...
     
     @typing.overload
-    def __getitem__(self, name: typing_extensions.Literal["full_name"]) -> MetaOapg.properties.full_name: ...
-    
-    @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["is_suspended"]) -> MetaOapg.properties.is_suspended: ...
     
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["picture"]) -> MetaOapg.properties.picture: ...
-    
-    @typing.overload
-    def __getitem__(self, name: typing_extensions.Literal["is_password_reset_requested"]) -> MetaOapg.properties.is_password_reset_requested: ...
     
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["total_sign_ins"]) -> MetaOapg.properties.total_sign_ins: ...
@@ -203,7 +174,7 @@ class User(
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "email", "last_name", "first_name", "full_name", "is_suspended", "picture", "is_password_reset_requested", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "preferred_email", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -215,7 +186,7 @@ class User(
     def get_item_oapg(self, name: typing_extensions.Literal["provided_id"]) -> typing.Union[MetaOapg.properties.provided_id, schemas.Unset]: ...
     
     @typing.overload
-    def get_item_oapg(self, name: typing_extensions.Literal["email"]) -> typing.Union[MetaOapg.properties.email, schemas.Unset]: ...
+    def get_item_oapg(self, name: typing_extensions.Literal["preferred_email"]) -> typing.Union[MetaOapg.properties.preferred_email, schemas.Unset]: ...
     
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["last_name"]) -> typing.Union[MetaOapg.properties.last_name, schemas.Unset]: ...
@@ -224,16 +195,10 @@ class User(
     def get_item_oapg(self, name: typing_extensions.Literal["first_name"]) -> typing.Union[MetaOapg.properties.first_name, schemas.Unset]: ...
     
     @typing.overload
-    def get_item_oapg(self, name: typing_extensions.Literal["full_name"]) -> typing.Union[MetaOapg.properties.full_name, schemas.Unset]: ...
-    
-    @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["is_suspended"]) -> typing.Union[MetaOapg.properties.is_suspended, schemas.Unset]: ...
     
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["picture"]) -> typing.Union[MetaOapg.properties.picture, schemas.Unset]: ...
-    
-    @typing.overload
-    def get_item_oapg(self, name: typing_extensions.Literal["is_password_reset_requested"]) -> typing.Union[MetaOapg.properties.is_password_reset_requested, schemas.Unset]: ...
     
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["total_sign_ins"]) -> typing.Union[MetaOapg.properties.total_sign_ins, schemas.Unset]: ...
@@ -250,7 +215,7 @@ class User(
     @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "email", "last_name", "first_name", "full_name", "is_suspended", "picture", "is_password_reset_requested", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "preferred_email", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -259,13 +224,11 @@ class User(
         *_args: typing.Union[dict, frozendict.frozendict, ],
         id: typing.Union[MetaOapg.properties.id, str, schemas.Unset] = schemas.unset,
         provided_id: typing.Union[MetaOapg.properties.provided_id, str, schemas.Unset] = schemas.unset,
-        email: typing.Union[MetaOapg.properties.email, str, schemas.Unset] = schemas.unset,
+        preferred_email: typing.Union[MetaOapg.properties.preferred_email, str, schemas.Unset] = schemas.unset,
         last_name: typing.Union[MetaOapg.properties.last_name, str, schemas.Unset] = schemas.unset,
         first_name: typing.Union[MetaOapg.properties.first_name, str, schemas.Unset] = schemas.unset,
-        full_name: typing.Union[MetaOapg.properties.full_name, str, schemas.Unset] = schemas.unset,
         is_suspended: typing.Union[MetaOapg.properties.is_suspended, bool, schemas.Unset] = schemas.unset,
         picture: typing.Union[MetaOapg.properties.picture, str, schemas.Unset] = schemas.unset,
-        is_password_reset_requested: typing.Union[MetaOapg.properties.is_password_reset_requested, None, bool, schemas.Unset] = schemas.unset,
         total_sign_ins: typing.Union[MetaOapg.properties.total_sign_ins, None, decimal.Decimal, int, schemas.Unset] = schemas.unset,
         failed_sign_ins: typing.Union[MetaOapg.properties.failed_sign_ins, None, decimal.Decimal, int, schemas.Unset] = schemas.unset,
         last_signed_in: typing.Union[MetaOapg.properties.last_signed_in, None, str, schemas.Unset] = schemas.unset,
@@ -278,13 +241,11 @@ class User(
             *_args,
             id=id,
             provided_id=provided_id,
-            email=email,
+            preferred_email=preferred_email,
             last_name=last_name,
             first_name=first_name,
-            full_name=full_name,
             is_suspended=is_suspended,
             picture=picture,
-            is_password_reset_requested=is_password_reset_requested,
             total_sign_ins=total_sign_ins,
             failed_sign_ins=failed_sign_ins,
             last_signed_in=last_signed_in,

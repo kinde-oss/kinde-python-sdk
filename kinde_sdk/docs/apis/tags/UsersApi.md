@@ -9,6 +9,7 @@ Method | HTTP request | Description
 [**delete_user**](#delete_user) | **delete** /api/v1/user | Delete User
 [**get_user_data**](#get_user_data) | **get** /api/v1/user | Get User
 [**get_users**](#get_users) | **get** /api/v1/users | List Users
+[**refresh_user_claims**](#refresh_user_claims) | **post** /api/v1/users/{user_id}/refresh_claims | Refresh User Claims and Invalidate Cache
 [**update_user**](#update_user) | **patch** /api/v1/user | Update User
 
 # **create_user**
@@ -168,6 +169,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#create_user.ApiResponseFor200) | User successfully created.
 400 | [ApiResponseFor400](#create_user.ApiResponseFor400) | Error creating user.
 403 | [ApiResponseFor403](#create_user.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#create_user.ApiResponseFor429) | Request was throttled.
 
 #### create_user.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -214,6 +216,13 @@ response | urllib3.HTTPResponse | Raw response |
 body | Unset | body was not defined |
 headers | Unset | headers were not defined |
 
+#### create_user.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
 ### Authorization
 
 [kindeBearerAuth](../../../README.md#kindeBearerAuth)
@@ -222,7 +231,7 @@ headers | Unset | headers were not defined |
 
 # **delete_user**
 <a name="delete_user"></a>
-> SuccessResponse delete_user()
+> SuccessResponse delete_user(id)
 
 Delete User
 
@@ -257,9 +266,23 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = users_api.UsersApi(api_client)
 
+    # example passing only required values which don't have defaults set
+    query_params = {
+        'id': "id_example",
+    }
+    try:
+        # Delete User
+        api_response = api_instance.delete_user(
+            query_params=query_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling UsersApi->delete_user: %s\n" % e)
+
     # example passing only optional values
     query_params = {
         'id': "id_example",
+        'is_delete_profile': True,
     }
     try:
         # Delete User
@@ -285,7 +308,8 @@ skip_deserialization | bool | default is False | when True, headers and body wil
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
-id | IdSchema | | optional
+id | IdSchema | | 
+is_delete_profile | IsDeleteProfileSchema | | optional
 
 
 # IdSchema
@@ -295,6 +319,13 @@ Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 str,  | str,  |  | 
 
+# IsDeleteProfileSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+bool,  | BoolClass,  |  | 
+
 ### Return Types, Responses
 
 Code | Class | Description
@@ -303,6 +334,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#delete_user.ApiResponseFor200) | User successfully deleted.
 400 | [ApiResponseFor400](#delete_user.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#delete_user.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#delete_user.ApiResponseFor429) | Request was throttled.
 
 #### delete_user.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -343,6 +375,13 @@ Type | Description  | Notes
 
 
 #### delete_user.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_user.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -404,6 +443,20 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         pprint(api_response)
     except kinde_sdk.ApiException as e:
         print("Exception when calling UsersApi->get_user_data: %s\n" % e)
+
+    # example passing only optional values
+    query_params = {
+        'id': "id_example",
+        'expand': "expand_example",
+    }
+    try:
+        # Get User
+        api_response = api_instance.get_user_data(
+            query_params=query_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling UsersApi->get_user_data: %s\n" % e)
 ```
 ### Parameters
 
@@ -421,6 +474,7 @@ skip_deserialization | bool | default is False | when True, headers and body wil
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 id | IdSchema | | 
+expand | ExpandSchema | | optional
 
 
 # IdSchema
@@ -430,6 +484,13 @@ Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 str,  | str,  |  | 
 
+# ExpandSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+None, str,  | NoneClass, str,  |  | 
+
 ### Return Types, Responses
 
 Code | Class | Description
@@ -438,6 +499,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#get_user_data.ApiResponseFor200) | User successfully updated.
 400 | [ApiResponseFor400](#get_user_data.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#get_user_data.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_user_data.ApiResponseFor429) | Request was throttled.
 
 #### get_user_data.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -478,6 +540,13 @@ Type | Description  | Notes
 
 
 #### get_user_data.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_user_data.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -533,6 +602,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         'user_id': "user_id_example",
         'next_token': "next_token_example",
         'email': "email_example",
+        'expand': "expand_example",
     }
     try:
         # List Users
@@ -563,6 +633,7 @@ page_size | PageSizeSchema | | optional
 user_id | UserIdSchema | | optional
 next_token | NextTokenSchema | | optional
 email | EmailSchema | | optional
+expand | ExpandSchema | | optional
 
 
 # SortSchema
@@ -600,6 +671,13 @@ Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 None, str,  | NoneClass, str,  |  | 
 
+# ExpandSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+None, str,  | NoneClass, str,  |  | 
+
 ### Return Types, Responses
 
 Code | Class | Description
@@ -607,6 +685,7 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#get_users.ApiResponseFor200) | Users successfully retrieved.
 403 | [ApiResponseFor403](#get_users.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_users.ApiResponseFor429) | Request was throttled.
 
 #### get_users.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -634,6 +713,167 @@ response | urllib3.HTTPResponse | Raw response |
 body | Unset | body was not defined |
 headers | Unset | headers were not defined |
 
+#### get_users.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **refresh_user_claims**
+<a name="refresh_user_claims"></a>
+> SuccessResponse refresh_user_claims(user_id)
+
+Refresh User Claims and Invalidate Cache
+
+Refreshes the user's claims and invalidates the current cache. 
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = users_api.UsersApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'user_id': "user_id_example",
+    }
+    try:
+        # Refresh User Claims and Invalidate Cache
+        api_response = api_instance.refresh_user_claims(
+            path_params=path_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling UsersApi->refresh_user_claims: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json; charset&#x3D;utf-8', 'application/json', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+user_id | UserIdSchema | | 
+
+# UserIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#refresh_user_claims.ApiResponseFor200) | Claims successfully refreshed.
+400 | [ApiResponseFor400](#refresh_user_claims.ApiResponseFor400) | Bad request.
+403 | [ApiResponseFor403](#refresh_user_claims.ApiResponseFor403) | Bad request.
+429 | [ApiResponseFor429](#refresh_user_claims.ApiResponseFor429) | Request was throttled.
+
+#### refresh_user_claims.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJsonCharsetutf8, SchemaFor200ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### refresh_user_claims.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### refresh_user_claims.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor403ResponseBodyApplicationJsonCharsetutf8, SchemaFor403ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor403ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor403ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### refresh_user_claims.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
 ### Authorization
 
 [kindeBearerAuth](../../../README.md#kindeBearerAuth)
@@ -642,7 +882,7 @@ headers | Unset | headers were not defined |
 
 # **update_user**
 <a name="update_user"></a>
-> User update_user(any_type)
+> UpdateUserResponse update_user(any_type)
 
 Update User
 
@@ -654,8 +894,8 @@ Update a user record.
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import users_api
-from kinde_sdk.model.user import User
 from kinde_sdk.model.error_response import ErrorResponse
+from kinde_sdk.model.update_user_response import UpdateUserResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
 # See configuration.py for a list of all supported configuration parameters.
@@ -769,6 +1009,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#update_user.ApiResponseFor200) | User successfully updated.
 400 | [ApiResponseFor400](#update_user.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#update_user.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_user.ApiResponseFor429) | Request was throttled.
 
 #### update_user.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -780,13 +1021,13 @@ headers | Unset | headers were not defined |
 # SchemaFor200ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**User**](../../models/User.md) |  | 
+[**UpdateUserResponse**](../../models/UpdateUserResponse.md) |  | 
 
 
 # SchemaFor200ResponseBodyApplicationJsonCharsetutf8
 Type | Description  | Notes
 ------------- | ------------- | -------------
-[**User**](../../models/User.md) |  | 
+[**UpdateUserResponse**](../../models/UpdateUserResponse.md) |  | 
 
 
 #### update_user.ApiResponseFor400
@@ -809,6 +1050,13 @@ Type | Description  | Notes
 
 
 #### update_user.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_user.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

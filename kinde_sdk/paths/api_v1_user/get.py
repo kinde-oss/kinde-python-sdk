@@ -32,6 +32,26 @@ from . import path
 
 # Query params
 IdSchema = schemas.StrSchema
+
+
+class ExpandSchema(
+    schemas.StrBase,
+    schemas.NoneBase,
+    schemas.Schema,
+    schemas.NoneStrMixin
+):
+
+
+    def __new__(
+        cls,
+        *_args: typing.Union[None, str, ],
+        _configuration: typing.Optional[schemas.Configuration] = None,
+    ) -> 'ExpandSchema':
+        return super().__new__(
+            cls,
+            *_args,
+            _configuration=_configuration,
+        )
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     'RequestRequiredQueryParams',
     {
@@ -41,6 +61,7 @@ RequestRequiredQueryParams = typing_extensions.TypedDict(
 RequestOptionalQueryParams = typing_extensions.TypedDict(
     'RequestOptionalQueryParams',
     {
+        'expand': typing.Union[ExpandSchema, None, str, ],
     },
     total=False
 )
@@ -55,6 +76,12 @@ request_query_id = api_client.QueryParameter(
     style=api_client.ParameterStyle.FORM,
     schema=IdSchema,
     required=True,
+    explode=True,
+)
+request_query_expand = api_client.QueryParameter(
+    name="expand",
+    style=api_client.ParameterStyle.FORM,
+    schema=ExpandSchema,
     explode=True,
 )
 _auth = [
@@ -118,10 +145,23 @@ class ApiResponseFor403(api_client.ApiResponse):
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
+
+
+@dataclass
+class ApiResponseFor429(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_429 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor429,
+)
 _status_code_to_response = {
     '200': _response_for_200,
     '400': _response_for_400,
     '403': _response_for_403,
+    '429': _response_for_429,
 }
 _all_accept_content_types = (
     'application/json',
@@ -185,6 +225,7 @@ class BaseApi(api_client.Api):
         prefix_separator_iterator = None
         for parameter in (
             request_query_id,
+            request_query_expand,
         ):
             parameter_data = query_params.get(parameter.name, schemas.unset)
             if parameter_data is schemas.unset:

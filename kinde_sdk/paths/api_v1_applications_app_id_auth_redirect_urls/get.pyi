@@ -54,6 +54,7 @@ request_path_app_id = api_client.PathParameter(
     schema=AppIdSchema,
     required=True,
 )
+SchemaFor200ResponseBodyApplicationJson = RedirectCallbackUrls
 SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = RedirectCallbackUrls
 
 
@@ -61,6 +62,7 @@ SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = RedirectCallbackUrls
 class ApiResponseFor200(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
+        SchemaFor200ResponseBodyApplicationJson,
         SchemaFor200ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
@@ -69,10 +71,13 @@ class ApiResponseFor200(api_client.ApiResponse):
 _response_for_200 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor200,
     content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJson),
         'application/json; charset=utf-8': api_client.MediaType(
             schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
     },
 )
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
 SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
 
@@ -80,6 +85,7 @@ SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 class ApiResponseFor400(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
         SchemaFor400ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
@@ -88,30 +94,38 @@ class ApiResponseFor400(api_client.ApiResponse):
 _response_for_400 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor400,
     content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson),
         'application/json; charset=utf-8': api_client.MediaType(
             schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
     },
 )
-SchemaFor403ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
 
 @dataclass
 class ApiResponseFor403(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: typing.Union[
-        SchemaFor403ResponseBodyApplicationJsonCharsetutf8,
-    ]
+    body: schemas.Unset = schemas.unset
     headers: schemas.Unset = schemas.unset
 
 
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
-    content={
-        'application/json; charset=utf-8': api_client.MediaType(
-            schema=SchemaFor403ResponseBodyApplicationJsonCharsetutf8),
-    },
+)
+
+
+@dataclass
+class ApiResponseFor429(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_429 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor429,
 )
 _all_accept_content_types = (
+    'application/json',
     'application/json; charset=utf-8',
 )
 

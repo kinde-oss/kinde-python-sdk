@@ -154,6 +154,26 @@ class EmailSchema(
             *_args,
             _configuration=_configuration,
         )
+
+
+class ExpandSchema(
+    schemas.StrBase,
+    schemas.NoneBase,
+    schemas.Schema,
+    schemas.NoneStrMixin
+):
+
+
+    def __new__(
+        cls,
+        *_args: typing.Union[None, str, ],
+        _configuration: typing.Optional[schemas.Configuration] = None,
+    ) -> 'ExpandSchema':
+        return super().__new__(
+            cls,
+            *_args,
+            _configuration=_configuration,
+        )
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     'RequestRequiredQueryParams',
     {
@@ -167,6 +187,7 @@ RequestOptionalQueryParams = typing_extensions.TypedDict(
         'user_id': typing.Union[UserIdSchema, None, str, ],
         'next_token': typing.Union[NextTokenSchema, None, str, ],
         'email': typing.Union[EmailSchema, None, str, ],
+        'expand': typing.Union[ExpandSchema, None, str, ],
     },
     total=False
 )
@@ -206,6 +227,12 @@ request_query_email = api_client.QueryParameter(
     schema=EmailSchema,
     explode=True,
 )
+request_query_expand = api_client.QueryParameter(
+    name="expand",
+    style=api_client.ParameterStyle.FORM,
+    schema=ExpandSchema,
+    explode=True,
+)
 SchemaFor200ResponseBodyApplicationJson = UsersResponse
 SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = UsersResponse
 
@@ -240,6 +267,18 @@ class ApiResponseFor403(api_client.ApiResponse):
 
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
+)
+
+
+@dataclass
+class ApiResponseFor429(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_429 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor429,
 )
 _all_accept_content_types = (
     'application/json',
@@ -307,6 +346,7 @@ class BaseApi(api_client.Api):
             request_query_user_id,
             request_query_next_token,
             request_query_email,
+            request_query_expand,
         ):
             parameter_data = query_params.get(parameter.name, schemas.unset)
             if parameter_data is schemas.unset:

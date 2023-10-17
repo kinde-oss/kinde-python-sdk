@@ -167,6 +167,7 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 201 | [ApiResponseFor201](#get_business.ApiResponseFor201) | A successful response with your business details.
 403 | [ApiResponseFor403](#get_business.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_business.ApiResponseFor429) | Request was throttled.
 
 #### get_business.ApiResponseFor201
 Name | Type | Description  | Notes
@@ -182,6 +183,13 @@ Type | Description  | Notes
 
 
 #### get_business.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_business.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -372,6 +380,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 201 | [ApiResponseFor201](#update_business.ApiResponseFor201) | Business successfully updated.
 400 | [ApiResponseFor400](#update_business.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#update_business.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_business.ApiResponseFor429) | Request was throttled.
 
 #### update_business.ApiResponseFor201
 Name | Type | Description  | Notes
@@ -400,6 +409,13 @@ Type | Description  | Notes
 
 
 #### update_business.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_business.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

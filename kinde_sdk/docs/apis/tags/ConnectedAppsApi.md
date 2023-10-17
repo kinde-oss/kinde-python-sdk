@@ -102,6 +102,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 400 | [ApiResponseFor400](#get_connected_app_auth_url.ApiResponseFor400) | Error retrieving connected app auth url.
 404 | [ApiResponseFor404](#get_connected_app_auth_url.ApiResponseFor404) | Error retrieving connected app auth url.
 403 | [ApiResponseFor403](#get_connected_app_auth_url.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_connected_app_auth_url.ApiResponseFor429) | Request was throttled.
 
 #### get_connected_app_auth_url.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -161,6 +162,13 @@ Type | Description  | Notes
 
 
 #### get_connected_app_auth_url.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_connected_app_auth_url.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -256,6 +264,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 200 | [ApiResponseFor200](#get_connected_app_token.ApiResponseFor200) | An access token that can be used to query a third-party provider, as well as the token&#x27;s expiry time.
 400 | [ApiResponseFor400](#get_connected_app_token.ApiResponseFor400) | The session id provided points to an invalid session.
 403 | [ApiResponseFor403](#get_connected_app_token.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_connected_app_token.ApiResponseFor429) | Request was throttled.
 
 #### get_connected_app_token.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -313,6 +322,13 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
+
+#### get_connected_app_token.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
 
 ### Authorization
 
@@ -404,6 +420,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 400 | [ApiResponseFor400](#revoke_connected_app_token.ApiResponseFor400) | Bad request.
 403 | [ApiResponseFor403](#revoke_connected_app_token.ApiResponseFor403) | Invalid credentials.
 405 | [ApiResponseFor405](#revoke_connected_app_token.ApiResponseFor405) | Invalid HTTP method used.
+429 | [ApiResponseFor429](#revoke_connected_app_token.ApiResponseFor429) | Request was throttled.
 
 #### revoke_connected_app_token.ApiResponseFor200
 Name | Type | Description  | Notes
@@ -463,6 +480,13 @@ Type | Description  | Notes
 
 
 #### revoke_connected_app_token.ApiResponseFor405
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### revoke_connected_app_token.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

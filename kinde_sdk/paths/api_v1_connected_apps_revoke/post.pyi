@@ -136,6 +136,18 @@ class ApiResponseFor405(api_client.ApiResponse):
 _response_for_405 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor405,
 )
+
+
+@dataclass
+class ApiResponseFor429(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_429 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor429,
+)
 _all_accept_content_types = (
     'application/json',
     'application/json; charset=utf-8',

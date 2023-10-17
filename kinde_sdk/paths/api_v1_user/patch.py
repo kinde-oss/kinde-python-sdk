@@ -25,8 +25,8 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
-from kinde_sdk.model.user import User
 from kinde_sdk.model.error_response import ErrorResponse
+from kinde_sdk.model.update_user_response import UpdateUserResponse
 
 from . import path
 
@@ -149,8 +149,8 @@ request_body_any_type = api_client.RequestBody(
 _auth = [
     'kindeBearerAuth',
 ]
-SchemaFor200ResponseBodyApplicationJson = User
-SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = User
+SchemaFor200ResponseBodyApplicationJson = UpdateUserResponse
+SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = UpdateUserResponse
 
 
 @dataclass
@@ -207,10 +207,23 @@ class ApiResponseFor403(api_client.ApiResponse):
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
 )
+
+
+@dataclass
+class ApiResponseFor429(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_429 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor429,
+)
 _status_code_to_response = {
     '200': _response_for_200,
     '400': _response_for_400,
     '403': _response_for_403,
+    '429': _response_for_429,
 }
 _all_accept_content_types = (
     'application/json',

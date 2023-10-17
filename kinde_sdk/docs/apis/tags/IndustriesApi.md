@@ -97,6 +97,7 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 201 | [ApiResponseFor201](#get_industries.ApiResponseFor201) | A successful response with a list of industries and industry keys.
 403 | [ApiResponseFor403](#get_industries.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_industries.ApiResponseFor429) | Request was throttled.
 
 #### get_industries.ApiResponseFor201
 Name | Type | Description  | Notes
@@ -112,6 +113,13 @@ Type | Description  | Notes
 
 
 #### get_industries.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_industries.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

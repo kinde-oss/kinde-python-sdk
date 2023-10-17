@@ -40,10 +40,12 @@ class Organization(
             code = schemas.StrSchema
             name = schemas.StrSchema
             is_default = schemas.BoolSchema
+            external_id = schemas.StrSchema
             __annotations__ = {
                 "code": code,
                 "name": name,
                 "is_default": is_default,
+                "external_id": external_id,
             }
     
     @typing.overload
@@ -56,9 +58,12 @@ class Organization(
     def __getitem__(self, name: typing_extensions.Literal["is_default"]) -> MetaOapg.properties.is_default: ...
     
     @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["external_id"]) -> MetaOapg.properties.external_id: ...
+    
+    @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["code", "name", "is_default", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["code", "name", "is_default", "external_id", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -73,9 +78,12 @@ class Organization(
     def get_item_oapg(self, name: typing_extensions.Literal["is_default"]) -> typing.Union[MetaOapg.properties.is_default, schemas.Unset]: ...
     
     @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["external_id"]) -> typing.Union[MetaOapg.properties.external_id, schemas.Unset]: ...
+    
+    @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["code", "name", "is_default", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["code", "name", "is_default", "external_id", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -85,6 +93,7 @@ class Organization(
         code: typing.Union[MetaOapg.properties.code, str, schemas.Unset] = schemas.unset,
         name: typing.Union[MetaOapg.properties.name, str, schemas.Unset] = schemas.unset,
         is_default: typing.Union[MetaOapg.properties.is_default, bool, schemas.Unset] = schemas.unset,
+        external_id: typing.Union[MetaOapg.properties.external_id, str, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
     ) -> 'Organization':
@@ -94,6 +103,7 @@ class Organization(
             code=code,
             name=name,
             is_default=is_default,
+            external_id=external_id,
             _configuration=_configuration,
             **kwargs,
         )

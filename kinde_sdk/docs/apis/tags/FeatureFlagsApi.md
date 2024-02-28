@@ -92,7 +92,7 @@ Key | Input Type | Accessed Type | Description | Notes
 **type** | str,  | str,  | The variable type. | must be one of ["str", "int", "bool", ] 
 **key** | str,  | str,  | The flag identifier to use in code. | 
 **description** | str,  | str,  | Description of the flag purpose. | [optional] 
-**allow_override_level** | str,  | str,  | Allow the flag to be overridden at a different level. | [optional] must be one of ["env", "org", ] 
+**allow_override_level** | str,  | str,  | Allow the flag to be overridden at a different level. | [optional] must be one of ["env", "org", "usr", ] 
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 ### Return Types, Responses

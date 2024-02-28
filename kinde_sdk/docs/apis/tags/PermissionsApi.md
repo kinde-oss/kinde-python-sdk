@@ -296,7 +296,7 @@ headers | Unset | headers were not defined |
 
 # **get_permissions**
 <a name="get_permissions"></a>
-> SuccessResponse get_permissions()
+> GetPermissionsResponse get_permissions()
 
 List Permissions
 
@@ -308,6 +308,7 @@ The returned list can be sorted by permission name or permission ID in ascending
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import permissions_api
+from kinde_sdk.model.get_permissions_response import GetPermissionsResponse
 from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
@@ -350,7 +351,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 query_params | RequestQueryParams | |
-accept_content_types | typing.Tuple[str] | default is ('application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
 timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
 skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
@@ -399,22 +400,33 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
 
-# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetPermissionsResponse**](../../models/GetPermissionsResponse.md) |  | 
 
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-dict, frozendict.frozendict,  | frozendict.frozendict,  |  | 
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetPermissionsResponse**](../../models/GetPermissionsResponse.md) |  | 
+
 
 #### get_permissions.ApiResponseFor403
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor403ResponseBodyApplicationJsonCharsetutf8, ] |  |
+body | typing.Union[SchemaFor403ResponseBodyApplicationJson, SchemaFor403ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor403ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
 
 # SchemaFor403ResponseBodyApplicationJsonCharsetutf8
 Type | Description  | Notes

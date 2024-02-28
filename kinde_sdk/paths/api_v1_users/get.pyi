@@ -30,52 +30,6 @@ from kinde_sdk.model.users_response import UsersResponse
 # Query params
 
 
-class SortSchema(
-    schemas.EnumBase,
-    schemas.StrBase,
-    schemas.NoneBase,
-    schemas.Schema,
-    schemas.NoneStrMixin
-):
-
-
-    class MetaOapg:
-        enum_value_to_name = {
-            "name_asc": "NAME_ASC",
-            "name_desc": "NAME_DESC",
-            "email_asc": "EMAIL_ASC",
-            "email_desc": "EMAIL_DESC",
-        }
-    
-    @schemas.classproperty
-    def NAME_ASC(cls):
-        return cls("name_asc")
-    
-    @schemas.classproperty
-    def NAME_DESC(cls):
-        return cls("name_desc")
-    
-    @schemas.classproperty
-    def EMAIL_ASC(cls):
-        return cls("email_asc")
-    
-    @schemas.classproperty
-    def EMAIL_DESC(cls):
-        return cls("email_desc")
-
-
-    def __new__(
-        cls,
-        *_args: typing.Union[None, str, ],
-        _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> 'SortSchema':
-        return super().__new__(
-            cls,
-            *_args,
-            _configuration=_configuration,
-        )
-
-
 class PageSizeSchema(
     schemas.IntBase,
     schemas.NoneBase,
@@ -182,7 +136,6 @@ RequestRequiredQueryParams = typing_extensions.TypedDict(
 RequestOptionalQueryParams = typing_extensions.TypedDict(
     'RequestOptionalQueryParams',
     {
-        'sort': typing.Union[SortSchema, None, str, ],
         'page_size': typing.Union[PageSizeSchema, None, decimal.Decimal, int, ],
         'user_id': typing.Union[UserIdSchema, None, str, ],
         'next_token': typing.Union[NextTokenSchema, None, str, ],
@@ -197,12 +150,6 @@ class RequestQueryParams(RequestRequiredQueryParams, RequestOptionalQueryParams)
     pass
 
 
-request_query_sort = api_client.QueryParameter(
-    name="sort",
-    style=api_client.ParameterStyle.FORM,
-    schema=SortSchema,
-    explode=True,
-)
 request_query_page_size = api_client.QueryParameter(
     name="page_size",
     style=api_client.ParameterStyle.FORM,
@@ -341,7 +288,6 @@ class BaseApi(api_client.Api):
 
         prefix_separator_iterator = None
         for parameter in (
-            request_query_sort,
             request_query_page_size,
             request_query_user_id,
             request_query_next_token,

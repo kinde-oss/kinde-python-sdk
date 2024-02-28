@@ -20,7 +20,7 @@ class BaseTestCase(TestCase):
         self.callback_url = "CALLBACK_URL"
         self.client_id = "CLIENT_ID"
         self.client_secret = "CLIENT_SECRET"
-        self.login_url = "login_url"
+        self.login_url = "https://login_url.kinde.com/"
         self.registration_url = f"{self.login_url}&start_page=registration"
         self.create_org_url = f"{self.registration_url}&is_create_org=true"
         self.scope = "openid profile email offline"
@@ -32,10 +32,18 @@ class BaseTestCase(TestCase):
             self._get_user_details(), "secret", algorithm="HS256"
         )
 
-    def _create_kinde_client(self, auth_session_mock, grant_type, **kwargs):
+    def _create_kinde_client(self, auth_session_mock, grant_type, login_url=None, state=None, **kwargs):
+        actual_login_url = self.login_url
+        if login_url:
+            actual_login_url = login_url
+
+        actual_state = self.state
+        if state:
+            actual_state = state
+
         auth_session_mock.return_value.create_authorization_url.return_value = [
-            self.login_url,
-            self.state,
+            actual_login_url,
+            actual_state,
         ]
         configuration = Configuration(host=self.host)
         kinde_client = KindeApiClient(
@@ -115,6 +123,23 @@ class BaseTestCase(TestCase):
             "picture": "picture_url",
         }
 
+class TestKindeApiClient(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.grant_type = GrantType.AUTHORIZATION_CODE
+
+    @patch("kinde_sdk.kinde_api_client.OAuth2Session")
+    def test_login_url_extra_params(self, auth_session_mock):
+        kinde_client = self._create_kinde_client(
+            auth_session_mock,
+            grant_type=self.grant_type,
+            login_url="https://login_url.kinde.com/auth",
+            state="hello"
+        )
+
+        expected = "https://login_url.kinde.com/auth?test=val"
+        actual = kinde_client.get_login_url({'auth_url_params':{'test':'val'}})
+        self.assertEqual(expected, actual)
 
 class TestKindeApiClientClientCredentials(BaseTestCase):
     def setUp(self):

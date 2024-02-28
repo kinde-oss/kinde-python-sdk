@@ -124,6 +124,111 @@ class User(
                         *_args,
                         _configuration=_configuration,
                     )
+            
+            
+            class organizations(
+                schemas.ListSchema
+            ):
+            
+            
+                class MetaOapg:
+                    items = schemas.StrSchema
+            
+                def __new__(
+                    cls,
+                    _arg: typing.Union[typing.Tuple[typing.Union[MetaOapg.items, str, ]], typing.List[typing.Union[MetaOapg.items, str, ]]],
+                    _configuration: typing.Optional[schemas.Configuration] = None,
+                ) -> 'organizations':
+                    return super().__new__(
+                        cls,
+                        _arg,
+                        _configuration=_configuration,
+                    )
+            
+                def __getitem__(self, i: int) -> MetaOapg.items:
+                    return super().__getitem__(i)
+            
+            
+            class identities(
+                schemas.ListSchema
+            ):
+            
+            
+                class MetaOapg:
+                    
+                    
+                    class items(
+                        schemas.DictSchema
+                    ):
+                    
+                    
+                        class MetaOapg:
+                            
+                            class properties:
+                                type = schemas.StrSchema
+                                identity = schemas.StrSchema
+                                __annotations__ = {
+                                    "type": type,
+                                    "identity": identity,
+                                }
+                        
+                        @typing.overload
+                        def __getitem__(self, name: typing_extensions.Literal["type"]) -> MetaOapg.properties.type: ...
+                        
+                        @typing.overload
+                        def __getitem__(self, name: typing_extensions.Literal["identity"]) -> MetaOapg.properties.identity: ...
+                        
+                        @typing.overload
+                        def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
+                        
+                        def __getitem__(self, name: typing.Union[typing_extensions.Literal["type", "identity", ], str]):
+                            # dict_instance[name] accessor
+                            return super().__getitem__(name)
+                        
+                        
+                        @typing.overload
+                        def get_item_oapg(self, name: typing_extensions.Literal["type"]) -> typing.Union[MetaOapg.properties.type, schemas.Unset]: ...
+                        
+                        @typing.overload
+                        def get_item_oapg(self, name: typing_extensions.Literal["identity"]) -> typing.Union[MetaOapg.properties.identity, schemas.Unset]: ...
+                        
+                        @typing.overload
+                        def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
+                        
+                        def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["type", "identity", ], str]):
+                            return super().get_item_oapg(name)
+                        
+                    
+                        def __new__(
+                            cls,
+                            *_args: typing.Union[dict, frozendict.frozendict, ],
+                            type: typing.Union[MetaOapg.properties.type, str, schemas.Unset] = schemas.unset,
+                            identity: typing.Union[MetaOapg.properties.identity, str, schemas.Unset] = schemas.unset,
+                            _configuration: typing.Optional[schemas.Configuration] = None,
+                            **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
+                        ) -> 'items':
+                            return super().__new__(
+                                cls,
+                                *_args,
+                                type=type,
+                                identity=identity,
+                                _configuration=_configuration,
+                                **kwargs,
+                            )
+            
+                def __new__(
+                    cls,
+                    _arg: typing.Union[typing.Tuple[typing.Union[MetaOapg.items, dict, frozendict.frozendict, ]], typing.List[typing.Union[MetaOapg.items, dict, frozendict.frozendict, ]]],
+                    _configuration: typing.Optional[schemas.Configuration] = None,
+                ) -> 'identities':
+                    return super().__new__(
+                        cls,
+                        _arg,
+                        _configuration=_configuration,
+                    )
+            
+                def __getitem__(self, i: int) -> MetaOapg.items:
+                    return super().__getitem__(i)
             __annotations__ = {
                 "id": id,
                 "provided_id": provided_id,
@@ -136,6 +241,8 @@ class User(
                 "failed_sign_ins": failed_sign_ins,
                 "last_signed_in": last_signed_in,
                 "created_on": created_on,
+                "organizations": organizations,
+                "identities": identities,
             }
     
     @typing.overload
@@ -172,9 +279,15 @@ class User(
     def __getitem__(self, name: typing_extensions.Literal["created_on"]) -> MetaOapg.properties.created_on: ...
     
     @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["organizations"]) -> MetaOapg.properties.organizations: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["identities"]) -> MetaOapg.properties.identities: ...
+    
+    @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "preferred_email", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "preferred_email", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -213,9 +326,15 @@ class User(
     def get_item_oapg(self, name: typing_extensions.Literal["created_on"]) -> typing.Union[MetaOapg.properties.created_on, schemas.Unset]: ...
     
     @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["organizations"]) -> typing.Union[MetaOapg.properties.organizations, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["identities"]) -> typing.Union[MetaOapg.properties.identities, schemas.Unset]: ...
+    
+    @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "preferred_email", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "preferred_email", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -233,6 +352,8 @@ class User(
         failed_sign_ins: typing.Union[MetaOapg.properties.failed_sign_ins, None, decimal.Decimal, int, schemas.Unset] = schemas.unset,
         last_signed_in: typing.Union[MetaOapg.properties.last_signed_in, None, str, schemas.Unset] = schemas.unset,
         created_on: typing.Union[MetaOapg.properties.created_on, None, str, schemas.Unset] = schemas.unset,
+        organizations: typing.Union[MetaOapg.properties.organizations, list, tuple, schemas.Unset] = schemas.unset,
+        identities: typing.Union[MetaOapg.properties.identities, list, tuple, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
     ) -> 'User':
@@ -250,6 +371,8 @@ class User(
             failed_sign_ins=failed_sign_ins,
             last_signed_in=last_signed_in,
             created_on=created_on,
+            organizations=organizations,
+            identities=identities,
             _configuration=_configuration,
             **kwargs,
         )

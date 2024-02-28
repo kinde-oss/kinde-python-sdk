@@ -99,6 +99,7 @@ class SchemaForRequestBodyApplicationJson(
                         _configuration=_configuration,
                         **kwargs,
                     )
+            organization_code = schemas.StrSchema
             
             
             class identities(
@@ -241,6 +242,7 @@ class SchemaForRequestBodyApplicationJson(
                     return super().__getitem__(i)
             __annotations__ = {
                 "profile": profile,
+                "organization_code": organization_code,
                 "identities": identities,
             }
     
@@ -248,12 +250,15 @@ class SchemaForRequestBodyApplicationJson(
     def __getitem__(self, name: typing_extensions.Literal["profile"]) -> MetaOapg.properties.profile: ...
     
     @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["organization_code"]) -> MetaOapg.properties.organization_code: ...
+    
+    @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["identities"]) -> MetaOapg.properties.identities: ...
     
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["profile", "identities", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["profile", "organization_code", "identities", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -262,12 +267,15 @@ class SchemaForRequestBodyApplicationJson(
     def get_item_oapg(self, name: typing_extensions.Literal["profile"]) -> typing.Union[MetaOapg.properties.profile, schemas.Unset]: ...
     
     @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["organization_code"]) -> typing.Union[MetaOapg.properties.organization_code, schemas.Unset]: ...
+    
+    @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["identities"]) -> typing.Union[MetaOapg.properties.identities, schemas.Unset]: ...
     
     @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["profile", "identities", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["profile", "organization_code", "identities", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -275,6 +283,7 @@ class SchemaForRequestBodyApplicationJson(
         cls,
         *_args: typing.Union[dict, frozendict.frozendict, ],
         profile: typing.Union[MetaOapg.properties.profile, dict, frozendict.frozendict, schemas.Unset] = schemas.unset,
+        organization_code: typing.Union[MetaOapg.properties.organization_code, str, schemas.Unset] = schemas.unset,
         identities: typing.Union[MetaOapg.properties.identities, list, tuple, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
@@ -283,6 +292,7 @@ class SchemaForRequestBodyApplicationJson(
             cls,
             *_args,
             profile=profile,
+            organization_code=organization_code,
             identities=identities,
             _configuration=_configuration,
             **kwargs,

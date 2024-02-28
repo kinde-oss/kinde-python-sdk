@@ -88,6 +88,7 @@ class SchemaForRequestBodyApplicationJson(
                     enum_value_to_name = {
                         "env": "ENV",
                         "org": "ORG",
+                        "usr": "USR",
                     }
                 
                 @schemas.classproperty
@@ -97,6 +98,10 @@ class SchemaForRequestBodyApplicationJson(
                 @schemas.classproperty
                 def ORG(cls):
                     return cls("org")
+                
+                @schemas.classproperty
+                def USR(cls):
+                    return cls("usr")
             default_value = schemas.StrSchema
             __annotations__ = {
                 "name": name,

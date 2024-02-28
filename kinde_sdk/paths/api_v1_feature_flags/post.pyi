@@ -80,6 +80,10 @@ class SchemaForRequestBodyApplicationJson(
                 @schemas.classproperty
                 def ORG(cls):
                     return cls("org")
+                
+                @schemas.classproperty
+                def USR(cls):
+                    return cls("usr")
             default_value = schemas.StrSchema
             __annotations__ = {
                 "name": name,

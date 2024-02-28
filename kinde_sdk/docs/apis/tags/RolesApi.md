@@ -5,11 +5,11 @@ All URIs are relative to *https://app.kinde.com*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_role**](#create_role) | **post** /api/v1/role | Create Role
+[**create_role**](#create_role) | **post** /api/v1/roles | Create Role
 [**delete_role**](#delete_role) | **delete** /api/v1/roles/{role_id} | Delete Role
 [**get_role_permission**](#get_role_permission) | **get** /api/v1/roles/{role_id}/permissions | Get Role Permissions
 [**get_roles**](#get_roles) | **get** /api/v1/roles | List Roles
-[**remove_role_permission**](#remove_role_permission) | **delete** /api/v1/roles/{role_id}/permission/{permission_id} | Remove Role Permission
+[**remove_role_permission**](#remove_role_permission) | **delete** /api/v1/roles/{role_id}/permissions/{permission_id} | Remove Role Permission
 [**update_role_permissions**](#update_role_permissions) | **patch** /api/v1/roles/{role_id}/permissions | Update Role Permissions
 [**update_roles**](#update_roles) | **patch** /api/v1/roles/{role_id} | Update Role
 
@@ -72,7 +72,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 body | typing.Union[SchemaForRequestBodyApplicationJson, Unset] | optional, default is unset |
 content_type | str | optional, default is 'application/json' | Selects the schema and serialization of the request body
-accept_content_types | typing.Tuple[str] | default is ('application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
 timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
 skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
@@ -103,14 +103,19 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 201 | [ApiResponseFor201](#create_role.ApiResponseFor201) | Role successfully created
 400 | [ApiResponseFor400](#create_role.ApiResponseFor400) | Invalid request.
 403 | [ApiResponseFor403](#create_role.ApiResponseFor403) | Invalid credentials.
-429 | [ApiResponseFor429](#create_role.ApiResponseFor429) | Request was throttled.
 
 #### create_role.ApiResponseFor201
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor201ResponseBodyApplicationJsonCharsetutf8, ] |  |
+body | typing.Union[SchemaFor201ResponseBodyApplicationJson, SchemaFor201ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor201ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
 
 # SchemaFor201ResponseBodyApplicationJsonCharsetutf8
 Type | Description  | Notes
@@ -122,8 +127,14 @@ Type | Description  | Notes
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
 
 # SchemaFor400ResponseBodyApplicationJsonCharsetutf8
 Type | Description  | Notes
@@ -135,21 +146,20 @@ Type | Description  | Notes
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor403ResponseBodyApplicationJsonCharsetutf8, ] |  |
+body | typing.Union[SchemaFor403ResponseBodyApplicationJson, SchemaFor403ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor403ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
 
 # SchemaFor403ResponseBodyApplicationJsonCharsetutf8
 Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
-
-#### create_role.ApiResponseFor429
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
 
 ### Authorization
 
@@ -509,6 +519,7 @@ The returned list can be sorted by role name or role ID in ascending or descendi
 ```python
 import kinde_sdk
 from kinde_sdk.apis.tags import roles_api
+from kinde_sdk.model.get_roles_response import GetRolesResponse
 from kinde_sdk.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to https://app.kinde.com
@@ -551,7 +562,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 query_params | RequestQueryParams | |
-accept_content_types | typing.Tuple[str] | default is ('application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
 timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
 skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
@@ -600,22 +611,33 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
 
-# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetRolesResponse**](../../models/GetRolesResponse.md) |  | 
 
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-dict, frozendict.frozendict,  | frozendict.frozendict,  |  | 
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetRolesResponse**](../../models/GetRolesResponse.md) |  | 
+
 
 #### get_roles.ApiResponseFor403
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | typing.Union[SchemaFor403ResponseBodyApplicationJsonCharsetutf8, ] |  |
+body | typing.Union[SchemaFor403ResponseBodyApplicationJson, SchemaFor403ResponseBodyApplicationJsonCharsetutf8, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor403ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
 
 # SchemaFor403ResponseBodyApplicationJsonCharsetutf8
 Type | Description  | Notes

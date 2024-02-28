@@ -11,6 +11,7 @@ Method | HTTP request | Description
 [**get_users**](#get_users) | **get** /api/v1/users | List Users
 [**refresh_user_claims**](#refresh_user_claims) | **post** /api/v1/users/{user_id}/refresh_claims | Refresh User Claims and Invalidate Cache
 [**update_user**](#update_user) | **patch** /api/v1/user | Update User
+[**update_user_feature_flag_override**](#update_user_feature_flag_override) | **patch** /api/v1/users/{user_id}/feature_flags/{feature_flag_key} | Update User Feature Flag Override
 
 # **create_user**
 <a name="create_user"></a>
@@ -55,6 +56,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
             given_name="given_name_example",
             family_name="family_name_example",
         ),
+        organization_code="organization_code_example",
         identities=[
             dict(
                 type="email",
@@ -97,6 +99,7 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
 **[profile](#profile)** | dict, frozendict.frozendict,  | frozendict.frozendict,  | Basic information required to create a user. | [optional] 
+**organization_code** | str,  | str,  | The unique code associated with the organization you want the user to join. | [optional] 
 **[identities](#identities)** | list, tuple,  | tuple,  | Array of identities to assign to the created user | [optional] 
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
@@ -597,7 +600,6 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 
     # example passing only optional values
     query_params = {
-        'sort': "name_asc",
         'page_size': 1,
         'user_id': "user_id_example",
         'next_token': "next_token_example",
@@ -628,20 +630,12 @@ skip_deserialization | bool | default is False | when True, headers and body wil
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
-sort | SortSchema | | optional
 page_size | PageSizeSchema | | optional
 user_id | UserIdSchema | | optional
 next_token | NextTokenSchema | | optional
 email | EmailSchema | | optional
 expand | ExpandSchema | | optional
 
-
-# SortSchema
-
-## Model Type Info
-Input Type | Accessed Type | Description | Notes
------------- | ------------- | ------------- | -------------
-None, str,  | NoneClass, str,  |  | must be one of ["name_asc", "name_desc", "email_asc", "email_desc", ] 
 
 # PageSizeSchema
 
@@ -882,7 +876,7 @@ headers | Unset | headers were not defined |
 
 # **update_user**
 <a name="update_user"></a>
-> UpdateUserResponse update_user(any_type)
+> UpdateUserResponse update_user(idany_type)
 
 Update User
 
@@ -918,25 +912,6 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     api_instance = users_api.UsersApi(api_client)
 
     # example passing only required values which don't have defaults set
-    query_params = {
-    }
-    body = dict(
-        given_name="given_name_example",
-        family_name="family_name_example",
-        is_suspended=True,
-        is_password_reset_requested=True,
-    )
-    try:
-        # Update User
-        api_response = api_instance.update_user(
-            query_params=query_params,
-            body=body,
-        )
-        pprint(api_response)
-    except kinde_sdk.ApiException as e:
-        print("Exception when calling UsersApi->update_user: %s\n" % e)
-
-    # example passing only optional values
     query_params = {
         'id': "id_example",
     }
@@ -991,7 +966,7 @@ Key | Input Type | Accessed Type | Description | Notes
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
-id | IdSchema | | optional
+id | IdSchema | | 
 
 
 # IdSchema
@@ -1057,6 +1032,177 @@ body | Unset | body was not defined |
 headers | Unset | headers were not defined |
 
 #### update_user.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **update_user_feature_flag_override**
+<a name="update_user_feature_flag_override"></a>
+> SuccessResponse update_user_feature_flag_override(user_idfeature_flag_keyvalue)
+
+Update User Feature Flag Override
+
+Update user feature flag override.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = users_api.UsersApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'user_id': "user_id_example",
+        'feature_flag_key': "feature_flag_key_example",
+    }
+    query_params = {
+        'value': "value_example",
+    }
+    try:
+        # Update User Feature Flag Override
+        api_response = api_instance.update_user_feature_flag_override(
+            path_params=path_params,
+            query_params=query_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling UsersApi->update_user_feature_flag_override: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+query_params | RequestQueryParams | |
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### query_params
+#### RequestQueryParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+value | ValueSchema | | 
+
+
+# ValueSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+user_id | UserIdSchema | | 
+feature_flag_key | FeatureFlagKeySchema | | 
+
+# UserIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+# FeatureFlagKeySchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#update_user_feature_flag_override.ApiResponseFor200) | Feature flag override successfully updated.
+400 | [ApiResponseFor400](#update_user_feature_flag_override.ApiResponseFor400) | Invalid request.
+403 | [ApiResponseFor403](#update_user_feature_flag_override.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_user_feature_flag_override.ApiResponseFor429) | Request was throttled.
+
+#### update_user_feature_flag_override.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### update_user_feature_flag_override.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### update_user_feature_flag_override.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_user_feature_flag_override.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

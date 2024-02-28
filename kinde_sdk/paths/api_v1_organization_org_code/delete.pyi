@@ -65,18 +65,6 @@ class ApiResponseFor200(api_client.ApiResponse):
 _response_for_200 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor200,
 )
-
-
-@dataclass
-class ApiResponseFor403(api_client.ApiResponse):
-    response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
-    headers: schemas.Unset = schemas.unset
-
-
-_response_for_403 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor403,
-)
 SchemaFor400ResponseBodyApplicationJson = ErrorResponse
 SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
@@ -99,6 +87,18 @@ _response_for_400 = api_client.OpenApiResponse(
         'application/json; charset=utf-8': api_client.MediaType(
             schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
     },
+)
+
+
+@dataclass
+class ApiResponseFor403(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_403 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor403,
 )
 
 

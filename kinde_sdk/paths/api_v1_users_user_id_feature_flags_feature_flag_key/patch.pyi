@@ -25,124 +25,20 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
-from kinde_sdk.model.users_response import UsersResponse
-
-from . import path
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
 
 # Query params
-
-
-class PageSizeSchema(
-    schemas.IntBase,
-    schemas.NoneBase,
-    schemas.Schema,
-    schemas.NoneDecimalMixin
-):
-
-
-    def __new__(
-        cls,
-        *_args: typing.Union[None, decimal.Decimal, int, ],
-        _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> 'PageSizeSchema':
-        return super().__new__(
-            cls,
-            *_args,
-            _configuration=_configuration,
-        )
-
-
-class UserIdSchema(
-    schemas.StrBase,
-    schemas.NoneBase,
-    schemas.Schema,
-    schemas.NoneStrMixin
-):
-
-
-    def __new__(
-        cls,
-        *_args: typing.Union[None, str, ],
-        _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> 'UserIdSchema':
-        return super().__new__(
-            cls,
-            *_args,
-            _configuration=_configuration,
-        )
-
-
-class NextTokenSchema(
-    schemas.StrBase,
-    schemas.NoneBase,
-    schemas.Schema,
-    schemas.NoneStrMixin
-):
-
-
-    def __new__(
-        cls,
-        *_args: typing.Union[None, str, ],
-        _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> 'NextTokenSchema':
-        return super().__new__(
-            cls,
-            *_args,
-            _configuration=_configuration,
-        )
-
-
-class EmailSchema(
-    schemas.StrBase,
-    schemas.NoneBase,
-    schemas.Schema,
-    schemas.NoneStrMixin
-):
-
-
-    def __new__(
-        cls,
-        *_args: typing.Union[None, str, ],
-        _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> 'EmailSchema':
-        return super().__new__(
-            cls,
-            *_args,
-            _configuration=_configuration,
-        )
-
-
-class ExpandSchema(
-    schemas.StrBase,
-    schemas.NoneBase,
-    schemas.Schema,
-    schemas.NoneStrMixin
-):
-
-
-    def __new__(
-        cls,
-        *_args: typing.Union[None, str, ],
-        _configuration: typing.Optional[schemas.Configuration] = None,
-    ) -> 'ExpandSchema':
-        return super().__new__(
-            cls,
-            *_args,
-            _configuration=_configuration,
-        )
+ValueSchema = schemas.StrSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     'RequestRequiredQueryParams',
     {
+        'value': typing.Union[ValueSchema, str, ],
     }
 )
 RequestOptionalQueryParams = typing_extensions.TypedDict(
     'RequestOptionalQueryParams',
     {
-        'page_size': typing.Union[PageSizeSchema, None, decimal.Decimal, int, ],
-        'user_id': typing.Union[UserIdSchema, None, str, ],
-        'next_token': typing.Union[NextTokenSchema, None, str, ],
-        'email': typing.Union[EmailSchema, None, str, ],
-        'expand': typing.Union[ExpandSchema, None, str, ],
     },
     total=False
 )
@@ -152,41 +48,49 @@ class RequestQueryParams(RequestRequiredQueryParams, RequestOptionalQueryParams)
     pass
 
 
-request_query_page_size = api_client.QueryParameter(
-    name="page_size",
+request_query_value = api_client.QueryParameter(
+    name="value",
     style=api_client.ParameterStyle.FORM,
-    schema=PageSizeSchema,
+    schema=ValueSchema,
+    required=True,
     explode=True,
 )
-request_query_user_id = api_client.QueryParameter(
+# Path params
+UserIdSchema = schemas.StrSchema
+FeatureFlagKeySchema = schemas.StrSchema
+RequestRequiredPathParams = typing_extensions.TypedDict(
+    'RequestRequiredPathParams',
+    {
+        'user_id': typing.Union[UserIdSchema, str, ],
+        'feature_flag_key': typing.Union[FeatureFlagKeySchema, str, ],
+    }
+)
+RequestOptionalPathParams = typing_extensions.TypedDict(
+    'RequestOptionalPathParams',
+    {
+    },
+    total=False
+)
+
+
+class RequestPathParams(RequestRequiredPathParams, RequestOptionalPathParams):
+    pass
+
+
+request_path_user_id = api_client.PathParameter(
     name="user_id",
-    style=api_client.ParameterStyle.FORM,
+    style=api_client.ParameterStyle.SIMPLE,
     schema=UserIdSchema,
-    explode=True,
+    required=True,
 )
-request_query_next_token = api_client.QueryParameter(
-    name="next_token",
-    style=api_client.ParameterStyle.FORM,
-    schema=NextTokenSchema,
-    explode=True,
+request_path_feature_flag_key = api_client.PathParameter(
+    name="feature_flag_key",
+    style=api_client.ParameterStyle.SIMPLE,
+    schema=FeatureFlagKeySchema,
+    required=True,
 )
-request_query_email = api_client.QueryParameter(
-    name="email",
-    style=api_client.ParameterStyle.FORM,
-    schema=EmailSchema,
-    explode=True,
-)
-request_query_expand = api_client.QueryParameter(
-    name="expand",
-    style=api_client.ParameterStyle.FORM,
-    schema=ExpandSchema,
-    explode=True,
-)
-_auth = [
-    'kindeBearerAuth',
-]
-SchemaFor200ResponseBodyApplicationJson = UsersResponse
-SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = UsersResponse
+SchemaFor200ResponseBodyApplicationJson = SuccessResponse
+SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = SuccessResponse
 
 
 @dataclass
@@ -206,6 +110,29 @@ _response_for_200 = api_client.OpenApiResponse(
             schema=SchemaFor200ResponseBodyApplicationJson),
         'application/json; charset=utf-8': api_client.MediaType(
             schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
+    },
+)
+SchemaFor400ResponseBodyApplicationJson = ErrorResponse
+SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
+
+
+@dataclass
+class ApiResponseFor400(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: typing.Union[
+        SchemaFor400ResponseBodyApplicationJson,
+        SchemaFor400ResponseBodyApplicationJsonCharsetutf8,
+    ]
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_400 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor400,
+    content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJson),
+        'application/json; charset=utf-8': api_client.MediaType(
+            schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
     },
 )
 
@@ -232,11 +159,6 @@ class ApiResponseFor429(api_client.ApiResponse):
 _response_for_429 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor429,
 )
-_status_code_to_response = {
-    '200': _response_for_200,
-    '403': _response_for_403,
-    '429': _response_for_429,
-}
 _all_accept_content_types = (
     'application/json',
     'application/json; charset=utf-8',
@@ -245,9 +167,10 @@ _all_accept_content_types = (
 
 class BaseApi(api_client.Api):
     @typing.overload
-    def _get_users_oapg(
+    def _update_user_feature_flag_override_oapg(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -257,19 +180,21 @@ class BaseApi(api_client.Api):
     ]: ...
 
     @typing.overload
-    def _get_users_oapg(
+    def _update_user_feature_flag_override_oapg(
         self,
         skip_deserialization: typing_extensions.Literal[True],
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
-    def _get_users_oapg(
+    def _update_user_feature_flag_override_oapg(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -279,30 +204,42 @@ class BaseApi(api_client.Api):
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
 
-    def _get_users_oapg(
+    def _update_user_feature_flag_override_oapg(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
     ):
         """
-        List Users
+        Update User Feature Flag Override
         :param skip_deserialization: If true then api_response.response will be set but
             api_response.body and api_response.headers will not be deserialized into schema
             class instances
         """
         self._verify_typed_dict_inputs_oapg(RequestQueryParams, query_params)
+        self._verify_typed_dict_inputs_oapg(RequestPathParams, path_params)
         used_path = path.value
+
+        _path_params = {}
+        for parameter in (
+            request_path_user_id,
+            request_path_feature_flag_key,
+        ):
+            parameter_data = path_params.get(parameter.name, schemas.unset)
+            if parameter_data is schemas.unset:
+                continue
+            serialized_data = parameter.serialize(parameter_data)
+            _path_params.update(serialized_data)
+
+        for k, v in _path_params.items():
+            used_path = used_path.replace('{%s}' % k, v)
 
         prefix_separator_iterator = None
         for parameter in (
-            request_query_page_size,
-            request_query_user_id,
-            request_query_next_token,
-            request_query_email,
-            request_query_expand,
+            request_query_value,
         ):
             parameter_data = query_params.get(parameter.name, schemas.unset)
             if parameter_data is schemas.unset:
@@ -321,7 +258,7 @@ class BaseApi(api_client.Api):
 
         response = self.api_client.call_api(
             resource_path=used_path,
-            method='get'.upper(),
+            method='patch'.upper(),
             headers=_headers,
             auth_settings=_auth,
             stream=stream,
@@ -347,13 +284,14 @@ class BaseApi(api_client.Api):
         return api_response
 
 
-class GetUsers(BaseApi):
+class UpdateUserFeatureFlagOverride(BaseApi):
     # this class is used by api classes that refer to endpoints with operationId fn names
 
     @typing.overload
-    def get_users(
+    def update_user_feature_flag_override(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -363,19 +301,21 @@ class GetUsers(BaseApi):
     ]: ...
 
     @typing.overload
-    def get_users(
+    def update_user_feature_flag_override(
         self,
         skip_deserialization: typing_extensions.Literal[True],
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
-    def get_users(
+    def update_user_feature_flag_override(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -385,16 +325,18 @@ class GetUsers(BaseApi):
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
 
-    def get_users(
+    def update_user_feature_flag_override(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
     ):
-        return self._get_users_oapg(
+        return self._update_user_feature_flag_override_oapg(
             query_params=query_params,
+            path_params=path_params,
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,
@@ -402,13 +344,14 @@ class GetUsers(BaseApi):
         )
 
 
-class ApiForget(BaseApi):
+class ApiForpatch(BaseApi):
     # this class is used by api classes that refer to endpoints by path and http method names
 
     @typing.overload
-    def get(
+    def patch(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -418,19 +361,21 @@ class ApiForget(BaseApi):
     ]: ...
 
     @typing.overload
-    def get(
+    def patch(
         self,
         skip_deserialization: typing_extensions.Literal[True],
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
     ) -> api_client.ApiResponseWithoutDeserialization: ...
 
     @typing.overload
-    def get(
+    def patch(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
@@ -440,16 +385,18 @@ class ApiForget(BaseApi):
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
 
-    def get(
+    def patch(
         self,
         query_params: RequestQueryParams = frozendict.frozendict(),
+        path_params: RequestPathParams = frozendict.frozendict(),
         accept_content_types: typing.Tuple[str] = _all_accept_content_types,
         stream: bool = False,
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = False,
     ):
-        return self._get_users_oapg(
+        return self._update_user_feature_flag_override_oapg(
             query_params=query_params,
+            path_params=path_params,
             accept_content_types=accept_content_types,
             stream=stream,
             timeout=timeout,

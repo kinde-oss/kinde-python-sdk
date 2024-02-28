@@ -25,6 +25,7 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
+from kinde_sdk.model.get_permissions_response import GetPermissionsResponse
 from kinde_sdk.model.error_response import ErrorResponse
 
 # Query params
@@ -152,13 +153,15 @@ request_query_next_token = api_client.QueryParameter(
     schema=NextTokenSchema,
     explode=True,
 )
-SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = schemas.DictSchema
+SchemaFor200ResponseBodyApplicationJson = GetPermissionsResponse
+SchemaFor200ResponseBodyApplicationJsonCharsetutf8 = GetPermissionsResponse
 
 
 @dataclass
 class ApiResponseFor200(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
+        SchemaFor200ResponseBodyApplicationJson,
         SchemaFor200ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
@@ -167,10 +170,13 @@ class ApiResponseFor200(api_client.ApiResponse):
 _response_for_200 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor200,
     content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor200ResponseBodyApplicationJson),
         'application/json; charset=utf-8': api_client.MediaType(
             schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
     },
 )
+SchemaFor403ResponseBodyApplicationJson = ErrorResponse
 SchemaFor403ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
 
@@ -178,6 +184,7 @@ SchemaFor403ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 class ApiResponseFor403(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: typing.Union[
+        SchemaFor403ResponseBodyApplicationJson,
         SchemaFor403ResponseBodyApplicationJsonCharsetutf8,
     ]
     headers: schemas.Unset = schemas.unset
@@ -186,6 +193,8 @@ class ApiResponseFor403(api_client.ApiResponse):
 _response_for_403 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor403,
     content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor403ResponseBodyApplicationJson),
         'application/json; charset=utf-8': api_client.MediaType(
             schema=SchemaFor403ResponseBodyApplicationJsonCharsetutf8),
     },
@@ -203,6 +212,7 @@ _response_for_429 = api_client.OpenApiResponse(
     response_cls=ApiResponseFor429,
 )
 _all_accept_content_types = (
+    'application/json',
     'application/json; charset=utf-8',
 )
 

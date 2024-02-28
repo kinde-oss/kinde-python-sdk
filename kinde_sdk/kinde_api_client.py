@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 
 import jwt
 from authlib.integrations.requests_client import OAuth2Session
@@ -99,10 +100,14 @@ class KindeApiClient(ApiClient):
         self.registration_url = f"{self.login_url}&start_page=registration"
         self.create_org_url = f"{self.registration_url}&is_create_org=true"
 
-    def get_login_url(self) -> str:
+    def get_login_url(self, additional_params: Optional[Dict[str, str]] = None) -> str:
+        if additional_params:
+            return self._add_additional_params(self.login_url, additional_params=additional_params)
         return self.login_url
 
-    def get_register_url(self) -> str:
+    def get_register_url(self, additional_params: Optional[Dict[str, str]] = None) -> str:
+        if additional_params:
+            return self._add_additional_params(self.registration_url, additional_params=additional_params)
         return self.registration_url
 
     def logout(self, redirect_to: str) -> str:
@@ -282,3 +287,17 @@ class KindeApiClient(ApiClient):
             self._clear_decoded_tokens()
         else:
             raise KindeTokenException('"Access token" and "Refresh token" are invalid.')
+
+    def _add_additional_params(self, url: str, additional_params: Optional[Dict[str, str]] = None) -> str:
+
+        if additional_params.get('auth_url_params'):
+            url_parts = urlparse(url)
+            query = parse_qs(url_parts.query)
+
+            for key, value in additional_params.get('auth_url_params').items():
+                query[key] = value
+
+            url_parts = url_parts._replace(query=urlencode(query, doseq=True))
+            return urlunparse(url_parts)
+        else:
+            return url

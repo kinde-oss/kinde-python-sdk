@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 # **get_connected_app_auth_url**
 <a name="get_connected_app_auth_url"></a>
-> ConnectedAppsAuthUrl get_connected_app_auth_url(key_code_refuser_id)
+> ConnectedAppsAuthUrl get_connected_app_auth_url(key_code_ref)
 
 Get Connected App URL
 
@@ -49,7 +49,22 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     query_params = {
         'key_code_ref': "key_code_ref_example",
+    }
+    try:
+        # Get Connected App URL
+        api_response = api_instance.get_connected_app_auth_url(
+            query_params=query_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling ConnectedAppsApi->get_connected_app_auth_url: %s\n" % e)
+
+    # example passing only optional values
+    query_params = {
+        'key_code_ref': "key_code_ref_example",
         'user_id': "user_id_example",
+        'org_code': "org_code_example",
+        'override_callback_url': "override_callback_url_example",
     }
     try:
         # Get Connected App URL
@@ -76,7 +91,9 @@ skip_deserialization | bool | default is False | when True, headers and body wil
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 key_code_ref | KeyCodeRefSchema | | 
-user_id | UserIdSchema | | 
+user_id | UserIdSchema | | optional
+org_code | OrgCodeSchema | | optional
+override_callback_url | OverrideCallbackUrlSchema | | optional
 
 
 # KeyCodeRefSchema
@@ -93,6 +110,20 @@ Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 str,  | str,  |  | 
 
+# OrgCodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+# OverrideCallbackUrlSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
 ### Return Types, Responses
 
 Code | Class | Description
@@ -100,8 +131,8 @@ Code | Class | Description
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#get_connected_app_auth_url.ApiResponseFor200) | A URL that can be used to authenticate and a session id to identify this authentication session.
 400 | [ApiResponseFor400](#get_connected_app_auth_url.ApiResponseFor400) | Error retrieving connected app auth url.
-404 | [ApiResponseFor404](#get_connected_app_auth_url.ApiResponseFor404) | Error retrieving connected app auth url.
 403 | [ApiResponseFor403](#get_connected_app_auth_url.ApiResponseFor403) | Invalid credentials.
+404 | [ApiResponseFor404](#get_connected_app_auth_url.ApiResponseFor404) | Error retrieving connected app auth url.
 429 | [ApiResponseFor429](#get_connected_app_auth_url.ApiResponseFor429) | Request was throttled.
 
 #### get_connected_app_auth_url.ApiResponseFor200
@@ -142,6 +173,13 @@ Type | Description  | Notes
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
 
+#### get_connected_app_auth_url.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
 #### get_connected_app_auth_url.ApiResponseFor404
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
@@ -160,13 +198,6 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
-
-#### get_connected_app_auth_url.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
 
 #### get_connected_app_auth_url.ApiResponseFor429
 Name | Type | Description  | Notes

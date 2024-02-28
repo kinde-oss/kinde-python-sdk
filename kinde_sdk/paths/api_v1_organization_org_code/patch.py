@@ -73,6 +73,13 @@ class SchemaForRequestBodyApplicationJson(
             button_color = schemas.StrSchema
             button_text_color = schemas.StrSchema
             link_color = schemas.StrSchema
+            background_color_dark = schemas.StrSchema
+            button_color_dark = schemas.StrSchema
+            button_text_color_dark = schemas.StrSchema
+            link_color_dark = schemas.StrSchema
+            theme_code = schemas.StrSchema
+            handle = schemas.StrSchema
+            is_allow_registrations = schemas.BoolSchema
             __annotations__ = {
                 "name": name,
                 "external_id": external_id,
@@ -80,6 +87,13 @@ class SchemaForRequestBodyApplicationJson(
                 "button_color": button_color,
                 "button_text_color": button_text_color,
                 "link_color": link_color,
+                "background_color_dark": background_color_dark,
+                "button_color_dark": button_color_dark,
+                "button_text_color_dark": button_text_color_dark,
+                "link_color_dark": link_color_dark,
+                "theme_code": theme_code,
+                "handle": handle,
+                "is_allow_registrations": is_allow_registrations,
             }
     
     @typing.overload
@@ -101,9 +115,30 @@ class SchemaForRequestBodyApplicationJson(
     def __getitem__(self, name: typing_extensions.Literal["link_color"]) -> MetaOapg.properties.link_color: ...
     
     @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["background_color_dark"]) -> MetaOapg.properties.background_color_dark: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["button_color_dark"]) -> MetaOapg.properties.button_color_dark: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["button_text_color_dark"]) -> MetaOapg.properties.button_text_color_dark: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["link_color_dark"]) -> MetaOapg.properties.link_color_dark: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["theme_code"]) -> MetaOapg.properties.theme_code: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["handle"]) -> MetaOapg.properties.handle: ...
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["is_allow_registrations"]) -> MetaOapg.properties.is_allow_registrations: ...
+    
+    @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["name", "external_id", "background_color", "button_color", "button_text_color", "link_color", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["name", "external_id", "background_color", "button_color", "button_text_color", "link_color", "background_color_dark", "button_color_dark", "button_text_color_dark", "link_color_dark", "theme_code", "handle", "is_allow_registrations", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -127,9 +162,30 @@ class SchemaForRequestBodyApplicationJson(
     def get_item_oapg(self, name: typing_extensions.Literal["link_color"]) -> typing.Union[MetaOapg.properties.link_color, schemas.Unset]: ...
     
     @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["background_color_dark"]) -> typing.Union[MetaOapg.properties.background_color_dark, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["button_color_dark"]) -> typing.Union[MetaOapg.properties.button_color_dark, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["button_text_color_dark"]) -> typing.Union[MetaOapg.properties.button_text_color_dark, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["link_color_dark"]) -> typing.Union[MetaOapg.properties.link_color_dark, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["theme_code"]) -> typing.Union[MetaOapg.properties.theme_code, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["handle"]) -> typing.Union[MetaOapg.properties.handle, schemas.Unset]: ...
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["is_allow_registrations"]) -> typing.Union[MetaOapg.properties.is_allow_registrations, schemas.Unset]: ...
+    
+    @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["name", "external_id", "background_color", "button_color", "button_text_color", "link_color", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["name", "external_id", "background_color", "button_color", "button_text_color", "link_color", "background_color_dark", "button_color_dark", "button_text_color_dark", "link_color_dark", "theme_code", "handle", "is_allow_registrations", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -142,6 +198,13 @@ class SchemaForRequestBodyApplicationJson(
         button_color: typing.Union[MetaOapg.properties.button_color, str, schemas.Unset] = schemas.unset,
         button_text_color: typing.Union[MetaOapg.properties.button_text_color, str, schemas.Unset] = schemas.unset,
         link_color: typing.Union[MetaOapg.properties.link_color, str, schemas.Unset] = schemas.unset,
+        background_color_dark: typing.Union[MetaOapg.properties.background_color_dark, str, schemas.Unset] = schemas.unset,
+        button_color_dark: typing.Union[MetaOapg.properties.button_color_dark, str, schemas.Unset] = schemas.unset,
+        button_text_color_dark: typing.Union[MetaOapg.properties.button_text_color_dark, str, schemas.Unset] = schemas.unset,
+        link_color_dark: typing.Union[MetaOapg.properties.link_color_dark, str, schemas.Unset] = schemas.unset,
+        theme_code: typing.Union[MetaOapg.properties.theme_code, str, schemas.Unset] = schemas.unset,
+        handle: typing.Union[MetaOapg.properties.handle, str, schemas.Unset] = schemas.unset,
+        is_allow_registrations: typing.Union[MetaOapg.properties.is_allow_registrations, bool, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
     ) -> 'SchemaForRequestBodyApplicationJson':
@@ -154,6 +217,13 @@ class SchemaForRequestBodyApplicationJson(
             button_color=button_color,
             button_text_color=button_text_color,
             link_color=link_color,
+            background_color_dark=background_color_dark,
+            button_color_dark=button_color_dark,
+            button_text_color_dark=button_text_color_dark,
+            link_color_dark=link_color_dark,
+            theme_code=theme_code,
+            handle=handle,
+            is_allow_registrations=is_allow_registrations,
             _configuration=_configuration,
             **kwargs,
         )
@@ -191,18 +261,6 @@ _response_for_200 = api_client.OpenApiResponse(
             schema=SchemaFor200ResponseBodyApplicationJsonCharsetutf8),
     },
 )
-
-
-@dataclass
-class ApiResponseFor403(api_client.ApiResponse):
-    response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
-    headers: schemas.Unset = schemas.unset
-
-
-_response_for_403 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor403,
-)
 SchemaFor400ResponseBodyApplicationJson = ErrorResponse
 SchemaFor400ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
@@ -229,6 +287,18 @@ _response_for_400 = api_client.OpenApiResponse(
 
 
 @dataclass
+class ApiResponseFor403(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_403 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor403,
+)
+
+
+@dataclass
 class ApiResponseFor429(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: schemas.Unset = schemas.unset
@@ -240,8 +310,8 @@ _response_for_429 = api_client.OpenApiResponse(
 )
 _status_code_to_response = {
     '200': _response_for_200,
-    '403': _response_for_403,
     '400': _response_for_400,
+    '403': _response_for_403,
     '429': _response_for_429,
 }
 _all_accept_content_types = (

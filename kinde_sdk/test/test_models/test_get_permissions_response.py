@@ -13,12 +13,12 @@
 import unittest
 
 import kinde_sdk
-from kinde_sdk.model.get_organization_users_response import GetOrganizationUsersResponse
+from kinde_sdk.model.get_permissions_response import GetPermissionsResponse
 from kinde_sdk import configuration
 
 
-class TestGetOrganizationUsersResponse(unittest.TestCase):
-    """GetOrganizationUsersResponse unit test stubs"""
+class TestGetPermissionsResponse(unittest.TestCase):
+    """GetPermissionsResponse unit test stubs"""
     _configuration = configuration.Configuration()
 
 

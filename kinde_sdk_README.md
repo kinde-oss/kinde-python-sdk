@@ -86,11 +86,11 @@ Class | Method | HTTP request | Description
 *PermissionsApi* | [**delete_permission**](kinde_sdk/docs/apis/tags/PermissionsApi.md#delete_permission) | **delete** /api/v1/permissions/{permission_id} | Delete Permission
 *PermissionsApi* | [**get_permissions**](kinde_sdk/docs/apis/tags/PermissionsApi.md#get_permissions) | **get** /api/v1/permissions | List Permissions
 *PermissionsApi* | [**update_permissions**](kinde_sdk/docs/apis/tags/PermissionsApi.md#update_permissions) | **patch** /api/v1/permissions/{permission_id} | Update Permission
-*RolesApi* | [**create_role**](kinde_sdk/docs/apis/tags/RolesApi.md#create_role) | **post** /api/v1/role | Create Role
+*RolesApi* | [**create_role**](kinde_sdk/docs/apis/tags/RolesApi.md#create_role) | **post** /api/v1/roles | Create Role
 *RolesApi* | [**delete_role**](kinde_sdk/docs/apis/tags/RolesApi.md#delete_role) | **delete** /api/v1/roles/{role_id} | Delete Role
 *RolesApi* | [**get_role_permission**](kinde_sdk/docs/apis/tags/RolesApi.md#get_role_permission) | **get** /api/v1/roles/{role_id}/permissions | Get Role Permissions
 *RolesApi* | [**get_roles**](kinde_sdk/docs/apis/tags/RolesApi.md#get_roles) | **get** /api/v1/roles | List Roles
-*RolesApi* | [**remove_role_permission**](kinde_sdk/docs/apis/tags/RolesApi.md#remove_role_permission) | **delete** /api/v1/roles/{role_id}/permission/{permission_id} | Remove Role Permission
+*RolesApi* | [**remove_role_permission**](kinde_sdk/docs/apis/tags/RolesApi.md#remove_role_permission) | **delete** /api/v1/roles/{role_id}/permissions/{permission_id} | Remove Role Permission
 *RolesApi* | [**update_role_permissions**](kinde_sdk/docs/apis/tags/RolesApi.md#update_role_permissions) | **patch** /api/v1/roles/{role_id}/permissions | Update Role Permissions
 *RolesApi* | [**update_roles**](kinde_sdk/docs/apis/tags/RolesApi.md#update_roles) | **patch** /api/v1/roles/{role_id} | Update Role
 *SubscribersApi* | [**create_subscriber**](kinde_sdk/docs/apis/tags/SubscribersApi.md#create_subscriber) | **post** /api/v1/subscribers | Create Subscriber
@@ -103,6 +103,7 @@ Class | Method | HTTP request | Description
 *UsersApi* | [**get_users**](kinde_sdk/docs/apis/tags/UsersApi.md#get_users) | **get** /api/v1/users | List Users
 *UsersApi* | [**refresh_user_claims**](kinde_sdk/docs/apis/tags/UsersApi.md#refresh_user_claims) | **post** /api/v1/users/{user_id}/refresh_claims | Refresh User Claims and Invalidate Cache
 *UsersApi* | [**update_user**](kinde_sdk/docs/apis/tags/UsersApi.md#update_user) | **patch** /api/v1/user | Update User
+*UsersApi* | [**update_user_feature_flag_override**](kinde_sdk/docs/apis/tags/UsersApi.md#update_user_feature_flag_override) | **patch** /api/v1/users/{user_id}/feature_flags/{feature_flag_key} | Update User Feature Flag Override
 
 ## Documentation For Models
 
@@ -127,6 +128,7 @@ Class | Method | HTTP request | Description
  - [GetOrganizationsResponse](kinde_sdk/docs/models/GetOrganizationsResponse.md)
  - [GetOrganizationsUserPermissionsResponse](kinde_sdk/docs/models/GetOrganizationsUserPermissionsResponse.md)
  - [GetOrganizationsUserRolesResponse](kinde_sdk/docs/models/GetOrganizationsUserRolesResponse.md)
+ - [GetPermissionsResponse](kinde_sdk/docs/models/GetPermissionsResponse.md)
  - [GetRedirectCallbackUrlsResponse](kinde_sdk/docs/models/GetRedirectCallbackUrlsResponse.md)
  - [GetRolesResponse](kinde_sdk/docs/models/GetRolesResponse.md)
  - [GetSubscriberResponse](kinde_sdk/docs/models/GetSubscriberResponse.md)

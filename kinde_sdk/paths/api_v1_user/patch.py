@@ -35,12 +35,12 @@ IdSchema = schemas.StrSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     'RequestRequiredQueryParams',
     {
+        'id': typing.Union[IdSchema, str, ],
     }
 )
 RequestOptionalQueryParams = typing_extensions.TypedDict(
     'RequestOptionalQueryParams',
     {
-        'id': typing.Union[IdSchema, str, ],
     },
     total=False
 )
@@ -54,6 +54,7 @@ request_query_id = api_client.QueryParameter(
     name="id",
     style=api_client.ParameterStyle.FORM,
     schema=IdSchema,
+    required=True,
     explode=True,
 )
 # body param

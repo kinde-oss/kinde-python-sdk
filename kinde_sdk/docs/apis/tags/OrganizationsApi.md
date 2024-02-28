@@ -278,7 +278,7 @@ headers | Unset | headers were not defined |
 
 # **create_organization**
 <a name="create_organization"></a>
-> CreateOrganizationResponse create_organization()
+> CreateOrganizationResponse create_organization(any_type)
 
 Create Organization
 
@@ -313,7 +313,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = organizations_api.OrganizationsApi(api_client)
 
-    # example passing only optional values
+    # example passing only required values which don't have defaults set
     body = dict(
         name="name_example",
         feature_flags=dict(
@@ -324,6 +324,13 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         button_color="button_color_example",
         button_text_color="button_text_color_example",
         link_color="link_color_example",
+        background_color_dark="background_color_dark_example",
+        button_color_dark="button_color_dark_example",
+        button_text_color_dark="button_text_color_dark_example",
+        link_color_dark="link_color_dark_example",
+        theme_code="theme_code_example",
+        handle="handle_example",
+        is_allow_registrations=True,
     )
     try:
         # Create Organization
@@ -338,7 +345,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
-body | typing.Union[SchemaForRequestBodyApplicationJson, Unset] | optional, default is unset |
+body | typing.Union[SchemaForRequestBodyApplicationJson] | required |
 content_type | str | optional, default is 'application/json' | Selects the schema and serialization of the request body
 accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
 stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
@@ -357,13 +364,20 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**name** | str,  | str,  | The organization&#x27;s name. | [optional] 
+**name** | str,  | str,  | The organization&#x27;s name. | 
 **[feature_flags](#feature_flags)** | dict, frozendict.frozendict,  | frozendict.frozendict,  | The organization&#x27;s feature flag settings. | [optional] 
 **external_id** | str,  | str,  | The organization&#x27;s ID. | [optional] 
 **background_color** | str,  | str,  | The organization&#x27;s brand settings - background color. | [optional] 
 **button_color** | str,  | str,  | The organization&#x27;s brand settings - button color. | [optional] 
 **button_text_color** | str,  | str,  | The organization&#x27;s brand settings - button text color. | [optional] 
 **link_color** | str,  | str,  | The organization&#x27;s brand settings - link color. | [optional] 
+**background_color_dark** | str,  | str,  | The organization&#x27;s brand settings - dark mode background color. | [optional] 
+**button_color_dark** | str,  | str,  | The organization&#x27;s brand settings - dark mode button color. | [optional] 
+**button_text_color_dark** | str,  | str,  | The organization&#x27;s brand settings - dark mode button text color. | [optional] 
+**link_color_dark** | str,  | str,  | The organization&#x27;s brand settings - dark mode link color. | [optional] 
+**theme_code** | str,  | str,  | The organization&#x27;s brand settings - theme/mode &#x27;light&#x27; | &#x27;dark&#x27; | &#x27;user_preference&#x27;. | [optional] 
+**handle** | str,  | str,  | The organization&#x27;s handle. | [optional] 
+**is_allow_registrations** | bool,  | BoolClass,  | Users can sign up to this organization. | [optional] 
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 # feature_flags
@@ -386,8 +400,8 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#create_organization.ApiResponseFor200) | Organization successfully created.
-403 | [ApiResponseFor403](#create_organization.ApiResponseFor403) | Invalid credentials.
 400 | [ApiResponseFor400](#create_organization.ApiResponseFor400) | Error creating user.
+403 | [ApiResponseFor403](#create_organization.ApiResponseFor403) | Invalid credentials.
 429 | [ApiResponseFor429](#create_organization.ApiResponseFor429) | Request was throttled.
 500 | [ApiResponseFor500](#create_organization.ApiResponseFor500) | Could not create organization.
 
@@ -403,13 +417,6 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**CreateOrganizationResponse**](../../models/CreateOrganizationResponse.md) |  | 
 
-
-#### create_organization.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
 
 #### create_organization.ApiResponseFor400
 Name | Type | Description  | Notes
@@ -429,6 +436,13 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
+
+#### create_organization.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
 
 #### create_organization.ApiResponseFor429
 Name | Type | Description  | Notes
@@ -830,18 +844,11 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#delete_organization.ApiResponseFor200) | Organization successfully deleted.
-403 | [ApiResponseFor403](#delete_organization.ApiResponseFor403) | Invalid credentials.
 400 | [ApiResponseFor400](#delete_organization.ApiResponseFor400) | Error deleting organization.
+403 | [ApiResponseFor403](#delete_organization.ApiResponseFor403) | Invalid credentials.
 429 | [ApiResponseFor429](#delete_organization.ApiResponseFor429) | Request was throttled.
 
 #### delete_organization.ApiResponseFor200
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### delete_organization.ApiResponseFor403
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -866,6 +873,13 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
+
+#### delete_organization.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
 
 #### delete_organization.ApiResponseFor429
 Name | Type | Description  | Notes
@@ -2641,6 +2655,13 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         button_color="button_color_example",
         button_text_color="button_text_color_example",
         link_color="link_color_example",
+        background_color_dark="background_color_dark_example",
+        button_color_dark="button_color_dark_example",
+        button_text_color_dark="button_text_color_dark_example",
+        link_color_dark="link_color_dark_example",
+        theme_code="theme_code_example",
+        handle="handle_example",
+        is_allow_registrations=True,
     )
     try:
         # Update Organization
@@ -2682,6 +2703,13 @@ Key | Input Type | Accessed Type | Description | Notes
 **button_color** | str,  | str,  | The organization&#x27;s brand settings - button color. | [optional] 
 **button_text_color** | str,  | str,  | The organization&#x27;s brand settings - button text color. | [optional] 
 **link_color** | str,  | str,  | The organization&#x27;s brand settings - link color. | [optional] 
+**background_color_dark** | str,  | str,  | The organization&#x27;s brand settings - dark mode background color. | [optional] 
+**button_color_dark** | str,  | str,  | The organization&#x27;s brand settings - dark mode button color. | [optional] 
+**button_text_color_dark** | str,  | str,  | The organization&#x27;s brand settings - dark mode button text color. | [optional] 
+**link_color_dark** | str,  | str,  | The organization&#x27;s brand settings - dark mode link color. | [optional] 
+**theme_code** | str,  | str,  | The organization&#x27;s brand settings - theme/mode &#x27;light&#x27; | &#x27;dark&#x27; | &#x27;user_preference&#x27;. | [optional] 
+**handle** | str,  | str,  | The organization&#x27;s handle. | [optional] 
+**is_allow_registrations** | bool,  | BoolClass,  | Users can sign up to this organization. | [optional] 
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 ### path_params
@@ -2704,8 +2732,8 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#update_organization.ApiResponseFor200) | Organization successfully updated.
-403 | [ApiResponseFor403](#update_organization.ApiResponseFor403) | Invalid credentials.
 400 | [ApiResponseFor400](#update_organization.ApiResponseFor400) | Error updating organization.
+403 | [ApiResponseFor403](#update_organization.ApiResponseFor403) | Invalid credentials.
 429 | [ApiResponseFor429](#update_organization.ApiResponseFor429) | Request was throttled.
 
 #### update_organization.ApiResponseFor200
@@ -2727,13 +2755,6 @@ Type | Description  | Notes
 [**SuccessResponse**](../../models/SuccessResponse.md) |  | 
 
 
-#### update_organization.ApiResponseFor403
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
 #### update_organization.ApiResponseFor400
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
@@ -2752,6 +2773,13 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
+
+#### update_organization.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
 
 #### update_organization.ApiResponseFor429
 Name | Type | Description  | Notes

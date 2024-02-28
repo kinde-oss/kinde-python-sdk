@@ -736,18 +736,11 @@ Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
 200 | [ApiResponseFor200](#update_application.ApiResponseFor200) | Application successfully updated.
-403 | [ApiResponseFor403](#update_application.ApiResponseFor403) | Invalid credentials.
 400 | [ApiResponseFor400](#update_application.ApiResponseFor400) | Bad request.
+403 | [ApiResponseFor403](#update_application.ApiResponseFor403) | Invalid credentials.
 429 | [ApiResponseFor429](#update_application.ApiResponseFor429) | Request was throttled.
 
 #### update_application.ApiResponseFor200
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
-headers | Unset | headers were not defined |
-
-#### update_application.ApiResponseFor403
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -772,6 +765,13 @@ Type | Description  | Notes
 ------------- | ------------- | -------------
 [**ErrorResponse**](../../models/ErrorResponse.md) |  | 
 
+
+#### update_application.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
 
 #### update_application.ApiResponseFor429
 Name | Type | Description  | Notes

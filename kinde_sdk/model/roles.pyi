@@ -37,14 +37,19 @@ class Roles(
     class MetaOapg:
         
         class properties:
+            id = schemas.StrSchema
             key = schemas.StrSchema
             name = schemas.StrSchema
             description = schemas.StrSchema
             __annotations__ = {
+                "id": id,
                 "key": key,
                 "name": name,
                 "description": description,
             }
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["id"]) -> MetaOapg.properties.id: ...
     
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["key"]) -> MetaOapg.properties.key: ...
@@ -58,10 +63,13 @@ class Roles(
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["key", "name", "description", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "key", "name", "description", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["id"]) -> typing.Union[MetaOapg.properties.id, schemas.Unset]: ...
     
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["key"]) -> typing.Union[MetaOapg.properties.key, schemas.Unset]: ...
@@ -75,13 +83,14 @@ class Roles(
     @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["key", "name", "description", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "key", "name", "description", ], str]):
         return super().get_item_oapg(name)
     
 
     def __new__(
         cls,
         *_args: typing.Union[dict, frozendict.frozendict, ],
+        id: typing.Union[MetaOapg.properties.id, str, schemas.Unset] = schemas.unset,
         key: typing.Union[MetaOapg.properties.key, str, schemas.Unset] = schemas.unset,
         name: typing.Union[MetaOapg.properties.name, str, schemas.Unset] = schemas.unset,
         description: typing.Union[MetaOapg.properties.description, str, schemas.Unset] = schemas.unset,
@@ -91,6 +100,7 @@ class Roles(
         return super().__new__(
             cls,
             *_args,
+            id=id,
             key=key,
             name=name,
             description=description,

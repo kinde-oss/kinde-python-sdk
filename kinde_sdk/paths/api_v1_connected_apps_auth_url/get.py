@@ -33,16 +33,20 @@ from . import path
 # Query params
 KeyCodeRefSchema = schemas.StrSchema
 UserIdSchema = schemas.StrSchema
+OrgCodeSchema = schemas.StrSchema
+OverrideCallbackUrlSchema = schemas.StrSchema
 RequestRequiredQueryParams = typing_extensions.TypedDict(
     'RequestRequiredQueryParams',
     {
         'key_code_ref': typing.Union[KeyCodeRefSchema, str, ],
-        'user_id': typing.Union[UserIdSchema, str, ],
     }
 )
 RequestOptionalQueryParams = typing_extensions.TypedDict(
     'RequestOptionalQueryParams',
     {
+        'user_id': typing.Union[UserIdSchema, str, ],
+        'org_code': typing.Union[OrgCodeSchema, str, ],
+        'override_callback_url': typing.Union[OverrideCallbackUrlSchema, str, ],
     },
     total=False
 )
@@ -63,7 +67,18 @@ request_query_user_id = api_client.QueryParameter(
     name="user_id",
     style=api_client.ParameterStyle.FORM,
     schema=UserIdSchema,
-    required=True,
+    explode=True,
+)
+request_query_org_code = api_client.QueryParameter(
+    name="org_code",
+    style=api_client.ParameterStyle.FORM,
+    schema=OrgCodeSchema,
+    explode=True,
+)
+request_query_override_callback_url = api_client.QueryParameter(
+    name="override_callback_url",
+    style=api_client.ParameterStyle.FORM,
+    schema=OverrideCallbackUrlSchema,
     explode=True,
 )
 _auth = [
@@ -115,6 +130,18 @@ _response_for_400 = api_client.OpenApiResponse(
             schema=SchemaFor400ResponseBodyApplicationJsonCharsetutf8),
     },
 )
+
+
+@dataclass
+class ApiResponseFor403(api_client.ApiResponse):
+    response: urllib3.HTTPResponse
+    body: schemas.Unset = schemas.unset
+    headers: schemas.Unset = schemas.unset
+
+
+_response_for_403 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor403,
+)
 SchemaFor404ResponseBodyApplicationJson = ErrorResponse
 SchemaFor404ResponseBodyApplicationJsonCharsetutf8 = ErrorResponse
 
@@ -141,18 +168,6 @@ _response_for_404 = api_client.OpenApiResponse(
 
 
 @dataclass
-class ApiResponseFor403(api_client.ApiResponse):
-    response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
-    headers: schemas.Unset = schemas.unset
-
-
-_response_for_403 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor403,
-)
-
-
-@dataclass
 class ApiResponseFor429(api_client.ApiResponse):
     response: urllib3.HTTPResponse
     body: schemas.Unset = schemas.unset
@@ -165,8 +180,8 @@ _response_for_429 = api_client.OpenApiResponse(
 _status_code_to_response = {
     '200': _response_for_200,
     '400': _response_for_400,
-    '404': _response_for_404,
     '403': _response_for_403,
+    '404': _response_for_404,
     '429': _response_for_429,
 }
 _all_accept_content_types = (
@@ -232,6 +247,8 @@ class BaseApi(api_client.Api):
         for parameter in (
             request_query_key_code_ref,
             request_query_user_id,
+            request_query_org_code,
+            request_query_override_callback_url,
         ):
             parameter_data = query_params.get(parameter.name, schemas.unset)
             if parameter_data is schemas.unset:

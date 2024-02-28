@@ -6,3 +6,4 @@ requests==2.31.0 # https://github.com/psf/requests
 typing-extensions==4.8.0 # https://github.com/python/typing_extensions
 frozendict==2.3.8 # https://github.com/Marco-Sulla/python-frozendict
 certifi==2022.12.7 # https://github.com/certifi/python-certifi
+

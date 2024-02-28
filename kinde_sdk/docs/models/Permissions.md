@@ -8,7 +8,8 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  |  |
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**id** | str,  | str,  | The permission identifier to use in code. | [optional] 
+**id** | str,  | str,  | The permission&#x27;s id. | [optional] 
+**key** | str,  | str,  | The permission identifier to use in code. | [optional] 
 **name** | str,  | str,  | The permission&#x27;s name. | [optional] 
 **description** | str,  | str,  | The permission&#x27;s description. | [optional] 
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]

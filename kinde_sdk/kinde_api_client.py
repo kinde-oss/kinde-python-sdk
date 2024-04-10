@@ -12,7 +12,11 @@ from kinde_sdk.exceptions import (
     KindeRetrieveException,
 )
 from kinde_sdk import __version__ as kinde_sdk_version
+import logging
 
+def debug(msg):
+    if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+        logging.debug(msg)
 
 class FlagType(Enum):
     s = "string"
@@ -132,6 +136,8 @@ class KindeApiClient(ApiClient):
             )
         self._decode_token_if_needed(token_name)
         value = self.__decoded_tokens[token_name].get(key)
+        if value is None:
+            debug(f"The claimed value of '{key}' does not exist in your token")
         return {"name": key, "value": value}
 
     def get_permission(self, permission: str) -> Dict[str, Any]:

@@ -1,6 +1,6 @@
 [project]
 name = "kinde-python-sdk"
-version = "1.2.3"
+version = "1.2.4"
 authors = [
     { name = "Kinde Engineering", email = "engineering@kinde.com" },
 ]
@@ -17,17 +17,17 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
 ]
 dependencies = [
-    "urllib3 ~=2.0.3",
-    "python-dateutil ~=2.8.2",
-    "Authlib ~=1.2.0",
+    "urllib3 ~=2.2.1",
+    "python-dateutil ~=2.9.0.post0",
+    "Authlib ~=1.3.0",
     "pyjwt ~=2.8.0",
     "requests ~=2.31.0",
-    "typing-extensions ~=4.8.0",
-    "frozendict ~=2.3.8",
-    "certifi ~=2022.12.7",
+    "typing-extensions ~=4.11.0",
+    "frozendict ~=2.4.3",
+    "certifi ~=2024.2.2",
 ]
 [project.urls]
 "Homepage" = "https://github.com/kinde-oss/kinde-python-sdk"
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"

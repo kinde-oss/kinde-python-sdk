@@ -12,10 +12,12 @@ Method | HTTP request | Description
 [**delete_organization**](#delete_organization) | **delete** /api/v1/organization/{org_code} | Delete Organization
 [**delete_organization_feature_flag_override**](#delete_organization_feature_flag_override) | **delete** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Delete Organization Feature Flag Override
 [**delete_organization_feature_flag_overrides**](#delete_organization_feature_flag_overrides) | **delete** /api/v1/organizations/{org_code}/feature_flags | Delete Organization Feature Flag Overrides
+[**delete_organization_handle**](#delete_organization_handle) | **delete** /api/v1/organization/{org_code}/handle | Delete organization handle
 [**delete_organization_user_permission**](#delete_organization_user_permission) | **delete** /api/v1/organizations/{org_code}/users/{user_id}/permissions/{permission_id} | Delete Organization User Permission
 [**delete_organization_user_role**](#delete_organization_user_role) | **delete** /api/v1/organizations/{org_code}/users/{user_id}/roles/{role_id} | Delete Organization User Role
 [**get_organization**](#get_organization) | **get** /api/v1/organization | Get Organization
 [**get_organization_feature_flags**](#get_organization_feature_flags) | **get** /api/v1/organizations/{org_code}/feature_flags | List Organization Feature Flags
+[**get_organization_property_values**](#get_organization_property_values) | **get** /api/v1/organizations/{org_code}/properties | Get Organization Property Values
 [**get_organization_user_permissions**](#get_organization_user_permissions) | **get** /api/v1/organizations/{org_code}/users/{user_id}/permissions | List Organization User Permissions
 [**get_organization_user_roles**](#get_organization_user_roles) | **get** /api/v1/organizations/{org_code}/users/{user_id}/roles | List Organization User Roles
 [**get_organization_users**](#get_organization_users) | **get** /api/v1/organizations/{org_code}/users | List Organization Users
@@ -23,6 +25,8 @@ Method | HTTP request | Description
 [**remove_organization_user**](#remove_organization_user) | **delete** /api/v1/organizations/{org_code}/users/{user_id} | Remove Organization User
 [**update_organization**](#update_organization) | **patch** /api/v1/organization/{org_code} | Update Organization
 [**update_organization_feature_flag_override**](#update_organization_feature_flag_override) | **patch** /api/v1/organizations/{org_code}/feature_flags/{feature_flag_key} | Update Organization Feature Flag Override
+[**update_organization_properties**](#update_organization_properties) | **patch** /api/v1/organizations/{org_code}/properties | Update Organization Property values
+[**update_organization_property**](#update_organization_property) | **put** /api/v1/organizations/{org_code}/properties/{property_key} | Update Organization Property value
 [**update_organization_users**](#update_organization_users) | **patch** /api/v1/organizations/{org_code}/users | Update Organization Users
 
 # **add_organization_users**
@@ -1187,6 +1191,148 @@ headers | Unset | headers were not defined |
 
 [[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
 
+# **delete_organization_handle**
+<a name="delete_organization_handle"></a>
+> SuccessResponse delete_organization_handle(org_code)
+
+Delete organization handle
+
+Delete organization handle 
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = organizations_api.OrganizationsApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'org_code': "org_code_example",
+    }
+    try:
+        # Delete organization handle
+        api_response = api_instance.delete_organization_handle(
+            path_params=path_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->delete_organization_handle: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+org_code | OrgCodeSchema | | 
+
+# OrgCodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#delete_organization_handle.ApiResponseFor200) | Handle successfully deleted.
+400 | [ApiResponseFor400](#delete_organization_handle.ApiResponseFor400) | Bad request.
+403 | [ApiResponseFor403](#delete_organization_handle.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#delete_organization_handle.ApiResponseFor429) | Request was throttled.
+
+#### delete_organization_handle.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### delete_organization_handle.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### delete_organization_handle.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### delete_organization_handle.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
 # **delete_organization_user_permission**
 <a name="delete_organization_user_permission"></a>
 > SuccessResponse delete_organization_user_permission(org_codeuser_idpermission_id)
@@ -1792,6 +1938,148 @@ headers | Unset | headers were not defined |
 
 [[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
 
+# **get_organization_property_values**
+<a name="get_organization_property_values"></a>
+> GetPropertyValuesResponse get_organization_property_values(org_code)
+
+Get Organization Property Values
+
+Gets properties for an organization by org code. 
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.error_response import ErrorResponse
+from kinde_sdk.model.get_property_values_response import GetPropertyValuesResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = organizations_api.OrganizationsApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'org_code': "org_code_example",
+    }
+    try:
+        # Get Organization Property Values
+        api_response = api_instance.get_organization_property_values(
+            path_params=path_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->get_organization_property_values: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+org_code | OrgCodeSchema | | 
+
+# OrgCodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#get_organization_property_values.ApiResponseFor200) | Properties successfully retrieved.
+400 | [ApiResponseFor400](#get_organization_property_values.ApiResponseFor400) | Bad request.
+403 | [ApiResponseFor403](#get_organization_property_values.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_organization_property_values.ApiResponseFor429) | Request was throttled.
+
+#### get_organization_property_values.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetPropertyValuesResponse**](../../models/GetPropertyValuesResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetPropertyValuesResponse**](../../models/GetPropertyValuesResponse.md) |  | 
+
+
+#### get_organization_property_values.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### get_organization_property_values.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_organization_property_values.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
 # **get_organization_user_permissions**
 <a name="get_organization_user_permissions"></a>
 > GetOrganizationsUserPermissionsResponse get_organization_user_permissions(org_codeuser_id)
@@ -2191,7 +2479,7 @@ roles | RolesSchema | | optional
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-None, str,  | NoneClass, str,  |  | must be one of ["name_asc", "name_desc", "email_asc", "email_desc", ] 
+None, str,  | NoneClass, str,  |  | must be one of ["name_asc", "name_desc", "email_asc", "email_desc", "id_asc", "id_desc", ] 
 
 # PageSizeSchema
 
@@ -2953,6 +3241,349 @@ body | Unset | body was not defined |
 headers | Unset | headers were not defined |
 
 #### update_organization_feature_flag_override.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **update_organization_properties**
+<a name="update_organization_properties"></a>
+> SuccessResponse update_organization_properties(org_codeany_type)
+
+Update Organization Property values
+
+Update organization property values.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = organizations_api.OrganizationsApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'org_code': "org_code_example",
+    }
+    body = dict(
+        properties=dict(),
+    )
+    try:
+        # Update Organization Property values
+        api_response = api_instance.update_organization_properties(
+            path_params=path_params,
+            body=body,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->update_organization_properties: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+body | typing.Union[SchemaForRequestBodyApplicationJson] | required |
+path_params | RequestPathParams | |
+content_type | str | optional, default is 'application/json' | Selects the schema and serialization of the request body
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### body
+
+# SchemaForRequestBodyApplicationJson
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  | 
+
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**[properties](#properties)** | dict, frozendict.frozendict,  | frozendict.frozendict,  | Property keys and values | 
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
+
+# properties
+
+Property keys and values
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  | Property keys and values | 
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+org_code | OrgCodeSchema | | 
+
+# OrgCodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#update_organization_properties.ApiResponseFor200) | Properties successfully updated.
+400 | [ApiResponseFor400](#update_organization_properties.ApiResponseFor400) | Invalid request.
+403 | [ApiResponseFor403](#update_organization_properties.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_organization_properties.ApiResponseFor429) | Request was throttled.
+
+#### update_organization_properties.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### update_organization_properties.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### update_organization_properties.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_organization_properties.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **update_organization_property**
+<a name="update_organization_property"></a>
+> SuccessResponse update_organization_property(org_codeproperty_keyvalue)
+
+Update Organization Property value
+
+Update organization property value.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import organizations_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = organizations_api.OrganizationsApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'org_code': "org_code_example",
+        'property_key': "property_key_example",
+    }
+    query_params = {
+        'value': "value_example",
+    }
+    try:
+        # Update Organization Property value
+        api_response = api_instance.update_organization_property(
+            path_params=path_params,
+            query_params=query_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling OrganizationsApi->update_organization_property: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+query_params | RequestQueryParams | |
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### query_params
+#### RequestQueryParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+value | ValueSchema | | 
+
+
+# ValueSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+org_code | OrgCodeSchema | | 
+property_key | PropertyKeySchema | | 
+
+# OrgCodeSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+# PropertyKeySchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#update_organization_property.ApiResponseFor200) | Property successfully updated.
+400 | [ApiResponseFor400](#update_organization_property.ApiResponseFor400) | Invalid request.
+403 | [ApiResponseFor403](#update_organization_property.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_organization_property.ApiResponseFor429) | Request was throttled.
+
+#### update_organization_property.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### update_organization_property.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### update_organization_property.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_organization_property.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

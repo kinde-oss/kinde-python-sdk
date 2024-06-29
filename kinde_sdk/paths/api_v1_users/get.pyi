@@ -110,6 +110,26 @@ class EmailSchema(
         )
 
 
+class UsernameSchema(
+    schemas.StrBase,
+    schemas.NoneBase,
+    schemas.Schema,
+    schemas.NoneStrMixin
+):
+
+
+    def __new__(
+        cls,
+        *_args: typing.Union[None, str, ],
+        _configuration: typing.Optional[schemas.Configuration] = None,
+    ) -> 'UsernameSchema':
+        return super().__new__(
+            cls,
+            *_args,
+            _configuration=_configuration,
+        )
+
+
 class ExpandSchema(
     schemas.StrBase,
     schemas.NoneBase,
@@ -140,6 +160,7 @@ RequestOptionalQueryParams = typing_extensions.TypedDict(
         'user_id': typing.Union[UserIdSchema, None, str, ],
         'next_token': typing.Union[NextTokenSchema, None, str, ],
         'email': typing.Union[EmailSchema, None, str, ],
+        'username': typing.Union[UsernameSchema, None, str, ],
         'expand': typing.Union[ExpandSchema, None, str, ],
     },
     total=False
@@ -172,6 +193,12 @@ request_query_email = api_client.QueryParameter(
     name="email",
     style=api_client.ParameterStyle.FORM,
     schema=EmailSchema,
+    explode=True,
+)
+request_query_username = api_client.QueryParameter(
+    name="username",
+    style=api_client.ParameterStyle.FORM,
+    schema=UsernameSchema,
     explode=True,
 )
 request_query_expand = api_client.QueryParameter(
@@ -292,6 +319,7 @@ class BaseApi(api_client.Api):
             request_query_user_id,
             request_query_next_token,
             request_query_email,
+            request_query_username,
             request_query_expand,
         ):
             parameter_data = query_params.get(parameter.name, schemas.unset)

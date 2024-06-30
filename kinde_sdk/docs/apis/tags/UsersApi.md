@@ -8,10 +8,14 @@ Method | HTTP request | Description
 [**create_user**](#create_user) | **post** /api/v1/user | Create User
 [**delete_user**](#delete_user) | **delete** /api/v1/user | Delete User
 [**get_user_data**](#get_user_data) | **get** /api/v1/user | Get User
+[**get_user_property_values**](#get_user_property_values) | **get** /api/v1/users/{user_id}/properties | Get property values
 [**get_users**](#get_users) | **get** /api/v1/users | List Users
 [**refresh_user_claims**](#refresh_user_claims) | **post** /api/v1/users/{user_id}/refresh_claims | Refresh User Claims and Invalidate Cache
+[**set_user_password**](#set_user_password) | **put** /api/v1/users/{user_id}/password | Set User password
 [**update_user**](#update_user) | **patch** /api/v1/user | Update User
 [**update_user_feature_flag_override**](#update_user_feature_flag_override) | **patch** /api/v1/users/{user_id}/feature_flags/{feature_flag_key} | Update User Feature Flag Override
+[**update_user_properties**](#update_user_properties) | **patch** /api/v1/users/{user_id}/properties | Update Property values
+[**update_user_property**](#update_user_property) | **put** /api/v1/users/{user_id}/properties/{property_key} | Update Property value
 
 # **create_user**
 <a name="create_user"></a>
@@ -62,6 +66,8 @@ with kinde_sdk.ApiClient(configuration) as api_client:
                 type="email",
                 details=dict(
                     email="email_example",
+                    phone="phone_example",
+                    username="username_example",
                 ),
             )
         ],
@@ -145,7 +151,7 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  | The result of the user
 ### Dictionary Keys
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
-**type** | str,  | str,  | The type of identity to create, for e.g. email. | [optional] must be one of ["email", ] 
+**type** | str,  | str,  | The type of identity to create, for e.g. email. | [optional] must be one of ["email", "phone", "username", ] 
 **[details](#details)** | dict, frozendict.frozendict,  | frozendict.frozendict,  | Additional details required to create the user. | [optional] 
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
@@ -162,6 +168,8 @@ dict, frozendict.frozendict,  | frozendict.frozendict,  | Additional details req
 Key | Input Type | Accessed Type | Description | Notes
 ------------ | ------------- | ------------- | ------------- | -------------
 **email** | str,  | str,  | The email address of the user. | [optional] 
+**phone** | str,  | str,  | The phone number of the user. | [optional] 
+**username** | str,  | str,  | The username of the user. | [optional] 
 **any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
 
 ### Return Types, Responses
@@ -562,6 +570,148 @@ headers | Unset | headers were not defined |
 
 [[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
 
+# **get_user_property_values**
+<a name="get_user_property_values"></a>
+> GetPropertyValuesResponse get_user_property_values(user_id)
+
+Get property values
+
+Gets properties for an user by ID. 
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.error_response import ErrorResponse
+from kinde_sdk.model.get_property_values_response import GetPropertyValuesResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = users_api.UsersApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'user_id': "user_id_example",
+    }
+    try:
+        # Get property values
+        api_response = api_instance.get_user_property_values(
+            path_params=path_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling UsersApi->get_user_property_values: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+user_id | UserIdSchema | | 
+
+# UserIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#get_user_property_values.ApiResponseFor200) | Properties successfully retrieved.
+400 | [ApiResponseFor400](#get_user_property_values.ApiResponseFor400) | Bad request.
+403 | [ApiResponseFor403](#get_user_property_values.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#get_user_property_values.ApiResponseFor429) | Request was throttled.
+
+#### get_user_property_values.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetPropertyValuesResponse**](../../models/GetPropertyValuesResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**GetPropertyValuesResponse**](../../models/GetPropertyValuesResponse.md) |  | 
+
+
+#### get_user_property_values.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### get_user_property_values.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### get_user_property_values.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
 # **get_users**
 <a name="get_users"></a>
 > UsersResponse get_users()
@@ -604,6 +754,7 @@ with kinde_sdk.ApiClient(configuration) as api_client:
         'user_id': "user_id_example",
         'next_token': "next_token_example",
         'email': "email_example",
+        'username': "username_example",
         'expand': "expand_example",
     }
     try:
@@ -634,6 +785,7 @@ page_size | PageSizeSchema | | optional
 user_id | UserIdSchema | | optional
 next_token | NextTokenSchema | | optional
 email | EmailSchema | | optional
+username | UsernameSchema | | optional
 expand | ExpandSchema | | optional
 
 
@@ -659,6 +811,13 @@ Input Type | Accessed Type | Description | Notes
 None, str,  | NoneClass, str,  |  | 
 
 # EmailSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+None, str,  | NoneClass, str,  |  | 
+
+# UsernameSchema
 
 ## Model Type Info
 Input Type | Accessed Type | Description | Notes
@@ -862,6 +1021,177 @@ Type | Description  | Notes
 
 
 #### refresh_user_claims.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **set_user_password**
+<a name="set_user_password"></a>
+> SuccessResponse set_user_password(user_idany_type)
+
+Set User password
+
+Set user password.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = users_api.UsersApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'user_id': "user_id_example",
+    }
+    body = dict(
+        hashed_password="hashed_password_example",
+        hashing_method="bcrypt",
+        salt="salt_example",
+        salt_position="prefix",
+        is_temporary_password=True,
+    )
+    try:
+        # Set User password
+        api_response = api_instance.set_user_password(
+            path_params=path_params,
+            body=body,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling UsersApi->set_user_password: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+body | typing.Union[SchemaForRequestBodyApplicationJson] | required |
+path_params | RequestPathParams | |
+content_type | str | optional, default is 'application/json' | Selects the schema and serialization of the request body
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### body
+
+# SchemaForRequestBodyApplicationJson
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  | 
+
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**hashed_password** | str,  | str,  | The hashed password. | 
+**hashing_method** | str,  | str,  | The hashing method or algorithm used to encrypt the user’s password. Default is bcrypt. | [optional] must be one of ["bcrypt", "crypt", "md5", "wordpress", ] 
+**salt** | str,  | str,  | Extra characters added to passwords to make them stronger. Not required for bcrypt. | [optional] 
+**salt_position** | str,  | str,  | Position of salt in password string. Not required for bcrypt. | [optional] must be one of ["prefix", "suffix", ] 
+**is_temporary_password** | bool,  | BoolClass,  | The user will be prompted to set a new password after entering this one. | [optional] 
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+user_id | UserIdSchema | | 
+
+# UserIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#set_user_password.ApiResponseFor200) | User successfully created.
+400 | [ApiResponseFor400](#set_user_password.ApiResponseFor400) | Error creating user.
+403 | [ApiResponseFor403](#set_user_password.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#set_user_password.ApiResponseFor429) | Request was throttled.
+
+#### set_user_password.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### set_user_password.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### set_user_password.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### set_user_password.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
@@ -1203,6 +1533,349 @@ body | Unset | body was not defined |
 headers | Unset | headers were not defined |
 
 #### update_user_feature_flag_override.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **update_user_properties**
+<a name="update_user_properties"></a>
+> SuccessResponse update_user_properties(user_idany_type)
+
+Update Property values
+
+Update property values.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = users_api.UsersApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'user_id': "user_id_example",
+    }
+    body = dict(
+        properties=dict(),
+    )
+    try:
+        # Update Property values
+        api_response = api_instance.update_user_properties(
+            path_params=path_params,
+            body=body,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling UsersApi->update_user_properties: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+body | typing.Union[SchemaForRequestBodyApplicationJson] | required |
+path_params | RequestPathParams | |
+content_type | str | optional, default is 'application/json' | Selects the schema and serialization of the request body
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### body
+
+# SchemaForRequestBodyApplicationJson
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  |  | 
+
+### Dictionary Keys
+Key | Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | ------------- | -------------
+**[properties](#properties)** | dict, frozendict.frozendict,  | frozendict.frozendict,  | Property keys and values | 
+**any_string_name** | dict, frozendict.frozendict, str, date, datetime, int, float, bool, decimal.Decimal, None, list, tuple, bytes, io.FileIO, io.BufferedReader | frozendict.frozendict, str, BoolClass, decimal.Decimal, NoneClass, tuple, bytes, FileIO | any string name can be used but the value must be the correct type | [optional]
+
+# properties
+
+Property keys and values
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+dict, frozendict.frozendict,  | frozendict.frozendict,  | Property keys and values | 
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+user_id | UserIdSchema | | 
+
+# UserIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#update_user_properties.ApiResponseFor200) | Properties successfully updated.
+400 | [ApiResponseFor400](#update_user_properties.ApiResponseFor400) | Invalid request.
+403 | [ApiResponseFor403](#update_user_properties.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_user_properties.ApiResponseFor429) | Request was throttled.
+
+#### update_user_properties.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### update_user_properties.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### update_user_properties.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_user_properties.ApiResponseFor429
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+### Authorization
+
+[kindeBearerAuth](../../../README.md#kindeBearerAuth)
+
+[[Back to top]](#__pageTop) [[Back to API list]](../../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../../README.md#documentation-for-models) [[Back to README]](../../../README.md)
+
+# **update_user_property**
+<a name="update_user_property"></a>
+> SuccessResponse update_user_property(user_idproperty_keyvalue)
+
+Update Property value
+
+Update property value.
+
+### Example
+
+* Bearer (JWT) Authentication (kindeBearerAuth):
+```python
+import kinde_sdk
+from kinde_sdk.apis.tags import users_api
+from kinde_sdk.model.success_response import SuccessResponse
+from kinde_sdk.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to https://app.kinde.com
+# See configuration.py for a list of all supported configuration parameters.
+configuration = kinde_sdk.Configuration(
+    host = "https://app.kinde.com"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization (JWT): kindeBearerAuth
+configuration = kinde_sdk.Configuration(
+    access_token = 'YOUR_BEARER_TOKEN'
+)
+# Enter a context with an instance of the API client
+with kinde_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = users_api.UsersApi(api_client)
+
+    # example passing only required values which don't have defaults set
+    path_params = {
+        'user_id': "user_id_example",
+        'property_key': "property_key_example",
+    }
+    query_params = {
+        'value': "value_example",
+    }
+    try:
+        # Update Property value
+        api_response = api_instance.update_user_property(
+            path_params=path_params,
+            query_params=query_params,
+        )
+        pprint(api_response)
+    except kinde_sdk.ApiException as e:
+        print("Exception when calling UsersApi->update_user_property: %s\n" % e)
+```
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+query_params | RequestQueryParams | |
+path_params | RequestPathParams | |
+accept_content_types | typing.Tuple[str] | default is ('application/json', 'application/json; charset&#x3D;utf-8', ) | Tells the server the content type(s) that are accepted by the client
+stream | bool | default is False | if True then the response.content will be streamed and loaded from a file like object. When downloading a file, set this to True to force the code to deserialize the content to a FileSchema file
+timeout | typing.Optional[typing.Union[int, typing.Tuple]] | default is None | the timeout used by the rest client
+skip_deserialization | bool | default is False | when True, headers and body will be unset and an instance of api_client.ApiResponseWithoutDeserialization will be returned
+
+### query_params
+#### RequestQueryParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+value | ValueSchema | | 
+
+
+# ValueSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### path_params
+#### RequestPathParams
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+user_id | UserIdSchema | | 
+property_key | PropertyKeySchema | | 
+
+# UserIdSchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+# PropertyKeySchema
+
+## Model Type Info
+Input Type | Accessed Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+str,  | str,  |  | 
+
+### Return Types, Responses
+
+Code | Class | Description
+------------- | ------------- | -------------
+n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
+200 | [ApiResponseFor200](#update_user_property.ApiResponseFor200) | Property successfully updated.
+400 | [ApiResponseFor400](#update_user_property.ApiResponseFor400) | Invalid request.
+403 | [ApiResponseFor403](#update_user_property.ApiResponseFor403) | Invalid credentials.
+429 | [ApiResponseFor429](#update_user_property.ApiResponseFor429) | Request was throttled.
+
+#### update_user_property.ApiResponseFor200
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor200ResponseBodyApplicationJson, SchemaFor200ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor200ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+# SchemaFor200ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**SuccessResponse**](../../models/SuccessResponse.md) |  | 
+
+
+#### update_user_property.ApiResponseFor400
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor400ResponseBodyApplicationJson, SchemaFor400ResponseBodyApplicationJsonCharsetutf8, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor400ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+# SchemaFor400ResponseBodyApplicationJsonCharsetutf8
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**ErrorResponse**](../../models/ErrorResponse.md) |  | 
+
+
+#### update_user_property.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | Unset | body was not defined |
+headers | Unset | headers were not defined |
+
+#### update_user_property.ApiResponseFor429
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |

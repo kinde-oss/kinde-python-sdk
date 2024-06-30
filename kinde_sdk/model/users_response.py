@@ -60,6 +60,7 @@ class UsersResponse(
                                 id = schemas.StrSchema
                                 provided_id = schemas.StrSchema
                                 email = schemas.StrSchema
+                                username = schemas.StrSchema
                                 last_name = schemas.StrSchema
                                 first_name = schemas.StrSchema
                                 is_suspended = schemas.BoolSchema
@@ -253,6 +254,7 @@ class UsersResponse(
                                     "id": id,
                                     "provided_id": provided_id,
                                     "email": email,
+                                    "username": username,
                                     "last_name": last_name,
                                     "first_name": first_name,
                                     "is_suspended": is_suspended,
@@ -273,6 +275,9 @@ class UsersResponse(
                         
                         @typing.overload
                         def __getitem__(self, name: typing_extensions.Literal["email"]) -> MetaOapg.properties.email: ...
+                        
+                        @typing.overload
+                        def __getitem__(self, name: typing_extensions.Literal["username"]) -> MetaOapg.properties.username: ...
                         
                         @typing.overload
                         def __getitem__(self, name: typing_extensions.Literal["last_name"]) -> MetaOapg.properties.last_name: ...
@@ -307,7 +312,7 @@ class UsersResponse(
                         @typing.overload
                         def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
                         
-                        def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "email", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", ], str]):
+                        def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "email", "username", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", ], str]):
                             # dict_instance[name] accessor
                             return super().__getitem__(name)
                         
@@ -320,6 +325,9 @@ class UsersResponse(
                         
                         @typing.overload
                         def get_item_oapg(self, name: typing_extensions.Literal["email"]) -> typing.Union[MetaOapg.properties.email, schemas.Unset]: ...
+                        
+                        @typing.overload
+                        def get_item_oapg(self, name: typing_extensions.Literal["username"]) -> typing.Union[MetaOapg.properties.username, schemas.Unset]: ...
                         
                         @typing.overload
                         def get_item_oapg(self, name: typing_extensions.Literal["last_name"]) -> typing.Union[MetaOapg.properties.last_name, schemas.Unset]: ...
@@ -354,7 +362,7 @@ class UsersResponse(
                         @typing.overload
                         def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
                         
-                        def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "email", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", ], str]):
+                        def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "provided_id", "email", "username", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", ], str]):
                             return super().get_item_oapg(name)
                         
                     
@@ -364,6 +372,7 @@ class UsersResponse(
                             id: typing.Union[MetaOapg.properties.id, str, schemas.Unset] = schemas.unset,
                             provided_id: typing.Union[MetaOapg.properties.provided_id, str, schemas.Unset] = schemas.unset,
                             email: typing.Union[MetaOapg.properties.email, str, schemas.Unset] = schemas.unset,
+                            username: typing.Union[MetaOapg.properties.username, str, schemas.Unset] = schemas.unset,
                             last_name: typing.Union[MetaOapg.properties.last_name, str, schemas.Unset] = schemas.unset,
                             first_name: typing.Union[MetaOapg.properties.first_name, str, schemas.Unset] = schemas.unset,
                             is_suspended: typing.Union[MetaOapg.properties.is_suspended, bool, schemas.Unset] = schemas.unset,
@@ -383,6 +392,7 @@ class UsersResponse(
                                 id=id,
                                 provided_id=provided_id,
                                 email=email,
+                                username=username,
                                 last_name=last_name,
                                 first_name=first_name,
                                 is_suspended=is_suspended,

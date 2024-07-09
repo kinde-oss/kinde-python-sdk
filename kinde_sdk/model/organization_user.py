@@ -42,6 +42,7 @@ class OrganizationUser(
             full_name = schemas.StrSchema
             last_name = schemas.StrSchema
             first_name = schemas.StrSchema
+            picture = schemas.StrSchema
             
             
             class roles(
@@ -71,6 +72,7 @@ class OrganizationUser(
                 "full_name": full_name,
                 "last_name": last_name,
                 "first_name": first_name,
+                "picture": picture,
                 "roles": roles,
             }
     
@@ -90,12 +92,15 @@ class OrganizationUser(
     def __getitem__(self, name: typing_extensions.Literal["first_name"]) -> MetaOapg.properties.first_name: ...
     
     @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["picture"]) -> MetaOapg.properties.picture: ...
+    
+    @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["roles"]) -> MetaOapg.properties.roles: ...
     
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "email", "full_name", "last_name", "first_name", "roles", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["id", "email", "full_name", "last_name", "first_name", "picture", "roles", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -116,12 +121,15 @@ class OrganizationUser(
     def get_item_oapg(self, name: typing_extensions.Literal["first_name"]) -> typing.Union[MetaOapg.properties.first_name, schemas.Unset]: ...
     
     @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["picture"]) -> typing.Union[MetaOapg.properties.picture, schemas.Unset]: ...
+    
+    @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["roles"]) -> typing.Union[MetaOapg.properties.roles, schemas.Unset]: ...
     
     @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "email", "full_name", "last_name", "first_name", "roles", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["id", "email", "full_name", "last_name", "first_name", "picture", "roles", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -133,6 +141,7 @@ class OrganizationUser(
         full_name: typing.Union[MetaOapg.properties.full_name, str, schemas.Unset] = schemas.unset,
         last_name: typing.Union[MetaOapg.properties.last_name, str, schemas.Unset] = schemas.unset,
         first_name: typing.Union[MetaOapg.properties.first_name, str, schemas.Unset] = schemas.unset,
+        picture: typing.Union[MetaOapg.properties.picture, str, schemas.Unset] = schemas.unset,
         roles: typing.Union[MetaOapg.properties.roles, list, tuple, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
@@ -145,6 +154,7 @@ class OrganizationUser(
             full_name=full_name,
             last_name=last_name,
             first_name=first_name,
+            picture=picture,
             roles=roles,
             _configuration=_configuration,
             **kwargs,

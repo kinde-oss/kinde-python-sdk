@@ -131,11 +131,21 @@ class SchemaForRequestBodyApplicationJson(
                                     class MetaOapg:
                                         enum_value_to_name = {
                                             "email": "EMAIL",
+                                            "phone": "PHONE",
+                                            "username": "USERNAME",
                                         }
                                     
                                     @schemas.classproperty
                                     def EMAIL(cls):
                                         return cls("email")
+                                    
+                                    @schemas.classproperty
+                                    def PHONE(cls):
+                                        return cls("phone")
+                                    
+                                    @schemas.classproperty
+                                    def USERNAME(cls):
+                                        return cls("username")
                                 
                                 
                                 class details(
@@ -147,17 +157,27 @@ class SchemaForRequestBodyApplicationJson(
                                         
                                         class properties:
                                             email = schemas.StrSchema
+                                            phone = schemas.StrSchema
+                                            username = schemas.StrSchema
                                             __annotations__ = {
                                                 "email": email,
+                                                "phone": phone,
+                                                "username": username,
                                             }
                                     
                                     @typing.overload
                                     def __getitem__(self, name: typing_extensions.Literal["email"]) -> MetaOapg.properties.email: ...
                                     
                                     @typing.overload
+                                    def __getitem__(self, name: typing_extensions.Literal["phone"]) -> MetaOapg.properties.phone: ...
+                                    
+                                    @typing.overload
+                                    def __getitem__(self, name: typing_extensions.Literal["username"]) -> MetaOapg.properties.username: ...
+                                    
+                                    @typing.overload
                                     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
                                     
-                                    def __getitem__(self, name: typing.Union[typing_extensions.Literal["email", ], str]):
+                                    def __getitem__(self, name: typing.Union[typing_extensions.Literal["email", "phone", "username", ], str]):
                                         # dict_instance[name] accessor
                                         return super().__getitem__(name)
                                     
@@ -166,9 +186,15 @@ class SchemaForRequestBodyApplicationJson(
                                     def get_item_oapg(self, name: typing_extensions.Literal["email"]) -> typing.Union[MetaOapg.properties.email, schemas.Unset]: ...
                                     
                                     @typing.overload
+                                    def get_item_oapg(self, name: typing_extensions.Literal["phone"]) -> typing.Union[MetaOapg.properties.phone, schemas.Unset]: ...
+                                    
+                                    @typing.overload
+                                    def get_item_oapg(self, name: typing_extensions.Literal["username"]) -> typing.Union[MetaOapg.properties.username, schemas.Unset]: ...
+                                    
+                                    @typing.overload
                                     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
                                     
-                                    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["email", ], str]):
+                                    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["email", "phone", "username", ], str]):
                                         return super().get_item_oapg(name)
                                     
                                 
@@ -176,6 +202,8 @@ class SchemaForRequestBodyApplicationJson(
                                         cls,
                                         *_args: typing.Union[dict, frozendict.frozendict, ],
                                         email: typing.Union[MetaOapg.properties.email, str, schemas.Unset] = schemas.unset,
+                                        phone: typing.Union[MetaOapg.properties.phone, str, schemas.Unset] = schemas.unset,
+                                        username: typing.Union[MetaOapg.properties.username, str, schemas.Unset] = schemas.unset,
                                         _configuration: typing.Optional[schemas.Configuration] = None,
                                         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
                                     ) -> 'details':
@@ -183,6 +211,8 @@ class SchemaForRequestBodyApplicationJson(
                                             cls,
                                             *_args,
                                             email=email,
+                                            phone=phone,
+                                            username=username,
                                             _configuration=_configuration,
                                             **kwargs,
                                         )

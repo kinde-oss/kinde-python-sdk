@@ -39,6 +39,7 @@ Key | Input Type | Accessed Type | Description | Notes
 **id** | str,  | str,  | Unique id of the user in Kinde. | [optional] 
 **provided_id** | str,  | str,  | External id for user. | [optional] 
 **email** | str,  | str,  | Default email address of the user in Kinde. | [optional] 
+**username** | str,  | str,  | Primary username of the user in Kinde. | [optional] 
 **last_name** | str,  | str,  | User&#x27;s last name. | [optional] 
 **first_name** | str,  | str,  | User&#x27;s first name. | [optional] 
 **is_suspended** | bool,  | BoolClass,  | Whether the user is currently suspended or not. | [optional] 

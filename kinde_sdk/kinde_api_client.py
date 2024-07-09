@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 
 import jwt
+from jwt import PyJWKClient
 from authlib.integrations.requests_client import OAuth2Session
 from kinde_sdk.api_client import ApiClient
 from kinde_sdk.exceptions import (
@@ -12,11 +13,7 @@ from kinde_sdk.exceptions import (
     KindeRetrieveException,
 )
 from kinde_sdk import __version__ as kinde_sdk_version
-import logging
 
-def debug(msg):
-    if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
-        logging.debug(msg)
 
 class FlagType(Enum):
     s = "string"
@@ -103,6 +100,11 @@ class KindeApiClient(ApiClient):
 
         self.registration_url = f"{self.login_url}&start_page=registration"
         self.create_org_url = f"{self.registration_url}&is_create_org=true"
+        self.jwks_client = PyJWKClient(
+            uri=f"{self.domain}/.well-known/jwks.json",
+            cache_keys=True,
+        )
+
 
     def get_login_url(self, additional_params: Optional[Dict[str, str]] = None) -> str:
         if additional_params:
@@ -136,8 +138,6 @@ class KindeApiClient(ApiClient):
             )
         self._decode_token_if_needed(token_name)
         value = self.__decoded_tokens[token_name].get(key)
-        if value is None:
-            debug(f"The claimed value of '{key}' does not exist in your token")
         return {"name": key, "value": value}
 
     def get_permission(self, permission: str) -> Dict[str, Any]:
@@ -226,10 +226,20 @@ class KindeApiClient(ApiClient):
                 )
             token = self.__access_token_obj.get(token_name)
 
+            signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+
             if token:
-                self.__decoded_tokens[token_name] = jwt.decode(
-                    token, options={"verify_signature": False}
-                )
+                decode_token_params = {
+                    "jwt":token,
+                    "key": signing_key.key,
+                    "algorithms":["RS256"],
+                    "options":{
+                        "verify_signature": True,
+                        "verify_exp": True,
+                        "verify_aud": False
+                    }
+                }
+                self.__decoded_tokens[token_name] = jwt.decode(**decode_token_params)
             else:
                 raise KindeTokenException(f"Token {token_name} doesn't exist.")
 

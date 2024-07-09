@@ -46,6 +46,8 @@ class SortSchema(
             "name_desc": "NAME_DESC",
             "email_asc": "EMAIL_ASC",
             "email_desc": "EMAIL_DESC",
+            "id_asc": "ID_ASC",
+            "id_desc": "ID_DESC",
         }
     
     @schemas.classproperty
@@ -63,6 +65,14 @@ class SortSchema(
     @schemas.classproperty
     def EMAIL_DESC(cls):
         return cls("email_desc")
+    
+    @schemas.classproperty
+    def ID_ASC(cls):
+        return cls("id_asc")
+    
+    @schemas.classproperty
+    def ID_DESC(cls):
+        return cls("id_desc")
 
 
     def __new__(

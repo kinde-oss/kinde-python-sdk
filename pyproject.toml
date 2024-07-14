@@ -1,6 +1,6 @@
 [project]
 name = "kinde-python-sdk"
-version = "1.2.5"
+version = "1.2.6"
 authors = [
     { name = "Kinde Engineering", email = "engineering@kinde.com" },
 ]

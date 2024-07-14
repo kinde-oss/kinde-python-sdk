@@ -73,14 +73,14 @@ class KindeApiClient(ApiClient):
             "scope": self.scope,
             "token_endpoint": self.token_endpoint,
         }
-        create_authorization_url_params = {}
+        self.create_authorization_url_params = {}
         if self.grant_type == GrantType.AUTHORIZATION_CODE_WITH_PKCE:
             if self.code_verifier is None:
                 raise KindeConfigurationException(
                     '"code_verifier" parameter is required when a grant_type is AUTHORIZATION_CODE_WITH_PKCE.'
                 )
             auth_session_params["code_challenge_method"] = "S256"
-            create_authorization_url_params["code_verifier"] = self.code_verifier
+            self.create_authorization_url_params["code_verifier"] = self.code_verifier
 
         self.client = OAuth2Session(
             self.client_id,
@@ -89,8 +89,17 @@ class KindeApiClient(ApiClient):
             **auth_session_params,
         )
 
+        self.login_url = ""
+        self.registration_url = ""
+
+        self.jwks_client = PyJWKClient(
+            uri=f"{self.domain}/.well-known/jwks.json",
+            cache_keys=True,
+        )
+
+    def _get_auth_url(self, state: str = None):
         self.login_url, self.state = self.client.create_authorization_url(
-            self.authorization_endpoint, **create_authorization_url_params
+            self.authorization_endpoint, **self.create_authorization_url_params, state=state
         )
 
         if self.audience:
@@ -98,20 +107,17 @@ class KindeApiClient(ApiClient):
         if self.org_code:
             self.login_url = f"{self.login_url}&org_code={self.org_code}"
 
-        self.registration_url = f"{self.login_url}&start_page=registration"
-        self.create_org_url = f"{self.registration_url}&is_create_org=true"
-        self.jwks_client = PyJWKClient(
-            uri=f"{self.domain}/.well-known/jwks.json",
-            cache_keys=True,
-        )
+    def get_login_url(self, additional_params: Optional[Dict[str, str]] = None, state: str = None) -> str:
+        self._get_auth_url(state=state)
 
-
-    def get_login_url(self, additional_params: Optional[Dict[str, str]] = None) -> str:
         if additional_params:
             return self._add_additional_params(self.login_url, additional_params=additional_params)
         return self.login_url
 
-    def get_register_url(self, additional_params: Optional[Dict[str, str]] = None) -> str:
+    def get_register_url(self, additional_params: Optional[Dict[str, str]] = None, state: str = None) -> str:
+        self._get_auth_url(state=state)
+        self.registration_url = f"{self.login_url}&start_page=registration"
+
         if additional_params:
             return self._add_additional_params(self.registration_url, additional_params=additional_params)
         return self.registration_url
@@ -129,7 +135,7 @@ class KindeApiClient(ApiClient):
         return False
 
     def create_org(self) -> str:
-        return self.create_org_url
+        return f"{self.registration_url}&is_create_org=true"
 
     def get_claim(self, key: str, token_name: str = "access_token") -> Any:
         if token_name not in self.TOKEN_NAMES:

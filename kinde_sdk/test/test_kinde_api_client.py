@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from kinde_sdk.kinde_api_client import KindeApiClient, GrantType
 from kinde_sdk import __version__
+from urllib.parse import urlparse, parse_qs
 
 class TestKindeApiClient(unittest.TestCase):
 
@@ -163,6 +164,44 @@ class TestKindeApiClient(unittest.TestCase):
         call_kwargs = self.mock_oauth2_session.return_value.fetch_token.call_args[1]
         self.assertIn('code_verifier', call_kwargs)
         self.assertEqual(call_kwargs['code_verifier'], '1234')
+
+
+
+class TestKindeApiClientAdditional(unittest.TestCase):
+    def setUp(self):
+        self.domain = "https://example.kinde.com"
+        self.callback_url = "https://example.com/callback"
+        self.client_id = "test_client_id"
+        self.client_secret = "test_client_secret"
+
+    def _create_kinde_client(self, grant_type, code_verifier=None):
+        return KindeApiClient(
+            domain=self.domain,
+            callback_url=self.callback_url,
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            grant_type=grant_type,
+            code_verifier = code_verifier
+        )
+            
+    def test_get_login_url_state(self):
+        client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
+        login_url = client.get_login_url(state="hello")
+
+        url_parts = urlparse(login_url)
+        query = parse_qs(url_parts.query)
+
+        self.assertEqual(query['state'][0], "hello")
+
+    def test_get_register_url_state(self):
+        client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
+        register_url = client.get_register_url(state="regis")
+        
+        url_parts = urlparse(register_url)
+        query = parse_qs(url_parts.query)
+
+        self.assertEqual(query['state'][0], "regis")
+        self.assertEqual(query['start_page'][0], "registration")
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,3 +1,4 @@
+from .user_session import UserSession
 import requests
 import logging
 import urllib3
@@ -21,7 +22,6 @@ class GrantType(Enum):
     AUTHORIZATION_CODE = "authorization_code"
     AUTHORIZATION_CODE_WITH_PKCE = "authorization_code_with_pkce"
 
-
 class OAuth:
     def __init__(
         self,
@@ -43,7 +43,8 @@ class OAuth:
         self.logout_url = logout_url
         self.audience = audience
         self.host = host
-
+        self.session_manager = UserSession()
+        
         # Logging settings
         self.logger = logging.getLogger("kinde_sdk")
         self.logger.setLevel(logging.INFO)
@@ -53,10 +54,21 @@ class OAuth:
         self.proxy = None
         self.proxy_headers = None
 
-        # Create OAuth session
-        self.session = OAuth2Session(
-            client_id=self.client_id, client_secret=self.client_secret, redirect_uri=self.redirect_uri
-        )
+    def authenticate_user(self, user_id, auth_code):
+        """ Exchange authorization code for tokens and store in session. """
+        data = {
+            "grant_type": "authorization_code",
+            "code": auth_code,
+            "redirect_uri": self.redirect_uri,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+        }
+        response = requests.post(self.token_url, data=data)
+        response.raise_for_status()
+        token_data = response.json()
+
+        user_info = {"client_id": self.client_id, "client_secret": self.client_secret, "token_url": self.token_url}
+        self.session_manager.set_user_data(user_id, user_info, token_data)
 
     def _get_auth_url(
         self,
@@ -79,51 +91,31 @@ class OAuth:
             params["audience"] = audience
         return f"{self.auth_url}?{urlencode(params)}"
 
+        
     def get_login_url(self, state: Optional[str] = None) -> str:
-        """
-        Get the login URL for user authentication.
-        """
-        return self._get_auth_url(GrantType.AUTHORIZATION_CODE, state=state)
+        """ Get the login URL for user authentication. """
+        params = {
+            "client_id": self.client_id,
+            "response_type": "code",
+            "redirect_uri": self.redirect_uri,
+            "scope": "openid profile email",
+            "state": state or "",
+        }
+        return f"{self.auth_url}?{urlencode(params)}"
 
-    # def exchange_code_for_token(self, code: str) -> Dict[str, Any]:
-    #     """
-    #     Exchange the authorization code for an access token.
-    #     """
-    #     data = {
-    #         "grant_type": GrantType.AUTHORIZATION_CODE.value,
-    #         "code": code,
-    #         "redirect_uri": self.redirect_uri,
-    #         "client_id": self.client_id,
-    #         "client_secret": self.client_secret,
-    #     }
-    #     response = requests.post(self.token_url, data=data)
-    #     response.raise_for_status()  # Raise an error for non-2xx responses
-    #     return response.json()
+    def get_user_info(self, user_id) -> Dict[str, Any]:
+        """ Retrieve user information using the stored token. """
+        token_manager = self.session_manager.user_sessions.get(user_id, {}).get("token_manager")
+        if not token_manager:
+            raise ValueError("User not authenticated")
 
-    # def refresh_access_token(self, refresh_token: str) -> Dict[str, Any]:
-    #     """
-    #     Refresh the access token.
-    #     """
-    #     data = {
-    #         "grant_type": "refresh_token",
-    #         "refresh_token": refresh_token,
-    #         "client_id": self.client_id,
-    #         "client_secret": self.client_secret,
-    #     }
-    #     response = requests.post(self.token_url, data=data)
-    #     response.raise_for_status()
-    #     return response.json()
-
-    def get_user_info(self, access_token: str) -> Dict[str, Any]:
-        """
-        Retrieve user information.
-        """
+        access_token = token_manager.get_access_token()
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.get(f"{self.host}/oauth/userinfo", headers=headers)
         response.raise_for_status()
         return response.json()
 
-    def logout(self, redirect_url: str) -> str:
+    def logout(self, user_id):
         """
         Get logout URL.
         """

@@ -2,32 +2,34 @@ import time
 import requests
 
 class TokenManager:
-    def __init__(self, client_id, client_secret, token_url):
+    _instances = {}
+
+    def __new__(cls, user_id, *args, **kwargs):
+        """
+        Ensure only one instance per user.
+        """
+        if user_id not in cls._instances:
+            cls._instances[user_id] = super(TokenManager, cls).__new__(cls)
+            cls._instances[user_id].__init__(user_id, *args, **kwargs)
+        return cls._instances[user_id]
+
+    def __init__(self, user_id, client_id, client_secret, token_url):
+        if hasattr(self, "initialized"):  # Prevent re-initialization
+            return
+        self.user_id = user_id
         self.client_id = client_id
         self.client_secret = client_secret
         self.token_url = token_url
         self.tokens = {}  # Store tokens (access/refresh)
+        self.initialized = True
 
     def set_tokens(self, access_token, refresh_token, expires_in):
-        """
-        Store tokens and expiration time.
-        """
+        """ Store tokens with expiration. """
         self.tokens = {
             "access_token": access_token,
             "refresh_token": refresh_token,
             "expires_at": time.time() + expires_in,
         }
-
-    def get_access_token(self):
-        """
-        Get a valid access token. Refresh if expired.
-        """
-        if self.tokens and time.time() < self.tokens["expires_at"]:
-            return self.tokens["access_token"]
-        elif self.tokens.get("refresh_token"):
-            return self.refresh_access_token()
-        else:
-            raise ValueError("No valid tokens available")
 
     def exchange_code_for_token(self, code):
         """
@@ -49,11 +51,18 @@ class TokenManager:
             token_data.get("expires_in", 3600),
         )
         return self.tokens["access_token"]
+        
+    def get_access_token(self):
+        """ Get a valid access token. Refresh if expired. """
+        if self.tokens and time.time() < self.tokens["expires_at"]:
+            return self.tokens["access_token"]
+        elif self.tokens.get("refresh_token"):
+            return self.refresh_access_token()
+        else:
+            raise ValueError("No valid tokens available")
 
     def refresh_access_token(self):
-        """
-        Use the refresh token to get a new access token.
-        """
+        """ Use the refresh token to get a new access token. """
         if "refresh_token" not in self.tokens:
             raise ValueError("No refresh token available")
 
@@ -74,9 +83,7 @@ class TokenManager:
         return self.tokens["access_token"]
 
     def revoke_token(self):
-        """
-        Revoke the current access token.
-        """
+        """ Revoke the current access token. """
         if "access_token" not in self.tokens:
             raise ValueError("No access token to revoke")
 
@@ -87,5 +94,4 @@ class TokenManager:
         }
         response = requests.post(f"{self.token_url}/revoke", data=data)
         response.raise_for_status()
-
         self.tokens = {}  # Clear stored tokens

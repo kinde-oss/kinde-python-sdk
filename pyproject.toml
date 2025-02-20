@@ -17,14 +17,14 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
 ]
 dependencies = [
-    "urllib3 ~=2.2.1",
-    "python-dateutil ~=2.9.0.post0",
-    "Authlib ~=1.3.0",
-    "pyjwt ~=2.8.0",
-    "requests ~=2.31.0",
-    "typing-extensions ~=4.11.0",
-    "frozendict ~=2.4.3",
-    "certifi ~=2024.2.2",
+    "urllib3",
+    "python-dateutil",
+    "Authlib",
+    "pyjwt",
+    "requests",
+    "typing-extensions >=4.11.0",
+    "frozendict >=2.4.3",
+    "certifi >=2024.7.4",
 ]
 [project.urls]
 "Homepage" = "https://github.com/kinde-oss/kinde-python-sdk"

@@ -1,17 +1,20 @@
 import time
 import requests
+import threading
 
 class TokenManager:
     _instances = {}
+    _lock = threading.Lock()  # Add a lock for thread safety
 
     def __new__(cls, user_id, *args, **kwargs):
         """
         Ensure only one instance per user.
         """
-        if user_id not in cls._instances:
-            cls._instances[user_id] = super(TokenManager, cls).__new__(cls)
-            cls._instances[user_id].__init__(user_id, *args, **kwargs)
-        return cls._instances[user_id]
+        with cls._lock:
+            if user_id not in cls._instances:
+                cls._instances[user_id] = super(TokenManager, cls).__new__(cls)
+                cls._instances[user_id].__init__(user_id, *args, **kwargs)
+            return cls._instances[user_id]
 
     def __init__(self, user_id, client_id, client_secret, token_url):
         if hasattr(self, "initialized"):  # Prevent re-initialization
@@ -21,15 +24,17 @@ class TokenManager:
         self.client_secret = client_secret
         self.token_url = token_url
         self.tokens = {}  # Store tokens (access/refresh)
+        self.lock = threading.Lock()  # Add a lock for thread safety
         self.initialized = True
 
     def set_tokens(self, access_token, refresh_token, expires_in):
         """ Store tokens with expiration. """
-        self.tokens = {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "expires_at": time.time() + expires_in,
-        }
+        with self.lock:
+            self.tokens = {
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "expires_at": time.time() + expires_in,
+            }
 
     def exchange_code_for_token(self, code):
         """
@@ -51,7 +56,7 @@ class TokenManager:
             token_data.get("expires_in", 3600),
         )
         return self.tokens["access_token"]
-        
+
     def get_access_token(self):
         """ Get a valid access token. Refresh if expired. """
         if self.tokens and time.time() < self.tokens["expires_at"]:

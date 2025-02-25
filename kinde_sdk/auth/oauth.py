@@ -5,6 +5,9 @@ import urllib3
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
+import hashlib
+import base64
+import secrets
 
 import jwt
 from jwt import PyJWKClient
@@ -44,7 +47,7 @@ class OAuth:
         self.audience = audience
         self.host = host
         self.session_manager = UserSession()
-        
+
         # Logging settings
         self.logger = logging.getLogger("kinde_sdk")
         self.logger.setLevel(logging.INFO)
@@ -124,3 +127,28 @@ class OAuth:
             "logout_uri": redirect_url,
         }
         return f"{self.logout_url}?{urlencode(params)}"
+
+    def generate_pkce_code_verifier(self) -> str:
+        """Generate a PKCE code verifier."""
+        return secrets.token_urlsafe(32)
+
+    def generate_pkce_code_challenge(self, code_verifier: str) -> str:
+        """Generate a PKCE code challenge from the verifier."""
+        code_challenge = hashlib.sha256(code_verifier.encode()).digest()
+        return base64.urlsafe_b64encode(code_challenge).decode().rstrip("=")
+
+    def get_login_url_with_pkce(self, state: Optional[str] = None) -> str:
+        """Get the login URL for PKCE flow."""
+        code_verifier = self.generate_pkce_code_verifier()
+        code_challenge = self.generate_pkce_code_challenge(code_verifier)
+
+        params = {
+            "client_id": self.client_id,
+            "response_type": "code",
+            "redirect_uri": self.redirect_uri,
+            "scope": "openid profile email",
+            "state": state or "",
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+        }
+        return f"{self.auth_url}?{urlencode(params)}"

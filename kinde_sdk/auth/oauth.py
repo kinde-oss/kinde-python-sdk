@@ -9,6 +9,10 @@ import hashlib
 import base64
 import secrets
 
+from .storage_factory import StorageFactory
+from .config_loader import load_config
+from typing import Dict, Optional
+
 import jwt
 from jwt import PyJWKClient
 from authlib.integrations.requests_client import OAuth2Session
@@ -34,6 +38,7 @@ class OAuth:
         auth_url: str,
         token_url: str,
         logout_url: str,
+        config_file: str = "config.yaml",  # Path to the configuration file
         audience: Optional[str] = None,
         host: Optional[str] = "https://app.kinde.com",
     ):
@@ -46,6 +51,12 @@ class OAuth:
         self.logout_url = logout_url
         self.audience = audience
         self.host = host
+
+        # Load configuration and create the appropriate storage backend
+        config = load_config(config_file)
+        storage_config = config.get("storage", {"type": "memory"})  # Default to "memory"
+        storage = StorageFactory.create_storage(storage_config)
+
         self.session_manager = UserSession()
 
         # Logging settings
@@ -152,3 +163,41 @@ class OAuth:
             "code_challenge_method": "S256",
         }
         return f"{self.auth_url}?{urlencode(params)}"
+
+    def get_tokens_for_core(self, user_id: str) -> Optional[Dict[str, str]]:
+        """
+        Retrieve tokens for the core module.
+
+        Args:
+            user_id (str): The ID of the user whose tokens are being retrieved.
+
+        Returns:
+            Optional[Dict[str, str]]: A dictionary containing the access token and refresh token (if available).
+                                      Returns None if the user is not authenticated or the session is invalid.
+        """
+        # Retrieve the user session from the storage backend
+        session = self.session_manager.storage.get(user_id)
+        if not session:
+            return None  # User session not found
+
+        # Retrieve the TokenManager from the session
+        token_manager = session.get("token_manager")
+        if not token_manager:
+            return None  # TokenManager not found
+
+        # Get the access token
+        access_token = token_manager.get_access_token()
+        if not access_token:
+            return None  # No valid access token
+
+        # Prepare the token dictionary
+        tokens = {
+            "access_token": access_token,
+        }
+
+        # Add the refresh token if available
+        refresh_token = token_manager.tokens.get("refresh_token")
+        if refresh_token:
+            tokens["refresh_token"] = refresh_token
+
+        return tokens

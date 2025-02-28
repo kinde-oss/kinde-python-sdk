@@ -1,6 +1,7 @@
 import time
 import requests
 import threading
+from typing import Dict, Optional
 
 class TokenManager:
     _instances = {}

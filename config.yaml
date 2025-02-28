@@ -1,0 +1,11 @@
+# config.yaml
+storage:
+  type: "memory"  # Options: "memory", "local_storage", "postgres", "dynamo", etc.
+  options:
+    # Additional options specific to the storage type
+    # For example, for Postgres:
+    # host: "localhost"
+    # port: 5432
+    # database: "kinde"
+    # user: "user"
+    # password: "password"

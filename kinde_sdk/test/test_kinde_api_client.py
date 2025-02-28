@@ -182,7 +182,7 @@ class TestKindeApiClient(unittest.TestCase):
         }
         self.assertEqual(result, expected_result)
 
-    def test_get_claim_token(self):
+    def test_get_user_details_token(self):
         client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
         
         result = client.get_user_details_token({

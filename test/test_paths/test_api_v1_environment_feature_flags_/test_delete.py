@@ -12,9 +12,9 @@ from unittest.mock import patch
 import urllib3
 
 import kinde_sdk
-from kinde_sdk.paths.api_v1_environment_feature_flags_ import delete  # noqa: E501
+# from kinde_sdk.paths.api_v1_environment_feature_flags_ import delete  # noqa: E501
 from kinde_sdk import configuration, schemas, api_client
-from kinde_sdk.test.test_kinde_api_client import TestKindeApiClientAuthorizationCode
+from kinde_sdk.test.test_kinde_api_client import TestKindeApiClient
 
 from .. import ApiTestMixin
 
@@ -27,11 +27,11 @@ class TestApiV1EnvironmentFeatureFlags(ApiTestMixin, unittest.TestCase):
     _configuration = configuration.Configuration()
 
     def setUp(self):
-        kinde_api_client = TestKindeApiClientAuthorizationCode()
+        kinde_api_client = TestKindeApiClient()
         kinde_api_client.setUp()
         self._configuration.access_token = kinde_api_client.fake_access_token
         used_api_client = api_client.ApiClient(configuration=self._configuration)
-        self.api = delete.ApiFordelete(api_client=used_api_client)  # noqa: E501
+        # self.api = delete.ApiFordelete(api_client=used_api_client)  # noqa: E501
 
     def tearDown(self):
         pass

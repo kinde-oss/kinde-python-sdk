@@ -13,7 +13,7 @@ import urllib3
 
 import kinde_sdk
 from kinde_sdk import configuration, schemas, api_client
-from kinde_sdk.test.test_kinde_api_client import TestKindeApiClientAuthorizationCode
+from kinde_sdk.test.test_kinde_api_client import TestKindeApiClient
 
 from .. import ApiTestMixin
 
@@ -26,7 +26,7 @@ class TestApiV1OrganizationUsers(ApiTestMixin, unittest.TestCase):
     _configuration = configuration.Configuration()
 
     def setUp(self):
-        kinde_api_client = TestKindeApiClientAuthorizationCode()
+        kinde_api_client = TestKindeApiClient()
         kinde_api_client.setUp()
 
     def tearDown(self):

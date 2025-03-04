@@ -12,7 +12,7 @@ from unittest.mock import patch
 import urllib3
 
 import kinde_sdk
-from kinde_sdk.paths.api_v1_roles_role_id_permission_permission_id import delete  # noqa: E501
+# from kinde_sdk.paths.api_v1_roles_role_id_permission_permission_id import delete  # noqa: E501
 from kinde_sdk import configuration, schemas, api_client
 
 from .. import ApiTestMixin
@@ -27,7 +27,7 @@ class TestApiV1RolesRoleIdPermissionPermissionId(ApiTestMixin, unittest.TestCase
 
     def setUp(self):
         used_api_client = api_client.ApiClient(configuration=self._configuration)
-        self.api = delete.ApiFordelete(api_client=used_api_client)  # noqa: E501
+        # self.api = delete.ApiFordelete(api_client=used_api_client)  # noqa: E501
 
     def tearDown(self):
         pass

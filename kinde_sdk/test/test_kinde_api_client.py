@@ -98,6 +98,12 @@ class TestKindeApiClient(unittest.TestCase):
         client.fetch_token(authorization_response="https://example.com/callback?code=test_code")
         self.mock_oauth2_session.return_value.fetch_token.assert_called_once()
 
+    def test_fetch_token_authorization_code_token(self):
+        client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
+        self.mock_oauth2_session.return_value.fetch_token.return_value = {"access_token": "test_token"}
+        token_value = client.fetch_token_value(authorization_response="https://example.com/callback?code=test_code")
+        self.mock_oauth2_session.return_value.fetch_token.assert_called_once()
+
     @patch('kinde_sdk.kinde_api_client.ApiClient.call_api')
     def test_super_call_api_with_correct_args(self, mock_super_call_api):
         client = self._create_kinde_client(GrantType.CLIENT_CREDENTIALS)
@@ -141,6 +147,86 @@ class TestKindeApiClient(unittest.TestCase):
         mock_get_claim.assert_any_call("org_code")
         mock_get_claim.assert_any_call("permissions")
         self.assertEqual(mock_get_claim.call_count, 2)
+
+    def test_get_permissions_token(self):
+        client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
+        
+        result = client.get_permissions_token({"access_token":{"org_code":"org123","permissions": ["read", "write", "delete"]}})
+
+        expected_result = {
+            "org_code": "org123",
+            "permissions": ["read", "write", "delete"]
+        }
+        self.assertEqual(result, expected_result)
+
+    def test_get_permission_token(self):
+        client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
+        
+        result = client.get_permission_token({"access_token":{"org_code":"org123","permissions": ["read", "write", "delete"]}},"read")
+
+        expected_result = {
+            "org_code": "org123",
+            "is_granted": True
+        }
+        self.assertEqual(result, expected_result)
+
+
+    def test_get_claim_token(self):
+        client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
+        
+        result = client.get_claim_token({"access_token":{"org_code":"org123","permissions": ["read", "write", "delete"]}},"org_code")
+
+        expected_result = {
+            "name": "org_code",
+            "value": "org123"
+        }
+        self.assertEqual(result, expected_result)
+
+    def test_get_user_details_token(self):
+        client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
+        
+        result = client.get_user_details_token({
+            "access_token":{"org_code":"org123","permissions": ["read", "write", "delete"]}
+            ,"id_token":{"sub":"123","given_name":"John","family_name":"Doe","email":"john@example.com","picture":"https://example.com/pic.jpg"}
+            })
+
+        expected_result = {
+            "id":"123","given_name":"John","family_name":"Doe","email":"john@example.com","picture":"https://example.com/pic.jpg"
+        }
+        self.assertEqual(result, expected_result)
+
+
+    def test_get_flag_token(self):
+        client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
+        
+        result = client.get_flag_token({
+            "access_token":{"org_code":"org123","permissions": ["read", "write", "delete"],"feature_flags":{"test_flag":{"v":True,"t":"b"}}}
+            ,"id_token":{"sub":"123","given_name":"John","family_name":"Doe","email":"john@example.com","picture":"https://example.com/pic.jpg"}
+            },
+            "test_flag"
+            )
+
+        expected_result = {
+            "code":"test_flag",
+            "value":True,
+            "is_default":False,
+            "type":"boolean"
+        }
+        self.assertEqual(result, expected_result)
+
+    def test_get_boolean_flag_token(self):
+        client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)
+        
+        result = client.get_boolean_flag_token({
+            "access_token":{"org_code":"org123","permissions": ["read", "write", "delete"],"feature_flags":{"test_flag":{"v":True,"t":"b"}}}
+            ,"id_token":{"sub":"123","given_name":"John","family_name":"Doe","email":"john@example.com","picture":"https://example.com/pic.jpg"}
+            },
+            "test_flag"
+            )
+
+        expected_result = True
+        self.assertEqual(result, expected_result)
+
 
     def test_fetch_token_headers_with_authorization_code(self):
         client = self._create_kinde_client(GrantType.AUTHORIZATION_CODE)

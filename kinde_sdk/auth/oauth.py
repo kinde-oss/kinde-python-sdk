@@ -135,7 +135,7 @@ class OAuth:
         """
         params = {
             "client_id": self.client_id,
-            "logout_uri": redirect_url,
+            "logout_uri": self.redirect_uri,
         }
         return f"{self.logout_url}?{urlencode(params)}"
 

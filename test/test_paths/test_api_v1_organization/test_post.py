@@ -29,7 +29,7 @@ class TestApiV1Organization(ApiTestMixin, unittest.TestCase):
     def setUp(self):
         kinde_api_client = TestKindeApiClient()
         kinde_api_client.setUp()
-        self._configuration.access_token = kinde_api_client.fake_access_token
+        # self._configuration.access_token = kinde_api_client.fake_access_token
         used_api_client = api_client.ApiClient(configuration=self._configuration)
         self.api = post.ApiForpost(api_client=used_api_client)  # noqa: E501
 
@@ -39,7 +39,8 @@ class TestApiV1Organization(ApiTestMixin, unittest.TestCase):
     @patch.object(urllib3.PoolManager, 'request')
     def test_oauth2_v2_user_profile(self, mock_request):
         mock_request.return_value = self.response(b'')
-        api_response = self.api.post(skip_deserialization=True)
+        body = {}
+        api_response = self.api.post(body= body, skip_deserialization=True)
 
         assert isinstance(api_response.response, urllib3.HTTPResponse)
         assert isinstance(api_response.body, schemas.Unset)

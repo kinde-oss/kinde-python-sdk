@@ -6,6 +6,7 @@ from kinde_sdk.auth.token_manager import TokenManager
 class TestTokenManager(unittest.TestCase):
     def setUp(self):
         self.token_manager = TokenManager(
+            user_id="test_user_id",
             client_id="test_client_id",
             client_secret="test_client_secret",
             token_url="https://example.com/token",
@@ -65,6 +66,29 @@ class TestTokenManager(unittest.TestCase):
 
             self.assertEqual(refreshed_token, "new_access_token")
             self.assertEqual(self.token_manager.tokens["refresh_token"], "new_refresh_token")
+
+    def test_revoke_token(self):
+        self.token_manager.set_tokens("valid_access_token", "refresh123", 3600)
+        
+        with patch("requests.post") as mock_post:
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+            mock_post.return_value = mock_response
+
+            self.token_manager.revoke_token()
+
+            self.assertEqual(self.token_manager.tokens, {})
+
+    def test_refresh_access_token_failure(self):
+        self.token_manager.set_tokens("expired_access_token", "valid_refresh_token", -10)  # Expired access token
+        
+        with patch("requests.post") as mock_post:
+            mock_post.side_effect = Exception("Network error")
+
+            with self.assertRaises(Exception) as context:
+                self.token_manager.refresh_access_token()
+            
+            self.assertEqual(str(context.exception), "Network error")
 
 if __name__ == "__main__":
     unittest.main()

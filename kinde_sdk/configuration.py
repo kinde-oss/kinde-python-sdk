@@ -91,6 +91,7 @@ class Configuration(object):
         server_variables=None,
         server_operation_index=None,
         server_operation_variables=None,
+        access_token=None, 
     ):
         """Constructor
         """
@@ -130,6 +131,7 @@ class Configuration(object):
         self.debug = False
         """Debug switch
         """
+        self.access_token = access_token
 
         self.verify_ssl = True
         """SSL/TLS verification

@@ -29,7 +29,7 @@ class TestApiV1ConnectedAppsToken(ApiTestMixin, unittest.TestCase):
     def setUp(self):
         kinde_api_client = TestKindeApiClient()
         kinde_api_client.setUp()
-        self._configuration.access_token = kinde_api_client.fake_access_token
+        # self._configuration.access_token = kinde_api_client.fake_access_token
         used_api_client = api_client.ApiClient(configuration=self._configuration)
         self.api = get.ApiForget(api_client=used_api_client)  # noqa: E501
 

@@ -57,7 +57,7 @@ class OAuth:
         storage_config = config.get("storage", {"type": "memory"})  # Default to "memory"
         storage = StorageFactory.create_storage(storage_config)
 
-        self.session_manager = UserSession()
+        self.session_manager = UserSession(storage= storage)
 
         # Logging settings
         self.logger = logging.getLogger("kinde_sdk")

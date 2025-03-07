@@ -1,5 +1,6 @@
 from .token_manager import TokenManager
 import threading
+import time
 from .storage_interface import StorageInterface
 
 class UserSession:
@@ -24,7 +25,7 @@ class UserSession:
                 token_data["refresh_token"],
                 token_data["expires_in"],
             )
-            self.storage.set(user_id, {"user_info": user_info, "token_manager": token_manager})
+            self.storage.set(user_id, {"user_info": user_info, "token_manager": self.user_sessions[user_id]["token_manager"]})
 
     def get_user_data(self, user_id):
         """ Retrieve stored user session details. """

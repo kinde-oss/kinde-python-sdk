@@ -38,6 +38,7 @@ class OAuth:
         auth_url: str,
         token_url: str,
         logout_url: str,
+        userinfo_url: str,
         config_file: str = "config.yaml",  # Path to the configuration file
         audience: Optional[str] = None,
         host: Optional[str] = "https://app.kinde.com",
@@ -49,6 +50,7 @@ class OAuth:
         self.auth_url = auth_url
         self.token_url = token_url
         self.logout_url = logout_url
+        self.userinfo_url = userinfo_url
         self.audience = audience
         self.host = host
 
@@ -126,7 +128,7 @@ class OAuth:
 
         access_token = token_manager.get_access_token()
         headers = {"Authorization": f"Bearer {access_token}"}
-        response = requests.get(f"{self.host}/oauth/userinfo", headers=headers)
+        response = requests.get(f"{self.userinfo_url}", headers=headers)
         response.raise_for_status()
         return response.json()
 

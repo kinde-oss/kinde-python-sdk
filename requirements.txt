@@ -8,3 +8,4 @@ frozendict>=2.4.3,<3.0
 certifi>=2024.2.2,<2025.0.0 
 pytest
 pytest-cov
+PyYAML>=6.0.0,<7.0.0

@@ -109,16 +109,62 @@ class OAuth:
         return f"{self.auth_url}?{urlencode(params)}"
 
         
-    def get_login_url(self, state: Optional[str] = None) -> str:
-        """ Get the login URL for user authentication. """
+    # def get_login_url(self, state: Optional[str] = None) -> str:
+    #     """ Get the login URL for user authentication. """
+    #     params = {
+    #         "client_id": self.client_id,
+    #         "response_type": "code",
+    #         "redirect_uri": self.redirect_uri,
+    #         "scope": "openid profile email offline",
+    #         "state": state or "",
+    #     }
+    #     return f"{self.auth_url}?{urlencode(params)}"
+
+    def get_login_url(self, state: Optional[str] = None, scope: Optional[List[str]] = None) -> str:
+        """
+        Get the login URL for user authentication.
+
+        Args:
+            state (Optional[str]): A state parameter for CSRF protection.
+            scope (Optional[List[str]]): A list of scopes to request.
+
+        Returns:
+            str: The login URL.
+        """
         params = {
             "client_id": self.client_id,
             "response_type": "code",
             "redirect_uri": self.redirect_uri,
-            "scope": "openid profile email offline",
+            "scope": " ".join(scope) if scope else "openid profile email",  # Allow custom scope
             "state": state or "",
         }
         return f"{self.auth_url}?{urlencode(params)}"
+
+    def get_login_url_with_pkce(self, state: Optional[str] = None, scope: Optional[List[str]] = None) -> str:
+        """
+        Get the login URL for PKCE flow.
+
+        Args:
+            state (Optional[str]): A state parameter for CSRF protection.
+            scope (Optional[List[str]]): A list of scopes to request.
+
+        Returns:
+            str: The login URL with PKCE parameters.
+        """
+        code_verifier = self.generate_pkce_code_verifier()
+        code_challenge = self.generate_pkce_code_challenge(code_verifier)
+
+        params = {
+            "client_id": self.client_id,
+            "response_type": "code",
+            "redirect_uri": self.redirect_uri,
+            "scope": " ".join(scope) if scope else "openid profile email",  # Allow custom scope
+            "state": state or "",
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+        }
+        return f"{self.auth_url}?{urlencode(params)}"
+
 
     def get_user_info(self, user_id) -> Dict[str, Any]:
         """ Retrieve user information using the stored token. """
@@ -151,21 +197,21 @@ class OAuth:
         code_challenge = hashlib.sha256(code_verifier.encode()).digest()
         return base64.urlsafe_b64encode(code_challenge).decode().rstrip("=")
 
-    def get_login_url_with_pkce(self, state: Optional[str] = None) -> str:
-        """Get the login URL for PKCE flow."""
-        code_verifier = self.generate_pkce_code_verifier()
-        code_challenge = self.generate_pkce_code_challenge(code_verifier)
+    # def get_login_url_with_pkce(self, state: Optional[str] = None) -> str:
+    #     """Get the login URL for PKCE flow."""
+    #     code_verifier = self.generate_pkce_code_verifier()
+    #     code_challenge = self.generate_pkce_code_challenge(code_verifier)
 
-        params = {
-            "client_id": self.client_id,
-            "response_type": "code",
-            "redirect_uri": self.redirect_uri,
-            "scope": "openid profile email offline",
-            "state": state or "",
-            "code_challenge": code_challenge,
-            "code_challenge_method": "S256",
-        }
-        return f"{self.auth_url}?{urlencode(params)}"
+    #     params = {
+    #         "client_id": self.client_id,
+    #         "response_type": "code",
+    #         "redirect_uri": self.redirect_uri,
+    #         "scope": "openid profile email offline",
+    #         "state": state or "",
+    #         "code_challenge": code_challenge,
+    #         "code_challenge_method": "S256",
+    #     }
+    #     return f"{self.auth_url}?{urlencode(params)}"
 
     def get_tokens_for_core(self, user_id: str) -> Optional[Dict[str, str]]:
         """

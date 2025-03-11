@@ -80,6 +80,7 @@ class OAuth:
         response = requests.post(self.token_url, data=data)
         response.raise_for_status()
         token_data = response.json()
+        print("token_data: " + str(token_data))
 
         user_info = {"client_id": self.client_id, "client_secret": self.client_secret, "token_url": self.token_url}
         self.session_manager.set_user_data(user_id, user_info, token_data)
@@ -98,7 +99,7 @@ class OAuth:
             "client_id": self.client_id,
             "response_type": "code",
             "redirect_uri": self.redirect_uri,
-            "scope": " ".join(scope) if scope else "openid profile email",
+            "scope": " ".join(scope) if scope else "openid profile email offline",
             "state": state or "",
         }
         if audience:
@@ -112,7 +113,7 @@ class OAuth:
             "client_id": self.client_id,
             "response_type": "code",
             "redirect_uri": self.redirect_uri,
-            "scope": "openid profile email",
+            "scope": "openid profile email offline",
             "state": state or "",
         }
         return f"{self.auth_url}?{urlencode(params)}"
@@ -157,7 +158,7 @@ class OAuth:
             "client_id": self.client_id,
             "response_type": "code",
             "redirect_uri": self.redirect_uri,
-            "scope": "openid profile email",
+            "scope": "openid profile email offline",
             "state": state or "",
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",

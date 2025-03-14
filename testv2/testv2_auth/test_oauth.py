@@ -14,6 +14,34 @@ class TestOAuth(unittest.TestCase):
             userinfo_url="https://example.com/userinfo"  # Added userinfo_url
         )
 
+    def test_register(self):
+        # Test the register method
+        url = self.oauth.register(state="xyz", scope=["openid", "profile", "email"])
+        parsed_url = urlparse(url)
+        query_params = parse_qs(parsed_url.query)
+
+        self.assertEqual(parsed_url.scheme, "https")
+        self.assertEqual(parsed_url.netloc, "example.com")
+        self.assertEqual(parsed_url.path, "/auth/register")
+        self.assertEqual(query_params["client_id"][0], "test_client_id")
+        self.assertEqual(query_params["redirect_uri"][0], "http://localhost/callback")
+        self.assertEqual(query_params["scope"][0], "openid profile email")  # Expected scope
+        self.assertEqual(query_params["state"][0], "xyz")
+
+    def test_login(self):
+        # Test the login method
+        url = self.oauth.login(state="xyz", scope=["openid", "profile", "email"])
+        parsed_url = urlparse(url)
+        query_params = parse_qs(parsed_url.query)
+
+        self.assertEqual(parsed_url.scheme, "https")
+        self.assertEqual(parsed_url.netloc, "example.com")
+        self.assertEqual(parsed_url.path, "/auth/login")
+        self.assertEqual(query_params["client_id"][0], "test_client_id")
+        self.assertEqual(query_params["redirect_uri"][0], "http://localhost/callback")
+        self.assertEqual(query_params["scope"][0], "openid profile email")  # Expected scope
+        self.assertEqual(query_params["state"][0], "xyz")
+
     def test_get_login_url(self):
         # Explicitly specify the scope
         url = self.oauth.get_login_url(state="xyz", scope=["openid", "profile", "email"])
@@ -57,7 +85,8 @@ class TestOAuth(unittest.TestCase):
         self.assertEqual(tokens["refresh_token"], "test_refresh_token")
 
     def test_logout(self):
-        logout_url = self.oauth.logout("test_user_id")
+        # Test the logout method
+        logout_url = self.oauth.logout(state="xyz")
         parsed_url = urlparse(logout_url)
         query_params = parse_qs(parsed_url.query)
 
@@ -66,6 +95,7 @@ class TestOAuth(unittest.TestCase):
         self.assertEqual(parsed_url.path, "/logout")
         self.assertEqual(query_params["client_id"][0], "test_client_id")
         self.assertEqual(query_params["logout_uri"][0], "http://localhost/callback")
+        self.assertEqual(query_params["state"][0], "xyz")
 
-if __name__ == "__main__":
-    unittest.main()
+# if __name__ == "_main_":
+#     unittest.main()

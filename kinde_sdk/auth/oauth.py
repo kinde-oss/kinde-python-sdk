@@ -250,3 +250,68 @@ class OAuth:
             tokens["refresh_token"] = refresh_token
 
         return tokens
+    
+    def register(self, state: Optional[str] = None, scope: Optional[List[str]] = None, audience: Optional[str] = None) -> str:
+        """
+        Generate the registration URL for user sign-up.
+
+        Args:
+            state (Optional[str]): A state parameter for CSRF protection.
+            scope (Optional[List[str]]): A list of scopes to request.
+            audience (Optional[str]): The audience for the token.
+
+        Returns:
+            str: The registration URL.
+        """
+        params = {
+            "client_id": self.client_id,
+            "response_type": "code",
+            "redirect_uri": self.redirect_uri,
+            "scope": " ".join(scope) if scope else "openid profile email",  # Default scope
+            "state": state or "",
+        }
+        if audience:
+            params["audience"] = audience
+        return f"{self.auth_url}/register?{urlencode(params)}"
+    
+
+    def login(self, state: Optional[str] = None, scope: Optional[List[str]] = None, audience: Optional[str] = None) -> str:
+        """
+        Generate the login URL for user authentication.
+
+        Args:
+            state (Optional[str]): A state parameter for CSRF protection.
+            scope (Optional[List[str]]): A list of scopes to request.
+            audience (Optional[str]): The audience for the token.
+
+        Returns:
+            str: The login URL.
+        """
+        params = {
+            "client_id": self.client_id,
+            "response_type": "code",
+            "redirect_uri": self.redirect_uri,
+            "scope": " ".join(scope) if scope else "openid profile email",  # Default scope
+            "state": state or "",
+        }
+        if audience:
+            params["audience"] = audience
+        return f"{self.auth_url}/login?{urlencode(params)}"
+    
+    def logout(self, state: Optional[str] = None) -> str:
+        """
+        Generate the logout URL.
+
+        Args:
+            state (Optional[str]): A state parameter for CSRF protection.
+
+        Returns:
+            str: The logout URL.
+        """
+        params = {
+            "client_id": self.client_id,
+            "logout_uri": self.redirect_uri,
+        }
+        if state:
+            params["state"] = state
+        return f"{self.logout_url}?{urlencode(params)}"

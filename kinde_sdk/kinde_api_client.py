@@ -353,7 +353,7 @@ class KindeApiClient(ApiClient):
                     "verify_aud": False
                 }
             }
-            return {token_name: jwt.decode(**decode_token_params)};
+            return {token_name: jwt.decode(**decode_token_params)}
         else:
             raise KindeTokenException(f"Token {token_name} doesn't exist.")
 

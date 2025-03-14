@@ -137,7 +137,8 @@ class KindeApiClient(ApiClient):
     def is_authenticated_token(self, token_value: dict) -> dict:
         if token_value:
             if token_value.is_expired():
-                return self._refresh_token_value(token_value)
+                self._refresh_token_value(token_value)
+            return True
         return None
 
     def create_org(self) -> str:
@@ -335,32 +336,26 @@ class KindeApiClient(ApiClient):
                 raise KindeTokenException(f"Token {token_name} doesn't exist.")
     
     def _decode_token_if_needed_value(self, token_name: str, token_value: dict) -> dict:
-        if token_name not in token_value:
-            if not token_value:
-                raise KindeTokenException(
-                    "Access token doesn't exist.\n"
-                    "When grant_type is CLIENT_CREDENTIALS use fetch_token().\n"
-                    'For other grant_type use "get_login_url()" or "get_register_url()".'
-                )
-            token = token_value.get(token_name)
+        token = token_value.get(token_name)
 
-            signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+        if not isinstance(token, str):
+            return token_value
 
-            if token:
-                decode_token_params = {
-                    "jwt":token,
-                    "key": signing_key.key,
-                    "algorithms":["RS256"],
-                    "options":{
-                        "verify_signature": True,
-                        "verify_exp": True,
-                        "verify_aud": False
-                    }
+        signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+        if signing_key:
+            decode_token_params = {
+                "jwt":token,
+                "key": signing_key.key,
+                "algorithms":["RS256"],
+                "options":{
+                    "verify_signature": True,
+                    "verify_exp": True,
+                    "verify_aud": False
                 }
-                return jwt.decode(**decode_token_params)
-            else:
-                raise KindeTokenException(f"Token {token_name} doesn't exist.")
-        return token_value
+            }
+            return {token_name: jwt.decode(**decode_token_params)}
+        else:
+            raise KindeTokenException(f"Token {token_name} doesn't exist.")
 
     def fetch_token(self, authorization_response: Optional[str] = None) -> None:
         if self.grant_type == GrantType.CLIENT_CREDENTIALS:

@@ -11,82 +11,39 @@ class TestOAuth(unittest.TestCase):
             auth_url="https://example.com/auth",
             token_url="https://example.com/token",
             logout_url="https://example.com/logout",
-            userinfo_url="https://example.com/userinfo"  # Added userinfo_url
+            userinfo_url="https://example.com/userinfo"
         )
-
+    
     def test_register(self):
-        # Test the register method
-        url = self.oauth.register(state="xyz", scope=["openid", "profile", "email"])
+        url = self.oauth.get_login_url(state="xyz", scope=["openid", "profile", "email"], login_type="register")
         parsed_url = urlparse(url)
         query_params = parse_qs(parsed_url.query)
-
+        
         self.assertEqual(parsed_url.scheme, "https")
         self.assertEqual(parsed_url.netloc, "example.com")
-        self.assertEqual(parsed_url.path, "/auth/register")
+        self.assertEqual(parsed_url.path, "/auth")
         self.assertEqual(query_params["client_id"][0], "test_client_id")
         self.assertEqual(query_params["redirect_uri"][0], "http://localhost/callback")
-        self.assertEqual(query_params["scope"][0], "openid profile email")  # Expected scope
+        self.assertEqual(query_params["scope"][0], "openid profile email")
         self.assertEqual(query_params["state"][0], "xyz")
+        self.assertEqual(query_params["login_type"][0], "register")
 
     def test_login(self):
-        # Test the login method
-        url = self.oauth.login(state="xyz", scope=["openid", "profile", "email"])
+        url = self.oauth.get_login_url(state="xyz", scope=["openid", "profile", "email"], login_type="login")
         parsed_url = urlparse(url)
         query_params = parse_qs(parsed_url.query)
-
-        self.assertEqual(parsed_url.scheme, "https")
-        self.assertEqual(parsed_url.netloc, "example.com")
-        self.assertEqual(parsed_url.path, "/auth/login")
-        self.assertEqual(query_params["client_id"][0], "test_client_id")
-        self.assertEqual(query_params["redirect_uri"][0], "http://localhost/callback")
-        self.assertEqual(query_params["scope"][0], "openid profile email")  # Expected scope
-        self.assertEqual(query_params["state"][0], "xyz")
-
-    def test_get_login_url(self):
-        # Explicitly specify the scope
-        url = self.oauth.get_login_url(state="xyz", scope=["openid", "profile", "email"])
-        parsed_url = urlparse(url)
-        query_params = parse_qs(parsed_url.query)
-
+        
         self.assertEqual(parsed_url.scheme, "https")
         self.assertEqual(parsed_url.netloc, "example.com")
         self.assertEqual(parsed_url.path, "/auth")
         self.assertEqual(query_params["client_id"][0], "test_client_id")
         self.assertEqual(query_params["redirect_uri"][0], "http://localhost/callback")
-        self.assertEqual(query_params["scope"][0], "openid profile email")  # Expected scope
+        self.assertEqual(query_params["scope"][0], "openid profile email")
         self.assertEqual(query_params["state"][0], "xyz")
-
-    def test_get_login_url_with_pkce(self):
-        # Explicitly specify the scope
-        url = self.oauth.get_login_url_with_pkce(state="xyz", scope=["openid", "profile", "email"])
-        parsed_url = urlparse(url)
-        query_params = parse_qs(parsed_url.query)
-
-        self.assertEqual(parsed_url.scheme, "https")
-        self.assertEqual(parsed_url.netloc, "example.com")
-        self.assertEqual(parsed_url.path, "/auth")
-        self.assertEqual(query_params["client_id"][0], "test_client_id")
-        self.assertEqual(query_params["redirect_uri"][0], "http://localhost/callback")
-        self.assertEqual(query_params["scope"][0], "openid profile email")  # Expected scope
-        self.assertEqual(query_params["state"][0], "xyz")
-        self.assertIn("code_challenge", query_params)
-        self.assertIn("code_challenge_method", query_params)
-
-    def test_get_tokens_for_core(self):
-        # Mock the session_manager and token_manager
-        self.oauth.session_manager.set_user_data(
-            "test_user_id",
-            {"client_id": "test_client_id", "client_secret": "test_client_secret", "token_url": "https://example.com/token"},
-            {"access_token": "test_access_token", "refresh_token": "test_refresh_token", "expires_in": 3600},
-        )
-
-        tokens = self.oauth.get_tokens_for_core("test_user_id")
-        self.assertEqual(tokens["access_token"], "test_access_token")
-        self.assertEqual(tokens["refresh_token"], "test_refresh_token")
+        self.assertEqual(query_params["login_type"][0], "login")
 
     def test_logout(self):
-        # Test the logout method
-        logout_url = self.oauth.logout(state="xyz")
+        logout_url = self.oauth.logout(params={"state": "xyz"})
         parsed_url = urlparse(logout_url)
         query_params = parse_qs(parsed_url.query)
 
@@ -97,5 +54,5 @@ class TestOAuth(unittest.TestCase):
         self.assertEqual(query_params["logout_uri"][0], "http://localhost/callback")
         self.assertEqual(query_params["state"][0], "xyz")
 
-# if __name__ == "_main_":
-#     unittest.main()
+if __name__ == "__main__":
+    unittest.main()

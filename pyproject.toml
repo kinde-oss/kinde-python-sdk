@@ -35,3 +35,7 @@ build-backend = "setuptools.build_meta"
 [tool.poetry.dev-dependencies]
 pytest = "^7.0"
 pytest-cov = "^4.0"
+mypy = "^1.0"
+bandit = "^1.7"
+pylint = "^2.0"
+pycodestyle = "^2.0"

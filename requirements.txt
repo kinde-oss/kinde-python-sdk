@@ -9,3 +9,7 @@ certifi>=2024.2.2,<2025.0.0
 pytest
 pytest-cov
 PyYAML>=6.0.0,<7.0.0
+mypy>=1.0
+bandit>=1.7
+pylint>=2.0
+pycodestyle>=2.0

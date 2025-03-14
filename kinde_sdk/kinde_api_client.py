@@ -338,11 +338,10 @@ class KindeApiClient(ApiClient):
     def _decode_token_if_needed_value(self, token_name: str, token_value: dict) -> dict:
         token = token_value.get(token_name)
 
-        if token is not str:
+        if not isinstance(token, str):
             return token_value
 
         signing_key = self.jwks_client.get_signing_key_from_jwt(token)
-
         if signing_key:
             decode_token_params = {
                 "jwt":token,

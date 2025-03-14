@@ -137,7 +137,8 @@ class KindeApiClient(ApiClient):
     def is_authenticated_token(self, token_value: dict) -> dict:
         if token_value:
             if token_value.is_expired():
-                return self._refresh_token_value(token_value)
+                self._refresh_token_value(token_value)
+            return True
         return None
 
     def create_org(self) -> str:

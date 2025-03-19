@@ -2,6 +2,7 @@ from .token_manager import TokenManager
 import threading
 import time
 from .storage_interface import StorageInterface
+from typing import Dict, Any, Optional
 
 class UserSession:
     def __init__(self, storage: StorageInterface):
@@ -9,52 +10,215 @@ class UserSession:
         self.lock = threading.Lock()  # Add a lock for thread safety
         self.storage = storage  # Use the provided storage backend
 
-    def set_user_data(self, user_id, user_info, token_data):
+    # def set_user_data(self, user_id, user_info, token_data):
+    #     """Store user session details and associate tokens."""
+    #     with self.lock:  # Acquire the lock
+    #         if user_id not in self.user_sessions:
+    #             self.user_sessions[user_id] = {
+    #                 "user_info": user_info,
+    #                 "token_manager": TokenManager(
+    #                     user_id, user_info["client_id"], user_info["client_secret"], user_info["token_url"]
+    #                 ),
+    #             }
+    #         self.user_sessions[user_id]["user_info"] = user_info
+    #         self.user_sessions[user_id]["token_manager"].set_tokens(
+    #             token_data["access_token"],
+    #             token_data["refresh_token"],
+    #             token_data["expires_in"],
+    #         )
+    #         self.storage.set(user_id, {"user_info": user_info, "token_manager": self.user_sessions[user_id]["token_manager"]})
+
+    def set_user_data(self, user_id: str, user_info: Dict[str, Any], token_data: Dict[str, Any]):
         """Store user session details and associate tokens."""
         with self.lock:  # Acquire the lock
             if user_id not in self.user_sessions:
+                # Create new token manager
+                token_manager = TokenManager(
+                    user_id, 
+                    user_info["client_id"], 
+                    user_info.get("client_secret"),  # May be None for PKCE flow
+                    user_info["token_url"]
+                )
+                
+                # Set redirect URI if available
+                if "redirect_uri" in user_info:
+                    token_manager.set_redirect_uri(user_info["redirect_uri"])
+                
                 self.user_sessions[user_id] = {
                     "user_info": user_info,
-                    "token_manager": TokenManager(
-                        user_id, user_info["client_id"], user_info["client_secret"], user_info["token_url"]
-                    ),
+                    "token_manager": token_manager
                 }
-            self.user_sessions[user_id]["user_info"] = user_info
-            self.user_sessions[user_id]["token_manager"].set_tokens(
-                token_data["access_token"],
-                token_data["refresh_token"],
-                token_data["expires_in"],
-            )
-            self.storage.set(user_id, {"user_info": user_info, "token_manager": self.user_sessions[user_id]["token_manager"]})
+            else:
+                # Update existing user info
+                self.user_sessions[user_id]["user_info"] = user_info
+            
+            # Set tokens in token manager
+            self.user_sessions[user_id]["token_manager"].set_tokens(token_data)
+            
+            # Save to persistent storage
+            self._save_to_storage(user_id)
 
-    def get_user_data(self, user_id):
-        """ Retrieve stored user session details. """
-        with self.lock:
-            # return self.user_sessions.get(user_id, {}).get("user_info")
-            session = self.storage.get(user_id)
-            return session.get("user_info") if session else None
+    def _save_to_storage(self, user_id: str):
+        """Save session data to storage."""
+        session_data = self.user_sessions.get(user_id)
+        if session_data:
+            # We need to serialize the session data
+            # Token manager can't be directly serialized
+            serialized_data = {
+                "user_info": session_data["user_info"],
+                "tokens": session_data["token_manager"].tokens,
+            }
+            self.storage.set(user_id, serialized_data)
 
-    def is_authenticated(self, user_id):
-        """ Check if the user is authenticated. """
+    def _load_from_storage(self, user_id: str) -> bool:
+        """Load session data from storage if not already in memory."""
+        if user_id in self.user_sessions:
+            return True
+            
+        session_data = self.storage.get(user_id)
+        if not session_data:
+            return False
+            
+        # Recreate token manager from stored data
+        user_info = session_data.get("user_info", {})
+        tokens = session_data.get("tokens", {})
+        
+        if not user_info or not tokens:
+            return False
+            
+        token_manager = TokenManager(
+            user_id,
+            user_info.get("client_id"),
+            user_info.get("client_secret"),
+            user_info.get("token_url")
+        )
+        
+        # Set redirect URI if available
+        if "redirect_uri" in user_info:
+            token_manager.set_redirect_uri(user_info["redirect_uri"])
+            
+        # Set tokens
+        token_manager.tokens = tokens
+        
+        # Store in memory
+        self.user_sessions[user_id] = {
+            "user_info": user_info,
+            "token_manager": token_manager
+        }
+        
+        return True
+
+
+    # def get_user_data(self, user_id):
+    #     """ Retrieve stored user session details. """
+    #     with self.lock:
+    #         # return self.user_sessions.get(user_id, {}).get("user_info")
+    #         session = self.storage.get(user_id)
+    #         return session.get("user_info") if session else None
+
+    def get_user_data(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve stored user session details."""
         with self.lock:
+            # Try to load from storage if not in memory
+            if user_id not in self.user_sessions:
+                if not self._load_from_storage(user_id):
+                    return None
+                    
+            return self.user_sessions.get(user_id, {}).get("user_info")
+
+    def get_token_manager(self, user_id: str) -> Optional[TokenManager]:
+        """Get the token manager for a user."""
+        with self.lock:
+            # Try to load from storage if not in memory
+            if user_id not in self.user_sessions:
+                if not self._load_from_storage(user_id):
+                    return None
+                    
+            return self.user_sessions.get(user_id, {}).get("token_manager")
+
+    # def is_authenticated(self, user_id):
+    #     """ Check if the user is authenticated. """
+    #     with self.lock:
+    #         token_manager = self.user_sessions.get(user_id, {}).get("token_manager")
+    #         return bool(token_manager and token_manager.get_access_token())
+
+    def is_authenticated(self, user_id: str) -> bool:
+        """Check if the user is authenticated with a valid token."""
+        with self.lock:
+            token_manager = self.get_token_manager(user_id)
+            if not token_manager:
+                return False
+                
+            try:
+                # This will check if token is valid and not expired
+                token_manager.get_access_token()
+                return True
+            except Exception:
+                return False
+
+    # def logout(self, user_id):
+    #     """ Clear user session and tokens. """
+    #     with self.lock:
+    #         if user_id in self.user_sessions:
+    #             self.user_sessions[user_id]["token_manager"].revoke_token()
+    #             del self.user_sessions[user_id]
+
+    # def cleanup_expired_sessions(self):
+    #     """Remove expired sessions."""
+    #     with self.lock:  # Acquire the lock
+    #         current_time = time.time()
+    #         expired_users = [
+    #             user_id
+    #             for user_id, session in self.user_sessions.items()
+    #             if session["token_manager"].tokens.get("expires_at", 0) < current_time
+    #         ]
+    #         for user_id in expired_users:
+    #             del self.user_sessions[user_id]
+
+    def logout(self, user_id: str) -> None:
+        """Clear user session and tokens."""
+        with self.lock:
+            # Try to load from storage if not in memory
+            if user_id not in self.user_sessions:
+                if not self._load_from_storage(user_id):
+                    return  # No session to clear
+            
+            # Revoke token if possible
             token_manager = self.user_sessions.get(user_id, {}).get("token_manager")
-            return bool(token_manager and token_manager.get_access_token())
-
-    def logout(self, user_id):
-        """ Clear user session and tokens. """
-        with self.lock:
+            if token_manager:
+                try:
+                    token_manager.revoke_token()
+                except Exception:
+                    pass  # Best effort
+            
+            # Delete from memory
             if user_id in self.user_sessions:
-                self.user_sessions[user_id]["token_manager"].revoke_token()
                 del self.user_sessions[user_id]
+                
+            # Delete from storage
+            self.storage.delete(user_id)
 
-    def cleanup_expired_sessions(self):
-        """Remove expired sessions."""
-        with self.lock:  # Acquire the lock
+    def cleanup_expired_sessions(self) -> None:
+        """Remove expired sessions from memory and storage."""
+        with self.lock:
             current_time = time.time()
-            expired_users = [
-                user_id
-                for user_id, session in self.user_sessions.items()
-                if session["token_manager"].tokens.get("expires_at", 0) < current_time
-            ]
+            expired_users = []
+            
+            # Check all in-memory sessions
+            for user_id, session in self.user_sessions.items():
+                token_manager = session.get("token_manager")
+                if not token_manager:
+                    expired_users.append(user_id)
+                    continue
+                    
+                tokens = token_manager.tokens
+                if not tokens or tokens.get("expires_at", 0) < current_time:
+                    # If there's a refresh token, we can keep the session
+                    if "refresh_token" not in tokens:
+                        expired_users.append(user_id)
+            
+            # Remove expired sessions
             for user_id in expired_users:
-                del self.user_sessions[user_id]
+                if user_id in self.user_sessions:
+                    del self.user_sessions[user_id]
+                self.storage.delete(user_id)

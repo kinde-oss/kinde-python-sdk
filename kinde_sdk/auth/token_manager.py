@@ -1,7 +1,8 @@
 import time
 import requests
 import threading
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
+import jwt
 
 class TokenManager:
     _instances = {}
@@ -28,44 +29,142 @@ class TokenManager:
         self.lock = threading.Lock()  # Add a lock for thread safety
         self.initialized = True
 
-    def set_tokens(self, access_token, refresh_token, expires_in):
+    # def set_tokens(self, access_token, refresh_token, expires_in):
+    #     """ Store tokens with expiration. """
+    #     with self.lock:
+    #         self.tokens = {
+    #             "access_token": access_token,
+    #             "refresh_token": refresh_token,
+    #             "expires_at": time.time() + expires_in,
+    #         }
+
+    def set_tokens(self, token_data: Dict[str, Any]):
         """ Store tokens with expiration. """
         with self.lock:
             self.tokens = {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "expires_at": time.time() + expires_in,
+                "access_token": token_data.get("access_token"),
+                "expires_at": time.time() + token_data.get("expires_in", 3600),
             }
+            
+            # Store refresh token if available
+            if "refresh_token" in token_data:
+                self.tokens["refresh_token"] = token_data["refresh_token"]
+                
+            # Store ID token if available
+            if "id_token" in token_data:
+                self.tokens["id_token"] = token_data["id_token"]
+                
+                # Parse claims from ID token
+                try:
+                    # Note: This is not secure verification, just for claims extraction
+                    # For proper verification, use the full JWT verification process
+                    payload = jwt.decode(
+                        token_data["id_token"],
+                        options={"verify_signature": False}
+                    )
+                    self.tokens["claims"] = payload
+                except Exception:
+                    self.tokens["claims"] = {}
 
-    def exchange_code_for_token(self, code):
+    def set_redirect_uri(self, redirect_uri: str):
+        """Set the redirect URI for token exchange."""
+        self.redirect_uri = redirect_uri
+
+    # # def exchange_code_for_token(self, code):
+    #     """
+    #     Exchange an authorization code for an access token.
+    #     """
+    #     data = {
+    #         "grant_type": "authorization_code",
+    #         "code": code,
+    #         "redirect_uri": self.redirect_uri,
+    #         "client_id": self.client_id,
+    #         "client_secret": self.client_secret,
+    #     }
+    #     response = requests.post(self.token_url, data=data)
+    #     response.raise_for_status()
+    #     token_data = response.json()
+    #     self.set_tokens(
+    #         token_data["access_token"],
+    #         token_data["refresh_token"],
+    #         token_data.get("expires_in", 3600),
+    #     )
+    #     return self.tokens["access_token"]
+
+    async def exchange_code_for_token(self, code: str, code_verifier: Optional[str] = None):
         """
         Exchange an authorization code for an access token.
         """
+        if not self.redirect_uri:
+            raise ValueError("Redirect URI is not set")
+            
         data = {
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": self.redirect_uri,
             "client_id": self.client_id,
-            "client_secret": self.client_secret,
         }
+        
+        # Add client secret if available (for non-PKCE flow)
+        if self.client_secret:
+            data["client_secret"] = self.client_secret
+        
+        # Add code verifier for PKCE flow
+        if code_verifier:
+            data["code_verifier"] = code_verifier
+            
         response = requests.post(self.token_url, data=data)
         response.raise_for_status()
         token_data = response.json()
-        self.set_tokens(
-            token_data["access_token"],
-            token_data["refresh_token"],
-            token_data.get("expires_in", 3600),
-        )
+        
+        self.set_tokens(token_data)
         return self.tokens["access_token"]
+    
+    # def get_access_token(self):
+    #     """ Get a valid access token. Refresh if expired. """
+    #     if self.tokens and time.time() < self.tokens["expires_at"]:
+    #         return self.tokens["access_token"]
+    #     elif self.tokens.get("refresh_token"):
+    #         return self.refresh_access_token()
+    #     else:
+    #         raise ValueError("No valid tokens available")
 
     def get_access_token(self):
         """ Get a valid access token. Refresh if expired. """
-        if self.tokens and time.time() < self.tokens["expires_at"]:
+        with self.lock:
+            if not self.tokens or "access_token" not in self.tokens:
+                raise ValueError("No access token available")
+                
+            # Check if token is expired
+            if time.time() >= self.tokens["expires_at"]:
+                # Try to refresh token if available
+                if "refresh_token" in self.tokens:
+                    return self.refresh_access_token()
+                else:
+                    raise ValueError("Access token expired and no refresh token available")
+                
             return self.tokens["access_token"]
-        elif self.tokens.get("refresh_token"):
-            return self.refresh_access_token()
-        else:
-            raise ValueError("No valid tokens available")
+
+    # def refresh_access_token(self):
+    #     """ Use the refresh token to get a new access token. """
+    #     if "refresh_token" not in self.tokens:
+    #         raise ValueError("No refresh token available")
+
+    #     data = {
+    #         "grant_type": "refresh_token",
+    #         "refresh_token": self.tokens["refresh_token"],
+    #         "client_id": self.client_id,
+    #         "client_secret": self.client_secret,
+    #     }
+    #     response = requests.post(self.token_url, data=data)
+    #     response.raise_for_status()
+    #     token_data = response.json()
+    #     self.set_tokens(
+    #         token_data["access_token"],
+    #         token_data["refresh_token"],
+    #         token_data.get("expires_in", 3600),
+    #     )
+    #     return self.tokens["access_token"]
 
     def refresh_access_token(self):
         """ Use the refresh token to get a new access token. """
@@ -76,28 +175,60 @@ class TokenManager:
             "grant_type": "refresh_token",
             "refresh_token": self.tokens["refresh_token"],
             "client_id": self.client_id,
-            "client_secret": self.client_secret,
         }
+        
+        # Add client secret if available
+        if self.client_secret:
+            data["client_secret"] = self.client_secret
+            
         response = requests.post(self.token_url, data=data)
         response.raise_for_status()
         token_data = response.json()
-        self.set_tokens(
-            token_data["access_token"],
-            token_data["refresh_token"],
-            token_data.get("expires_in", 3600),
-        )
+        
+        self.set_tokens(token_data)
         return self.tokens["access_token"]
+
+    def get_id_token(self):
+        """Get the ID token if available."""
+        return self.tokens.get("id_token")
+        
+    def get_claims(self):
+        """Get the claims from the ID token if available."""
+        return self.tokens.get("claims", {})
+    
+    # def revoke_token(self):
+    #     """ Revoke the current access token. """
+    #     if "access_token" not in self.tokens:
+    #         raise ValueError("No access token to revoke")
+
+    #     data = {
+    #         "token": self.tokens["access_token"],
+    #         "client_id": self.client_id,
+    #         "client_secret": self.client_secret,
+    #     }
+    #     response = requests.post(f"{self.token_url}/revoke", data=data)
+    #     response.raise_for_status()
+    #     self.tokens = {}  # Clear stored tokens
 
     def revoke_token(self):
         """ Revoke the current access token. """
         if "access_token" not in self.tokens:
-            raise ValueError("No access token to revoke")
-
+            return  # No token to revoke
+            
+        revoke_url = f"{self.token_url.replace('/token', '/revoke')}"
         data = {
             "token": self.tokens["access_token"],
             "client_id": self.client_id,
-            "client_secret": self.client_secret,
         }
-        response = requests.post(f"{self.token_url}/revoke", data=data)
-        response.raise_for_status()
+        
+        # Add client secret if available
+        if self.client_secret:
+            data["client_secret"] = self.client_secret
+            
+        try:
+            response = requests.post(revoke_url, data=data)
+            response.raise_for_status()
+        except Exception:
+            pass  # Best effort revocation
+            
         self.tokens = {}  # Clear stored tokens

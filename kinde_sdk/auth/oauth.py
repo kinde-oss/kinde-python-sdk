@@ -35,6 +35,7 @@ class OAuth:
         userinfo_url: Optional[str] = None,
         config_file: Optional[str] = None,  #  config_file optional
         storage_config: Optional[Dict[str, Any]] = None,  # Add storage_config parameter
+        framework: Optional[str] = None,  # Add framework property
         audience: Optional[str] = None,
         host: Optional[str] = None,
         state: Optional[str] = None,
@@ -51,6 +52,7 @@ class OAuth:
         self.host = host or os.getenv("KINDE_HOST", "https://app.kinde.com")
         self.audience = audience or os.getenv("KINDE_AUDIENCE")
         self.state = state
+        self.framework = framework
         
         # Validate required configurations
         if not self.client_id:

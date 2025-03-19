@@ -13,6 +13,7 @@ from kinde_sdk.exceptions import (
     KindeRetrieveException,
 )
 from kinde_sdk import __version__ as kinde_sdk_version
+from .framework_detector import FrameworkDetector 
 
 
 class FlagType(Enum):
@@ -42,6 +43,7 @@ class KindeApiClient(ApiClient):
         scope="openid profile email offline",
         audience=None,
         org_code=None,
+        framework: Optional[str] = None,  # Add framework property
         **kwargs,
     ):
         if not isinstance(grant_type, GrantType):
@@ -49,6 +51,17 @@ class KindeApiClient(ApiClient):
                 f"Please provide a grant_type one of the following: {list(GrantType)}"
             )
         super().__init__(**kwargs)
+
+        if framework is None:
+            detector = FrameworkDetector()
+            framework = detector.detect_framework(["flask", "fastapi", "django"])
+            if framework:
+                print(f"Auto-detected framework: {framework}")
+            else:
+                print("No framework detected. Using default configuration.")
+
+        self.framework = framework  # Set the framework property
+
         self.domain = domain
         self.client_id = client_id
         self.client_secret = client_secret

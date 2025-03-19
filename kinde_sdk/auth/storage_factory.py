@@ -26,12 +26,6 @@ class StorageFactory:
             return MemoryStorage()
         elif storage_type == "local_storage":
             return LocalStorage()
-        # elif storage_type == "postgres":
-        #         return PostgresStorage(**options)
-            # Add more storage types here
-            # elif storage_type == "postgres":
-            #     return PostgresStorage(**options)
-            # elif storage_type == "dynamo":
-            #     return DynamoStorage(**options)
+        # Add more storage types here as needed
         else:
             raise ValueError(f"Unsupported storage type: {storage_type}")

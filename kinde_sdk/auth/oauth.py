@@ -33,7 +33,8 @@ class OAuth:
         token_url: Optional[str] = None,
         logout_url: Optional[str] = None,
         userinfo_url: Optional[str] = None,
-        config_file: str = "config.yaml",  # Path to the configuration file
+        config_file: Optional[str] = None,  #  config_file optional
+        storage_config: Optional[Dict[str, Any]] = None,  # Add storage_config parameter
         audience: Optional[str] = None,
         host: Optional[str] = None,
         state: Optional[str] = None,
@@ -68,8 +69,11 @@ class OAuth:
             raise KindeConfigurationException("Userinfo URL is required.")
 
         # Load configuration and create the appropriate storage backend
-        config = load_config(config_file)
-        storage_config = config.get("storage", {"type": "memory"})  # Default to "memory"
+        if config_file:
+            config = load_config(config_file)
+            storage_config = config.get("storage", {"type": "memory"})  # Default to "memory"
+        elif storage_config is None:
+            storage_config = {"type": "memory"}  # Default to in-memory storage if no config is provided
         storage = StorageFactory.create_storage(storage_config)
 
         self.session_manager = UserSession(storage=storage)
@@ -83,7 +87,7 @@ class OAuth:
         self.proxy = None
         self.proxy_headers = None
 
-    def authenticate_user(self, user_id: str, auth_code: str) -> None:
+    def code_exchange(self, user_id: str, auth_code: str) -> None:
         """Exchange authorization code for tokens and store in session."""
         data = {
             "grant_type": "authorization_code",
@@ -231,16 +235,88 @@ class OAuth:
 
         return tokens
 
-    def login(self, params: Optional[Dict[str, Any]] = None) -> str:
+    # def login(self, params: Optional[Dict[str, Any]] = None) -> str:
+    #     """
+    #     Generate the login URL for user authentication.
+
+    #     Args:
+    #         params (Optional[Dict[str, Any]]): A dictionary of query parameters to include in the login URL.
+    #                                           Supported keys: org_code, org_name, is_create_org, auth_url_params.
+
+    #     Returns:
+    #         str: The login URL.
+    #     """
+    #     # Default parameters
+    #     default_params = {
+    #         "client_id": self.client_id,
+    #         "response_type": "code",
+    #         "redirect_uri": self.redirect_uri,
+    #         "scope": "openid profile email",  # Default scope
+    #     }
+
+    #     # Merge default parameters with user-provided parameters
+    #     if params:
+    #         # Handle organization-specific parameters
+    #         if "org_code" in params:
+    #             default_params["org_code"] = params["org_code"]
+    #         if "org_name" in params:
+    #             default_params["org_name"] = params["org_name"]
+    #         if "is_create_org" in params:
+    #             default_params["is_create_org"] = "true" if params["is_create_org"] else "false"
+
+    #         # Handle additional auth URL parameters
+    #         if "auth_url_params" in params and isinstance(params["auth_url_params"], dict):
+    #             default_params.update(params["auth_url_params"])
+
+    #     return f"{self.auth_url}?{urlencode(default_params)}"
+
+    # def register(self, params: Optional[Dict[str, Any]] = None) -> str:
+    #     """
+    #     Generate the registration URL for user sign-up.
+
+    #     Args:
+    #         params (Optional[Dict[str, Any]]): A dictionary of query parameters to include in the registration URL.
+    #                                           Supported keys: org_code, org_name, is_create_org, auth_url_params.
+
+    #     Returns:
+    #         str: The registration URL.
+    #     """
+    #     # Default parameters
+    #     default_params = {
+    #         "client_id": self.client_id,
+    #         "response_type": "code",
+    #         "redirect_uri": self.redirect_uri,
+    #         "scope": "openid profile email",  # Default scope
+    #     }
+
+    #     # Merge default parameters with user-provided parameters
+    #     if params:
+    #         # Handle organization-specific parameters
+    #         if "org_code" in params:
+    #             default_params["org_code"] = params["org_code"]
+    #         if "org_name" in params:
+    #             default_params["org_name"] = params["org_name"]
+    #         if "is_create_org" in params:
+    #             default_params["is_create_org"] = "true" if params["is_create_org"] else "false"
+
+    #         # Handle additional auth URL parameters
+    #         if "auth_url_params" in params and isinstance(params["auth_url_params"], dict):
+    #             default_params.update(params["auth_url_params"])
+
+    #     return f"{self.auth_url}/register?{urlencode(default_params)}"
+
+
+    def _get_auth_url(self, prompt: Optional[str] = None, params: Optional[Dict[str, Any]] = None) -> str:
         """
-        Generate the login URL for user authentication.
+        Helper method to generate the authentication URL for login or registration.
 
         Args:
-            params (Optional[Dict[str, Any]]): A dictionary of query parameters to include in the login URL.
-                                              Supported keys: org_code, org_name, is_create_org, auth_url_params.
+            prompt (Optional[str]): Set to "create" for registration.
+            params (Optional[Dict[str, Any]]): A dictionary of query parameters to include in the URL.
+                                            Supported keys: org_code, org_name, is_create_org, auth_url_params.
 
         Returns:
-            str: The login URL.
+            str: The authentication URL.
         """
         # Default parameters
         default_params = {
@@ -249,6 +325,10 @@ class OAuth:
             "redirect_uri": self.redirect_uri,
             "scope": "openid profile email",  # Default scope
         }
+
+        # Add prompt if provided (used for registration)
+        if prompt:
+            default_params["prompt"] = prompt
 
         # Merge default parameters with user-provided parameters
         if params:
@@ -266,37 +346,41 @@ class OAuth:
 
         return f"{self.auth_url}?{urlencode(default_params)}"
 
+    def login(self, params: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Generate the login URL for user authentication.
+
+        Args:
+            params (Optional[Dict[str, Any]]): A dictionary of query parameters to include in the login URL.
+                                            Supported keys: org_code, org_name, is_create_org, auth_url_params.
+
+        Returns:
+            str: The login URL.
+        """
+        return self._get_auth_url(params=params)
+
     def register(self, params: Optional[Dict[str, Any]] = None) -> str:
         """
         Generate the registration URL for user sign-up.
 
         Args:
             params (Optional[Dict[str, Any]]): A dictionary of query parameters to include in the registration URL.
-                                              Supported keys: org_code, org_name, is_create_org, auth_url_params.
+                                            Supported keys: org_code, org_name, is_create_org, auth_url_params.
 
         Returns:
             str: The registration URL.
         """
-        # Default parameters
-        default_params = {
-            "client_id": self.client_id,
-            "response_type": "code",
-            "redirect_uri": self.redirect_uri,
-            "scope": "openid profile email",  # Default scope
-        }
+        return self._get_auth_url(prompt="create", params=params)
+    
 
-        # Merge default parameters with user-provided parameters
-        if params:
-            # Handle organization-specific parameters
-            if "org_code" in params:
-                default_params["org_code"] = params["org_code"]
-            if "org_name" in params:
-                default_params["org_name"] = params["org_name"]
-            if "is_create_org" in params:
-                default_params["is_create_org"] = "true" if params["is_create_org"] else "false"
+    """
+    Example usage for login and register.
+    # Login URL
+    login_url = oauth_client.login(params={"org_code": "12345"})
+    print(login_url)  # Output: https://auth.kinde.com?client_id=...&response_type=code&...
 
-            # Handle additional auth URL parameters
-            if "auth_url_params" in params and isinstance(params["auth_url_params"], dict):
-                default_params.update(params["auth_url_params"])
-
-        return f"{self.auth_url}/register?{urlencode(default_params)}"
+    # Registration URL
+    register_url = oauth_client.register(params={"org_code": "12345"})
+    print(register_url)  # Output: https://auth.kinde.com?client_id=...&response_type=code&...&prompt=create
+    
+    """

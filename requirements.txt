@@ -13,3 +13,5 @@ mypy>=1.0
 bandit>=1.7
 pylint>=2.0
 pycodestyle>=2.0
+pytest-asyncio
+pytest-timeout

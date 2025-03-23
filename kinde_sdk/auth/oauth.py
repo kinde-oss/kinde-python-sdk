@@ -1,70 +1,22 @@
 import os
 import requests
 import logging
-import secrets
-import hashlib
-import base64
-import json
 import time
-from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlencode, urlparse, quote
 
 from .user_session import UserSession
 from .storage_factory import StorageFactory
 from .config_loader import load_config
+from .enums import GrantType, IssuerRouteTypes, PromptTypes
+from .login_options import LoginOptions
+from kinde_sdk.core.helpers import generate_random_string, base64_url_encode, generate_pkce_pair, get_user_details as helper_get_user_details
 from kinde_sdk.exceptions import (
     KindeConfigurationException,
     KindeLoginException,
     KindeTokenException,
     KindeRetrieveException,
 )
-
-class GrantType(Enum):
-    CLIENT_CREDENTIALS = "client_credentials"
-    AUTHORIZATION_CODE = "authorization_code"
-    AUTHORIZATION_CODE_WITH_PKCE = "authorization_code_with_pkce"
-
-class IssuerRouteTypes(Enum):
-    LOGIN = "login"
-    REGISTER = "register"
-
-class PromptTypes(Enum):
-    CREATE = "create"
-    LOGIN = "login"
-    CONSENT = "consent"
-    SELECT_ACCOUNT = "select_account"
-    NONE = "none"
-
-# Define login option constants for better documentation and maintenance
-class LoginOptions:
-    # Standard OAuth parameters
-    RESPONSE_TYPE = "response_type"
-    REDIRECT_URI = "redirect_uri"
-    SCOPE = "scope"
-    AUDIENCE = "audience"
-    STATE = "state"
-    NONCE = "nonce"
-    CODE_CHALLENGE = "code_challenge"
-    CODE_CHALLENGE_METHOD = "code_challenge_method"
-    
-    # Organization parameters
-    ORG_CODE = "org_code"
-    ORG_NAME = "org_name"
-    IS_CREATE_ORG = "is_create_org"
-    
-    # User experience parameters
-    PROMPT = "prompt"
-    LANG = "lang"
-    LOGIN_HINT = "login_hint"
-    CONNECTION_ID = "connection_id"
-    REDIRECT_URL = "redirect_url"
-    HAS_SUCCESS_PAGE = "has_success_page"
-    WORKFLOW_DEPLOYMENT_ID = "workflow_deployment_id"
-    
-    # Additional parameters container
-    AUTH_PARAMS = "auth_params"
-
 
 class OAuth:
     def __init__(
@@ -118,61 +70,6 @@ class OAuth:
         self.verify_ssl = True
         self.proxy = None
         self.proxy_headers = None
-
-    def generate_random_string(self, length: int = 32) -> str:
-        """
-        Generate a random string of specified length.
-        
-        Args:
-            length: Length of the random string
-            
-        Returns:
-            Random URL-safe string
-        """
-        return secrets.token_urlsafe(length)
-    
-    def base64_url_encode(self, data: Union[bytes, str]) -> str:
-        """
-        Encode bytes or string to base64url format.
-        
-        Args:
-            data: Data to encode (bytes or string)
-            
-        Returns:
-            Base64URL encoded string
-        """
-        if isinstance(data, str):
-            data = data.encode('utf-8')
-            
-        return base64.urlsafe_b64encode(data).decode('utf-8').replace('=', '')
-    
-    async def generate_pkce_pair(self) -> Dict[str, str]:
-        """
-        Generate PKCE code verifier and challenge pair.
-        
-        Returns:
-            Dictionary containing code_verifier and code_challenge
-        """
-        # Generate code verifier (random string between 43-128 chars)
-        # We use 52 chars to match JS implementation
-        code_verifier = self.generate_random_string(52)
-        
-        # Generate code challenge using SHA-256
-        code_challenge = ""
-        try:
-            # Hash the verifier
-            data = code_verifier.encode()
-            hashed = hashlib.sha256(data).digest()
-            code_challenge = self.base64_url_encode(hashed)
-        except Exception as e:
-            # Fallback to plain verifier if hashing fails
-            self.logger.error(f"Error generating code challenge: {str(e)}")
-            code_challenge = self.base64_url_encode(code_verifier)
-        
-        return {
-            "code_verifier": code_verifier,
-            "code_challenge": code_challenge
-        }
 
     async def generate_auth_url(
         self,
@@ -249,12 +146,12 @@ class OAuth:
                 search_params[key] = str(value) if value is not None else ""
         
         # Generate state if not provided
-        state = login_options.get(LoginOptions.STATE, self.generate_random_string(32))
+        state = login_options.get(LoginOptions.STATE, generate_random_string(32))
         search_params["state"] = state
         self.session_manager.storage.set("state", {"value": state})
         
         # Generate nonce if not provided
-        nonce = login_options.get(LoginOptions.NONCE, self.generate_random_string(16))
+        nonce = login_options.get(LoginOptions.NONCE, generate_random_string(16))
         search_params["nonce"] = nonce
         self.session_manager.storage.set("nonce", {"value": nonce})
         
@@ -264,7 +161,7 @@ class OAuth:
             search_params["code_challenge"] = login_options[LoginOptions.CODE_CHALLENGE]
         else:
             # Generate PKCE pair
-            pkce_data = await self.generate_pkce_pair()
+            pkce_data = await generate_pkce_pair(52)  # Use 52 chars to match JS implementation
             code_verifier = pkce_data["code_verifier"]
             search_params["code_challenge"] = pkce_data["code_challenge"]
             self.session_manager.storage.set("code_verifier", {"value": code_verifier})
@@ -314,6 +211,9 @@ class OAuth:
         Returns:
             Login URL
         """
+        if not self.framework:
+            raise KindeConfigurationException("Framework must be selected")
+        
         if login_options is None:
             login_options = {}
         
@@ -348,6 +248,9 @@ class OAuth:
         Returns:
             Registration URL
         """
+        if not self.framework:
+            raise KindeConfigurationException("Framework must be selected")
+
         if login_options is None:
             login_options = {}
         
@@ -360,6 +263,61 @@ class OAuth:
             login_options=login_options
         )
         return auth_url_data["url"]
+    
+    async def logout(self, user_id: Optional[str] = None, logout_options: Dict[str, Any] = None) -> str:
+        """
+        Generate the logout URL and clear session if user_id provided.
+        
+        Args:
+            user_id: User identifier to clear session
+            logout_options: Dictionary with logout options including:
+                - post_logout_redirect_uri: URI to redirect after logout
+                - state: State parameter for validation
+                - id_token_hint: ID token hint for validation
+            
+        Returns:
+            Logout URL
+        """
+        if not self.framework:
+            raise KindeConfigurationException("Framework must be selected")
+
+        if logout_options is None:
+            logout_options = {}
+        
+        # Clear session if user_id provided
+        if user_id:
+            # Get ID token before logging out if not provided in options
+            if "id_token_hint" not in logout_options and user_id:
+                token_manager = self.session_manager.get_token_manager(user_id)
+                if token_manager:
+                    id_token = token_manager.get_id_token()
+                    if id_token:
+                        logout_options["id_token_hint"] = id_token
+            
+            # Perform logout (clear session)
+            self.session_manager.logout(user_id)
+        
+        # Generate logout URL
+        params = {
+            "client_id": self.client_id,
+        }
+        
+        # Add redirect URI
+        redirect_uri = logout_options.get("post_logout_redirect_uri", self.redirect_uri)
+        if redirect_uri:
+            params["redirect_uri"] = redirect_uri
+        
+        # Add state if provided
+        if "state" in logout_options:
+            params["state"] = logout_options["state"]
+        
+        # Add ID token hint if provided
+        if "id_token_hint" in logout_options:
+            params["id_token_hint"] = logout_options["id_token_hint"]
+        
+        # Build logout URL
+        query_string = urlencode(params)
+        return f"{self.logout_url}?{query_string}"
     
     async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -409,7 +367,15 @@ class OAuth:
         
         # Get user details using the token
         try:
-            user_details = await self.get_user_details(user_id)
+            token_manager = self.session_manager.get_token_manager(user_id)
+            if token_manager:
+                user_details = await helper_get_user_details(
+                    userinfo_url=self.userinfo_url,
+                    token_manager=token_manager,
+                    logger=self.logger
+                )
+            else:
+                user_details = {}
         except Exception as e:
             self.logger.error(f"Failed to get user details: {str(e)}")
             user_details = {}
@@ -457,111 +423,6 @@ class OAuth:
             raise KindeTokenException(f"Token exchange failed: {response.text}")
         
         return response.json()
-    
-    async def get_user_details(self, user_id: str) -> Dict[str, Any]:
-        """
-        Retrieve user information using the stored token.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            Dictionary with user profile information
-            
-        Raises:
-            KindeRetrieveException: If user is not authenticated or retrieval fails
-        """
-        # Get token manager for the user
-        token_manager = self.session_manager.get_token_manager(user_id)
-        if not token_manager:
-            raise KindeRetrieveException("User not authenticated")
-
-        try:
-            # Get access token
-            access_token = token_manager.get_access_token()
-            
-            # Set up request headers
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/json"
-            }
-            
-            # Make the request to userinfo endpoint
-            response = requests.get(self.userinfo_url, headers=headers)
-            response.raise_for_status()
-            
-            # Return user profile data
-            return response.json()
-            
-        except ValueError as e:
-            # Token manager errors (e.g., no token available)
-            self.logger.error(f"Token error when retrieving user details: {str(e)}")
-            raise KindeRetrieveException(f"Token error: {str(e)}")
-            
-        except requests.RequestException as e:
-            # Network or API errors
-            error_message = f"Failed to retrieve user details: {str(e)}"
-            if hasattr(e, 'response') and e.response is not None:
-                try:
-                    error_data = e.response.json()
-                    error_message = f"User details retrieval failed: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}"
-                except Exception:
-                    error_message = f"User details retrieval failed with status code: {e.response.status_code}"
-            
-            self.logger.error(error_message)
-            raise KindeRetrieveException(error_message)
-    
-    async def logout(self, user_id: Optional[str] = None, logout_options: Dict[str, Any] = None) -> str:
-        """
-        Generate the logout URL and clear session if user_id provided.
-        
-        Args:
-            user_id: User identifier to clear session
-            logout_options: Dictionary with logout options including:
-                - post_logout_redirect_uri: URI to redirect after logout
-                - state: State parameter for validation
-                - id_token_hint: ID token hint for validation
-            
-        Returns:
-            Logout URL
-        """
-        if logout_options is None:
-            logout_options = {}
-        
-        # Clear session if user_id provided
-        if user_id:
-            # Get ID token before logging out if not provided in options
-            if "id_token_hint" not in logout_options and user_id:
-                token_manager = self.session_manager.get_token_manager(user_id)
-                if token_manager:
-                    id_token = token_manager.get_id_token()
-                    if id_token:
-                        logout_options["id_token_hint"] = id_token
-            
-            # Perform logout (clear session)
-            self.session_manager.logout(user_id)
-        
-        # Generate logout URL
-        params = {
-            "client_id": self.client_id,
-        }
-        
-        # Add redirect URI
-        redirect_uri = logout_options.get("post_logout_redirect_uri", self.redirect_uri)
-        if redirect_uri:
-            params["redirect_uri"] = redirect_uri
-        
-        # Add state if provided
-        if "state" in logout_options:
-            params["state"] = logout_options["state"]
-        
-        # Add ID token hint if provided
-        if "id_token_hint" in logout_options:
-            params["id_token_hint"] = logout_options["id_token_hint"]
-        
-        # Build logout URL
-        query_string = urlencode(params)
-        return f"{self.logout_url}?{query_string}"
     
     def get_tokens(self, user_id: str) -> Optional[Dict[str, Any]]:
         """

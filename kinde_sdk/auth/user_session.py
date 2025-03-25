@@ -1,14 +1,14 @@
 from .token_manager import TokenManager
 import threading
 import time
-from .storage_interface import StorageInterface
 from typing import Dict, Any, Optional
+from kinde_sdk.core.storage.storage_manager import StorageManager
 
 class UserSession:
-    def __init__(self, storage: StorageInterface):
+    def __init__(self):
         self.user_sessions = {}  # Store user-specific session data
         self.lock = threading.Lock()  # Add a lock for thread safety
-        self.storage = storage  # Use the provided storage backend
+        self.storage_manager = StorageManager()  # Use the provided storage backend
 
     def set_user_data(self, user_id: str, user_info: Dict[str, Any], token_data: Dict[str, Any]):
         """Store user session details and associate tokens."""
@@ -40,6 +40,18 @@ class UserSession:
             # Save to persistent storage
             self._save_to_storage(user_id)
 
+    # def _save_to_storage(self, user_id: str):
+    #     """Save session data to storage."""
+    #     session_data = self.user_sessions.get(user_id)
+    #     if session_data:
+    #         # We need to serialize the session data
+    #         # Token manager can't be directly serialized
+    #         serialized_data = {
+    #             "user_info": session_data["user_info"],
+    #             "tokens": session_data["token_manager"].tokens,
+    #         }
+    #         self.storage.set(user_id, serialized_data)
+
     def _save_to_storage(self, user_id: str):
         """Save session data to storage."""
         session_data = self.user_sessions.get(user_id)
@@ -50,14 +62,52 @@ class UserSession:
                 "user_info": session_data["user_info"],
                 "tokens": session_data["token_manager"].tokens,
             }
-            self.storage.set(user_id, serialized_data)
+            self.storage_manager.set(user_id, serialized_data)
+
+    # def _load_from_storage(self, user_id: str) -> bool:
+    #     """Load session data from storage if not already in memory."""
+    #     if user_id in self.user_sessions:
+    #         return True
+            
+    #     session_data = self.storage.get(user_id)
+    #     if not session_data:
+    #         return False
+            
+    #     # Recreate token manager from stored data
+    #     user_info = session_data.get("user_info", {})
+    #     tokens = session_data.get("tokens", {})
+        
+    #     if not user_info or not tokens:
+    #         return False
+            
+    #     token_manager = TokenManager(
+    #         user_id,
+    #         user_info.get("client_id"),
+    #         user_info.get("client_secret"),
+    #         user_info.get("token_url")
+    #     )
+        
+    #     # Set redirect URI if available
+    #     if "redirect_uri" in user_info:
+    #         token_manager.set_redirect_uri(user_info["redirect_uri"])
+            
+    #     # Set tokens
+    #     token_manager.tokens = tokens
+        
+    #     # Store in memory
+    #     self.user_sessions[user_id] = {
+    #         "user_info": user_info,
+    #         "token_manager": token_manager
+    #     }
+        
+    #     return True
 
     def _load_from_storage(self, user_id: str) -> bool:
         """Load session data from storage if not already in memory."""
         if user_id in self.user_sessions:
             return True
             
-        session_data = self.storage.get(user_id)
+        session_data = self.storage_manager.get(user_id)
         if not session_data:
             return False
             
@@ -145,7 +195,8 @@ class UserSession:
                 del self.user_sessions[user_id]
                 
             # Delete from storage
-            self.storage.delete(user_id)
+            # self.storage.delete(user_id)
+            self.storage_manager.delete(user_id)
 
     def cleanup_expired_sessions(self) -> None:
         """Remove expired sessions from memory and storage."""
@@ -170,4 +221,5 @@ class UserSession:
             for user_id in expired_users:
                 if user_id in self.user_sessions:
                     del self.user_sessions[user_id]
-                self.storage.delete(user_id)
+                # self.storage.delete(user_id)
+                self.storage_manager.delete(user_id)

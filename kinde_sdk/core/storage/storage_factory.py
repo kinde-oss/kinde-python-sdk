@@ -1,15 +1,12 @@
-# storage_factory.py
+
 from typing import Dict, Any
+from .storage_interface import StorageInterface
 from .memory_storage import MemoryStorage
 from .local_storage import LocalStorage
-from .storage_interface import StorageInterface  # Import StorageInterface
-# from .postgres_storage import PostgresStorage
-
-# Import other storage backends as needed (e.g., PostgresStorage, DynamoStorage)
 
 class StorageFactory:
     @staticmethod
-    def create_storage(config: Dict[str, Any]) -> "StorageInterface":
+    def create_storage(config: Dict[str, Any]) -> StorageInterface:
         """
         Create a storage backend based on the provided configuration.
 

@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock, Mock
 
 from kinde_sdk.auth.user_session import UserSession
 from kinde_sdk.auth.token_manager import TokenManager
-from kinde_sdk.auth.storage_interface import StorageInterface
+from kinde_sdk.core.storage.storage_interface import StorageInterface
 
 
 class MockStorage(StorageInterface):

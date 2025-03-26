@@ -52,6 +52,19 @@ class UserSession:
     #         }
     #         self.storage.set(user_id, serialized_data)
 
+    # def _save_to_storage(self, user_id: str):
+    #     """Save session data to storage."""
+    #     session_data = self.user_sessions.get(user_id)
+    #     if session_data:
+    #         # We need to serialize the session data
+    #         # Token manager can't be directly serialized
+    #         serialized_data = {
+    #             "user_info": session_data["user_info"],
+    #             "tokens": session_data["token_manager"].tokens,
+    #         }
+    #         self.storage_manager.set(user_id, serialized_data)
+
+    
     def _save_to_storage(self, user_id: str):
         """Save session data to storage."""
         session_data = self.user_sessions.get(user_id)
@@ -62,6 +75,8 @@ class UserSession:
                 "user_info": session_data["user_info"],
                 "tokens": session_data["token_manager"].tokens,
             }
+            # Store with user: prefix to make it user-specific but device-independent
+            # if you want device-specific sessions, remove the "user:" prefix
             self.storage_manager.set(user_id, serialized_data)
 
     # def _load_from_storage(self, user_id: str) -> bool:
@@ -196,7 +211,8 @@ class UserSession:
                 
             # Delete from storage
             # self.storage.delete(user_id)
-            self.storage_manager.delete(user_id)
+            # self.storage_manager.delete(user_id)
+            self.storage_manager.clear_device_data()
 
     def cleanup_expired_sessions(self) -> None:
         """Remove expired sessions from memory and storage."""

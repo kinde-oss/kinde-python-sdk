@@ -58,7 +58,7 @@ class OAuth:
             storage_config = config.get("storage", {"type": "memory"})  # Default to "memory"
         elif storage_config is None:
             storage_config = {"type": "memory"}  # Default to in-memory storage if no config is provided
-        # storage = StorageFactory.create_storage(storage_config)
+        
         storage_manager = StorageManager()
         storage_manager.initialize(storage_config)
 
@@ -150,12 +150,12 @@ class OAuth:
         # Generate state if not provided
         state = login_options.get(LoginOptions.STATE, generate_random_string(32))
         search_params["state"] = state
-        self.session_manager.storage_manager.set("state", {"value": state})
+        self.session_manager.storage_manager.setItems("state", {"value": state})
         
         # Generate nonce if not provided
         nonce = login_options.get(LoginOptions.NONCE, generate_random_string(16))
         search_params["nonce"] = nonce
-        self.session_manager.storage_manager.set("nonce", {"value": nonce})
+        self.session_manager.storage_manager.setItems("nonce", {"value": nonce})
         
         # Handle PKCE
         code_verifier = ""
@@ -166,7 +166,7 @@ class OAuth:
             pkce_data = await generate_pkce_pair(52)  # Use 52 chars to match JS implementation
             code_verifier = pkce_data["code_verifier"]
             search_params["code_challenge"] = pkce_data["code_challenge"]
-            self.session_manager.storage_manager.set("code_verifier", {"value": code_verifier})
+            self.session_manager.storage_manager.setItems("code_verifier", {"value": code_verifier})
         
         # Set code challenge method
         code_challenge_method = login_options.get(LoginOptions.CODE_CHALLENGE_METHOD, "S256")

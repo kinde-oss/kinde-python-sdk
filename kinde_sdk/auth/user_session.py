@@ -77,7 +77,7 @@ class UserSession:
             }
             # Store with user: prefix to make it user-specific but device-independent
             # if you want device-specific sessions, remove the "user:" prefix
-            self.storage_manager.set(user_id, serialized_data)
+            self.storage_manager.setItems(user_id, serialized_data)
 
     # def _load_from_storage(self, user_id: str) -> bool:
     #     """Load session data from storage if not already in memory."""

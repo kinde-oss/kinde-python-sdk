@@ -66,7 +66,7 @@ class StorageManager:
             else:
                 # Generate a new device ID
                 self._device_id = str(uuid.uuid4())
-                self.set("_device_id", {"value": self._device_id, "timestamp": time.time()})
+                self.setItems("_device_id", {"value": self._device_id, "timestamp": time.time()})
                 
         return self._device_id
     
@@ -128,7 +128,7 @@ class StorageManager:
         namespaced_key = self._get_namespaced_key(key)
         return self._storage.get(namespaced_key)
 
-    def set(self, key: str, value: Dict) -> None:
+    def setItems(self, key: str, value: Dict) -> None:
         """
         Store data in storage.
         
@@ -141,6 +141,21 @@ class StorageManager:
             
         namespaced_key = self._get_namespaced_key(key)
         self._storage.set(namespaced_key, value)
+
+
+    def set(self, access_token : str) -> None:
+        """
+        Store data in storage.
+        
+        Args:
+            key (str): The key to store under.
+            value (Dict): The data to store.
+        """
+        if self._storage is None:
+            self.initialize()
+            
+        # namespaced_key = self._get_namespaced_key(key)
+        self._storage.set_flat(access_token)
 
 
     def delete(self, key: str) -> None:

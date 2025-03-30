@@ -32,6 +32,16 @@ class LocalStorage(StorageInterface):
         """
         self.storage.setItem(key, json.dumps(value))
 
+    def set_flat(self, data: str) -> None:
+        """
+        Store data associated with the given key.
+        
+        Args:
+            key (str): The key to store the data under.
+            value (Dict): The data to store.
+        """
+        self.storage.set(json.dumps(data))
+
     def delete(self, key: str) -> None:
         """
         Delete data associated with the given key.

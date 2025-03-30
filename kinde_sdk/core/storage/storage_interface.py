@@ -28,6 +28,17 @@ class StorageInterface(ABC):
         pass
 
     @abstractmethod
+    def set_flat(self, value: str) -> None:
+        """
+        Store data associated with the given key.
+        
+        Args:
+            key (str): The key to store the data under.
+            value (Dict): The data to store.
+        """
+        pass
+
+    @abstractmethod
     def delete(self, key: str) -> None:
         """
         Delete data associated with the given key.

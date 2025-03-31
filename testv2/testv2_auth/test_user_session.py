@@ -24,17 +24,28 @@ class TestUserSession(unittest.TestCase):
         def mock_get(key):
             return self.storage_dict.get(key)
             
-        def mock_set(key, value):
+        def mock_setItems(key, value):
             self.storage_dict[key] = value
+            
+        def mock_set_flat(access_token):
+            self.storage_dict["_flat_access_token"] = access_token
             
         def mock_delete(key):
             if key in self.storage_dict:
                 del self.storage_dict[key]
+                
+        def mock_clear_device_data():
+            # This would clear all device-specific data
+            # For test simplicity, let's just remove the user_id we're testing with
+            if self.user_id in self.storage_dict:
+                del self.storage_dict[self.user_id]
         
-        # Configure the mock
+        # Configure the mock with the correct method names
         self.mock_storage_manager.get.side_effect = mock_get
-        self.mock_storage_manager.set.side_effect = mock_set
+        self.mock_storage_manager.setItems.side_effect = mock_setItems
+        self.mock_storage_manager.set.side_effect = mock_set_flat
         self.mock_storage_manager.delete.side_effect = mock_delete
+        self.mock_storage_manager.clear_device_data.side_effect = mock_clear_device_data
         
         # Patch the StorageManager's __new__ method to return our mock
         patcher = patch('kinde_sdk.auth.user_session.StorageManager')
@@ -70,10 +81,10 @@ class TestUserSession(unittest.TestCase):
             self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
         
         # Check storage was set correctly
-        self.mock_storage_manager.set.assert_called()
+        self.mock_storage_manager.setItems.assert_called()
         
         # Check the key and ensure at least some of the data was stored
-        args, kwargs = self.mock_storage_manager.set.call_args
+        args, kwargs = self.mock_storage_manager.setItems.call_args
         self.assertEqual(args[0], self.user_id)  # First arg should be the key (user_id)
         
         # Check memory state
@@ -183,7 +194,7 @@ class TestUserSession(unittest.TestCase):
             self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
         
         # Reset the mock count
-        self.mock_storage_manager.delete.reset_mock()
+        self.mock_storage_manager.clear_device_data.reset_mock()
         
         # Mock token revocation
         with patch.object(TokenManager, 'revoke_token') as mock_revoke:
@@ -196,8 +207,8 @@ class TestUserSession(unittest.TestCase):
             # Check memory was cleaned
             self.assertNotIn(self.user_id, self.user_session.user_sessions)
             
-            # Check storage delete was called with correct user_id
-            self.mock_storage_manager.delete.assert_called_once_with(self.user_id)
+            # Check clear_device_data was called instead of delete
+            self.mock_storage_manager.clear_device_data.assert_called_once()
             
             # Check storage dict was updated
             self.assertNotIn(self.user_id, self.storage_dict)
@@ -263,46 +274,3 @@ class TestUserSession(unittest.TestCase):
 
 if __name__ == "__main__":
     pytest.main(["-xvs", __file__])
-
-
-# @pytest.mark.timeout(5)  # 5 second timeout
-    # def test_is_authenticated_expired(self):
-    #     """Test is_authenticated with expired token"""
-    #     # Set token data with expired token
-    #     expired_token_data = {
-    #         "access_token": "expired_token",
-    #         "expires_in": -100  # Expired
-    #     }
-        
-    #     # Set up with JWT decode mock
-    #     with patch('jwt.decode') as mock_decode, \
-    #         patch('requests.post', side_effect=Exception("Network requests disabled in tests")), \
-    #         patch('kinde_sdk.auth.token_manager.TokenManager.get_access_token', 
-    #             side_effect=ValueError("Token expired")):
-            
-    #         mock_decode.return_value = {"sub": "user123"}
-    #         self.user_session.set_user_data(self.user_id, self.user_info, expired_token_data)
-            
-    #         # Check authentication - should fail
-    #         self.assertFalse(self.user_session.is_authenticated(self.user_id))
-
-    # @pytest.mark.timeout(5)  # 5 second timeout
-    # def test_is_authenticated_valid(self):
-    #     """Test is_authenticated with valid token"""
-    #     # Set up with valid token
-    #     valid_token_data = {
-    #         "access_token": "valid_access_token",
-    #         "expires_in": 3600
-    #     }
-        
-    #     # Set up with JWT decode mock
-    #     with patch('jwt.decode') as mock_decode, \
-    #         patch('requests.post', side_effect=Exception("Network requests disabled in tests")), \
-    #         patch('kinde_sdk.auth.token_manager.TokenManager.get_access_token', 
-    #             return_value="valid_access_token"):
-            
-    #         mock_decode.return_value = {"sub": "user123"}
-    #         self.user_session.set_user_data(self.user_id, self.user_info, valid_token_data)
-            
-    #         # Check authentication - should succeed
-    #         self.assertTrue(self.user_session.is_authenticated(self.user_id))

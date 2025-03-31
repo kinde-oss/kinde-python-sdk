@@ -54,7 +54,7 @@ class KindeApiClient(ApiClient):
 
         if framework is None:
             detector = FrameworkDetector()
-            framework = detector.detect_framework(["flask", "fastapi", "django"])
+            framework = detector.detect_framework(["flask", "fastapi", "django", "None"])
             if framework:
                 print(f"Auto-detected framework: {framework}")
             else:

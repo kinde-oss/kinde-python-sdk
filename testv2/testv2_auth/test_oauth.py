@@ -14,6 +14,7 @@ class TestOAuth(unittest.TestCase):
             client_id="test_client_id",
             client_secret="test_client_secret",
             redirect_uri="http://localhost/callback",
+            framework="None",
             host="https://example.com"  # Use host parameter instead of individual URLs
         )
         

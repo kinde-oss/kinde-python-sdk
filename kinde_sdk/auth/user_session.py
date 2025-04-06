@@ -117,6 +117,52 @@ class UserSession:
         
     #     return True
 
+    def reset(self):
+        """Reset all session data - useful for testing"""
+        with self.lock:
+            self.user_sessions = {}
+            # Also reset the TokenManager instances
+            from .token_manager import TokenManager
+            TokenManager.reset_instances()
+
+    # def _load_from_storage(self, user_id: str) -> bool:
+    #     """Load session data from storage if not already in memory."""
+    #     if user_id in self.user_sessions:
+    #         return True
+            
+    #     session_data = self.storage_manager.get(user_id)
+    #     if not session_data:
+    #         return False
+            
+    #     # Recreate token manager from stored data
+    #     user_info = session_data.get("user_info", {})
+    #     tokens = session_data.get("tokens", {})
+        
+    #     if not user_info or not tokens:
+    #         return False
+            
+    #     token_manager = TokenManager(
+    #         user_id,
+    #         user_info.get("client_id"),
+    #         user_info.get("client_secret"),
+    #         user_info.get("token_url")
+    #     )
+        
+    #     # Set redirect URI if available
+    #     if "redirect_uri" in user_info:
+    #         token_manager.set_redirect_uri(user_info["redirect_uri"])
+            
+    #     # Set tokens
+    #     token_manager.tokens = tokens
+        
+    #     # Store in memory
+    #     self.user_sessions[user_id] = {
+    #         "user_info": user_info,
+    #         "token_manager": token_manager
+    #     }
+        
+    #     return True
+
     def _load_from_storage(self, user_id: str) -> bool:
         """Load session data from storage if not already in memory."""
         if user_id in self.user_sessions:
@@ -126,13 +172,18 @@ class UserSession:
         if not session_data:
             return False
             
-        # Recreate token manager from stored data
+        # Verify we have all the required data
         user_info = session_data.get("user_info", {})
         tokens = session_data.get("tokens", {})
         
-        if not user_info or not tokens:
+        # Ensure we have all essential data
+        if (not user_info or not tokens or 
+            "client_id" not in user_info or 
+            "token_url" not in user_info or
+            "access_token" not in tokens):
             return False
             
+        
         token_manager = TokenManager(
             user_id,
             user_info.get("client_id"),

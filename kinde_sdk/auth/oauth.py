@@ -426,27 +426,136 @@ class OAuth:
         
         return response.json()
     
-    def get_tokens(self, user_id: str) -> Optional[Dict[str, Any]]:
+    # def get_tokens(self, user_id: str) -> Optional[Dict[str, Any]]:
+    #     """
+    #     Retrieve tokens and related information for a user.
+        
+    #     Args:
+    #         user_id: User identifier
+            
+    #     Returns:
+    #         Dictionary containing tokens and token information or None if not authenticated
+    #     """
+    #     # Get token manager
+    #     token_manager = self.session_manager.get_token_manager(user_id)
+    #     if not token_manager:
+    #         return None
+        
+    #     # Initialize tokens dictionary
+    #     tokens = {}
+        
+    #     try:
+    #         # Get access token
+    #         access_token = token_manager.get_access_token()
+    #         tokens["access_token"] = access_token
+            
+    #         # Get token expiration time
+    #         if "expires_at" in token_manager.tokens:
+    #             tokens["expires_at"] = token_manager.tokens["expires_at"]
+    #             tokens["expires_in"] = max(0, int(token_manager.tokens["expires_at"] - time.time()))
+            
+    #         # Add refresh token if available
+    #         if token_manager.tokens.get("refresh_token"):
+    #             tokens["refresh_token"] = token_manager.tokens["refresh_token"]
+                
+    #         # Add ID token if available
+    #         if token_manager.tokens.get("id_token"):
+    #             tokens["id_token"] = token_manager.tokens["id_token"]
+            
+    #         # Add claims if available
+    #         claims = token_manager.get_claims()
+    #         if claims:
+    #             tokens["claims"] = claims
+                
+    #         return tokens
+    #     except Exception as e:
+    #         self.logger.error(f"Error retrieving tokens: {str(e)}")
+    #         return None
+
+    # def get_tokens(self, user_id: str) -> Optional[Dict[str, Any]]:
+    #     """
+    #     Retrieve tokens and related information for a user.
+        
+    #     Args:
+    #         user_id: User identifier
+            
+    #     Returns:
+    #         Dictionary containing tokens and token information or None if not authenticated
+    #     """
+    #     # Get token manager
+    #     token_manager = self.session_manager.get_token_manager(user_id)
+    #     if not token_manager:
+    #         return None
+        
+    #     # Initialize tokens dictionary
+    #     tokens = {}
+        
+    #     try:
+    #         # Check if token manager has any tokens
+    #         if not token_manager.tokens or "access_token" not in token_manager.tokens:
+    #             return None
+                
+    #         # Get access token
+    #         access_token = token_manager.get_access_token()
+    #         if not access_token:
+    #             return None
+                
+    #         tokens["access_token"] = access_token
+            
+    #         # Get token expiration time
+    #         if "expires_at" in token_manager.tokens:
+    #             tokens["expires_at"] = token_manager.tokens["expires_at"]
+    #             tokens["expires_in"] = max(0, int(token_manager.tokens["expires_at"] - time.time()))
+            
+    #         # Add refresh token if available
+    #         if token_manager.tokens.get("refresh_token"):
+    #             tokens["refresh_token"] = token_manager.tokens["refresh_token"]
+                
+    #         # Add ID token if available
+    #         if token_manager.tokens.get("id_token"):
+    #             tokens["id_token"] = token_manager.tokens["id_token"]
+            
+    #         # Add claims if available
+    #         claims = token_manager.get_claims()
+    #         if claims:
+    #             tokens["claims"] = claims
+                
+    #         return tokens
+    #     except Exception as e:
+    #         self.logger.error(f"Error retrieving tokens: {str(e)}")
+    #         return None
+
+    def get_tokens(self, user_id: str) -> Dict[str, Any]:
         """
         Retrieve tokens and related information for a user.
         
         Args:
             user_id: User identifier
-            
+                
         Returns:
-            Dictionary containing tokens and token information or None if not authenticated
+            Dictionary containing tokens and token information
+            
+        Raises:
+            ValueError: If no tokens are available for the user
         """
         # Get token manager
         token_manager = self.session_manager.get_token_manager(user_id)
         if not token_manager:
-            return None
+            raise ValueError(f"No token manager available for user {user_id}")
         
         # Initialize tokens dictionary
         tokens = {}
         
         try:
+            # Check if token manager has any tokens
+            if not token_manager.tokens or "access_token" not in token_manager.tokens:
+                raise ValueError(f"No access token available for user {user_id}")
+                
             # Get access token
             access_token = token_manager.get_access_token()
+            if not access_token:
+                raise ValueError(f"Invalid access token for user {user_id}")
+                
             tokens["access_token"] = access_token
             
             # Get token expiration time
@@ -470,4 +579,4 @@ class OAuth:
             return tokens
         except Exception as e:
             self.logger.error(f"Error retrieving tokens: {str(e)}")
-            return None
+            raise ValueError(f"Failed to retrieve tokens: {str(e)}")

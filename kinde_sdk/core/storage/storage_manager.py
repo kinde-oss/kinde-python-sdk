@@ -26,6 +26,7 @@ class StorageManager:
         self._initialized = True
         self._device_id = None
 
+
     def initialize(self, config: Dict[str, Any] = None, device_id: Optional[str] = None):
         """
         Initialize the storage with the provided configuration.
@@ -40,7 +41,10 @@ class StorageManager:
             if config is None:
                 config = {"type": "memory"}
                 
+            # Clear any existing storage first
+            self._storage = None
             self._storage = StorageFactory.create_storage(config)
+            
             # Set or generate device ID
             if device_id:
                 self._device_id = device_id
@@ -199,3 +203,10 @@ class StorageManager:
                 keys_to_delete = [k for k in self._storage._storage.keys() if k.startswith(prefix)]
                 for k in keys_to_delete:
                     self._storage.delete(k)
+
+    def reset(self):
+        """Reset the storage manager - useful for testing"""
+        with self._lock:
+            self._storage = None
+            self._device_id = None
+            self.initialize({"type": "memory"})

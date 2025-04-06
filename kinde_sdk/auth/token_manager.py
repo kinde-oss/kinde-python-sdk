@@ -8,6 +8,12 @@ class TokenManager:
     _instances = {}
     _lock = threading.Lock()  # Add a lock for thread safety
 
+    @classmethod
+    def reset_instances(cls):
+        """Reset all token manager instances - useful for testing"""
+        with cls._lock:
+            cls._instances = {}
+
     def __new__(cls, user_id, *args, **kwargs):
         """
         Ensure only one instance per user.
@@ -27,6 +33,7 @@ class TokenManager:
         self.token_url = token_url
         self.tokens = {}  # Store tokens (access/refresh)
         self.lock = threading.Lock()  # Add a lock for thread safety
+        self.redirect_uri = None  # Initialize the redirect_uri attribute
         self.initialized = True
 
     def set_tokens(self, token_data: Dict[str, Any]):
@@ -97,7 +104,8 @@ class TokenManager:
                 raise ValueError("No access token available")
                 
             # Check if token is expired
-            if time.time() >= self.tokens["expires_at"]:
+            # if time.time() >= self.tokens["expires_at"]:
+            if time.time() >= self.tokens.get("expires_at", 0):
                 # Try to refresh token if available
                 if "refresh_token" in self.tokens:
                     return self.refresh_access_token()

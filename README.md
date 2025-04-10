@@ -122,6 +122,9 @@ data = storage_manager.get("some_key")
 
 
 
+# After initializing both OAuth and KindeApiClient use the following fn to get proper urls
+api_client.fetch_openid_configuration(oauth)
+
 ## Publishing
 
 The core team handles publishing.

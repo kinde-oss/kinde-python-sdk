@@ -39,31 +39,6 @@ class UserSession:
             
             # Save to persistent storage
             self._save_to_storage(user_id)
-
-    # def _save_to_storage(self, user_id: str):
-    #     """Save session data to storage."""
-    #     session_data = self.user_sessions.get(user_id)
-    #     if session_data:
-    #         # We need to serialize the session data
-    #         # Token manager can't be directly serialized
-    #         serialized_data = {
-    #             "user_info": session_data["user_info"],
-    #             "tokens": session_data["token_manager"].tokens,
-    #         }
-    #         self.storage.set(user_id, serialized_data)
-
-    # def _save_to_storage(self, user_id: str):
-    #     """Save session data to storage."""
-    #     session_data = self.user_sessions.get(user_id)
-    #     if session_data:
-    #         # We need to serialize the session data
-    #         # Token manager can't be directly serialized
-    #         serialized_data = {
-    #             "user_info": session_data["user_info"],
-    #             "tokens": session_data["token_manager"].tokens,
-    #         }
-    #         self.storage_manager.set(user_id, serialized_data)
-
     
     def _save_to_storage(self, user_id: str):
         """Save session data to storage."""
@@ -79,44 +54,6 @@ class UserSession:
             # if you want device-specific sessions, remove the "user:" prefix
             self.storage_manager.setItems(user_id, serialized_data)
 
-    # def _load_from_storage(self, user_id: str) -> bool:
-    #     """Load session data from storage if not already in memory."""
-    #     if user_id in self.user_sessions:
-    #         return True
-            
-    #     session_data = self.storage.get(user_id)
-    #     if not session_data:
-    #         return False
-            
-    #     # Recreate token manager from stored data
-    #     user_info = session_data.get("user_info", {})
-    #     tokens = session_data.get("tokens", {})
-        
-    #     if not user_info or not tokens:
-    #         return False
-            
-    #     token_manager = TokenManager(
-    #         user_id,
-    #         user_info.get("client_id"),
-    #         user_info.get("client_secret"),
-    #         user_info.get("token_url")
-    #     )
-        
-    #     # Set redirect URI if available
-    #     if "redirect_uri" in user_info:
-    #         token_manager.set_redirect_uri(user_info["redirect_uri"])
-            
-    #     # Set tokens
-    #     token_manager.tokens = tokens
-        
-    #     # Store in memory
-    #     self.user_sessions[user_id] = {
-    #         "user_info": user_info,
-    #         "token_manager": token_manager
-    #     }
-        
-    #     return True
-
     def reset(self):
         """Reset all session data - useful for testing"""
         with self.lock:
@@ -125,43 +62,6 @@ class UserSession:
             from .token_manager import TokenManager
             TokenManager.reset_instances()
 
-    # def _load_from_storage(self, user_id: str) -> bool:
-    #     """Load session data from storage if not already in memory."""
-    #     if user_id in self.user_sessions:
-    #         return True
-            
-    #     session_data = self.storage_manager.get(user_id)
-    #     if not session_data:
-    #         return False
-            
-    #     # Recreate token manager from stored data
-    #     user_info = session_data.get("user_info", {})
-    #     tokens = session_data.get("tokens", {})
-        
-    #     if not user_info or not tokens:
-    #         return False
-            
-    #     token_manager = TokenManager(
-    #         user_id,
-    #         user_info.get("client_id"),
-    #         user_info.get("client_secret"),
-    #         user_info.get("token_url")
-    #     )
-        
-    #     # Set redirect URI if available
-    #     if "redirect_uri" in user_info:
-    #         token_manager.set_redirect_uri(user_info["redirect_uri"])
-            
-    #     # Set tokens
-    #     token_manager.tokens = tokens
-        
-    #     # Store in memory
-    #     self.user_sessions[user_id] = {
-    #         "user_info": user_info,
-    #         "token_manager": token_manager
-    #     }
-        
-    #     return True
 
     def _load_from_storage(self, user_id: str) -> bool:
         """Load session data from storage if not already in memory."""
@@ -226,19 +126,6 @@ class UserSession:
                     
             return self.user_sessions.get(user_id, {}).get("token_manager")
 
-    # def is_authenticated(self, user_id: str) -> bool:
-    #     """Check if the user is authenticated with a valid token."""
-    #     with self.lock:
-    #         token_manager = self.get_token_manager(user_id)
-    #         if not token_manager:
-    #             return False
-                
-    #         try:
-    #             # This will check if token is valid and not expired
-    #             token_manager.get_access_token()
-    #             return True
-    #         except Exception:
-    #             return False
 
     def is_authenticated(self, user_id: str) -> bool:
         """Check if the user is authenticated with a valid token."""

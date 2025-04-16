@@ -321,6 +321,79 @@ class OAuth:
         query_string = urlencode(params)
         return f"{self.logout_url}?{query_string}"
     
+    # async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
+    #     """
+    #     Handle the OAuth redirect and exchange the code for tokens.
+        
+    #     Args:
+    #         code: Authorization code from the redirect
+    #         user_id: User identifier for token storage
+    #         state: State parameter for verification
+            
+    #     Returns:
+    #         Dict with user and token information
+    #     """
+    #     # Verify state if provided
+    #     if state:
+    #         stored_state = self.session_manager.storage_manager.get("state")
+    #         if not stored_state or state != stored_state.get("value"):
+    #             self.logger.error(f"State mismatch: received {state}, stored {stored_state}")
+    #             raise KindeLoginException("Invalid state parameter")
+        
+    #     # Get code verifier for PKCE
+    #     code_verifier = None
+    #     stored_code_verifier = self.session_manager.storage_manager.get("code_verifier")
+    #     if stored_code_verifier:
+    #         code_verifier = stored_code_verifier.get("value")
+            
+    #         # Clean up the used code verifier
+    #         self.session_manager.storage_manager.delete("code_verifier")
+        
+    #     # Exchange code for tokens
+    #     try:
+    #         token_data = await self.exchange_code_for_tokens(code, code_verifier)
+    #     except Exception as e:
+    #         self.logger.error(f"Token exchange failed: {str(e)}")
+    #         raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}")
+        
+    #     # Store tokens
+    #     user_info = {
+    #         "client_id": self.client_id,
+    #         "client_secret": self.client_secret,
+    #         "token_url": self.token_url,
+    #         "redirect_uri": self.redirect_uri,
+    #     }
+        
+    #     # Store session data
+    #     self.session_manager.set_user_data(user_id, user_info, token_data)
+        
+    #     # Get user details using the token
+    #     try:
+    #         token_manager = self.session_manager.get_token_manager(user_id)
+    #         if token_manager:
+    #             user_details = await helper_get_user_details(
+    #                 userinfo_url=self.userinfo_url,
+    #                 token_manager=token_manager,
+    #                 logger=self.logger
+    #             )
+    #         else:
+    #             user_details = {}
+    #     except Exception as e:
+    #         self.logger.error(f"Failed to get user details: {str(e)}")
+    #         user_details = {}
+        
+    #     # Clean up state
+    #     if state:
+    #         self.session_manager.storage_manager.delete("state")
+        
+    #     # Clean up nonce
+    #     self.session_manager.storage_manager.delete("nonce")
+        
+    #     return {
+    #         "tokens": token_data,
+    #         "user": user_details
+    #     }
+
     async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
         """
         Handle the OAuth redirect and exchange the code for tokens.
@@ -368,19 +441,16 @@ class OAuth:
         self.session_manager.set_user_data(user_id, user_info, token_data)
         
         # Get user details using the token
-        try:
-            token_manager = self.session_manager.get_token_manager(user_id)
-            if token_manager:
-                user_details = await helper_get_user_details(
-                    userinfo_url=self.userinfo_url,
-                    token_manager=token_manager,
-                    logger=self.logger
-                )
-            else:
-                user_details = {}
-        except Exception as e:
-            self.logger.error(f"Failed to get user details: {str(e)}")
-            user_details = {}
+        token_manager = self.session_manager.get_token_manager(user_id)
+        if not token_manager:
+            raise KindeRetrieveException("Failed to get token manager")
+        
+        # This will now throw the exception if it fails, allowing proper error handling
+        user_details = await helper_get_user_details(
+            userinfo_url=self.userinfo_url,
+            token_manager=token_manager,
+            logger=self.logger
+        )
         
         # Clean up state
         if state:

@@ -637,6 +637,129 @@ class TestHelpers(unittest.TestCase):
         result = sanitize_url(url)
         self.assertEqual(result, "https://example.com/path")
 
+    @patch('kinde_sdk.core.helpers.hashlib.sha256')
+    @patch('kinde_sdk.core.helpers.base64_url_encode')
+    async def test_generate_pkce_pair_error_handling(self, mock_encode, mock_sha256):
+        """Test error handling in generate_pkce_pair when hashing fails."""
+        # Mock the hash function to raise an exception
+        mock_sha256.side_effect = Exception("Hash error")
+        
+        # Call the function
+        result = await generate_pkce_pair(52)
+        
+        # Should fall back to plain verifier encoding
+        mock_encode.assert_called()
+        self.assertIn("code_verifier", result)
+        self.assertIn("code_challenge", result)
+
+    @patch('kinde_sdk.core.helpers.requests.get')
+    async def test_get_user_details_token_error(self, mock_get):
+        """Test get_user_details handles token errors."""
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("No token")
+        logger = MagicMock()
+        
+        with self.assertRaises(ValueError):
+            await get_user_details(userinfo_url, token_manager, logger)
+        
+        logger.error.assert_called_with("Token error when retrieving user details: No token")
+
+    @patch('kinde_sdk.core.helpers.requests.get')
+    async def test_get_user_details_request_error(self, mock_get):
+        """Test get_user_details handles request errors."""
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Mock failed request
+        mock_response = MagicMock()
+        mock_response.json.side_effect = json.JSONDecodeError("Error", "doc", 0)
+        mock_response.status_code = 500
+        mock_get.side_effect = RequestException(response=mock_response)
+        
+        with self.assertRaises(RequestException):
+            await get_user_details(userinfo_url, token_manager, logger)
+        
+        logger.error.assert_called_with("User details retrieval failed with status code: 500")
+
+    @patch('kinde_sdk.core.helpers.requests.get')
+    def test_get_user_organizations_error(self, mock_get):
+        """Test error handling in get_user_organizations."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("Token error")
+        logger = MagicMock()
+        
+        with self.assertRaises(ValueError):
+            get_user_organizations(api_url, token_manager, logger)
+        
+        logger.error.assert_called_with("Token error when retrieving organizations: Token error")
+
+    @patch('kinde_sdk.core.helpers.requests.get')
+    def test_get_organization_details_error(self, mock_get):
+        """Test error handling in get_organization_details."""
+        api_url = "https://test.kinde.com/api"
+        org_code = "org123"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Mock failed request with JSON error
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"error": "Not found"}
+        mock_response.status_code = 404
+        mock_get.side_effect = RequestException(response=mock_response)
+        
+        with self.assertRaises(RequestException):
+            get_organization_details(api_url, org_code, token_manager, logger)
+        
+        logger.error.assert_called_with("Organization details retrieval failed: Not found")
+
+    @patch('kinde_sdk.core.helpers.requests.get')
+    def test_get_user_permissions_error(self, mock_get):
+        """Test error handling in get_user_permissions."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("Token error")
+        logger = MagicMock()
+        
+        with self.assertRaises(ValueError):
+            get_user_permissions(api_url, token_manager, logger=logger)
+        
+        logger.error.assert_called_with("Token error when retrieving user permissions: Token error")
+
+    def test_has_permission_error(self):
+        """Test has_permission handles underlying errors."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        logger = MagicMock()
+        
+        # Test when get_user_permissions raises an exception
+        with patch('kinde_sdk.core.helpers.get_user_permissions') as mock_get_perms:
+            mock_get_perms.side_effect = Exception("Error")
+            result = has_permission("perm", api_url, token_manager, logger=logger)
+            self.assertFalse(result)
+            logger.error.assert_called_with("Error checking permission: Error")
+
+    def test_decode_jwt_invalid_token(self):
+        """Test decode_jwt with invalid token formats."""
+        # Test missing parts
+        with self.assertRaises(ValueError):
+            decode_jwt("invalid.token")
+        
+        # Test invalid base64
+        with self.assertRaises(ValueError):
+            decode_jwt("header.invalid_payload.signature")
+
+    def test_is_token_expired_edge_cases(self):
+        """Test is_token_expired with edge cases."""
+        # Test with buffer_seconds=0
+        current_time = int(time.time())
+        self.assertTrue(is_token_expired(current_time - 1, buffer_seconds=0))
+        self.assertFalse(is_token_expired(current_time + 1, buffer_seconds=0))
+
 
 if __name__ == "__main__":
     unittest.main()

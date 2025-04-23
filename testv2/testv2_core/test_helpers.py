@@ -70,32 +70,50 @@ class TestHelpers(unittest.TestCase):
         result = base64_url_encode(test_bytes)
         self.assertEqual(result, expected)
 
-    @patch('kinde_sdk.core.helpers.generate_random_string')
-    @patch('kinde_sdk.core.helpers.hashlib.sha256')
-    def test_generate_pkce_pair(self, mock_sha256, mock_random_string):
+    def test_generate_pkce_pair(self):
         """Test generate_pkce_pair generates valid verifier and challenge."""
         # Mock the random string and hash
-        mock_random_string.return_value = "test_verifier"
-        mock_digest = MagicMock()
-        mock_digest.digest.return_value = b"hashed_value"
-        mock_sha256.return_value = mock_digest
-        
-        # Call the function (and handle the coroutine)
-        result = asyncio.run(generate_pkce_pair(52))
-        
-        # Check the result
-        self.assertEqual(result["code_verifier"], "test_verifier")
-        self.assertEqual(
-            result["code_challenge"], 
-            base64_url_encode(b"hashed_value")
-        )
-        
-        # Verify the mocks were called correctly
-        mock_random_string.assert_called_once_with(52)
-        mock_sha256.assert_called_once_with(b"test_verifier")
+        with patch('kinde_sdk.core.helpers.generate_random_string') as mock_random_string:
+            with patch('kinde_sdk.core.helpers.hashlib.sha256') as mock_sha256:
+                mock_random_string.return_value = "test_verifier"
+                mock_digest = MagicMock()
+                mock_digest.digest.return_value = b"hashed_value"
+                mock_sha256.return_value = mock_digest
+                
+                # Use a loop to run the async function
+                result = asyncio.run(generate_pkce_pair(52))
+                
+                # Check the result
+                self.assertEqual(result["code_verifier"], "test_verifier")
+                self.assertEqual(
+                    result["code_challenge"], 
+                    base64_url_encode(b"hashed_value")
+                )
+                
+                # Verify the mocks were called correctly
+                mock_random_string.assert_called_once_with(52)
+                mock_sha256.assert_called_once_with(b"test_verifier")
+
+    def test_generate_pkce_pair_error_handling(self):
+        """Test error handling in generate_pkce_pair when hashing fails."""
+        # Mock the hash function to raise an exception
+        with patch('kinde_sdk.core.helpers.hashlib.sha256') as mock_sha256:
+            with patch('kinde_sdk.core.helpers.base64_url_encode') as mock_encode:
+                mock_sha256.side_effect = Exception("Hash error")
+                mock_encode.side_effect = lambda x: f"encoded_{x}"
+                
+                # Use a loop to run the async function
+                result = asyncio.run(generate_pkce_pair(52))
+                
+                # Should fall back to plain verifier encoding
+                self.assertIn("code_verifier", result)
+                self.assertIn("code_challenge", result)
+                
+                # Verify the logger was called
+                # Since we're not passing a logger, we need to verify the fallback worked
+                self.assertTrue(mock_encode.called)
     
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_user_details(self, mock_get):
+    def test_get_user_details(self):
         """Test get_user_details with valid token."""
         # Mock dependencies
         userinfo_url = "https://test.kinde.com/api/v1/user"
@@ -103,25 +121,76 @@ class TestHelpers(unittest.TestCase):
         token_manager.get_access_token.return_value = "test_access_token"
         logger = MagicMock()
         
-        # Mock response
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"id": "user1", "name": "Test User"}
-        mock_get.return_value = mock_response
+        # Create the mock for requests.get
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            # Mock response
+            mock_response = MagicMock()
+            mock_response.json.return_value = {"id": "user1", "name": "Test User"}
+            mock_get.return_value = mock_response
+            
+            # Use a loop to run the async function
+            result = asyncio.run(get_user_details(userinfo_url, token_manager, logger))
+            
+            # Check the result
+            self.assertEqual(result, {"id": "user1", "name": "Test User"})
+            
+            # Verify the mock was called correctly
+            mock_get.assert_called_once_with(
+                userinfo_url,
+                headers={
+                    "Authorization": "Bearer test_access_token",
+                    "Accept": "application/json"
+                }
+            )
+
+    def test_get_user_details_token_error(self):
+        """Test get_user_details handles token errors."""
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("No token")
+        logger = MagicMock()
         
-        # Call the function (and handle the coroutine)
-        result = asyncio.run(get_user_details(userinfo_url, token_manager, logger))
+        with self.assertRaises(ValueError):
+            asyncio.run(get_user_details(userinfo_url, token_manager, logger))
         
-        # Check the result
-        self.assertEqual(result, {"id": "user1", "name": "Test User"})
+        logger.error.assert_called_with("Token error when retrieving user details: No token")
+
+    def test_get_user_details_request_error_with_json(self):
+        """Test get_user_details handles request errors with JSON response."""
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
         
-        # Verify the mock was called correctly
-        mock_get.assert_called_once_with(
-            userinfo_url,
-            headers={
-                "Authorization": "Bearer test_access_token",
-                "Accept": "application/json"
-            }
-        )
+        # Create a mock response with JSON error data
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {"error": "invalid_token", "error_description": "Token is invalid"}
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                asyncio.run(get_user_details(userinfo_url, token_manager, logger))
+            
+            logger.error.assert_called_with("User details retrieval failed: Token is invalid")
+
+    def test_get_user_details_request_error_without_json(self):
+        """Test get_user_details handles request errors without JSON response."""
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Create a mock response that raises an exception when json() is called
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
+            mock_response.status_code = 500
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                asyncio.run(get_user_details(userinfo_url, token_manager, logger))
+            
+            logger.error.assert_called_with("User details retrieval failed with status code: 500")
     
     def test_decode_jwt(self):
         """Test decode_jwt with a valid token."""
@@ -141,6 +210,16 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(result["sub"], "1234567890")
         self.assertEqual(result["name"], "John Doe")
         self.assertEqual(result["iat"], 1516239022)
+    
+    def test_decode_jwt_invalid_token(self):
+        """Test decode_jwt with invalid token formats."""
+        # Test missing parts
+        with self.assertRaises(ValueError):
+            decode_jwt("invalid.token")
+        
+        # Test invalid base64
+        with self.assertRaises(ValueError):
+            decode_jwt("header.invalid_payload.signature")
     
     def test_is_authenticated(self):
         """Test is_authenticated with valid and invalid tokens."""
@@ -165,8 +244,7 @@ class TestHelpers(unittest.TestCase):
         # Test exception case
         self.assertFalse(is_authenticated(token_manager_error))
     
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_user_organizations(self, mock_get):
+    def test_get_user_organizations(self):
         """Test get_user_organizations returns organization list."""
         # Mock dependencies
         api_url = "https://test.kinde.com/api"
@@ -174,35 +252,85 @@ class TestHelpers(unittest.TestCase):
         token_manager.get_access_token.return_value = "test_access_token"
         logger = MagicMock()
         
-        # Mock response
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "organizations": [
-                {"id": "org1", "name": "Org 1"},
-                {"id": "org2", "name": "Org 2"}
-            ]
-        }
-        mock_get.return_value = mock_response
-        
-        # Call the function
-        result = get_user_organizations(api_url, token_manager, logger)
-        
-        # Check the result
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["id"], "org1")
-        self.assertEqual(result[1]["name"], "Org 2")
-        
-        # Verify the mock was called correctly
-        mock_get.assert_called_once_with(
-            f"{api_url}/user/organizations",
-            headers={
-                "Authorization": "Bearer test_access_token",
-                "Accept": "application/json"
+        # Create a mock for requests.get
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            # Mock response
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "organizations": [
+                    {"id": "org1", "name": "Org 1"},
+                    {"id": "org2", "name": "Org 2"}
+                ]
             }
-        )
+            mock_get.return_value = mock_response
+            
+            # Call the function
+            result = get_user_organizations(api_url, token_manager, logger)
+            
+            # Check the result
+            self.assertEqual(len(result), 2)
+            self.assertEqual(result[0]["id"], "org1")
+            self.assertEqual(result[1]["name"], "Org 2")
+            
+            # Verify the mock was called correctly
+            mock_get.assert_called_once_with(
+                f"{api_url}/user/organizations",
+                headers={
+                    "Authorization": "Bearer test_access_token",
+                    "Accept": "application/json"
+                }
+            )
+
+    def test_get_user_organizations_token_error(self):
+        """Test get_user_organizations handles token errors."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("No token")
+        logger = MagicMock()
+        
+        with self.assertRaises(ValueError):
+            get_user_organizations(api_url, token_manager, logger)
+        
+        logger.error.assert_called_with("Token error when retrieving organizations: No token")
+
+    def test_get_user_organizations_request_error_with_json(self):
+        """Test get_user_organizations handles request errors with JSON response."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Create a mock response with JSON error data
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {"error": "forbidden", "error_description": "Access denied"}
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_user_organizations(api_url, token_manager, logger)
+            
+            logger.error.assert_called_with("Organizations retrieval failed: Access denied")
+
+    def test_get_user_organizations_request_error_without_json(self):
+        """Test get_user_organizations handles request errors without JSON response."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Create a mock response that raises an exception when json() is called
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
+            mock_response.status_code = 500
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_user_organizations(api_url, token_manager, logger)
+            
+            logger.error.assert_called_with("Organizations retrieval failed with status code: 500")
     
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_organization_details(self, mock_get):
+    def test_get_organization_details(self):
         """Test get_organization_details returns organization details."""
         # Mock dependencies
         api_url = "https://test.kinde.com/api"
@@ -211,34 +339,87 @@ class TestHelpers(unittest.TestCase):
         token_manager.get_access_token.return_value = "test_access_token"
         logger = MagicMock()
         
-        # Mock response
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "id": "org123",
-            "name": "Test Organization",
-            "is_default": True
-        }
-        mock_get.return_value = mock_response
-        
-        # Call the function
-        result = get_organization_details(api_url, org_code, token_manager, logger)
-        
-        # Check the result
-        self.assertEqual(result["id"], "org123")
-        self.assertEqual(result["name"], "Test Organization")
-        self.assertTrue(result["is_default"])
-        
-        # Verify the mock was called correctly
-        mock_get.assert_called_once_with(
-            f"{api_url}/organization/{org_code}",
-            headers={
-                "Authorization": "Bearer test_access_token",
-                "Accept": "application/json"
+        # Create a mock for requests.get
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            # Mock response
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "id": "org123",
+                "name": "Test Organization",
+                "is_default": True
             }
-        )
+            mock_get.return_value = mock_response
+            
+            # Call the function
+            result = get_organization_details(api_url, org_code, token_manager, logger)
+            
+            # Check the result
+            self.assertEqual(result["id"], "org123")
+            self.assertEqual(result["name"], "Test Organization")
+            self.assertTrue(result["is_default"])
+            
+            # Verify the mock was called correctly
+            mock_get.assert_called_once_with(
+                f"{api_url}/organization/{org_code}",
+                headers={
+                    "Authorization": "Bearer test_access_token",
+                    "Accept": "application/json"
+                }
+            )
+
+    def test_get_organization_details_token_error(self):
+        """Test get_organization_details handles token errors."""
+        api_url = "https://test.kinde.com/api"
+        org_code = "org123"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("No token")
+        logger = MagicMock()
+        
+        with self.assertRaises(ValueError):
+            get_organization_details(api_url, org_code, token_manager, logger)
+        
+        logger.error.assert_called_with("Token error when retrieving organization details: No token")
+
+    def test_get_organization_details_request_error_with_json(self):
+        """Test get_organization_details handles request errors with JSON response."""
+        api_url = "https://test.kinde.com/api"
+        org_code = "org123"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Create a mock response with JSON error data
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {"error": "not_found", "error_description": "Organization not found"}
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_organization_details(api_url, org_code, token_manager, logger)
+            
+            logger.error.assert_called_with("Organization details retrieval failed: Organization not found")
+
+    def test_get_organization_details_request_error_without_json(self):
+        """Test get_organization_details handles request errors without JSON response."""
+        api_url = "https://test.kinde.com/api"
+        org_code = "org123"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Create a mock response that raises an exception when json() is called
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
+            mock_response.status_code = 404
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_organization_details(api_url, org_code, token_manager, logger)
+            
+            logger.error.assert_called_with("Organization details retrieval failed with status code: 404")
     
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_organization_users(self, mock_get):
+    def test_get_organization_users(self):
         """Test get_organization_users returns users list."""
         # Mock dependencies
         api_url = "https://test.kinde.com/api"
@@ -247,35 +428,88 @@ class TestHelpers(unittest.TestCase):
         token_manager.get_access_token.return_value = "test_access_token"
         logger = MagicMock()
         
-        # Mock response
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "users": [
-                {"id": "user1", "name": "User 1"},
-                {"id": "user2", "name": "User 2"}
-            ]
-        }
-        mock_get.return_value = mock_response
-        
-        # Call the function
-        result = get_organization_users(api_url, org_code, token_manager, logger)
-        
-        # Check the result
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["id"], "user1")
-        self.assertEqual(result[1]["name"], "User 2")
-        
-        # Verify the mock was called correctly
-        mock_get.assert_called_once_with(
-            f"{api_url}/organization/{org_code}/users",
-            headers={
-                "Authorization": "Bearer test_access_token",
-                "Accept": "application/json"
+        # Create a mock for requests.get
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            # Mock response
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "users": [
+                    {"id": "user1", "name": "User 1"},
+                    {"id": "user2", "name": "User 2"}
+                ]
             }
-        )
+            mock_get.return_value = mock_response
+            
+            # Call the function
+            result = get_organization_users(api_url, org_code, token_manager, logger)
+            
+            # Check the result
+            self.assertEqual(len(result), 2)
+            self.assertEqual(result[0]["id"], "user1")
+            self.assertEqual(result[1]["name"], "User 2")
+            
+            # Verify the mock was called correctly
+            mock_get.assert_called_once_with(
+                f"{api_url}/organization/{org_code}/users",
+                headers={
+                    "Authorization": "Bearer test_access_token",
+                    "Accept": "application/json"
+                }
+            )
+
+    def test_get_organization_users_token_error(self):
+        """Test get_organization_users handles token errors."""
+        api_url = "https://test.kinde.com/api"
+        org_code = "org123"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("No token")
+        logger = MagicMock()
+        
+        with self.assertRaises(ValueError):
+            get_organization_users(api_url, org_code, token_manager, logger)
+        
+        logger.error.assert_called_with("Token error when retrieving organization users: No token")
+
+    def test_get_organization_users_request_error_with_json(self):
+        """Test get_organization_users handles request errors with JSON response."""
+        api_url = "https://test.kinde.com/api"
+        org_code = "org123"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Create a mock response with JSON error data
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {"error": "forbidden", "error_description": "Access denied"}
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_organization_users(api_url, org_code, token_manager, logger)
+            
+            logger.error.assert_called_with("Organization users retrieval failed: Access denied")
+
+    def test_get_organization_users_request_error_without_json(self):
+        """Test get_organization_users handles request errors without JSON response."""
+        api_url = "https://test.kinde.com/api"
+        org_code = "org123"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Create a mock response that raises an exception when json() is called
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
+            mock_response.status_code = 500
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_organization_users(api_url, org_code, token_manager, logger)
+            
+            logger.error.assert_called_with("Organization users retrieval failed with status code: 500")
     
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_user_permissions(self, mock_get):
+    def test_get_user_permissions(self):
         """Test get_user_permissions returns permission codes."""
         # Mock dependencies
         api_url = "https://test.kinde.com/api"
@@ -283,51 +517,127 @@ class TestHelpers(unittest.TestCase):
         token_manager.get_access_token.return_value = "test_access_token"
         logger = MagicMock()
         
-        # Mock response
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "permissions": [
-                {"id": "perm1", "code": "read:users"},
-                {"id": "perm2", "code": "write:users"}
-            ]
-        }
-        mock_get.return_value = mock_response
-        
-        # Call the function without org_code
-        result = get_user_permissions(api_url, token_manager, logger=logger)
-        
-        # Check the result
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0], "read:users")
-        self.assertEqual(result[1], "write:users")
-        
-        # Verify the mock was called correctly
-        mock_get.assert_called_once_with(
-            f"{api_url}/user/permissions",
-            headers={
-                "Authorization": "Bearer test_access_token",
-                "Accept": "application/json"
+        # Create a mock for requests.get
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            # Mock response
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "permissions": [
+                    {"id": "perm1", "code": "read:users"},
+                    {"id": "perm2", "code": "write:users"}
+                ]
             }
-        )
+            mock_get.return_value = mock_response
+            
+            # Call the function without org_code
+            result = get_user_permissions(api_url, token_manager, logger=logger)
+            
+            # Check the result
+            self.assertEqual(len(result), 2)
+            self.assertEqual(result[0], "read:users")
+            self.assertEqual(result[1], "write:users")
+            
+            # Verify the mock was called correctly
+            mock_get.assert_called_once_with(
+                f"{api_url}/user/permissions",
+                headers={
+                    "Authorization": "Bearer test_access_token",
+                    "Accept": "application/json"
+                }
+            )
+            
+            # Reset mock and test with org_code
+            mock_get.reset_mock()
+            org_code = "org123"
+            
+            # Call the function with org_code
+            result = get_user_permissions(api_url, token_manager, org_code, logger)
+            
+            # Verify the mock was called with org-specific URL
+            mock_get.assert_called_once_with(
+                f"{api_url}/organization/{org_code}/user/permissions",
+                headers={
+                    "Authorization": "Bearer test_access_token",
+                    "Accept": "application/json"
+                }
+            )
+
+    def test_get_user_permissions_token_error(self):
+        """Test get_user_permissions handles token errors."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("No token")
+        logger = MagicMock()
         
-        # Reset mock and test with org_code
-        mock_get.reset_mock()
-        org_code = "org123"
+        with self.assertRaises(ValueError):
+            get_user_permissions(api_url, token_manager, logger=logger)
         
-        # Call the function with org_code
-        result = get_user_permissions(api_url, token_manager, org_code, logger)
+        logger.error.assert_called_with("Token error when retrieving user permissions: No token")
+
+    def test_get_user_permissions_request_error_with_json(self):
+        """Test get_user_permissions handles request errors with JSON response."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
         
-        # Verify the mock was called with org-specific URL
-        mock_get.assert_called_once_with(
-            f"{api_url}/organization/{org_code}/user/permissions",
-            headers={
-                "Authorization": "Bearer test_access_token",
-                "Accept": "application/json"
-            }
-        )
+        # Create a mock response with JSON error data
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {"error": "forbidden", "error_description": "Access denied"}
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_user_permissions(api_url, token_manager, logger=logger)
+            
+            logger.error.assert_called_with("User permissions retrieval failed: Access denied")
+
+    def test_get_user_permissions_request_error_without_json(self):
+        """Test get_user_permissions handles request errors without JSON response."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Create a mock response that raises an exception when json() is called
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
+            mock_response.status_code = 500
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_user_permissions(api_url, token_manager, logger=logger)
+            
+            logger.error.assert_called_with("User permissions retrieval failed with status code: 500")
     
-    @patch('kinde_sdk.core.helpers.get_user_permissions')
-    def test_has_permission(self, mock_get_permissions):
+    def test_get_user_permissions_without_logger(self):
+        """Test get_user_permissions when logger is not provided."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_access_token"
+        
+        # Create a mock for requests.get
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            # Mock response
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "permissions": [
+                    {"id": "perm1", "code": "read:users"},
+                    {"id": "perm2", "code": "write:users"}
+                ]
+            }
+            mock_get.return_value = mock_response
+            
+            # Call the function without logger
+            result = get_user_permissions(api_url, token_manager)
+            
+            # Check the result
+            self.assertEqual(len(result), 2)
+            self.assertEqual(result[0], "read:users")
+            self.assertEqual(result[1], "write:users")
+    
+    def test_has_permission(self):
         """Test has_permission returns correct boolean."""
         # Mock dependencies
         api_url = "https://test.kinde.com/api"
@@ -335,26 +645,39 @@ class TestHelpers(unittest.TestCase):
         logger = MagicMock()
         
         # Set up the mock to return specific permissions
-        mock_get_permissions.return_value = ["read:users", "write:users"]
+        with patch('kinde_sdk.core.helpers.get_user_permissions') as mock_get_permissions:
+            mock_get_permissions.return_value = ["read:users", "write:users"]
+            
+            # Test with permission that exists
+            result = has_permission("read:users", api_url, token_manager, logger=logger)
+            self.assertTrue(result)
+            
+            # Test with permission that doesn't exist
+            result = has_permission("delete:users", api_url, token_manager, logger=logger)
+            self.assertFalse(result)
+            
+            # Test with org_code
+            org_code = "org123"
+            result = has_permission("read:users", api_url, token_manager, org_code, logger)
+            self.assertTrue(result)
+            
+            # Verify the mock was called correctly
+            mock_get_permissions.assert_called_with(api_url, token_manager, org_code, logger)
+
+    def test_has_permission_error(self):
+        """Test has_permission handles underlying errors."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        logger = MagicMock()
         
-        # Test with permission that exists
-        result = has_permission("read:users", api_url, token_manager, logger=logger)
-        self.assertTrue(result)
-        
-        # Test with permission that doesn't exist
-        result = has_permission("delete:users", api_url, token_manager, logger=logger)
-        self.assertFalse(result)
-        
-        # Test with org_code
-        org_code = "org123"
-        result = has_permission("read:users", api_url, token_manager, org_code, logger)
-        self.assertTrue(result)
-        
-        # Verify the mock was called correctly
-        mock_get_permissions.assert_called_with(api_url, token_manager, org_code, logger)
+        # Test when get_user_permissions raises an exception
+        with patch('kinde_sdk.core.helpers.get_user_permissions') as mock_get_perms:
+            mock_get_perms.side_effect = Exception("Permission error")
+            result = has_permission("perm", api_url, token_manager, logger=logger)
+            self.assertFalse(result)
+            logger.error.assert_called_with("Error checking permission: Permission error")
     
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_user_roles(self, mock_get):
+    def test_get_user_roles(self):
         """Test get_user_roles returns roles list."""
         # Mock dependencies
         api_url = "https://test.kinde.com/api"
@@ -362,51 +685,127 @@ class TestHelpers(unittest.TestCase):
         token_manager.get_access_token.return_value = "test_access_token"
         logger = MagicMock()
         
-        # Mock response
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "roles": [
-                {"id": "role1", "code": "admin"},
-                {"id": "role2", "code": "user"}
-            ]
-        }
-        mock_get.return_value = mock_response
-        
-        # Call the function without org_code
-        result = get_user_roles(api_url, token_manager, logger=logger)
-        
-        # Check the result
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["code"], "admin")
-        self.assertEqual(result[1]["code"], "user")
-        
-        # Verify the mock was called correctly
-        mock_get.assert_called_once_with(
-            f"{api_url}/user/roles",
-            headers={
-                "Authorization": "Bearer test_access_token",
-                "Accept": "application/json"
+        # Create a mock for requests.get
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            # Mock response
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "roles": [
+                    {"id": "role1", "code": "admin"},
+                    {"id": "role2", "code": "user"}
+                ]
             }
-        )
+            mock_get.return_value = mock_response
+            
+            # Call the function without org_code
+            result = get_user_roles(api_url, token_manager, logger=logger)
+            
+            # Check the result
+            self.assertEqual(len(result), 2)
+            self.assertEqual(result[0]["code"], "admin")
+            self.assertEqual(result[1]["code"], "user")
+            
+            # Verify the mock was called correctly
+            mock_get.assert_called_once_with(
+                f"{api_url}/user/roles",
+                headers={
+                    "Authorization": "Bearer test_access_token",
+                    "Accept": "application/json"
+                }
+            )
+            
+            # Reset mock and test with org_code
+            mock_get.reset_mock()
+            org_code = "org123"
+            
+            # Call the function with org_code
+            result = get_user_roles(api_url, token_manager, org_code, logger)
+            
+            # Verify the mock was called with org-specific URL
+            mock_get.assert_called_once_with(
+                f"{api_url}/organization/{org_code}/user/roles",
+                headers={
+                    "Authorization": "Bearer test_access_token",
+                    "Accept": "application/json"
+                }
+            )
+
+    def test_get_user_roles_token_error(self):
+        """Test get_user_roles handles token errors."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("No token")
+        logger = MagicMock()
         
-        # Reset mock and test with org_code
-        mock_get.reset_mock()
-        org_code = "org123"
+        with self.assertRaises(ValueError):
+            get_user_roles(api_url, token_manager, logger=logger)
         
-        # Call the function with org_code
-        result = get_user_roles(api_url, token_manager, org_code, logger)
+        logger.error.assert_called_with("Token error when retrieving user roles: No token")
+
+    def test_get_user_roles_request_error_with_json(self):
+        """Test get_user_roles handles request errors with JSON response."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
         
-        # Verify the mock was called with org-specific URL
-        mock_get.assert_called_once_with(
-            f"{api_url}/organization/{org_code}/user/roles",
-            headers={
-                "Authorization": "Bearer test_access_token",
-                "Accept": "application/json"
-            }
-        )
+        # Create a mock response with JSON error data
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {"error": "forbidden", "error_description": "Access denied"}
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_user_roles(api_url, token_manager, logger=logger)
+            
+            logger.error.assert_called_with("User roles retrieval failed: Access denied")
+
+    def test_get_user_roles_request_error_without_json(self):
+        """Test get_user_roles handles request errors without JSON response."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Create a mock response that raises an exception when json() is called
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
+            mock_response.status_code = 500
+            mock_get.side_effect = RequestException(response=mock_response)
+            
+            with self.assertRaises(RequestException):
+                get_user_roles(api_url, token_manager, logger=logger)
+            
+            logger.error.assert_called_with("User roles retrieval failed with status code: 500")
     
-    @patch('kinde_sdk.core.helpers.get_user_roles')
-    def test_has_role(self, mock_get_roles):
+    def test_get_user_roles_without_logger(self):
+        """Test get_user_roles when logger is not provided."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_access_token"
+        
+        # Create a mock for requests.get
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            # Mock response
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "roles": [
+                    {"id": "role1", "code": "admin"},
+                    {"id": "role2", "code": "user"}
+                ]
+            }
+            mock_get.return_value = mock_response
+            
+            # Call the function without logger
+            result = get_user_roles(api_url, token_manager)
+            
+            # Check the result
+            self.assertEqual(len(result), 2)
+            self.assertEqual(result[0]["code"], "admin")
+            self.assertEqual(result[1]["code"], "user")
+    
+    def test_has_role(self):
         """Test has_role returns correct boolean."""
         # Mock dependencies
         api_url = "https://test.kinde.com/api"
@@ -414,29 +813,42 @@ class TestHelpers(unittest.TestCase):
         logger = MagicMock()
         
         # Set up the mock to return specific roles
-        mock_get_roles.return_value = [
-            {"id": "role1", "code": "admin"},
-            {"id": "role2", "code": "user"}
-        ]
+        with patch('kinde_sdk.core.helpers.get_user_roles') as mock_get_roles:
+            mock_get_roles.return_value = [
+                {"id": "role1", "code": "admin"},
+                {"id": "role2", "code": "user"}
+            ]
+            
+            # Test with role that exists
+            result = has_role("admin", api_url, token_manager, logger=logger)
+            self.assertTrue(result)
+            
+            # Test with role that doesn't exist
+            result = has_role("editor", api_url, token_manager, logger=logger)
+            self.assertFalse(result)
+            
+            # Test with org_code
+            org_code = "org123"
+            result = has_role("admin", api_url, token_manager, org_code, logger)
+            self.assertTrue(result)
+            
+            # Verify the mock was called correctly
+            mock_get_roles.assert_called_with(api_url, token_manager, org_code, logger)
+
+    def test_has_role_error(self):
+        """Test has_role handles underlying errors."""
+        api_url = "https://test.kinde.com/api"
+        token_manager = MagicMock()
+        logger = MagicMock()
         
-        # Test with role that exists
-        result = has_role("admin", api_url, token_manager, logger=logger)
-        self.assertTrue(result)
-        
-        # Test with role that doesn't exist
-        result = has_role("editor", api_url, token_manager, logger=logger)
-        self.assertFalse(result)
-        
-        # Test with org_code
-        org_code = "org123"
-        result = has_role("admin", api_url, token_manager, org_code, logger)
-        self.assertTrue(result)
-        
-        # Verify the mock was called correctly
-        mock_get_roles.assert_called_with(api_url, token_manager, org_code, logger)
+        # Test when get_user_roles raises an exception
+        with patch('kinde_sdk.core.helpers.get_user_roles') as mock_get_roles:
+            mock_get_roles.side_effect = Exception("Role error")
+            result = has_role("admin", api_url, token_manager, logger=logger)
+            self.assertFalse(result)
+            logger.error.assert_called_with("Error checking role: Role error")
     
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_flag_value(self, mock_get):
+    def test_get_flag_value(self):
         """Test get_flag_value returns correct flag value."""
         # Mock dependencies
         api_url = "https://test.kinde.com/api"
@@ -446,50 +858,86 @@ class TestHelpers(unittest.TestCase):
         token_manager.get_access_token.return_value = "test_access_token"
         logger = MagicMock()
         
-        # Mock response for active flag
-        mock_response_active = MagicMock()
-        mock_response_active.json.return_value = {
-            "feature_flag": {
-                "code": "feature_x",
-                "is_active": True,
-                "value": True
+        # Create a mock for requests.get
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            # Mock response for active flag
+            mock_response_active = MagicMock()
+            mock_response_active.json.return_value = {
+                "feature_flag": {
+                    "code": "feature_x",
+                    "is_active": True,
+                    "value": True
+                }
             }
-        }
-        
-        # Mock response for inactive flag
-        mock_response_inactive = MagicMock()
-        mock_response_inactive.json.return_value = {
-            "feature_flag": {
-                "code": "feature_x",
-                "is_active": False,
-                "value": True
+            mock_get.return_value = mock_response_active
+            
+            # Test with active flag
+            result = get_flag_value(api_url, flag_code, default_value, token_manager, logger=logger)
+            self.assertTrue(result)
+            
+            # Mock response for inactive flag
+            mock_response_inactive = MagicMock()
+            mock_response_inactive.json.return_value = {
+                "feature_flag": {
+                    "code": "feature_x",
+                    "is_active": False,
+                    "value": True
+                }
             }
-        }
+            mock_get.return_value = mock_response_inactive
+            
+            # Test with inactive flag
+            result = get_flag_value(api_url, flag_code, default_value, token_manager, logger=logger)
+            self.assertFalse(result)
+            
+            # Test with org_code
+            org_code = "org123"
+            mock_get.return_value = mock_response_active
+            result = get_flag_value(api_url, flag_code, default_value, token_manager, org_code, logger)
+            self.assertTrue(result)
+            
+            # Verify the mock was called correctly with org-specific URL
+            mock_get.assert_called_with(
+                f"{api_url}/organization/{org_code}/feature-flags/{flag_code}",
+                headers={
+                    "Authorization": "Bearer test_access_token",
+                    "Accept": "application/json"
+                }
+            )
+
+    def test_get_flag_value_request_error(self):
+        """Test get_flag_value handles request errors."""
+        api_url = "https://test.kinde.com/api"
+        flag_code = "feature_x"
+        default_value = "default"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
         
-        # Test with active flag
-        mock_get.return_value = mock_response_active
-        result = get_flag_value(api_url, flag_code, default_value, token_manager, logger=logger)
-        self.assertTrue(result)
+        # Create a mock that raises an exception
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_get.side_effect = RequestException("Network error")
+            
+            # Should return default value on error
+            result = get_flag_value(api_url, flag_code, default_value, token_manager, logger=logger)
+            self.assertEqual(result, default_value)
+            logger.error.assert_called_with("Error retrieving feature flag: Network error")
+    
+    def test_get_flag_value_without_logger(self):
+        """Test get_flag_value without logger."""
+        api_url = "https://test.kinde.com/api"
+        flag_code = "feature_x"
+        default_value = "default"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
         
-        # Test with inactive flag
-        mock_get.return_value = mock_response_inactive
-        result = get_flag_value(api_url, flag_code, default_value, token_manager, logger=logger)
-        self.assertFalse(result)
-        
-        # Test with org_code
-        org_code = "org123"
-        mock_get.return_value = mock_response_active
-        result = get_flag_value(api_url, flag_code, default_value, token_manager, org_code, logger)
-        self.assertTrue(result)
-        
-        # Verify the mock was called correctly with org-specific URL
-        mock_get.assert_called_with(
-            f"{api_url}/organization/{org_code}/feature-flags/{flag_code}",
-            headers={
-                "Authorization": "Bearer test_access_token",
-                "Accept": "application/json"
-            }
-        )
+        # Create a mock that raises an exception
+        with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+            mock_get.side_effect = RequestException("Network error")
+            
+            # Should return default value on error without logging
+            result = get_flag_value(api_url, flag_code, default_value, token_manager)
+            self.assertEqual(result, default_value)
     
     def test_get_claim_value(self):
         """Test get_claim_value returns claim from token."""
@@ -560,12 +1008,12 @@ class TestHelpers(unittest.TestCase):
         result = hash_string(test_string)
         self.assertEqual(result, expected)
     
-    @patch('kinde_sdk.core.helpers.time.time')
-    def test_get_current_timestamp(self, mock_time):
+    def test_get_current_timestamp(self):
         """Test get_current_timestamp returns correct time value."""
-        mock_time.return_value = 1616729532.123  # Example timestamp
-        result = get_current_timestamp()
-        self.assertEqual(result, 1616729532)
+        with patch('kinde_sdk.core.helpers.time.time') as mock_time:
+            mock_time.return_value = 1616729532.123  # Example timestamp
+            result = get_current_timestamp()
+            self.assertEqual(result, 1616729532)
     
     def test_parse_domain(self):
         """Test parse_domain extracts domain correctly from URL."""
@@ -619,6 +1067,10 @@ class TestHelpers(unittest.TestCase):
         expires_at = current_time + 30  # Expires in 30 seconds
         result = is_token_expired(expires_at, buffer_seconds=60)
         self.assertTrue(result)  # Should be considered expired with 60s buffer
+        
+        # Test with buffer_seconds=0
+        self.assertTrue(is_token_expired(current_time - 1, buffer_seconds=0))
+        self.assertFalse(is_token_expired(current_time + 1, buffer_seconds=0))
     
     def test_sanitize_url(self):
         """Test sanitize_url cleans URL correctly."""
@@ -636,129 +1088,6 @@ class TestHelpers(unittest.TestCase):
         url = "\thttps://example.com/path\t"
         result = sanitize_url(url)
         self.assertEqual(result, "https://example.com/path")
-
-    @patch('kinde_sdk.core.helpers.hashlib.sha256')
-    @patch('kinde_sdk.core.helpers.base64_url_encode')
-    async def test_generate_pkce_pair_error_handling(self, mock_encode, mock_sha256):
-        """Test error handling in generate_pkce_pair when hashing fails."""
-        # Mock the hash function to raise an exception
-        mock_sha256.side_effect = Exception("Hash error")
-        
-        # Call the function
-        result = await generate_pkce_pair(52)
-        
-        # Should fall back to plain verifier encoding
-        mock_encode.assert_called()
-        self.assertIn("code_verifier", result)
-        self.assertIn("code_challenge", result)
-
-    @patch('kinde_sdk.core.helpers.requests.get')
-    async def test_get_user_details_token_error(self, mock_get):
-        """Test get_user_details handles token errors."""
-        userinfo_url = "https://test.kinde.com/api/v1/user"
-        token_manager = MagicMock()
-        token_manager.get_access_token.side_effect = ValueError("No token")
-        logger = MagicMock()
-        
-        with self.assertRaises(ValueError):
-            await get_user_details(userinfo_url, token_manager, logger)
-        
-        logger.error.assert_called_with("Token error when retrieving user details: No token")
-
-    @patch('kinde_sdk.core.helpers.requests.get')
-    async def test_get_user_details_request_error(self, mock_get):
-        """Test get_user_details handles request errors."""
-        userinfo_url = "https://test.kinde.com/api/v1/user"
-        token_manager = MagicMock()
-        token_manager.get_access_token.return_value = "test_token"
-        logger = MagicMock()
-        
-        # Mock failed request
-        mock_response = MagicMock()
-        mock_response.json.side_effect = json.JSONDecodeError("Error", "doc", 0)
-        mock_response.status_code = 500
-        mock_get.side_effect = RequestException(response=mock_response)
-        
-        with self.assertRaises(RequestException):
-            await get_user_details(userinfo_url, token_manager, logger)
-        
-        logger.error.assert_called_with("User details retrieval failed with status code: 500")
-
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_user_organizations_error(self, mock_get):
-        """Test error handling in get_user_organizations."""
-        api_url = "https://test.kinde.com/api"
-        token_manager = MagicMock()
-        token_manager.get_access_token.side_effect = ValueError("Token error")
-        logger = MagicMock()
-        
-        with self.assertRaises(ValueError):
-            get_user_organizations(api_url, token_manager, logger)
-        
-        logger.error.assert_called_with("Token error when retrieving organizations: Token error")
-
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_organization_details_error(self, mock_get):
-        """Test error handling in get_organization_details."""
-        api_url = "https://test.kinde.com/api"
-        org_code = "org123"
-        token_manager = MagicMock()
-        token_manager.get_access_token.return_value = "test_token"
-        logger = MagicMock()
-        
-        # Mock failed request with JSON error
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"error": "Not found"}
-        mock_response.status_code = 404
-        mock_get.side_effect = RequestException(response=mock_response)
-        
-        with self.assertRaises(RequestException):
-            get_organization_details(api_url, org_code, token_manager, logger)
-        
-        logger.error.assert_called_with("Organization details retrieval failed: Not found")
-
-    @patch('kinde_sdk.core.helpers.requests.get')
-    def test_get_user_permissions_error(self, mock_get):
-        """Test error handling in get_user_permissions."""
-        api_url = "https://test.kinde.com/api"
-        token_manager = MagicMock()
-        token_manager.get_access_token.side_effect = ValueError("Token error")
-        logger = MagicMock()
-        
-        with self.assertRaises(ValueError):
-            get_user_permissions(api_url, token_manager, logger=logger)
-        
-        logger.error.assert_called_with("Token error when retrieving user permissions: Token error")
-
-    def test_has_permission_error(self):
-        """Test has_permission handles underlying errors."""
-        api_url = "https://test.kinde.com/api"
-        token_manager = MagicMock()
-        logger = MagicMock()
-        
-        # Test when get_user_permissions raises an exception
-        with patch('kinde_sdk.core.helpers.get_user_permissions') as mock_get_perms:
-            mock_get_perms.side_effect = Exception("Error")
-            result = has_permission("perm", api_url, token_manager, logger=logger)
-            self.assertFalse(result)
-            logger.error.assert_called_with("Error checking permission: Error")
-
-    def test_decode_jwt_invalid_token(self):
-        """Test decode_jwt with invalid token formats."""
-        # Test missing parts
-        with self.assertRaises(ValueError):
-            decode_jwt("invalid.token")
-        
-        # Test invalid base64
-        with self.assertRaises(ValueError):
-            decode_jwt("header.invalid_payload.signature")
-
-    def test_is_token_expired_edge_cases(self):
-        """Test is_token_expired with edge cases."""
-        # Test with buffer_seconds=0
-        current_time = int(time.time())
-        self.assertTrue(is_token_expired(current_time - 1, buffer_seconds=0))
-        self.assertFalse(is_token_expired(current_time + 1, buffer_seconds=0))
 
 
 if __name__ == "__main__":

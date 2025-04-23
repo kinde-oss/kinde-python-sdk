@@ -308,6 +308,103 @@ class TestOAuthExtended(unittest.TestCase):
         # Verify claims is not added to tokens
         self.assertNotIn("claims", tokens)
 
+    def test_handle_redirect_user_details_failure(self):
+        """Test error handling when user details retrieval fails"""
+        with patch.object(self.oauth, "exchange_code_for_tokens") as mock_exchange:
+            mock_exchange.return_value = {"access_token": "test_token"}
+            
+            # Mock helper_get_user_details to raise exception
+            with patch("kinde_sdk.auth.oauth.helper_get_user_details") as mock_get_user:
+                mock_get_user.side_effect = Exception("User details error")
+                
+                with self.assertRaises(Exception):
+                    run_async(self.oauth.handle_redirect(
+                        code="test_code",
+                        user_id="user123"
+                    ))
+
+    def test_generate_auth_url_with_pkce_generation(self):
+        """Test PKCE code challenge generation when not provided"""
+        with patch("kinde_sdk.auth.oauth.generate_pkce_pair") as mock_pkce:
+            mock_pkce.return_value = {
+                "code_verifier": "test_verifier",
+                "code_challenge": "test_challenge"
+            }
+            
+            auth_url_data = run_async(self.oauth.generate_auth_url())
+            
+            # Verify PKCE was generated and stored
+            self.assertEqual(auth_url_data["code_challenge"], "test_challenge")
+            self.assertEqual(auth_url_data["code_verifier"], "test_verifier")
+            self.oauth.session_manager.storage_manager.setItems.assert_called_with(
+                "code_verifier", {"value": "test_verifier"}
+            )
+
+    def test_register_sets_prompt_create(self):
+        """Test register automatically sets prompt=create"""
+        with patch.object(self.oauth, "generate_auth_url") as mock_gen:
+            mock_gen.return_value = {"url": "test_url"}
+            
+            # Call register without prompt
+            run_async(self.oauth.register())
+            
+            # Verify prompt was set to create
+            args, kwargs = mock_gen.call_args
+            self.assertEqual(
+                kwargs["login_options"].get("prompt"),
+                PromptTypes.CREATE.value
+            )
+
+    def test_exchange_code_with_client_secret(self):
+        """Test code exchange includes client secret when available"""
+        with patch("requests.post") as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"access_token": "test"}
+            
+            run_async(self.oauth.exchange_code_for_tokens("test_code"))
+            
+            # Verify client_secret was included
+            args, kwargs = mock_post.call_args
+            self.assertEqual(kwargs["data"]["client_secret"], "test_client_secret")
+
+    def test_auth_params_with_none_value(self):
+        """Test auth params with None value handling."""
+        login_options = {
+            LoginOptions.AUTH_PARAMS: {
+                "param_with_none": None,
+                "param_with_value": "test_value"  
+            }
+        }
+        
+        auth_url_data = run_async(self.oauth.generate_auth_url(login_options=login_options))
+        parsed_url = urlparse(auth_url_data["url"])
+        query_params = parse_qs(parsed_url.query)
+        
+        # Verify param with value is included
+        self.assertIn("param_with_value", query_params)
+        # Verify param with None is excluded
+        self.assertNotIn("param_with_none", query_params)
+
+    def test_handle_redirect_with_try_catch(self):
+        """Test handle_redirect with exception catching."""
+        with patch.object(self.oauth, "exchange_code_for_tokens") as mock_exchange:
+            async def mock_exchange_async(*args, **kwargs):
+                return {"access_token": "test_token"}
+            mock_exchange.side_effect = mock_exchange_async
+            
+            # Mock helper_get_user_details to raise exception
+            with patch("kinde_sdk.auth.oauth.helper_get_user_details") as mock_get_user:
+                async def mock_get_user_async(*args, **kwargs):
+                    raise Exception("Test exception in user details")
+                mock_get_user.side_effect = mock_get_user_async
+                
+                # Should raise the exception through (not catch it)
+                with self.assertRaises(Exception):
+                    run_async(self.oauth.handle_redirect(
+                        code="test_code", 
+                        user_id="user123"
+                    ))
+
 # Tests for lines 46-58 - Initialization with environment variables
 class TestOAuthInitialization(unittest.TestCase):
     
@@ -402,6 +499,57 @@ class TestOAuthTokensEdgeCases(unittest.TestCase):
         # Verify error was logged
         self.oauth.logger.error.assert_called_once()
 
+    def test_get_tokens_with_expired_token(self):
+        """Test get_tokens with expired token"""
+        # Set up tokens with an access_token first
+        self.mock_token_manager.tokens = {
+            "access_token": "test_access_token",  
+            "expires_at": time.time() - 3600
+        }
+        self.mock_token_manager.get_access_token = MagicMock(return_value="test_access_token")  
+        
+        tokens = self.oauth.get_tokens("user123")
+        
+        # Verify expires_in is 0
+        self.assertEqual(tokens["expires_in"], 0)
+
+    def test_get_tokens_with_empty_claims(self):
+        """Test get_tokens with empty claims"""
+        # You need to set up tokens with an access_token before setting claims
+        self.mock_token_manager.tokens = {
+            "access_token": "test_access_token"  
+        }
+        self.mock_token_manager.get_access_token = MagicMock(return_value="test_access_token")  
+        self.mock_token_manager.get_claims.return_value = {}
+        
+        tokens = self.oauth.get_tokens("user123")
+        
+        # Verify claims not included when empty
+        self.assertNotIn("claims", tokens)
+
+    def test_get_tokens_with_empty_token_dict(self):
+        """Test get_tokens with empty tokens dictionary."""
+        self.mock_token_manager.tokens = {}
+        
+        with self.assertRaises(ValueError) as context:
+            self.oauth.get_tokens("user123")
+        
+        self.assertIn("No access token available", str(context.exception))
+
+    def test_get_tokens_with_refresh_token_edge_case(self):
+        """Test get_tokens with refresh token edge case."""
+        # Test with refresh_token as None
+        self.mock_token_manager.tokens = {
+            "access_token": "test_access_token",
+            "refresh_token": None
+        }
+        self.mock_token_manager.get_access_token.return_value = "test_access_token"
+        
+        tokens = self.oauth.get_tokens("user123")
+        
+        # refresh_token should not be included since it's None
+        self.assertNotIn("refresh_token", tokens)
+
 # Tests for exchange_code_for_tokens (line 253-267, 284, 287, 293-297)
 class TestOAuthCodeExchange(unittest.TestCase):
     
@@ -452,6 +600,21 @@ class TestForIncreasedCoverage(unittest.TestCase):
         )
         self.oauth.session_manager = MagicMock()
         self.oauth.logger = MagicMock()
+        
+        # Add mock_token_manager setup
+        self.mock_token_manager = MagicMock()
+        self.mock_token_manager.tokens = {
+            "access_token": "test_access_token",
+            "refresh_token": "test_refresh_token",
+            "id_token": "test_id_token",
+            "expires_at": time.time() + 3600
+        }
+        self.mock_token_manager.get_access_token = MagicMock(return_value="test_access_token")
+        self.mock_token_manager.get_id_token = MagicMock(return_value="test_id_token")
+        self.mock_token_manager.get_claims = MagicMock(return_value={"sub": "user123", "email": "test@example.com"})
+        
+        # Make session manager return token manager
+        self.oauth.session_manager.get_token_manager = MagicMock(return_value=self.mock_token_manager)
 
     def test_handle_redirect_with_state_cleanup(self):
         """Test handle_redirect with state cleanup"""
@@ -654,6 +817,9 @@ class TestForIncreasedCoverage(unittest.TestCase):
                 return {
                     "access_token": "test_token",
                     "refresh_token": "test_refresh",
+                    "id_token": "test",
+                    "access_token": "test_token",
+                    "refresh_token": "test_refresh",
                     "id_token": "test_id_token" 
                 }
             mock_exchange.side_effect = mock_exchange_impl
@@ -709,6 +875,188 @@ class TestForIncreasedCoverage(unittest.TestCase):
         
         # Verify redirect_uri is not in URL
         self.assertNotIn("redirect_uri", query_params)
+
+    def test_init_without_client_id(self):
+        """Test initialization without client ID raises exception."""
+        with self.assertRaises(KindeConfigurationException):
+            OAuth(client_secret="test_secret", redirect_uri="http://localhost/callback")
+
+    def test_generate_auth_url_with_audience_option(self):
+        """Test auth URL generation with audience from options."""
+        # Create instance without audience
+        oauth = OAuth(
+            client_id="test_client_id",
+            redirect_uri="http://localhost/callback",
+            framework="flask"
+            # No audience
+        )
+        
+        # Provide audience in options
+        login_options = {
+            LoginOptions.AUDIENCE: "option_audience"
+        }
+        
+        auth_url_data = run_async(oauth.generate_auth_url(login_options=login_options))
+        
+        # Parse URL to check parameters
+        parsed_url = urlparse(auth_url_data["url"])
+        query_params = parse_qs(parsed_url.query)
+        
+        # Verify audience from options was used
+        self.assertIn("audience", query_params)
+        self.assertEqual(query_params["audience"][0], "option_audience")
+
+    def test_generate_auth_url_with_pkce_generation(self):
+        """Test auth URL generation with PKCE code challenge generation."""
+        with patch("kinde_sdk.auth.oauth.generate_pkce_pair") as mock_pkce:
+            # Setup mock to return specific PKCE values
+            async def mock_pkce_async(*args, **kwargs):
+                return {
+                    "code_verifier": "test_verifier_123",
+                    "code_challenge": "test_challenge_456"
+                }
+            mock_pkce.side_effect = mock_pkce_async
+            
+            # Generate auth URL without providing code challenge
+            auth_url_data = run_async(self.oauth.generate_auth_url())
+            
+            # Parse URL to check parameters
+            parsed_url = urlparse(auth_url_data["url"])
+            query_params = parse_qs(parsed_url.query)
+            
+            # Verify PKCE was generated and added to URL
+            self.assertIn("code_challenge", query_params)
+            self.assertEqual(query_params["code_challenge"][0], "test_challenge_456")
+            self.assertEqual(auth_url_data["code_verifier"], "test_verifier_123")
+            
+            # Verify storage was updated
+            self.oauth.session_manager.storage_manager.setItems.assert_any_call(
+                "code_verifier", {"value": "test_verifier_123"}
+            )
+
+    def test_handle_redirect_user_details_error(self):
+        """Test handling redirect when user details retrieval fails."""
+        with patch.object(self.oauth, "exchange_code_for_tokens") as mock_exchange:
+            async def mock_exchange_async(*args, **kwargs):
+                return {"access_token": "test_token"}
+            mock_exchange.side_effect = mock_exchange_async
+            
+            # Make helper_get_user_details raise an exception
+            with patch("kinde_sdk.auth.oauth.helper_get_user_details") as mock_user_details:
+                async def mock_details_async(*args, **kwargs):
+                    raise Exception("User details error")
+                mock_user_details.side_effect = mock_details_async
+                
+                # Should propagate the exception
+                with self.assertRaises(Exception):
+                    run_async(self.oauth.handle_redirect(
+                        code="test_code",
+                        user_id="user123",
+                        state="test_state"
+                    ))
+
+    def test_register_with_options(self):
+        """Test register method with custom options."""
+        login_options = {
+            LoginOptions.REDIRECT_URI: "http://localhost/register-callback",
+            LoginOptions.SCOPE: "openid profile email",
+            LoginOptions.LANG: "en",
+            # No prompt, should be added automatically
+        }
+        
+        with patch.object(self.oauth, "generate_auth_url") as mock_gen_url:
+            async def mock_gen_url_async(*args, **kwargs):
+                return {"url": "https://example.com/register"}
+            mock_gen_url.side_effect = mock_gen_url_async
+            
+            # Call register
+            result = run_async(self.oauth.register(login_options))
+            
+            # Verify generate_auth_url was called with correct parameters
+            call_args = mock_gen_url.call_args[1]
+            self.assertEqual(call_args["route_type"], IssuerRouteTypes.REGISTER)
+            
+            # Verify prompt was added
+            passed_options = call_args["login_options"]
+            self.assertEqual(passed_options.get("prompt"), PromptTypes.CREATE.value)
+            self.assertEqual(passed_options.get(LoginOptions.REDIRECT_URI), "http://localhost/register-callback")
+
+    def test_get_tokens_no_token_manager(self):
+        """Test get_tokens when no token manager is available."""
+        # Make get_token_manager return None
+        self.oauth.session_manager.get_token_manager.return_value = None
+        
+        # Should raise ValueError
+        with self.assertRaises(ValueError):
+            self.oauth.get_tokens("user123")
+    
+    def test_get_tokens_empty_tokens(self):
+        """Test get_tokens with empty tokens dictionary."""
+        # Set empty tokens
+        self.mock_token_manager.tokens = {}
+        
+        # Should raise ValueError
+        with self.assertRaises(ValueError):
+            self.oauth.get_tokens("user123")
+
+    def test_logout_url_options(self):
+        """Test logout URL generation with various options."""
+        # Test without post_logout_redirect_uri
+        oauth = OAuth(
+            client_id="test_client_id",
+            framework="flask"
+            # No redirect_uri
+        )
+        oauth.session_manager = MagicMock()
+        
+        # Generate logout URL with state but no redirect
+        logout_options = {
+            "state": "logout_state"
+        }
+        
+        logout_url = run_async(oauth.logout(logout_options=logout_options))
+        
+        parsed_url = urlparse(logout_url)
+        query_params = parse_qs(parsed_url.query)
+        
+        # Verify URL parameters
+        self.assertIn("client_id", query_params)
+        self.assertIn("state", query_params)
+        self.assertEqual(query_params["state"][0], "logout_state")
+        self.assertNotIn("redirect_uri", query_params)
+
+    def test_get_tokens_exception(self):
+        """Test exception handling in get_tokens."""
+        # Make get_access_token raise an exception
+        self.mock_token_manager.get_access_token.side_effect = Exception("Token error")
+        
+        # Should raise ValueError with error message
+        with self.assertRaises(ValueError) as cm:
+            self.oauth.get_tokens("user123")
+        
+        # Verify error was logged
+        self.oauth.logger.error.assert_called_once()
+        
+        # Verify error message
+        self.assertIn("Failed to retrieve tokens", str(cm.exception))
+
+    def test_register_with_existing_prompt(self):
+        """Test register method with an already set prompt."""
+        login_options = {
+            "prompt": "login"  # Different from create
+        }
+        
+        with patch.object(self.oauth, "generate_auth_url") as mock_gen_auth:
+            mock_gen_auth.return_value = {"url": "https://example.com/register"}
+            
+            url = run_async(self.oauth.register(login_options))
+            
+            # Verify generate_auth_url was called with login_options
+            mock_gen_auth.assert_called_once()
+            args, kwargs = mock_gen_auth.call_args
+            
+            # Prompt should not be overridden
+            self.assertEqual(kwargs["login_options"]["prompt"], "login")
 
 if __name__ == "__main__":
     unittest.main()

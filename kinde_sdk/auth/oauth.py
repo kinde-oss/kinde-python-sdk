@@ -518,20 +518,31 @@ class OAuth:
         tokens = {}
         
         try:
-            # Check if token manager has any tokens
-            if not token_manager.tokens or "access_token" not in token_manager.tokens:
+            # # Check if token manager has any tokens
+            # if not token_manager.tokens or "access_token" not in token_manager.tokens:
+            #     raise ValueError(f"No access token available for user {user_id}")
+                
+            # # Get access token
+            # access_token = token_manager.get_access_token()
+            # if not access_token:
+            #     raise ValueError(f"Invalid access token for user {user_id}")
+                
+            # tokens["access_token"] = access_token
+
+            access_token = None
+            if "access_token" in token_manager.tokens:
+                access_token = token_manager.get_access_token()
+                if access_token:
+                    tokens["access_token"] = access_token
+                else:
+                    raise ValueError(f"Invalid access token for user {user_id}")
+            else:
                 raise ValueError(f"No access token available for user {user_id}")
-                
-            # Get access token
-            access_token = token_manager.get_access_token()
-            if not access_token:
-                raise ValueError(f"Invalid access token for user {user_id}")
-                
-            tokens["access_token"] = access_token
             
             # Get token expiration time
             if "expires_at" in token_manager.tokens:
                 tokens["expires_at"] = token_manager.tokens["expires_at"]
+                # tokens["expires_in"] = max(0, int(token_manager.tokens["expires_at"] - time.time()))
                 tokens["expires_in"] = max(0, int(token_manager.tokens["expires_at"] - time.time()))
             
             # Add refresh token if available
@@ -544,7 +555,7 @@ class OAuth:
             
             # Add claims if available
             claims = token_manager.get_claims()
-            if claims:
+            if claims and len(claims) > 0:
                 tokens["claims"] = claims
                 
             return tokens

@@ -289,6 +289,98 @@ class TestTokenManagerExtended(unittest.TestCase):
             self.assertEqual(args[0], "https://example.com/revoke")
             self.assertNotIn("client_secret", kwargs["data"])
 
+    def test_get_claims(self):
+        """Test get_claims method"""
+        # Initially should be empty
+        self.assertEqual(self.token_manager.get_claims(), {})
+        
+        # Set claims
+        test_claims = {"sub": "123", "name": "Test User"}
+        self.token_manager.tokens = {"claims": test_claims}
+        
+        # Now should return the claims
+        self.assertEqual(self.token_manager.get_claims(), test_claims)
+
+    def test_set_tokens_with_valid_id_token(self):
+        """Test set_tokens with a valid ID token that can be decoded"""
+        # Create a mock ID token with claims
+        test_claims = {"sub": "123", "name": "Test User", "email": "test@example.com"}
+        
+        # Token data with ID token
+        token_data = {
+            "access_token": "test_access_token",
+            "id_token": "valid_id_token",
+            "expires_in": 3600
+        }
+        
+        # Mock jwt.decode to return our test claims
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = test_claims
+            
+            # Set tokens with the mock
+            self.token_manager.set_tokens(token_data)
+            
+            # Verify claims were set correctly
+            self.assertEqual(self.token_manager.tokens.get("claims"), test_claims)
+
+    def test_exchange_code_with_code_verifier(self):
+        """Test exchange_code_for_token with code_verifier (PKCE flow)"""
+        # Set redirect URI
+        self.token_manager.set_redirect_uri("https://example.com/callback")
+        
+        # Mock requests.post
+        with patch('requests.post') as mock_post:
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+            mock_response.json.return_value = {
+                "access_token": "test_access_token",
+                "expires_in": 3600
+            }
+            mock_post.return_value = mock_response
+            
+            # Exchange code with code_verifier
+            code_verifier = "test_code_verifier"
+            token = asyncio_test(self.token_manager.exchange_code_for_token("auth_code", code_verifier))
+            
+            # Verify the code_verifier was included in the request
+            args, kwargs = mock_post.call_args
+            self.assertEqual(args[0], "https://example.com/oauth2/token")
+            self.assertEqual(kwargs["data"]["code_verifier"], code_verifier)
+            self.assertEqual(token, "test_access_token")
+
+    def test_get_access_token_expired_with_refresh(self):
+        """Test get_access_token when token is expired but refresh token is available"""
+        # Set expired token with refresh token
+        self.token_manager.tokens = {
+            "access_token": "expired_token",
+            "refresh_token": "refresh_token",
+            "expires_at": time.time() - 100  # Expired
+        }
+        
+        # Mock refresh_access_token
+        with patch.object(self.token_manager, 'refresh_access_token') as mock_refresh:
+            mock_refresh.return_value = "new_token"
+            
+            # Get token - should call refresh
+            token = self.token_manager.get_access_token()
+            
+            # Verify refresh was called and returned the new token
+            mock_refresh.assert_called_once()
+            self.assertEqual(token, "new_token")
+
+    def test_get_access_token_expired_no_refresh(self):
+        """Test get_access_token when token is expired and no refresh token is available"""
+        # Set expired token without refresh token
+        self.token_manager.tokens = {
+            "access_token": "expired_token",
+            "expires_at": time.time() - 100  # Expired
+        }
+        
+        # Should raise ValueError
+        with self.assertRaises(ValueError) as context:
+            self.token_manager.get_access_token()
+        
+        self.assertIn("Access token expired and no refresh token available", str(context.exception))
 
 # Helper function to run async tests
 def asyncio_test(coro):

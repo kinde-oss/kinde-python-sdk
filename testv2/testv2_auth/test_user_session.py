@@ -271,6 +271,162 @@ class TestUserSession(unittest.TestCase):
         self.assertIn(user2, self.storage_dict)
         self.assertNotIn(user3, self.storage_dict)
 
+    def test_reset(self):
+        """Test the reset method"""
+        # Set up data
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+            
+        # Add a patch for TokenManager.reset_instances
+        with patch('kinde_sdk.auth.token_manager.TokenManager.reset_instances') as mock_reset:
+            # Call reset
+            self.user_session.reset()
+            
+            # Verify method was called
+            mock_reset.assert_called_once()
+            
+        # Verify user sessions are cleared
+        self.assertEqual(self.user_session.user_sessions, {})
+
+    def test_load_from_storage_invalid_data(self):
+        """Test loading invalid data from storage"""
+        # Set up invalid stored data cases
+        invalid_cases = [
+            {"user_info": {}},  # Missing tokens
+            {"tokens": {}},     # Missing user_info
+            {"user_info": {"token_url": "url"}, "tokens": {}},  # Missing client_id
+            {"user_info": {"client_id": "id"}, "tokens": {}},   # Missing token_url
+            {"user_info": {"client_id": "id", "token_url": "url"}, "tokens": {}}  # Missing access_token
+        ]
+        
+        # Test each invalid case
+        for i, invalid_data in enumerate(invalid_cases):
+            test_user_id = f"invalid_user_{i}"
+            self.storage_dict[test_user_id] = invalid_data
+            
+            # Try to get data
+            result = self.user_session.get_user_data(test_user_id)
+            
+            # Should return None
+            self.assertIsNone(result)
+            
+            # Verify it's not in memory
+            self.assertNotIn(test_user_id, self.user_session.user_sessions)
+
+    @pytest.mark.timeout(5)
+    def test_is_authenticated_exceptions(self):
+        """Test is_authenticated with exceptions using a custom mock approach"""
+        # We won't set up a real token manager - instead create a mock directly
+        mock_token_manager = MagicMock()
+        
+        # First test: ValueError
+        # Set up the mock to raise ValueError when get_access_token is called
+        mock_token_manager.get_access_token.side_effect = ValueError("Token expired")
+        
+        # Patch the get_token_manager method to return our mock
+        with patch.object(UserSession, 'get_token_manager', return_value=mock_token_manager):
+            result = self.user_session.is_authenticated(self.user_id)
+            self.assertFalse(result)
+            
+        # Second test: Generic Exception
+        # Reset the mock and set up for generic exception
+        mock_token_manager.reset_mock()
+        mock_token_manager.get_access_token.side_effect = Exception("Unknown error")
+        
+        # Patch again with the updated mock
+        with patch.object(UserSession, 'get_token_manager', return_value=mock_token_manager):
+            result = self.user_session.is_authenticated(self.user_id)
+            self.assertFalse(result)
+
+    def test_is_authenticated_minimal(self):
+        """Minimal test for is_authenticated exceptions"""
+        # Create a fresh UserSession instance
+        user_session = UserSession()
+        
+        # Patch get_token_manager to control what it returns
+        with patch.object(UserSession, 'get_token_manager') as mock_get_tm:
+            # First test - no token manager
+            mock_get_tm.return_value = None
+            self.assertFalse(user_session.is_authenticated("any_user"))
+            
+            # Second test - token manager raises ValueError
+            mock_tm = MagicMock()
+            mock_tm.get_access_token.side_effect = ValueError()
+            mock_get_tm.return_value = mock_tm
+            self.assertFalse(user_session.is_authenticated("any_user"))
+            
+            # Third test - token manager raises generic Exception
+            mock_tm = MagicMock()
+            mock_tm.get_access_token.side_effect = Exception()
+            mock_get_tm.return_value = mock_tm
+            self.assertFalse(user_session.is_authenticated("any_user"))
+
+    def test_logout_with_revoke_exception(self):
+        """Test logout with token revocation exception"""
+        # Set up the user session
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        
+        # Mock revoke_token to raise an exception
+        with patch.object(TokenManager, 'revoke_token') as mock_revoke:
+            mock_revoke.side_effect = Exception("Network error")
+            
+            # Call logout - should complete without error
+            self.user_session.logout(self.user_id)
+            
+            # Check that the user session was still removed
+            self.assertNotIn(self.user_id, self.user_session.user_sessions)
+            
+            # Check that clear_device_data was still called
+            self.mock_storage_manager.clear_device_data.assert_called_once()
+
+    def test_cleanup_expired_sessions_edge_cases(self):
+        """Test various cases in cleanup_expired_sessions"""
+        # Case 1: Session without token manager
+        user1 = "user1"
+        self.user_session.user_sessions[user1] = {"user_info": self.user_info}  # No token_manager
+        
+        # Case 2: Session with token manager but no tokens
+        user2 = "user2"
+        token_manager2 = TokenManager(
+            user2, 
+            self.user_info["client_id"],
+            self.user_info["client_secret"],
+            self.user_info["token_url"]
+        )
+        token_manager2.tokens = {}  # Empty tokens
+        self.user_session.user_sessions[user2] = {
+            "user_info": self.user_info,
+            "token_manager": token_manager2
+        }
+        
+        # Case 3: Session with expired token but with refresh token (should be kept)
+        user3 = "user3"
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            expired_with_refresh = {
+                "access_token": "expired",
+                "refresh_token": "refresh",
+                "expires_at": time.time() - 100  # Expired
+            }
+            self.user_session.set_user_data(user3, self.user_info, expired_with_refresh)
+        
+        # Run cleanup
+        self.user_session.cleanup_expired_sessions()
+        
+        # Check results
+        self.assertNotIn(user1, self.user_session.user_sessions)  # Removed (no token manager)
+        self.assertNotIn(user2, self.user_session.user_sessions)  # Removed (no tokens)
+        self.assertIn(user3, self.user_session.user_sessions)     # Kept (has refresh token)
+        
+        # Verify storage deletes
+        self.mock_storage_manager.delete.assert_has_calls([
+            call(user1),
+            call(user2)
+        ], any_order=True)
+
 
 if __name__ == "__main__":
     pytest.main(["-xvs", __file__])

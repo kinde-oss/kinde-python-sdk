@@ -45,12 +45,10 @@ class OAuth:
         if not self.client_id:
             raise KindeConfigurationException("Client ID is required.")
         
+        
+        # Initialize API endpoints
+        self._set_api_endpoints()
 
-        # Set API endpoints
-        self.auth_url = f"{self.host}/oauth2/auth"
-        self.token_url = f"{self.host}/oauth2/token"
-        self.logout_url = f"{self.host}/logout"
-        self.userinfo_url = f"{self.host}/oauth2/userinfo"
 
         # Load configuration and create the appropriate storage backend
         if config_file:
@@ -72,6 +70,49 @@ class OAuth:
         self.verify_ssl = True
         self.proxy = None
         self.proxy_headers = None
+
+    def _set_api_endpoints(self):
+        """Set API endpoints based on the host URL."""
+        # Attempt to fetch OpenID Configuration first
+        try:
+            self._fetch_openid_configuration()
+        except Exception as e:
+            # If fetching OpenID Configuration fails, fall back to default endpoints
+            # self.logger.warning(f"Failed to fetch OpenID Configuration: {str(e)}. Using default endpoints.")
+            self.auth_url = f"{self.host}/oauth2/auth"
+            self.token_url = f"{self.host}/oauth2/token"
+            self.logout_url = f"{self.host}/logout"
+            self.userinfo_url = f"{self.host}/oauth2/userinfo"
+
+    def _fetch_openid_configuration(self):
+        """
+        Fetch OpenID Configuration and update endpoints accordingly.
+        """
+        import requests
+        
+        # Construct the OpenID Configuration URL
+        openid_config_url = f"{self.host}/.well-known/openid-configuration"
+        
+        # Make the request
+        response = requests.get(openid_config_url)
+        
+        if response.status_code == 200:
+            config = response.json()
+            
+            # Update endpoints with the values from the configuration
+            self.auth_url = config.get("authorization_endpoint", f"{self.host}/oauth2/auth")
+            self.token_url = config.get("token_endpoint", f"{self.host}/oauth2/token")
+            self.logout_url = config.get("end_session_endpoint", f"{self.host}/logout")
+            self.userinfo_url = config.get("userinfo_endpoint", f"{self.host}/oauth2/userinfo")
+            
+            # self.logger.info("OpenID Configuration fetched and endpoints updated successfully")
+        else:
+            # self.logger.warning(f"Failed to fetch OpenID Configuration: {response.status_code}")
+            # Set default endpoints if OpenID Configuration fetch fails
+            self.auth_url = f"{self.host}/oauth2/auth"
+            self.token_url = f"{self.host}/oauth2/token"
+            self.logout_url = f"{self.host}/logout"
+            self.userinfo_url = f"{self.host}/oauth2/userinfo"
 
     async def generate_auth_url(
         self,

@@ -54,7 +54,7 @@ class KindeApiClient(ApiClient):
 
         if framework is None:
             detector = FrameworkDetector()
-            framework = detector.detect_framework(["flask", "fastapi", "django"])
+            framework = detector.detect_framework(["flask", "fastapi", "django", "None"])
             if framework:
                 print(f"Auto-detected framework: {framework}")
             else:
@@ -109,6 +109,48 @@ class KindeApiClient(ApiClient):
             uri=f"{self.domain}/.well-known/jwks.json",
             cache_keys=True,
         )
+
+    def fetch_openid_configuration(self, oauth_instance):
+        """
+        Fetch OpenID Configuration and update the OAuth instance with the correct endpoints.
+        
+        Args:
+            oauth_instance: The OAuth instance to update
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        import requests
+        
+        try:
+            # Construct the OpenID Configuration URL
+            openid_config_url = f"{self.domain}/.well-known/openid-configuration"
+            
+            # Make the request
+            response = requests.get(openid_config_url)
+            
+            if response.status_code == 200:
+                config = response.json()
+                
+                # Update OAuth instance with the correct endpoints
+                oauth_instance.auth_url = config.get("authorization_endpoint", oauth_instance.auth_url)
+                oauth_instance.token_url = config.get("token_endpoint", oauth_instance.token_url)
+                oauth_instance.logout_url = config.get("end_session_endpoint", oauth_instance.logout_url)
+                oauth_instance.userinfo_url = config.get("userinfo_endpoint", oauth_instance.userinfo_url)
+                
+                # Also update the API client's endpoints for consistency
+                self.authorization_endpoint = config.get("authorization_endpoint", self.authorization_endpoint)
+                self.token_endpoint = config.get("token_endpoint", self.token_endpoint)
+                self.logout_endpoint = config.get("end_session_endpoint", self.logout_endpoint)
+                
+                print("OpenID Configuration fetched and endpoints updated successfully")
+                return True
+            else:
+                print(f"Failed to fetch OpenID Configuration: {response.status_code}")
+                return False
+        except Exception as e:
+            print(f"Error fetching OpenID Configuration: {str(e)}")
+            return False
 
     def _get_auth_url(self, state: str = None):
         self.login_url, self.state = self.client.create_authorization_url(

@@ -1,70 +1,22 @@
 import os
 import requests
 import logging
-import secrets
-import hashlib
-import base64
-import json
 import time
-from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlencode, urlparse, quote
 
 from .user_session import UserSession
-from .storage_factory import StorageFactory
+from kinde_sdk.core.storage.storage_manager import StorageManager
 from .config_loader import load_config
+from .enums import GrantType, IssuerRouteTypes, PromptTypes
+from .login_options import LoginOptions
+from kinde_sdk.core.helpers import generate_random_string, base64_url_encode, generate_pkce_pair, get_user_details as helper_get_user_details
 from kinde_sdk.exceptions import (
     KindeConfigurationException,
     KindeLoginException,
     KindeTokenException,
     KindeRetrieveException,
 )
-
-class GrantType(Enum):
-    CLIENT_CREDENTIALS = "client_credentials"
-    AUTHORIZATION_CODE = "authorization_code"
-    AUTHORIZATION_CODE_WITH_PKCE = "authorization_code_with_pkce"
-
-class IssuerRouteTypes(Enum):
-    LOGIN = "login"
-    REGISTER = "register"
-
-class PromptTypes(Enum):
-    CREATE = "create"
-    LOGIN = "login"
-    CONSENT = "consent"
-    SELECT_ACCOUNT = "select_account"
-    NONE = "none"
-
-# Define login option constants for better documentation and maintenance
-class LoginOptions:
-    # Standard OAuth parameters
-    RESPONSE_TYPE = "response_type"
-    REDIRECT_URI = "redirect_uri"
-    SCOPE = "scope"
-    AUDIENCE = "audience"
-    STATE = "state"
-    NONCE = "nonce"
-    CODE_CHALLENGE = "code_challenge"
-    CODE_CHALLENGE_METHOD = "code_challenge_method"
-    
-    # Organization parameters
-    ORG_CODE = "org_code"
-    ORG_NAME = "org_name"
-    IS_CREATE_ORG = "is_create_org"
-    
-    # User experience parameters
-    PROMPT = "prompt"
-    LANG = "lang"
-    LOGIN_HINT = "login_hint"
-    CONNECTION_ID = "connection_id"
-    REDIRECT_URL = "redirect_url"
-    HAS_SUCCESS_PAGE = "has_success_page"
-    WORKFLOW_DEPLOYMENT_ID = "workflow_deployment_id"
-    
-    # Additional parameters container
-    AUTH_PARAMS = "auth_params"
-
 
 class OAuth:
     def __init__(
@@ -93,12 +45,10 @@ class OAuth:
         if not self.client_id:
             raise KindeConfigurationException("Client ID is required.")
         
+        
+        # Initialize API endpoints
+        self._set_api_endpoints()
 
-        # Set API endpoints
-        self.auth_url = f"{self.host}/oauth2/auth"
-        self.token_url = f"{self.host}/oauth2/token"
-        self.logout_url = f"{self.host}/logout"
-        self.userinfo_url = f"{self.host}/oauth2/userinfo"
 
         # Load configuration and create the appropriate storage backend
         if config_file:
@@ -106,9 +56,11 @@ class OAuth:
             storage_config = config.get("storage", {"type": "memory"})  # Default to "memory"
         elif storage_config is None:
             storage_config = {"type": "memory"}  # Default to in-memory storage if no config is provided
-        storage = StorageFactory.create_storage(storage_config)
+        
+        storage_manager = StorageManager()
+        storage_manager.initialize(storage_config)
 
-        self.session_manager = UserSession(storage=storage)
+        self.session_manager = UserSession()
 
         # Logging settings
         self.logger = logging.getLogger("kinde_sdk")
@@ -119,60 +71,43 @@ class OAuth:
         self.proxy = None
         self.proxy_headers = None
 
-    def generate_random_string(self, length: int = 32) -> str:
-        """
-        Generate a random string of specified length.
-        
-        Args:
-            length: Length of the random string
-            
-        Returns:
-            Random URL-safe string
-        """
-        return secrets.token_urlsafe(length)
-    
-    def base64_url_encode(self, data: Union[bytes, str]) -> str:
-        """
-        Encode bytes or string to base64url format.
-        
-        Args:
-            data: Data to encode (bytes or string)
-            
-        Returns:
-            Base64URL encoded string
-        """
-        if isinstance(data, str):
-            data = data.encode('utf-8')
-            
-        return base64.urlsafe_b64encode(data).decode('utf-8').replace('=', '')
-    
-    async def generate_pkce_pair(self) -> Dict[str, str]:
-        """
-        Generate PKCE code verifier and challenge pair.
-        
-        Returns:
-            Dictionary containing code_verifier and code_challenge
-        """
-        # Generate code verifier (random string between 43-128 chars)
-        # We use 52 chars to match JS implementation
-        code_verifier = self.generate_random_string(52)
-        
-        # Generate code challenge using SHA-256
-        code_challenge = ""
+    def _set_api_endpoints(self):
+        """Set API endpoints based on the host URL."""
+        # Attempt to fetch OpenID Configuration first
         try:
-            # Hash the verifier
-            data = code_verifier.encode()
-            hashed = hashlib.sha256(data).digest()
-            code_challenge = self.base64_url_encode(hashed)
+            self._fetch_openid_configuration()
         except Exception as e:
-            # Fallback to plain verifier if hashing fails
-            self.logger.error(f"Error generating code challenge: {str(e)}")
-            code_challenge = self.base64_url_encode(code_verifier)
+            self.auth_url = f"{self.host}/oauth2/auth"
+            self.token_url = f"{self.host}/oauth2/token"
+            self.logout_url = f"{self.host}/logout"
+            self.userinfo_url = f"{self.host}/oauth2/userinfo"
+
+    def _fetch_openid_configuration(self):
+        """
+        Fetch OpenID Configuration and update endpoints accordingly.
+        """
+        import requests
         
-        return {
-            "code_verifier": code_verifier,
-            "code_challenge": code_challenge
-        }
+        # Construct the OpenID Configuration URL
+        openid_config_url = f"{self.host}/.well-known/openid-configuration"
+        
+        # Make the request
+        response = requests.get(openid_config_url)
+        
+        if response.status_code == 200:
+            config = response.json()
+            
+            # Update endpoints with the values from the configuration
+            self.auth_url = config.get("authorization_endpoint", f"{self.host}/oauth2/auth")
+            self.token_url = config.get("token_endpoint", f"{self.host}/oauth2/token")
+            self.logout_url = config.get("end_session_endpoint", f"{self.host}/logout")
+            self.userinfo_url = config.get("userinfo_endpoint", f"{self.host}/oauth2/userinfo")
+            
+        else:
+            self.auth_url = f"{self.host}/oauth2/auth"
+            self.token_url = f"{self.host}/oauth2/token"
+            self.logout_url = f"{self.host}/logout"
+            self.userinfo_url = f"{self.host}/oauth2/userinfo"
 
     async def generate_auth_url(
         self,
@@ -249,14 +184,14 @@ class OAuth:
                 search_params[key] = str(value) if value is not None else ""
         
         # Generate state if not provided
-        state = login_options.get(LoginOptions.STATE, self.generate_random_string(32))
+        state = login_options.get(LoginOptions.STATE, generate_random_string(32))
         search_params["state"] = state
-        self.session_manager.storage.set("state", {"value": state})
+        self.session_manager.storage_manager.setItems("state", {"value": state})
         
         # Generate nonce if not provided
-        nonce = login_options.get(LoginOptions.NONCE, self.generate_random_string(16))
+        nonce = login_options.get(LoginOptions.NONCE, generate_random_string(16))
         search_params["nonce"] = nonce
-        self.session_manager.storage.set("nonce", {"value": nonce})
+        self.session_manager.storage_manager.setItems("nonce", {"value": nonce})
         
         # Handle PKCE
         code_verifier = ""
@@ -264,10 +199,10 @@ class OAuth:
             search_params["code_challenge"] = login_options[LoginOptions.CODE_CHALLENGE]
         else:
             # Generate PKCE pair
-            pkce_data = await self.generate_pkce_pair()
+            pkce_data = await generate_pkce_pair(52)  # Use 52 chars to match JS implementation
             code_verifier = pkce_data["code_verifier"]
             search_params["code_challenge"] = pkce_data["code_challenge"]
-            self.session_manager.storage.set("code_verifier", {"value": code_verifier})
+            self.session_manager.storage_manager.setItems("code_verifier", {"value": code_verifier})
         
         # Set code challenge method
         code_challenge_method = login_options.get(LoginOptions.CODE_CHALLENGE_METHOD, "S256")
@@ -314,6 +249,9 @@ class OAuth:
         Returns:
             Login URL
         """
+        if not self.framework:
+            raise KindeConfigurationException("Framework must be selected")
+        
         if login_options is None:
             login_options = {}
         
@@ -348,6 +286,9 @@ class OAuth:
         Returns:
             Registration URL
         """
+        if not self.framework:
+            raise KindeConfigurationException("Framework must be selected")
+
         if login_options is None:
             login_options = {}
         
@@ -360,156 +301,6 @@ class OAuth:
             login_options=login_options
         )
         return auth_url_data["url"]
-    
-    async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Handle the OAuth redirect and exchange the code for tokens.
-        
-        Args:
-            code: Authorization code from the redirect
-            user_id: User identifier for token storage
-            state: State parameter for verification
-            
-        Returns:
-            Dict with user and token information
-        """
-        # Verify state if provided
-        if state:
-            stored_state = self.session_manager.storage.get("state")
-            if not stored_state or state != stored_state.get("value"):
-                self.logger.error(f"State mismatch: received {state}, stored {stored_state}")
-                raise KindeLoginException("Invalid state parameter")
-        
-        # Get code verifier for PKCE
-        code_verifier = None
-        stored_code_verifier = self.session_manager.storage.get("code_verifier")
-        if stored_code_verifier:
-            code_verifier = stored_code_verifier.get("value")
-            
-            # Clean up the used code verifier
-            self.session_manager.storage.delete("code_verifier")
-        
-        # Exchange code for tokens
-        try:
-            token_data = await self.exchange_code_for_tokens(code, code_verifier)
-        except Exception as e:
-            self.logger.error(f"Token exchange failed: {str(e)}")
-            raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}")
-        
-        # Store tokens
-        user_info = {
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "token_url": self.token_url,
-            "redirect_uri": self.redirect_uri,
-        }
-        
-        # Store session data
-        self.session_manager.set_user_data(user_id, user_info, token_data)
-        
-        # Get user details using the token
-        try:
-            user_details = await self.get_user_details(user_id)
-        except Exception as e:
-            self.logger.error(f"Failed to get user details: {str(e)}")
-            user_details = {}
-        
-        # Clean up state
-        if state:
-            self.session_manager.storage.delete("state")
-        
-        # Clean up nonce
-        self.session_manager.storage.delete("nonce")
-        
-        return {
-            "tokens": token_data,
-            "user": user_details
-        }
-    
-    async def exchange_code_for_tokens(self, code: str, code_verifier: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Exchange authorization code for tokens.
-        
-        Args:
-            code: Authorization code
-            code_verifier: PKCE code verifier
-            
-        Returns:
-            Dict with token data
-        """
-        data = {
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": self.redirect_uri,
-            "client_id": self.client_id,
-        }
-        
-        # Add client secret if available (for non-PKCE flow)
-        if self.client_secret:
-            data["client_secret"] = self.client_secret
-        
-        # Add code verifier for PKCE flow
-        if code_verifier:
-            data["code_verifier"] = code_verifier
-        
-        response = requests.post(self.token_url, data=data)
-        if response.status_code != 200:
-            raise KindeTokenException(f"Token exchange failed: {response.text}")
-        
-        return response.json()
-    
-    async def get_user_details(self, user_id: str) -> Dict[str, Any]:
-        """
-        Retrieve user information using the stored token.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            Dictionary with user profile information
-            
-        Raises:
-            KindeRetrieveException: If user is not authenticated or retrieval fails
-        """
-        # Get token manager for the user
-        token_manager = self.session_manager.get_token_manager(user_id)
-        if not token_manager:
-            raise KindeRetrieveException("User not authenticated")
-
-        try:
-            # Get access token
-            access_token = token_manager.get_access_token()
-            
-            # Set up request headers
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/json"
-            }
-            
-            # Make the request to userinfo endpoint
-            response = requests.get(self.userinfo_url, headers=headers)
-            response.raise_for_status()
-            
-            # Return user profile data
-            return response.json()
-            
-        except ValueError as e:
-            # Token manager errors (e.g., no token available)
-            self.logger.error(f"Token error when retrieving user details: {str(e)}")
-            raise KindeRetrieveException(f"Token error: {str(e)}")
-            
-        except requests.RequestException as e:
-            # Network or API errors
-            error_message = f"Failed to retrieve user details: {str(e)}"
-            if hasattr(e, 'response') and e.response is not None:
-                try:
-                    error_data = e.response.json()
-                    error_message = f"User details retrieval failed: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}"
-                except Exception:
-                    error_message = f"User details retrieval failed with status code: {e.response.status_code}"
-            
-            self.logger.error(error_message)
-            raise KindeRetrieveException(error_message)
     
     async def logout(self, user_id: Optional[str] = None, logout_options: Dict[str, Any] = None) -> str:
         """
@@ -525,6 +316,9 @@ class OAuth:
         Returns:
             Logout URL
         """
+        if not self.framework:
+            raise KindeConfigurationException("Framework must be selected")
+
         if logout_options is None:
             logout_options = {}
         
@@ -562,29 +356,140 @@ class OAuth:
         # Build logout URL
         query_string = urlencode(params)
         return f"{self.logout_url}?{query_string}"
+
+    async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Handle the OAuth redirect and exchange the code for tokens.
+        
+        Args:
+            code: Authorization code from the redirect
+            user_id: User identifier for token storage
+            state: State parameter for verification
+            
+        Returns:
+            Dict with user and token information
+        """
+        # Verify state if provided
+        if state:
+            stored_state = self.session_manager.storage_manager.get("state")
+            if not stored_state or state != stored_state.get("value"):
+                self.logger.error(f"State mismatch: received {state}, stored {stored_state}")
+                raise KindeLoginException("Invalid state parameter")
+        
+        # Get code verifier for PKCE
+        code_verifier = None
+        stored_code_verifier = self.session_manager.storage_manager.get("code_verifier")
+        if stored_code_verifier:
+            code_verifier = stored_code_verifier.get("value")
+            
+            # Clean up the used code verifier
+            self.session_manager.storage_manager.delete("code_verifier")
+        
+        # Exchange code for tokens
+        try:
+            token_data = await self.exchange_code_for_tokens(code, code_verifier)
+        except Exception as e:
+            self.logger.error(f"Token exchange failed: {str(e)}")
+            raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}")
+        
+        # Store tokens
+        user_info = {
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "token_url": self.token_url,
+            "redirect_uri": self.redirect_uri,
+        }
+        
+        # Store session data
+        self.session_manager.set_user_data(user_id, user_info, token_data)
+        
+        # Get user details using the token
+        token_manager = self.session_manager.get_token_manager(user_id)
+        if not token_manager:
+            raise KindeRetrieveException("Failed to get token manager")
+        
+        # This will now throw the exception if it fails, allowing proper error handling
+        user_details = await helper_get_user_details(
+            userinfo_url=self.userinfo_url,
+            token_manager=token_manager,
+            logger=self.logger
+        )
+        
+        # Clean up state
+        if state:
+            self.session_manager.storage_manager.delete("state")
+        
+        # Clean up nonce
+        self.session_manager.storage_manager.delete("nonce")
+        
+        return {
+            "tokens": token_data,
+            "user": user_details
+        }
     
-    def get_tokens(self, user_id: str) -> Optional[Dict[str, Any]]:
+    async def exchange_code_for_tokens(self, code: str, code_verifier: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Exchange authorization code for tokens.
+        
+        Args:
+            code: Authorization code
+            code_verifier: PKCE code verifier
+            
+        Returns:
+            Dict with token data
+        """
+        data = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": self.redirect_uri,
+            "client_id": self.client_id,
+        }
+        
+        # Add client secret if available (for non-PKCE flow)
+        if self.client_secret:
+            data["client_secret"] = self.client_secret
+        
+        # Add code verifier for PKCE flow
+        if code_verifier:
+            data["code_verifier"] = code_verifier
+        
+        response = requests.post(self.token_url, data=data)
+        if response.status_code != 200:
+            raise KindeTokenException(f"Token exchange failed: {response.text}")
+        
+        return response.json()
+
+    def get_tokens(self, user_id: str) -> Dict[str, Any]:
         """
         Retrieve tokens and related information for a user.
         
         Args:
             user_id: User identifier
-            
+                
         Returns:
-            Dictionary containing tokens and token information or None if not authenticated
+            Dictionary containing tokens and token information
+            
+        Raises:
+            ValueError: If no tokens are available for the user
         """
         # Get token manager
         token_manager = self.session_manager.get_token_manager(user_id)
         if not token_manager:
-            return None
+            raise ValueError(f"No token manager available for user {user_id}")
         
         # Initialize tokens dictionary
         tokens = {}
         
         try:
-            # Get access token
-            access_token = token_manager.get_access_token()
-            tokens["access_token"] = access_token
+            access_token = None
+            if "access_token" in token_manager.tokens:
+                access_token = token_manager.get_access_token()
+                if access_token:
+                    tokens["access_token"] = access_token
+                else:
+                    raise ValueError(f"Invalid access token for user {user_id}")
+            else:
+                raise ValueError(f"No access token available for user {user_id}")
             
             # Get token expiration time
             if "expires_at" in token_manager.tokens:
@@ -601,10 +506,10 @@ class OAuth:
             
             # Add claims if available
             claims = token_manager.get_claims()
-            if claims:
+            if claims and len(claims) > 0:
                 tokens["claims"] = claims
                 
             return tokens
         except Exception as e:
             self.logger.error(f"Error retrieving tokens: {str(e)}")
-            return None
+            raise ValueError(f"Failed to retrieve tokens: {str(e)}")

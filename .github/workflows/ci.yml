@@ -5,7 +5,7 @@ on:
     branches: [ "main", "staging" ]
 
   push:
-    branches: [ "main", "staging", "main_V2" ]
+    branches: [ "main", "staging", "main_V2", "main_V2_auth_fixes_and_enhancements" ]
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
@@ -44,7 +44,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run tests
-        run:  pytest --cov-branch --cov-report=xml
+        run:  pytest --cov=kinde_sdk --cov-branch --cov-report=xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5

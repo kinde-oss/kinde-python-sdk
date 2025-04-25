@@ -167,8 +167,6 @@ class UserSession:
                 del self.user_sessions[user_id]
                 
             # Delete from storage
-            # self.storage.delete(user_id)
-            # self.storage_manager.delete(user_id)
             self.storage_manager.clear_device_data()
 
     def cleanup_expired_sessions(self) -> None:

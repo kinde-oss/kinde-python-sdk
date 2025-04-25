@@ -77,8 +77,6 @@ class OAuth:
         try:
             self._fetch_openid_configuration()
         except Exception as e:
-            # If fetching OpenID Configuration fails, fall back to default endpoints
-            # self.logger.warning(f"Failed to fetch OpenID Configuration: {str(e)}. Using default endpoints.")
             self.auth_url = f"{self.host}/oauth2/auth"
             self.token_url = f"{self.host}/oauth2/token"
             self.logout_url = f"{self.host}/logout"
@@ -105,10 +103,7 @@ class OAuth:
             self.logout_url = config.get("end_session_endpoint", f"{self.host}/logout")
             self.userinfo_url = config.get("userinfo_endpoint", f"{self.host}/oauth2/userinfo")
             
-            # self.logger.info("OpenID Configuration fetched and endpoints updated successfully")
         else:
-            # self.logger.warning(f"Failed to fetch OpenID Configuration: {response.status_code}")
-            # Set default endpoints if OpenID Configuration fetch fails
             self.auth_url = f"{self.host}/oauth2/auth"
             self.token_url = f"{self.host}/oauth2/token"
             self.logout_url = f"{self.host}/logout"
@@ -361,79 +356,6 @@ class OAuth:
         # Build logout URL
         query_string = urlencode(params)
         return f"{self.logout_url}?{query_string}"
-    
-    # async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
-    #     """
-    #     Handle the OAuth redirect and exchange the code for tokens.
-        
-    #     Args:
-    #         code: Authorization code from the redirect
-    #         user_id: User identifier for token storage
-    #         state: State parameter for verification
-            
-    #     Returns:
-    #         Dict with user and token information
-    #     """
-    #     # Verify state if provided
-    #     if state:
-    #         stored_state = self.session_manager.storage_manager.get("state")
-    #         if not stored_state or state != stored_state.get("value"):
-    #             self.logger.error(f"State mismatch: received {state}, stored {stored_state}")
-    #             raise KindeLoginException("Invalid state parameter")
-        
-    #     # Get code verifier for PKCE
-    #     code_verifier = None
-    #     stored_code_verifier = self.session_manager.storage_manager.get("code_verifier")
-    #     if stored_code_verifier:
-    #         code_verifier = stored_code_verifier.get("value")
-            
-    #         # Clean up the used code verifier
-    #         self.session_manager.storage_manager.delete("code_verifier")
-        
-    #     # Exchange code for tokens
-    #     try:
-    #         token_data = await self.exchange_code_for_tokens(code, code_verifier)
-    #     except Exception as e:
-    #         self.logger.error(f"Token exchange failed: {str(e)}")
-    #         raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}")
-        
-    #     # Store tokens
-    #     user_info = {
-    #         "client_id": self.client_id,
-    #         "client_secret": self.client_secret,
-    #         "token_url": self.token_url,
-    #         "redirect_uri": self.redirect_uri,
-    #     }
-        
-    #     # Store session data
-    #     self.session_manager.set_user_data(user_id, user_info, token_data)
-        
-    #     # Get user details using the token
-    #     try:
-    #         token_manager = self.session_manager.get_token_manager(user_id)
-    #         if token_manager:
-    #             user_details = await helper_get_user_details(
-    #                 userinfo_url=self.userinfo_url,
-    #                 token_manager=token_manager,
-    #                 logger=self.logger
-    #             )
-    #         else:
-    #             user_details = {}
-    #     except Exception as e:
-    #         self.logger.error(f"Failed to get user details: {str(e)}")
-    #         user_details = {}
-        
-    #     # Clean up state
-    #     if state:
-    #         self.session_manager.storage_manager.delete("state")
-        
-    #     # Clean up nonce
-    #     self.session_manager.storage_manager.delete("nonce")
-        
-    #     return {
-    #         "tokens": token_data,
-    #         "user": user_details
-    #     }
 
     async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -559,17 +481,6 @@ class OAuth:
         tokens = {}
         
         try:
-            # # Check if token manager has any tokens
-            # if not token_manager.tokens or "access_token" not in token_manager.tokens:
-            #     raise ValueError(f"No access token available for user {user_id}")
-                
-            # # Get access token
-            # access_token = token_manager.get_access_token()
-            # if not access_token:
-            #     raise ValueError(f"Invalid access token for user {user_id}")
-                
-            # tokens["access_token"] = access_token
-
             access_token = None
             if "access_token" in token_manager.tokens:
                 access_token = token_manager.get_access_token()
@@ -583,7 +494,6 @@ class OAuth:
             # Get token expiration time
             if "expires_at" in token_manager.tokens:
                 tokens["expires_at"] = token_manager.tokens["expires_at"]
-                # tokens["expires_in"] = max(0, int(token_manager.tokens["expires_at"] - time.time()))
                 tokens["expires_in"] = max(0, int(token_manager.tokens["expires_at"] - time.time()))
             
             # Add refresh token if available

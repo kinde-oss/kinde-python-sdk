@@ -14,6 +14,7 @@ from kinde_sdk.exceptions import (
 )
 from kinde_sdk import __version__ as kinde_sdk_version
 from .framework_detector import FrameworkDetector 
+from .management import ManagementClient
 
 
 class FlagType(Enum):
@@ -79,6 +80,9 @@ class KindeApiClient(ApiClient):
         self.logout_endpoint = f"{self.domain}/logout"
 
         self.__access_token_obj = None
+
+        self._management = None
+
 
         self._clear_decoded_tokens()
 
@@ -151,6 +155,33 @@ class KindeApiClient(ApiClient):
         except Exception as e:
             print(f"Error fetching OpenID Configuration: {str(e)}")
             return False
+
+
+    def get_management(self) -> ManagementClient:
+        """
+        Get the management client. Initializes it if not already done.
+        
+        Returns:
+            The management client.
+            
+        Raises:
+            ValueError: If client_secret was not provided during initialization.
+        """
+        if not self.client_secret:
+            raise ValueError(
+                "Management API requires client_secret. Initialize KindeApiClient with client_secret."
+            )
+            
+        if self._management is None:
+            self._management = ManagementClient(
+                domain=self.domain,
+                client_id=self.client_id,
+                client_secret=self.client_secret,
+            )
+            
+        return self._management
+
+
 
     def _get_auth_url(self, state: str = None):
         self.login_url, self.state = self.client.create_authorization_url(

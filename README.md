@@ -125,6 +125,386 @@ data = storage_manager.get("some_key")
 # After initializing both OAuth and KindeApiClient use the following fn to get proper urls
 api_client.fetch_openid_configuration(oauth)
 
+# Kinde Management API Module
+
+This module provides a client for the Kinde Management API, allowing you to manage users, organizations, roles, permissions, and feature flags programmatically.
+
+## Installation
+
+No additional installation is required if you already have the Kinde Python SDK installed. The Management API module is included as part of the SDK.
+
+## Usage
+
+The Management API client requires:
+- Your Kinde domain
+- Client ID
+- Client secret
+
+### Initializing the client
+
+You can access the Management API through the existing `KindeApiClient`:
+
+```python
+from kinde_sdk.kinde_api_client import KindeApiClient
+from kinde_sdk.enums import GrantType
+
+# Initialize the client with client credentials
+client = KindeApiClient(
+    domain="your-domain.kinde.com",
+    callback_url="https://your-app.com/callback",
+    client_id="your-client-id",
+    client_secret="your-client-secret", # Required for management API
+    grant_type=GrantType.CLIENT_CREDENTIALS,
+)
+
+# Get the management client
+management = client.get_management()
+```
+
+### Managing Users
+
+```python
+# List users
+users = management.get_users(page_size=10)
+
+# Get a specific user
+user = management.get_user(user_id="user_id")
+
+# Create a new user
+new_user = management.create_user(
+    first_name="John",
+    last_name="Doe",
+    email="john.doe@example.com"
+)
+
+# Update a user
+updated_user = management.update_user(
+    user_id="user_id",
+    first_name="John",
+    last_name="Smith"
+)
+
+# Delete a user
+result = management.delete_user(user_id="user_id")
+```
+
+### Managing Organizations
+
+```python
+# List organizations
+organizations = management.get_organizations(page_size=10)
+
+# Get a specific organization
+org = management.get_organization(org_code="org_code")
+
+# Create a new organization
+new_org = management.create_organization(
+    name="Example Organization"
+)
+
+# Update an organization
+updated_org = management.update_organization(
+    org_code="org_code",
+    name="Updated Organization Name"
+)
+
+# Delete an organization
+result = management.delete_organization(org_code="org_code")
+```
+
+### Managing Roles
+
+```python
+# List roles
+roles = management.get_roles(page_size=10)
+
+# Get a specific role
+role = management.get_role(role_id="role_id")
+
+# Create a new role
+new_role = management.create_role(
+    name="Admin",
+    description="Administrator role",
+    key="admin_role"
+)
+
+# Update a role
+updated_role = management.update_role(
+    role_id="role_id",
+    name="Super Admin",
+    description="Super administrator role"
+)
+
+# Delete a role
+result = management.delete_role(role_id="role_id")
+```
+
+### Managing Feature Flags
+
+```python
+# List feature flags
+flags = management.get_feature_flags(page_size=10)
+
+# Create a new feature flag
+new_flag = management.create_feature_flag(
+    name="Dark Mode",
+    key="dark_mode",
+    description="Enable dark mode theme",
+    type="boolean",
+    default_value=False
+)
+
+# Update a feature flag
+updated_flag = management.update_feature_flag(
+    feature_flag_id="flag_id",
+    name="Dark Theme",
+    description="Enable dark theme for the application"
+)
+
+# Delete a feature flag
+result = management.delete_feature_flag(feature_flag_id="flag_id")
+```
+
+## Token Management
+
+The Management API client automatically handles token management using client credentials:
+
+- Tokens are automatically obtained when needed
+- Tokens are cached to avoid unnecessary requests
+- Tokens are refreshed when they expire
+- Multiple instances of the client with the same domain and client ID share the same token
+
+## Error Handling
+
+All API methods can raise exceptions for HTTP errors. It's recommended to wrap calls in try/except blocks:
+
+```python
+try:
+    user = management.get_user(user_id="non_existent_id")
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+Complete example given below
+
+```python
+from kinde_sdk.kinde_api_client import KindeApiClient
+from kinde_sdk.enums import GrantType
+
+def main():
+    """Main function demonstrating Management API usage."""
+    # Initialize the Kinde client with management capabilities
+    client = KindeApiClient(
+        domain="your-domain.kinde.com",  # Replace with your Kinde domain
+        callback_url="https://your-app.com/callback",  # Your auth callback URL
+        client_id="your-client-id",  # Your client ID
+        client_secret="your-client-secret",  # Required for management API
+        grant_type=GrantType.CLIENT_CREDENTIALS,  # Use client credentials for management API
+    )
+
+    # Get the management client
+    management = client.get_management()
+    
+    # Example 1: List users
+    print("Example 1: List users")
+    print("-" * 50)
+    users_result = management.get_users(page_size=10)
+    if users_result and "users" in users_result:
+        users = users_result["users"]
+        print(f"Total users: {len(users)}")
+        for user in users:
+            print(f"User: {user.get('first_name', '')} {user.get('last_name', '')} ({user.get('email', '')})")
+    else:
+        print("No users found or error occurred")
+    print()
+
+    # Example 2: Create a new user
+    print("Example 2: Create a new user")
+    print("-" * 50)
+    try:
+        new_user = management.create_user(
+            first_name="Test",
+            last_name="User",
+            email="testuser@example.com",
+        )
+        print(f"User created: {new_user}")
+        
+        # Store the user ID for later examples
+        user_id = new_user.get("id")
+        print(f"User ID: {user_id}")
+    except Exception as e:
+        print(f"Error creating user: {e}")
+    print()
+
+    # Example 3: Update a user
+    print("Example 3: Update a user")
+    print("-" * 50)
+    try:
+        # Use the user ID from Example 2
+        if 'user_id' in locals():
+            updated_user = management.update_user(
+                user_id=user_id,
+                first_name="Updated",
+                last_name="User"
+            )
+            print(f"User updated: {updated_user}")
+        else:
+            print("No user ID available for update")
+    except Exception as e:
+        print(f"Error updating user: {e}")
+    print()
+
+    # Example 4: List organizations
+    print("Example 4: List organizations")
+    print("-" * 50)
+    orgs_result = management.get_organizations(page_size=10)
+    if orgs_result and "organizations" in orgs_result:
+        orgs = orgs_result["organizations"]
+        print(f"Total organizations: {len(orgs)}")
+        for org in orgs:
+            print(f"Organization: {org.get('name', '')} (Code: {org.get('code', '')})")
+    else:
+        print("No organizations found or error occurred")
+    print()
+
+    # Example 5: Create a new organization
+    print("Example 5: Create a new organization")
+    print("-" * 50)
+    try:
+        new_org = management.create_organization(
+            name="Test Organization"
+        )
+        print(f"Organization created: {new_org}")
+        
+        # Store the org code for later examples
+        org_code = new_org.get("code")
+        print(f"Organization Code: {org_code}")
+    except Exception as e:
+        print(f"Error creating organization: {e}")
+    print()
+
+    # Example 6: Update an organization
+    print("Example 6: Update an organization")
+    print("-" * 50)
+    try:
+        # Use the org code from Example 5
+        if 'org_code' in locals():
+            updated_org = management.update_organization(
+                org_code=org_code,
+                name="Updated Organization"
+            )
+            print(f"Organization updated: {updated_org}")
+        else:
+            print("No organization code available for update")
+    except Exception as e:
+        print(f"Error updating organization: {e}")
+    print()
+
+    # Example 7: List roles
+    print("Example 7: List roles")
+    print("-" * 50)
+    roles_result = management.get_roles(page_size=10)
+    if roles_result and "roles" in roles_result:
+        roles = roles_result["roles"]
+        print(f"Total roles: {len(roles)}")
+        for role in roles:
+            print(f"Role: {role.get('name', '')} (Key: {role.get('key', '')})")
+    else:
+        print("No roles found or error occurred")
+    print()
+
+    # Example 8: Create a new role
+    print("Example 8: Create a new role")
+    print("-" * 50)
+    try:
+        new_role = management.create_role(
+            name="Test Role",
+            description="A test role created via the Management API",
+            key="test_role"
+        )
+        print(f"Role created: {new_role}")
+        
+        # Store the role ID for later examples
+        role_id = new_role.get("id")
+        print(f"Role ID: {role_id}")
+    except Exception as e:
+        print(f"Error creating role: {e}")
+    print()
+
+    # Example 9: Get feature flags
+    print("Example 9: Get feature flags")
+    print("-" * 50)
+    flags_result = management.get_feature_flags(page_size=10)
+    if flags_result and "feature_flags" in flags_result:
+        flags = flags_result["feature_flags"]
+        print(f"Total feature flags: {len(flags)}")
+        for flag in flags:
+            print(f"Flag: {flag.get('name', '')} (Key: {flag.get('key', '')})")
+    else:
+        print("No feature flags found or error occurred")
+    print()
+
+    # Example 10: Create a new feature flag
+    print("Example 10: Create a new feature flag")
+    print("-" * 50)
+    try:
+        new_flag = management.create_feature_flag(
+            name="Test Flag",
+            key="test_flag",
+            description="A test feature flag created via the Management API",
+            type="boolean",
+            default_value=False
+        )
+        print(f"Feature flag created: {new_flag}")
+        
+        # Store the flag ID for later examples
+        flag_id = new_flag.get("id")
+        print(f"Flag ID: {flag_id}")
+    except Exception as e:
+        print(f"Error creating feature flag: {e}")
+    print()
+
+    # Example 11: Clean up (delete created resources)
+    print("Example 11: Clean up")
+    print("-" * 50)
+    
+    # Delete the feature flag (if created)
+    if 'flag_id' in locals():
+        try:
+            result = management.delete_feature_flag(flag_id)
+            print(f"Feature flag deleted: {result}")
+        except Exception as e:
+            print(f"Error deleting feature flag: {e}")
+    
+    # Delete the role (if created)
+    if 'role_id' in locals():
+        try:
+            result = management.delete_role(role_id)
+            print(f"Role deleted: {result}")
+        except Exception as e:
+            print(f"Error deleting role: {e}")
+    
+    # Delete the organization (if created)
+    if 'org_code' in locals():
+        try:
+            result = management.delete_organization(org_code)
+            print(f"Organization deleted: {result}")
+        except Exception as e:
+            print(f"Error deleting organization: {e}")
+    
+    # Delete the user (if created)
+    if 'user_id' in locals():
+        try:
+            result = management.delete_user(user_id)
+            print(f"User deleted: {result}")
+        except Exception as e:
+            print(f"Error deleting user: {e}")
+
+if __name__ == "__main__":
+    main()
+
+```    
+
 ## Publishing
 
 The core team handles publishing.

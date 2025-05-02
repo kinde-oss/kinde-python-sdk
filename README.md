@@ -342,8 +342,7 @@ def main():
     try:
         # Use the user ID from Example 2
         if 'user_id' in locals():
-            updated_user = management.update_user(
-                user_id=user_id,
+            updated_user = management.update_user(user_id,
                 first_name="Updated",
                 last_name="User"
             )
@@ -389,8 +388,7 @@ def main():
     try:
         # Use the org code from Example 5
         if 'org_code' in locals():
-            updated_org = management.update_organization(
-                org_code=org_code,
+            updated_org = management.update_organization(org_code,
                 name="Updated Organization"
             )
             print(f"Organization updated: {updated_org}")

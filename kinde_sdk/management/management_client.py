@@ -6,9 +6,8 @@ with the existing Kinde SDK infrastructure.
 """
 
 import logging
-import os
-import requests
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List, Union, Callable
+from functools import partial
 
 from kinde_sdk.configuration import Configuration
 from kinde_sdk.api_client import ApiClient
@@ -24,6 +23,85 @@ class ManagementClient:
     for managing users, organizations, roles, permissions, and feature flags.
     """
     
+    # Define API endpoints and their methods
+    API_ENDPOINTS = {
+        # Users API
+        'users': {
+            'list': ('GET', '/users'),
+            'get': ('GET', '/users/{user_id}'),
+            'create': ('POST', '/users'),
+            'update': ('PATCH', '/users/{user_id}'),
+            'delete': ('DELETE', '/users/{user_id}'),
+        },
+        
+        # Organizations API
+        'organizations': {
+            'list': ('GET', '/organizations'),
+            'get': ('GET', '/organizations/{org_code}'),
+            'create': ('POST', '/organizations'),
+            'update': ('PATCH', '/organizations/{org_code}'),
+            'delete': ('DELETE', '/organizations/{org_code}'),
+        },
+        
+        # Roles API
+        'roles': {
+            'list': ('GET', '/roles'),
+            'get': ('GET', '/roles/{role_id}'),
+            'create': ('POST', '/roles'),
+            'update': ('PATCH', '/roles/{role_id}'),
+            'delete': ('DELETE', '/roles/{role_id}'),
+        },
+
+        # Permissions API
+        'permissions': {
+            'list': ('GET', '/permissions'),
+            'get': ('GET', '/permissions/{permission_id}'),
+            'create': ('POST', '/permissions'),
+            'update': ('PATCH', '/permissions/{permission_id}'),
+            'delete': ('DELETE', '/permissions/{permission_id}'),
+        },
+        
+        # Feature Flags API
+        'feature_flags': {
+            'list': ('GET', '/feature_flags'),
+            'get': ('GET', '/feature_flags/{feature_flag_id}'),
+            'create': ('POST', '/feature_flags'),
+            'update': ('PATCH', '/feature_flags/{feature_flag_id}'),
+            'delete': ('DELETE', '/feature_flags/{feature_flag_id}'),
+        },
+
+        # Connected Apps API
+        'connected_apps': {
+            'list': ('GET', '/connected_apps'),
+            'get': ('GET', '/connected_apps/{app_id}'),
+        },
+
+        # API Applications API
+        'api_applications': {
+            'list': ('GET', '/api/applications'),
+            'get': ('GET', '/api/applications/{app_id}'),
+            'create': ('POST', '/api/applications'),
+            'update': ('PATCH', '/api/applications/{app_id}'),
+            'delete': ('DELETE', '/api/applications/{app_id}'),
+        },
+
+        # Subscribers API
+        'subscribers': {
+            'list': ('GET', '/subscribers'),
+            'get': ('GET', '/subscribers/{subscriber_id}'),
+        },
+
+        # Timezones API
+        'timezones': {
+            'list': ('GET', '/timezones'),
+        },
+
+        # Industries API
+        'industries': {
+            'list': ('GET', '/industries'),
+        },
+    }
+    
     def __init__(self, domain: str, client_id: str, client_secret: str):
         """
         Initialize the management client.
@@ -38,13 +116,14 @@ class ManagementClient:
         self.token_manager = ManagementTokenManager(domain, client_id, client_secret)
         
         # Initialize API client with the correct configuration
-        self.configuration = Configuration(
-            host=self.base_url,
-        )
+        self.configuration = Configuration(host=self.base_url)
         self.api_client = ApiClient(configuration=self.configuration)
         
         # Set up automatic token handling
         self._setup_token_handling()
+        
+        # Generate dynamic methods
+        self._generate_methods()
     
     def _setup_token_handling(self):
         """Set up automatic token refresh for API calls."""
@@ -68,528 +147,169 @@ class ManagementClient:
         
         self.api_client.call_api = call_api_with_token
     
-    # Users API Methods
-    def get_users(self, **kwargs) -> Dict[str, Any]:
-        """
-        Get a list of users.
-        
-        Args:
-            **kwargs: Optional arguments to pass to the API.
-                sort (str): Sort users by field. (Optional)
-                page_size (int): Number of results per page. (Optional)
-                next_token (str): Token for the next page of results. (Optional)
+    def _generate_methods(self):
+        """Generate dynamic methods for each API endpoint."""
+        for resource, endpoints in self.API_ENDPOINTS.items():
+            resource_singular = resource[:-1] if resource.endswith('s') else resource
+            
+            for action, (method, path) in endpoints.items():
+                # Create method name based on action and resource
+                if action == 'list':
+                    method_name = f"get_{resource}"
+                elif action == 'get':
+                    method_name = f"get_{resource_singular}"
+                else:
+                    method_name = f"{action}_{resource_singular}"
                 
-        Returns:
-            Dict containing users data.
-        """
-        params = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = "/users"
-        method = "GET"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            query_params=params
-        )
-        
-        return response
+                # Create the method
+                api_method = self._create_api_method(method, path, resource, action)
+                
+                # Set the method on the class
+                setattr(self, method_name, api_method)
     
-    def get_user(self, user_id: str) -> Dict[str, Any]:
+    def _create_api_method(self, http_method: str, path: str, resource: str, action: str) -> Callable:
         """
-        Get a user by ID.
+        Create a dynamic method for an API endpoint.
         
         Args:
-            user_id: The ID of the user to get.
+            http_method: HTTP method (GET, POST, etc.)
+            path: API endpoint path
+            resource: API resource name (users, organizations, etc.)
+            action: API action (list, get, create, etc.)
             
         Returns:
-            Dict containing user data.
+            A callable method that makes the API request
         """
-        resource_path = f"/users/{user_id}"
-        method = "GET"
+        resource_singular = resource[:-1] if resource.endswith('s') else resource
         
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None
-        )
-        
-        return response
-    
-    def create_user(self, **kwargs) -> Dict[str, Any]:
-        """
-        Create a new user.
-        
-        Args:
-            **kwargs: User data.
-                first_name (str): User's first name. (Optional)
-                last_name (str): User's last name. (Optional)
-                email (str): User's email address.
-                is_suspended (bool): Whether the user is suspended. (Optional)
-                
-        Returns:
-            Dict containing the created user.
-        """
-        data = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = "/users"
-        method = "POST"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            body=data
-        )
-        
-        return response
-    
-    def update_user(self, user_id: str, **kwargs) -> Dict[str, Any]:
-        """
-        Update a user.
-        
-        Args:
-            user_id: The ID of the user to update.
-            **kwargs: User data to update.
-                first_name (str): User's first name. (Optional)
-                last_name (str): User's last name. (Optional)
-                is_suspended (bool): Whether the user is suspended. (Optional)
-                
-        Returns:
-            Dict containing the updated user.
-        """
-        data = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = f"/users/{user_id}"
-        method = "PATCH"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            body=data
-        )
-        
-        return response
-    
-    def delete_user(self, user_id: str) -> Dict[str, Any]:
-        """
-        Delete a user.
-        
-        Args:
-            user_id: The ID of the user to delete.
+        def api_method(*args, **kwargs) -> Dict[str, Any]:
+            # Format path with any path parameters from args
+            formatted_path = path
+            if '{' in path and args:
+                param_values = list(args)
+                while '{' in formatted_path and param_values:
+                    start_idx = formatted_path.find('{')
+                    end_idx = formatted_path.find('}')
+                    if start_idx >= 0 and end_idx >= 0:
+                        formatted_path = formatted_path[:start_idx] + str(param_values.pop(0)) + formatted_path[end_idx + 1:]
             
-        Returns:
-            Dict containing the result.
-        """
-        resource_path = f"/users/{user_id}"
-        method = "DELETE"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None
-        )
-        
-        return response
-    
-    # Organizations API Methods
-    def get_organizations(self, **kwargs) -> Dict[str, Any]:
-        """
-        Get a list of organizations.
-        
-        Args:
-            **kwargs: Optional arguments to pass to the API.
-                sort (str): Sort organizations by field. (Optional)
-                page_size (int): Number of results per page. (Optional)
-                next_token (str): Token for the next page of results. (Optional)
-                
-        Returns:
-            Dict containing organizations data.
-        """
-        params = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = "/organizations"
-        method = "GET"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            query_params=params
-        )
-        
-        return response
-    
-    def get_organization(self, org_code: str) -> Dict[str, Any]:
-        """
-        Get an organization by code.
-        
-        Args:
-            org_code: The code of the organization to get.
+            # Handle query params or body data based on HTTP method
+            query_params = None
+            body = None
             
-        Returns:
-            Dict containing organization data.
-        """
-        resource_path = f"/organizations/{org_code}"
-        method = "GET"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None
-        )
-        
-        return response
-    
-    def create_organization(self, **kwargs) -> Dict[str, Any]:
-        """
-        Create a new organization.
-        
-        Args:
-            **kwargs: Organization data.
-                name (str): Organization name.
-                feature_flags (List[Dict]): Feature flags for the organization. (Optional)
-                
-        Returns:
-            Dict containing the created organization.
-        """
-        data = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = "/organizations"
-        method = "POST"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            body=data
-        )
-        
-        return response
-    
-    def update_organization(self, org_code: str, **kwargs) -> Dict[str, Any]:
-        """
-        Update an organization.
-        
-        Args:
-            org_code: The code of the organization to update.
-            **kwargs: Organization data to update.
-                name (str): Organization name. (Optional)
-                is_suspended (bool): Whether the organization is suspended. (Optional)
-                
-        Returns:
-            Dict containing the updated organization.
-        """
-        data = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = f"/organizations/{org_code}"
-        method = "PATCH"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            body=data
-        )
-        
-        return response
-    
-    def delete_organization(self, org_code: str) -> Dict[str, Any]:
-        """
-        Delete an organization.
-        
-        Args:
-            org_code: The code of the organization to delete.
+            if http_method in ('GET', 'DELETE'):
+                query_params = {k: v for k, v in kwargs.items() if v is not None}
+            else:
+                body = {k: v for k, v in kwargs.items() if v is not None}
             
-        Returns:
-            Dict containing the result.
-        """
-        resource_path = f"/organizations/{org_code}"
-        method = "DELETE"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None
-        )
-        
-        return response
-    
-    # Roles API Methods
-    def get_roles(self, **kwargs) -> Dict[str, Any]:
-        """
-        Get a list of roles.
-        
-        Args:
-            **kwargs: Optional arguments to pass to the API.
-                sort (str): Sort roles by field. (Optional)
-                page_size (int): Number of results per page. (Optional)
-                next_token (str): Token for the next page of results. (Optional)
-                
-        Returns:
-            Dict containing roles data.
-        """
-        params = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = "/roles"
-        method = "GET"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            query_params=params
-        )
-        
-        return response
-    
-    def get_role(self, role_id: str) -> Dict[str, Any]:
-        """
-        Get a role by ID.
-        
-        Args:
-            role_id: The ID of the role to get.
+            # Make the API call
+            response = self.api_client.call_api(
+                formatted_path,
+                http_method,
+                auth_settings=['kindeBearerAuth'],
+                _return_http_data_only=True,
+                _preload_content=True,
+                _request_timeout=None,
+                query_params=query_params,
+                body=body
+            )
             
-        Returns:
-            Dict containing role data.
-        """
-        resource_path = f"/roles/{role_id}"
-        method = "GET"
+            return response
         
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None
-        )
-        
-        return response
-    
-    def create_role(self, **kwargs) -> Dict[str, Any]:
-        """
-        Create a new role.
-        
-        Args:
-            **kwargs: Role data.
-                name (str): Role name.
-                description (str): Role description. (Optional)
-                key (str): Role key. (Optional)
-                is_default_role (bool): Whether this is a default role. (Optional)
-                permissions (List[str]): List of permission IDs. (Optional)
-                
-        Returns:
-            Dict containing the created role.
-        """
-        data = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = "/roles"
-        method = "POST"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            body=data
-        )
-        
-        return response
-    
-    def update_role(self, role_id: str, **kwargs) -> Dict[str, Any]:
-        """
-        Update a role.
-        
-        Args:
-            role_id: The ID of the role to update.
-            **kwargs: Role data to update.
-                name (str): Role name. (Optional)
-                description (str): Role description. (Optional)
-                
-        Returns:
-            Dict containing the updated role.
-        """
-        data = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = f"/roles/{role_id}"
-        method = "PATCH"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            body=data
-        )
-        
-        return response
-    
-    def delete_role(self, role_id: str) -> Dict[str, Any]:
-        """
-        Delete a role.
-        
-        Args:
-            role_id: The ID of the role to delete.
+        # Add docstring to the method based on the action and resource
+        if action == 'list':
+            docstring = f"""
+            Get a list of {resource}.
             
-        Returns:
-            Dict containing the result.
-        """
-        resource_path = f"/roles/{role_id}"
-        method = "DELETE"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None
-        )
-        
-        return response
-    
-    # Feature Flags API Methods
-    def get_feature_flags(self, **kwargs) -> Dict[str, Any]:
-        """
-        Get a list of feature flags.
-        
-        Args:
-            **kwargs: Optional arguments to pass to the API.
-                sort (str): Sort feature flags by field. (Optional)
-                page_size (int): Number of results per page. (Optional)
-                next_token (str): Token for the next page of results. (Optional)
-                
-        Returns:
-            Dict containing feature flags data.
-        """
-        params = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = "/feature_flags"
-        method = "GET"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            query_params=params
-        )
-        
-        return response
-    
-    def create_feature_flag(self, **kwargs) -> Dict[str, Any]:
-        """
-        Create a new feature flag.
-        
-        Args:
-            **kwargs: Feature flag data.
-                name (str): Feature flag name.
-                description (str): Feature flag description. (Optional)
-                key (str): Feature flag key.
-                type (str): Feature flag type (boolean, string, integer, number).
-                default_value (Any): Default value for the feature flag. (Optional)
-                
-        Returns:
-            Dict containing the created feature flag.
-        """
-        data = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = "/feature_flags"
-        method = "POST"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            body=data
-        )
-        
-        return response
-    
-    def update_feature_flag(self, feature_flag_id: str, **kwargs) -> Dict[str, Any]:
-        """
-        Update a feature flag.
-        
-        Args:
-            feature_flag_id: The ID of the feature flag to update.
-            **kwargs: Feature flag data to update.
-                name (str): Feature flag name. (Optional)
-                description (str): Feature flag description. (Optional)
-                default_value (Any): Default value for the feature flag. (Optional)
-                
-        Returns:
-            Dict containing the updated feature flag.
-        """
-        data = {k: v for k, v in kwargs.items() if v is not None}
-        resource_path = f"/feature_flags/{feature_flag_id}"
-        method = "PATCH"
-        
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None,
-            body=data
-        )
-        
-        return response
-    
-    def delete_feature_flag(self, feature_flag_id: str) -> Dict[str, Any]:
-        """
-        Delete a feature flag.
-        
-        Args:
-            feature_flag_id: The ID of the feature flag to delete.
+            Args:
+                **kwargs: Optional arguments to pass to the API.
+                    sort (str): Sort {resource} by field. (Optional)
+                    page_size (int): Number of results per page. (Optional)
+                    next_token (str): Token for the next page of results. (Optional)
+                    
+            Returns:
+                Dict containing {resource} data.
+            """
+        elif action == 'get':
+            param_name = path.split('{')[-1].split('}')[0] if '{' in path else f"{resource_singular}_id"
+            docstring = f"""
+            Get a {resource_singular} by ID.
             
-        Returns:
-            Dict containing the result.
-        """
-        resource_path = f"/feature_flags/{feature_flag_id}"
-        method = "DELETE"
+            Args:
+                {param_name}: The ID of the {resource_singular} to get.
+                
+            Returns:
+                Dict containing {resource_singular} data.
+            """
+        elif action == 'create':
+            docstring = f"""
+            Create a new {resource_singular}.
+            
+            Args:
+                **kwargs: {resource_singular.capitalize()} data to create.
+                
+            Returns:
+                Dict containing the created {resource_singular}.
+            """
+        elif action == 'update':
+            param_name = path.split('{')[-1].split('}')[0] if '{' in path else f"{resource_singular}_id"
+            docstring = f"""
+            Update a {resource_singular}.
+            
+            Args:
+                {param_name}: The ID of the {resource_singular} to update.
+                **kwargs: {resource_singular.capitalize()} data to update.
+                
+            Returns:
+                Dict containing the updated {resource_singular}.
+            """
+        elif action == 'delete':
+            param_name = path.split('{')[-1].split('}')[0] if '{' in path else f"{resource_singular}_id"
+            docstring = f"""
+            Delete a {resource_singular}.
+            
+            Args:
+                {param_name}: The ID of the {resource_singular} to delete.
+                
+            Returns:
+                Dict containing the result.
+            """
+        else:
+            docstring = f"""
+            {action.capitalize()} {resource}.
+            
+            Args:
+                *args: Positional arguments for path parameters.
+                **kwargs: Additional arguments for the API.
+                
+            Returns:
+                Dict containing the API response.
+            """
         
-        response = self.api_client.call_api(
-            resource_path,
-            method,
-            auth_settings=['kindeBearerAuth'],
-            _return_http_data_only=True,
-            _preload_content=True,
-            _request_timeout=None
-        )
-        
-        return response
+        api_method.__doc__ = docstring
+        return api_method
+
+# Add backwards compatibility methods for common operations
+# These will be deprecated in future versions
+for method_name, new_name in [
+    ('get_users', 'get_users'),
+    ('get_user', 'get_user'),
+    ('create_user', 'create_user'),
+    ('update_user', 'update_user'),
+    ('delete_user', 'delete_user'),
+    ('get_organizations', 'get_organizations'),
+    ('get_organization', 'get_organization'),
+    ('create_organization', 'create_organization'),
+    ('update_organization', 'update_organization'),
+    ('delete_organization', 'delete_organization'),
+    ('get_roles', 'get_roles'),
+    ('get_role', 'get_role'),
+    ('create_role', 'create_role'),
+    ('update_role', 'update_role'),
+    ('delete_role', 'delete_role'),
+    ('get_feature_flags', 'get_feature_flags'),
+    ('create_feature_flag', 'create_feature_flag'),
+    ('update_feature_flag', 'update_feature_flag'),
+    ('delete_feature_flag', 'delete_feature_flag'),
+]:
+    pass  # These methods will be created dynamically

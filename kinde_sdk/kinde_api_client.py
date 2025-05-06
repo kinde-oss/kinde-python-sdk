@@ -5,7 +5,7 @@ from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 import jwt
 from jwt import PyJWKClient
 from authlib.integrations.requests_client import OAuth2Session
-from kinde_sdk.api_client import ApiClient
+from kinde_sdk.management.api_client import ApiClient
 from kinde_sdk.exceptions import (
     KindeConfigurationException,
     KindeLoginException,

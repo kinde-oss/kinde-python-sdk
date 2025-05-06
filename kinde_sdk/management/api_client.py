@@ -30,7 +30,7 @@ from urllib3.fields import RequestField as RequestFieldBase
 import frozendict
 
 from kinde_sdk import rest
-from kinde_sdk.configuration import Configuration
+from kinde_sdk.management.configuration import Configuration
 from kinde_sdk.exceptions import ApiTypeError, ApiValueError
 from kinde_sdk.schemas import (
     NoneClass,

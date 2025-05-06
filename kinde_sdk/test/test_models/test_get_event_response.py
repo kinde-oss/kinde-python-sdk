@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.get_event_response import GetEventResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestGetEventResponse(unittest.TestCase):

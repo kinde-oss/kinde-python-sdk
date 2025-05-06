@@ -9,8 +9,8 @@ import logging
 from typing import Dict, Any, Optional, List, Union, Callable
 from functools import partial
 
-from kinde_sdk.configuration import Configuration
-from kinde_sdk.api_client import ApiClient
+from kinde_sdk.management.configuration import Configuration
+from kinde_sdk.management.api_client import ApiClient
 from .management_token_manager import ManagementTokenManager
 
 logger = logging.getLogger("kinde_sdk.management")

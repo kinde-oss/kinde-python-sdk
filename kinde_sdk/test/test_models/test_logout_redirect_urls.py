@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.logout_redirect_urls import LogoutRedirectUrls
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestLogoutRedirectUrls(unittest.TestCase):

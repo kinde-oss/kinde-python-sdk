@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.get_roles_response import GetRolesResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestGetRolesResponse(unittest.TestCase):

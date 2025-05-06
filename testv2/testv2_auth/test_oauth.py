@@ -18,8 +18,18 @@ from kinde_sdk.exceptions import (
 )
 
 # Helper function to run async tests in unittest
+# def run_async(coro):
+#     loop = asyncio.get_event_loop()
+#     return loop.run_until_complete(coro)
+
 def run_async(coro):
-    loop = asyncio.get_event_loop()
+    try:
+        # Use the running event loop if available
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # Create a new event loop if none exists
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
     return loop.run_until_complete(coro)
 
 class TestOAuthExtended(unittest.TestCase):

@@ -27,7 +27,7 @@ from kinde_sdk.exceptions import (
     ApiTypeError,
     ApiValueError,
 )
-from kinde_sdk.configuration import (
+from kinde_sdk.management.configuration import (
     Configuration,
 )
 

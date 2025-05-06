@@ -15,10 +15,10 @@
 __version__ = "1.2.5"
 
 # import ApiClient
-from kinde_sdk.api_client import ApiClient
+from kinde_sdk.management.api_client import ApiClient
 
 # import Configuration
-from kinde_sdk.configuration import Configuration
+from kinde_sdk.management.configuration import Configuration
 
 # import exceptions
 from kinde_sdk.exceptions import OpenApiException

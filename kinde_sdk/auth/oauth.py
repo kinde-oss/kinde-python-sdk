@@ -7,6 +7,7 @@ from urllib.parse import urlencode, urlparse, quote
 
 from .user_session import UserSession
 from kinde_sdk.core.storage.storage_manager import StorageManager
+from kinde_sdk.core.storage.storage_factory import StorageFactory
 from .config_loader import load_config
 from .enums import GrantType, IssuerRouteTypes, PromptTypes
 from .login_options import LoginOptions
@@ -24,12 +25,13 @@ class OAuth:
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
         redirect_uri: Optional[str] = None,
-        config_file: Optional[str] = None,  #  config_file optional
-        storage_config: Optional[Dict[str, Any]] = None,  # Add storage_config parameter
-        framework: Optional[str] = None,  # Add framework property
+        config_file: Optional[str] = None,
+        storage_config: Optional[Dict[str, Any]] = None,
+        framework: Optional[str] = None,
         audience: Optional[str] = None,
         host: Optional[str] = None,
         state: Optional[str] = None,
+        request: Optional[Any] = None,
     ):
         """Initialize the OAuth client."""
         # Fetch values from environment variables if not provided
@@ -40,25 +42,26 @@ class OAuth:
         self.audience = audience or os.getenv("KINDE_AUDIENCE")
         self.state = state
         self.framework = framework
+        self.request = request
         
         # Validate required configurations
         if not self.client_id:
             raise KindeConfigurationException("Client ID is required.")
         
-        
         # Initialize API endpoints
         self._set_api_endpoints()
-
 
         # Load configuration and create the appropriate storage backend
         if config_file:
             config = load_config(config_file)
-            storage_config = config.get("storage", {"type": "memory"})  # Default to "memory"
+            storage_config = config.get("storage", {"type": "memory"})
         elif storage_config is None:
-            storage_config = {"type": "memory"}  # Default to in-memory storage if no config is provided
+            storage_config = {"type": "memory"}
         
+        # Create storage manager with framework-specific storage
         storage_manager = StorageManager()
-        storage_manager.initialize(storage_config)
+        storage = StorageFactory.create_storage(storage_config, request)
+        storage_manager.initialize(storage_config, storage=storage)
 
         self.session_manager = UserSession()
 

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Any, Optional
 
 class FrameworkInterface(ABC):
     """
@@ -41,4 +41,33 @@ class FrameworkInterface(ABC):
         Stop the framework.
         This method should clean up any framework resources.
         """
-        pass 
+        pass
+    
+    @abstractmethod
+    def get_app(self) -> Any:
+        """
+        Get the framework application instance.
+        
+        Returns:
+            Any: The framework application instance
+        """
+        pass
+    
+    @abstractmethod
+    def get_request(self) -> Optional[Any]:
+        """
+        Get the current request object.
+        
+        Returns:
+            Optional[Any]: The current request object, or None if not available
+        """
+        pass
+    
+    def can_auto_detect(self) -> bool:
+        """
+        Check if this framework can be auto-detected.
+        
+        Returns:
+            bool: True if the framework can be auto-detected, False otherwise
+        """
+        return False 

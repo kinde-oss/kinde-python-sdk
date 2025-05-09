@@ -1,36 +1,36 @@
 from typing import Optional, Dict, Any
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from flask import Flask, request, redirect, session
 from kinde_sdk.auth.oauth import OAuth
-from .storage.fastapi_storage_factory import FastAPIStorageFactory
+from .storage.flask_storage_factory import FlaskStorageFactory
 from .middleware.framework_middleware import FrameworkMiddleware
 
-class KindeFastAPI:
+class KindeFlask:
     """
-    FastAPI integration for Kinde authentication.
+    Flask integration for Kinde authentication.
     """
     
     def __init__(
         self,
-        app: Optional[FastAPI] = None,
-        framework: Optional[str] = "fastapi",
+        app: Optional[Flask] = None,
+        framework: Optional[str] = "flask",
     ):
         """
-        Initialize the Kinde FastAPI integration.
+        Initialize the Kinde Flask integration.
         
         Args:
-            app (Optional[FastAPI]): The FastAPI application instance.
+            app (Optional[Flask]): The Flask application instance.
             framework (Optional[str]): The framework name.
         """
         self.app = app
         if app:
             # Add the framework middleware
-            app.add_middleware(FrameworkMiddleware)
+            app.before_request(FrameworkMiddleware.before_request)
+            app.after_request(FrameworkMiddleware.after_request)
         
         # Create a storage factory that can be used by the OAuth class
-        self.storage_factory = FastAPIStorageFactory()
+        self.storage_factory = FlaskStorageFactory()
         
-        # Initialize OAuth with the FastAPI storage factory
+        # Initialize OAuth with the Flask storage factory
         self.oauth = OAuth(
             framework=framework,
             storage_factory=self.storage_factory,
@@ -82,15 +82,15 @@ class KindeFastAPI:
         """
         return self._get_user_id() is not None
         
-    def login_required(self) -> RedirectResponse:
+    def login_required(self) -> redirect:
         """
         Check if the user is authenticated and redirect to login if not.
         
         Returns:
-            RedirectResponse: A redirect to the login page if the user is not authenticated.
+            redirect: A redirect to the login page if the user is not authenticated.
         """
         if not self.is_authenticated():
-            return RedirectResponse(url=self.get_login_url())
+            return redirect(self.get_login_url())
             
     def _get_user_id(self) -> Optional[str]:
         """
@@ -99,17 +99,14 @@ class KindeFastAPI:
         Returns:
             Optional[str]: The user ID, or None if not authenticated.
         """
-        request = self._get_current_request()
-        if request and hasattr(request, 'session'):
-            return request.session.get("user_id")
-        return None
+        return session.get("user_id")
         
-    def _get_current_request(self) -> Optional[Request]:
+    def _get_current_request(self) -> Optional[request]:
         """
         Get the current request from the framework context.
         
         Returns:
-            Optional[Request]: The current request, or None if not available.
+            Optional[request]: The current request, or None if not available.
         """
         from kinde_sdk.core.framework.framework_context import FrameworkContext
         return FrameworkContext.get_request() 

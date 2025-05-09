@@ -3,6 +3,9 @@ from .storage_interface import StorageInterface
 from .memory_storage import MemoryStorage
 from .local_storage import LocalStorage
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
+import logging
+
+logger = logging.getLogger(__name__)
 
 class StorageFactory:
     _framework_factories = {}
@@ -16,16 +19,16 @@ class StorageFactory:
             framework (str): The framework name (e.g., 'fastapi', 'flask')
             factory_class (Type): The storage factory class for the framework
         """
+        logger.warning(f"Registering storage factory: {framework}")
         cls._framework_factories[framework] = factory_class
     
     @classmethod
-    def create_storage(cls, config: Dict[str, Any], request: Optional[Any] = None) -> StorageInterface:
+    def create_storage(cls, config: Dict[str, Any]) -> StorageInterface:
         """
         Create a storage backend based on the provided configuration and framework detection.
 
         Args:
             config (Dict[str, Any]): Configuration dictionary containing storage settings.
-            request (Optional[Any]): The request object from the framework (if available)
 
         Returns:
             StorageInterface: An instance of the requested storage backend.
@@ -33,7 +36,14 @@ class StorageFactory:
         # If a specific storage type is requested, use that
         storage_type = config.get("type")
         if storage_type:
-            if storage_type == "memory":
+            # Check if it's a framework-specific storage type
+            logger.warning(f"Storage type: {storage_type}")
+            logger.warning(f"Framework factories: {cls._framework_factories}")
+            if storage_type in cls._framework_factories:
+                factory_class = cls._framework_factories[storage_type]
+                return factory_class.create_storage(config)
+            # Handle built-in storage types
+            elif storage_type == "memory":
                 return MemoryStorage()
             elif storage_type == "local_storage":
                 return LocalStorage()
@@ -46,7 +56,7 @@ class StorageFactory:
         
         if framework_name in cls._framework_factories:
             factory_class = cls._framework_factories[framework_name]
-            return factory_class.create_storage(request, config)
+            return factory_class.create_storage(config)
         
         # Default to memory storage if no framework factory registered
         return MemoryStorage()

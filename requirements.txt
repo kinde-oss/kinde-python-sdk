@@ -18,3 +18,5 @@ pytest-timeout
 fastapi>=0.110.0,<1.0.0
 itsdangerous>=2.1.2,<3.0.0
 python-dotenv>=1.0.0,<2.0.0
+flask>=3.0.0,<4.0.0
+uvicorn>=0.27.0,<1.0.0

@@ -10,7 +10,7 @@ import requests
 from kinde_sdk.auth.oauth import OAuth
 from kinde_sdk.auth.enums import IssuerRouteTypes, PromptTypes
 from kinde_sdk.auth.login_options import LoginOptions
-from kinde_sdk.exceptions import (
+from kinde_sdk.core.exceptions import (
     KindeConfigurationException,
     KindeLoginException,
     KindeTokenException,
@@ -78,8 +78,8 @@ class TestOAuthExtended(unittest.TestCase):
         self.mock_storage.get = MagicMock(side_effect=mock_get_side_effect)
         
         # Mock session manager
-        self.oauth.session_manager = MagicMock()
-        self.oauth.session_manager.storage_manager = self.mock_storage
+        self.oauth._session_manager = MagicMock()
+        self.oauth._session_manager.storage_manager = self.mock_storage
         
         # Mock token manager
         self.mock_token_manager = MagicMock()
@@ -94,7 +94,7 @@ class TestOAuthExtended(unittest.TestCase):
         self.mock_token_manager.get_claims = MagicMock(return_value={"sub": "user123", "email": "test@example.com"})
         
         # Make session manager return token manager
-        self.oauth.session_manager.get_token_manager = MagicMock(return_value=self.mock_token_manager)
+        self.oauth._session_manager.get_token_manager = MagicMock(return_value=self.mock_token_manager)
         
     # Test for None value handling in auth_params
     def test_none_values_in_auth_params(self):
@@ -194,7 +194,7 @@ class TestOAuthExtended(unittest.TestCase):
     def test_handle_redirect_token_manager_failure(self):
         """Test handling redirect when token manager can't be retrieved"""
         # Make get_token_manager return None
-        self.oauth.session_manager.get_token_manager.return_value = None
+        self.oauth._session_manager.get_token_manager.return_value = None
         
         with patch.object(self.oauth, "exchange_code_for_tokens") as mock_exchange:
             async def mock_exchange_async(*args, **kwargs):
@@ -259,7 +259,7 @@ class TestOAuthExtended(unittest.TestCase):
             self.assertEqual(auth_url_data["code_verifier"], "test_verifier_generated")
             
             # Verify storage was updated with code_verifier
-            self.oauth.session_manager.storage_manager.setItems.assert_any_call(
+            self.oauth._session_manager.storage_manager.setItems.assert_any_call(
                 "code_verifier", {"value": "test_verifier_generated"}
             )
 
@@ -286,7 +286,7 @@ class TestOAuthExtended(unittest.TestCase):
         self.assertEqual(query_params["id_token_hint"][0], "id_token_value")
         
         # Verify logout was called
-        self.oauth.session_manager.logout.assert_called_with("user123")
+        self.oauth._session_manager.logout.assert_called_with("user123")
 
     # Test get_tokens with various edge cases (line 428-430, 446)
     def test_get_tokens_with_minimal_fields(self):
@@ -346,7 +346,7 @@ class TestOAuthExtended(unittest.TestCase):
             # Verify PKCE was generated and stored
             self.assertEqual(auth_url_data["code_challenge"], "test_challenge")
             self.assertEqual(auth_url_data["code_verifier"], "test_verifier")
-            self.oauth.session_manager.storage_manager.setItems.assert_called_with(
+            self.oauth._session_manager.storage_manager.setItems.assert_called_with(
                 "code_verifier", {"value": "test_verifier"}
             )
 
@@ -415,6 +415,38 @@ class TestOAuthExtended(unittest.TestCase):
                         user_id="user123"
                     ))
 
+    def test_logout(self):
+        """Test logout functionality."""
+        # Setup
+        user_id = "user123"
+        self.oauth._session_manager.logout = MagicMock()
+        
+        # Execute
+        result = self.oauth.logout(user_id)
+        
+        # Verify
+        self.oauth._session_manager.logout.assert_called_with(user_id)
+
+    def test_handle_redirect(self):
+        """Test handle_redirect functionality."""
+        # Setup
+        code = "test_code"
+        user_id = "test_user"
+        state = "test_state"
+        token_data = {"access_token": "test_token"}
+        user_info = {"id": user_id, "email": "test@example.com"}
+        
+        # Mock the necessary methods
+        self.oauth._session_manager.storage_manager.get = MagicMock(return_value={"value": state})
+        self.oauth._session_manager.set_user_data = MagicMock()
+        self.oauth._session_manager.get_token_manager = MagicMock(return_value=self.mock_token_manager)
+        
+        # Execute
+        result = self.oauth.handle_redirect(code, user_id, state)
+        
+        # Verify
+        self.oauth._session_manager.set_user_data.assert_called_with(user_id, user_info, token_data)
+
 # Tests for lines 46-58 - Initialization with environment variables
 class TestOAuthInitialization(unittest.TestCase):
     
@@ -471,9 +503,9 @@ class TestOAuthTokensEdgeCases(unittest.TestCase):
         )
         
         # Mock session manager
-        self.oauth.session_manager = MagicMock()
+        self.oauth._session_manager = MagicMock()
         self.mock_token_manager = MagicMock()
-        self.oauth.session_manager.get_token_manager = MagicMock(return_value=self.mock_token_manager)
+        self.oauth._session_manager.get_token_manager = MagicMock(return_value=self.mock_token_manager)
         
         # Mock logger
         self.oauth.logger = MagicMock()
@@ -608,7 +640,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
             framework="flask",
             host="https://example.com"
         )
-        self.oauth.session_manager = MagicMock()
+        self.oauth._session_manager = MagicMock()
         self.oauth.logger = MagicMock()
         
         # Add mock_token_manager setup
@@ -624,14 +656,14 @@ class TestForIncreasedCoverage(unittest.TestCase):
         self.mock_token_manager.get_claims = MagicMock(return_value={"sub": "user123", "email": "test@example.com"})
         
         # Make session manager return token manager
-        self.oauth.session_manager.get_token_manager = MagicMock(return_value=self.mock_token_manager)
+        self.oauth._session_manager.get_token_manager = MagicMock(return_value=self.mock_token_manager)
 
     def test_handle_redirect_with_state_cleanup(self):
         """Test handle_redirect with state cleanup"""
         # Mock token manager
         mock_token_manager = MagicMock()
         mock_token_manager.get_access_token.return_value = "test_access_token"
-        self.oauth.session_manager.get_token_manager.return_value = mock_token_manager
+        self.oauth._session_manager.get_token_manager.return_value = mock_token_manager
         
         # Mock storage manager with properly structured state
         mock_storage = MagicMock()
@@ -640,7 +672,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
         state_mock.get.return_value = "test_state"  # Return matching state
         mock_storage.get.return_value = state_mock
         
-        self.oauth.session_manager.storage_manager = mock_storage
+        self.oauth._session_manager.storage_manager = mock_storage
         
         with patch.object(self.oauth, "exchange_code_for_tokens") as mock_exchange:
             async def mock_exchange_async(*args, **kwargs):
@@ -693,7 +725,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
         # Mock token manager to return id_token
         mock_token_manager = MagicMock()
         mock_token_manager.get_id_token.return_value = "test_id_token"
-        self.oauth.session_manager.get_token_manager.return_value = mock_token_manager
+        self.oauth._session_manager.get_token_manager.return_value = mock_token_manager
         
         # Call logout without specifying id_token_hint
         logout_url = run_async(self.oauth.logout(user_id="user123"))
@@ -716,7 +748,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
         mock_token_manager.get_access_token.return_value = "test_access_token"
         mock_token_manager.get_claims.return_value = {}  # Empty claims
         
-        self.oauth.session_manager.get_token_manager.return_value = mock_token_manager
+        self.oauth._session_manager.get_token_manager.return_value = mock_token_manager
         
         # Get tokens
         tokens = self.oauth.get_tokens("user123")
@@ -744,8 +776,8 @@ class TestForIncreasedCoverage(unittest.TestCase):
         """Test logout without redirect URI"""
         # Create OAuth with no redirect_uri
         oauth = OAuth(client_id="test_client_id", framework="flask")
+        oauth._session_manager = MagicMock()
         oauth.redirect_uri = None
-        oauth.session_manager = MagicMock()
         
         logout_url = run_async(oauth.logout())
         
@@ -801,7 +833,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
         mock_token_manager.get_access_token.return_value = "test_access_token"
         
         # Setup session manager
-        self.oauth.session_manager.get_token_manager.return_value = mock_token_manager
+        self.oauth._session_manager.get_token_manager.return_value = mock_token_manager
         
         # Setup storage with proper state
         mock_state = MagicMock()
@@ -819,7 +851,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
             return None
         
         mock_storage.get.side_effect = mock_get
-        self.oauth.session_manager.storage_manager = mock_storage
+        self.oauth._session_manager.storage_manager = mock_storage
         
         # Setup mocks for methods
         with patch.object(self.oauth, "exchange_code_for_tokens") as mock_exchange:
@@ -876,7 +908,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
             framework="flask"
             # No redirect_uri
         )
-        oauth.session_manager = MagicMock()
+        oauth._session_manager = MagicMock()
         
         logout_url = run_async(oauth.logout())
         
@@ -940,7 +972,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
             self.assertEqual(auth_url_data["code_verifier"], "test_verifier_123")
             
             # Verify storage was updated
-            self.oauth.session_manager.storage_manager.setItems.assert_any_call(
+            self.oauth._session_manager.storage_manager.setItems.assert_any_call(
                 "code_verifier", {"value": "test_verifier_123"}
             )
 
@@ -994,7 +1026,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
     def test_get_tokens_no_token_manager(self):
         """Test get_tokens when no token manager is available."""
         # Make get_token_manager return None
-        self.oauth.session_manager.get_token_manager.return_value = None
+        self.oauth._session_manager.get_token_manager.return_value = None
         
         # Should raise ValueError
         with self.assertRaises(ValueError):
@@ -1017,7 +1049,7 @@ class TestForIncreasedCoverage(unittest.TestCase):
             framework="flask"
             # No redirect_uri
         )
-        oauth.session_manager = MagicMock()
+        oauth._session_manager = MagicMock()
         
         # Generate logout URL with state but no redirect
         logout_options = {

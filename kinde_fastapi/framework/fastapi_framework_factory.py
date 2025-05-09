@@ -22,6 +22,3 @@ class FastAPIFrameworkFactory:
             FastAPIFramework: A FastAPI framework instance
         """
         return FastAPIFramework(app)
-
-# Register the FastAPI framework with the framework factory
-FrameworkFactory.register_framework("fastapi", FastAPIFramework) 

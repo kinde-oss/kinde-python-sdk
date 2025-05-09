@@ -1,51 +1,96 @@
-from typing import Dict, Type, Optional
+"""
+Framework Factory for creating framework instances.
+"""
+
+from typing import Dict, Type, Optional, Any
+import importlib
+import pkgutil
+import logging
 from .framework_interface import FrameworkInterface
 from .null_framework import NullFramework
-from kinde_sdk.framework_detector import FrameworkDetector
+
+logger = logging.getLogger(__name__)
 
 class FrameworkFactory:
     """
     Factory class for creating framework instances.
-    This factory is responsible for instantiating the appropriate framework implementation
-    based on the detected or specified framework.
     """
-    
-    _framework_registry: Dict[str, Type[FrameworkInterface]] = {}
+    _frameworks = {}
+    _initialized = False
     
     @classmethod
-    def register_framework(cls, framework_name: str, framework_class: Type[FrameworkInterface]) -> None:
+    def _discover_frameworks(cls) -> None:
+        """
+        Auto-discover and register available framework implementations.
+        This method looks for installed packages that start with 'kinde_' and
+        attempts to import and register their framework implementations.
+        """
+        if cls._initialized:
+            return
+            
+        logger.info("Discovering frameworks")
+        
+        # First pass: Look for installed packages
+        for _, name, is_pkg in pkgutil.iter_modules():
+            if is_pkg and name.startswith('kinde_') and name != 'kinde_sdk':
+                try:
+                    # Import the package
+                    importlib.import_module(name)
+                    logger.warning(f"Successfully imported framework package: {name}")
+                except ImportError as e:
+                    logger.warning(f"Failed to import framework package {name}: {str(e)}")
+                except Exception as e:
+                    logger.warning(f"Unexpected error importing framework package {name}: {str(e)}")
+        
+        logger.info(f"Framework registry: {list(cls._frameworks.keys())}")
+        cls._initialized = True
+    
+    @classmethod
+    def register_framework(cls, name: str, framework_class: Type[FrameworkInterface]) -> None:
         """
         Register a framework implementation.
         
         Args:
-            framework_name (str): The name of the framework (e.g., 'fastapi', 'flask')
-            framework_class (Type[FrameworkInterface]): The framework implementation class
+            name: The name of the framework
+            framework_class: The framework implementation class
         """
-        cls._framework_registry[framework_name] = framework_class
+        cls._frameworks[name] = framework_class
+        logger.warning(f"Registered framework: {name}")
     
     @classmethod
-    def create_framework(cls, framework_name: Optional[str] = None) -> FrameworkInterface:
+    def create_framework(cls, config: Dict[str, Any], app: Optional[Any] = None) -> FrameworkInterface:
         """
         Create a framework instance.
         
         Args:
-            framework_name (Optional[str]): The name of the framework to create.
-                If None, the framework will be auto-detected.
-                
+            config: Dictionary containing framework configuration
+            app: The application instance (optional)
+            
         Returns:
-            FrameworkInterface: An instance of the requested framework implementation.
-                If no framework is specified or detected, returns a NullFramework instance.
+            FrameworkInterface: A framework instance
+            
+        Raises:
+            ValueError: If the framework is not found
         """
-        # If framework name is provided, try to create that specific framework
-        if framework_name and framework_name in cls._framework_registry:
-            return cls._framework_registry[framework_name]()
+        # Ensure frameworks are discovered
+        cls._discover_frameworks()
         
-        # If no framework specified, try to detect one
-        if not framework_name:
-            detector = FrameworkDetector()
-            detected_framework = detector.detect_framework(list(cls._framework_registry.keys()))
-            if detected_framework and detected_framework in cls._framework_registry:
-                return cls._framework_registry[detected_framework]()
+        framework_type = config.get('type')
+        if framework_type is None:
+            raise ValueError("Framework type not specified in configuration")
+            
+        # Try to get the framework class
+        framework_class = cls._frameworks.get(framework_type)
+        if framework_class is None:
+            # If not found, try auto-detection
+            for name, impl in cls._frameworks.items():
+                if hasattr(impl, 'can_auto_detect') and impl.can_auto_detect():
+                    logger.info(f"Auto-detected framework: {name}")
+                    framework_class = impl
+                    break
+            
+            if framework_class is None:
+                raise ValueError(f"Framework not found: {framework_type}")
         
-        # If no framework found or specified, return null framework
-        return NullFramework() 
+        # Create and return the framework instance
+        return framework_class(app) 

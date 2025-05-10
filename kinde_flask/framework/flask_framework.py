@@ -6,6 +6,7 @@ from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
 import asyncio
+import nest_asyncio
 
 if TYPE_CHECKING:
     from flask import Request
@@ -32,6 +33,9 @@ class FlaskFramework(FrameworkInterface):
         self.app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
         self.app.config['SESSION_TYPE'] = 'filesystem'
         self.app.config['SESSION_PERMANENT'] = False
+        
+        # Enable nested event loops
+        nest_asyncio.apply()
     
     def get_name(self) -> str:
         """
@@ -114,6 +118,7 @@ class FlaskFramework(FrameworkInterface):
             login_url = loop.run_until_complete(self._oauth.login())
             return redirect(login_url)
         
+
         # Callback route
         @self.app.route('/callback')
         def callback():
@@ -161,10 +166,16 @@ class FlaskFramework(FrameworkInterface):
         @self.app.route('/user')
         def get_user():
             """Get the current user's information."""
-            if not self._oauth.is_authenticated(request):
-                login_url = asyncio.run(self._oauth.login())
-                return redirect(login_url)
             try:
+                if not self._oauth.is_authenticated(request):
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        login_url = loop.run_until_complete(self._oauth.login())
+                        return redirect(login_url)
+                    finally:
+                        loop.close()
+                
                 return self._oauth.get_user_info(request)
             except Exception as e:
                 return f"Failed to get user info: {str(e)}", 400

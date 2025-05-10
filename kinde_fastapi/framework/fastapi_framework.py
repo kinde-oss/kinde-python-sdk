@@ -2,6 +2,9 @@ from typing import Optional, Dict, Any
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi import FastAPI, Request, Depends
+from fastapi.responses import RedirectResponse, HTMLResponse
+from starlette.middleware.sessions import SessionMiddleware
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
 from ..middleware.framework_middleware import FrameworkMiddleware
@@ -28,6 +31,7 @@ class FastAPIFramework(FrameworkInterface):
         self.app = app or FastAPI()
         self._initialized = False
         self._oauth = None
+        self._oauth = None
     
     def get_name(self) -> str:
         """
@@ -50,6 +54,7 @@ class FastAPIFramework(FrameworkInterface):
     def start(self) -> None:
         """
         Start the framework.
+        This method initializes any necessary FastAPI components and registers Kinde routes.
         This method initializes any necessary FastAPI components and registers Kinde routes.
         """
         if not self._initialized:

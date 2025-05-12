@@ -3,6 +3,9 @@ from flask import session
 from kinde_sdk.core.storage.storage_factory import StorageFactory
 from kinde_sdk.core.storage.storage_interface import StorageInterface
 from kinde_sdk.core.storage.framework_aware_storage import FrameworkAwareStorage
+import logging
+
+logger = logging.getLogger(__name__)
 
 class FlaskStorage(FrameworkAwareStorage):
     """
@@ -24,7 +27,11 @@ class FlaskStorage(FrameworkAwareStorage):
             Optional[Dict]: The value if found, None otherwise.
         """
         session = self._get_session()
-        return session.get(key) if session else None
+        if session is not None:
+            value = session.get(key)
+            logger.debug(f"Getting key '{key}' from session: {value}")
+            return value
+        return None
         
     def set(self, key: str, value: Dict) -> None:
         """
@@ -35,8 +42,9 @@ class FlaskStorage(FrameworkAwareStorage):
             value (Dict): The value to store.
         """
         session = self._get_session()
-        if session:
+        if session is not None:
             session[key] = value
+            session.modified = True
         
     def delete(self, key: str) -> None:
         """
@@ -48,7 +56,7 @@ class FlaskStorage(FrameworkAwareStorage):
         session = self._get_session()
         if session and key in session:
             del session[key]
-            
+            session.modified = True
     def set_flat(self, value: str) -> None:
         """
         Store flat data in the session.
@@ -57,8 +65,9 @@ class FlaskStorage(FrameworkAwareStorage):
             value (str): The data to store.
         """
         session = self._get_session()
-        if session:
+        if session is not None:
             session["_flat_data"] = value
+            session.modified = True
 
 class FlaskStorageFactory(StorageFactory):
     """

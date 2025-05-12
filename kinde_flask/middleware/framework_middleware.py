@@ -1,6 +1,9 @@
 from typing import Optional, Callable
-from flask import request, Response
+from flask import request, Response, session
 from kinde_sdk.core.framework.framework_context import FrameworkContext
+import logging
+
+logger = logging.getLogger(__name__)
 
 class FrameworkMiddleware:
     """

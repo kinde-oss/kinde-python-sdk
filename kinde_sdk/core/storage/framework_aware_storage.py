@@ -3,8 +3,6 @@ from .storage_interface import StorageInterface
 from ..framework.framework_context import FrameworkContext
 import logging
 
-logger = logging.getLogger(__name__)
-
 class FrameworkAwareStorage(StorageInterface):
     """
     Base class for framework-aware storage implementations.
@@ -15,6 +13,7 @@ class FrameworkAwareStorage(StorageInterface):
     def __init__(self):
         """Initialize the framework-aware storage."""
         self._session = None
+        self._logger = logging.getLogger(__name__)
         
     def _get_session(self) -> Optional[Any]:
         """
@@ -25,22 +24,18 @@ class FrameworkAwareStorage(StorageInterface):
         """
         request = FrameworkContext.get_request()
         if not request:
-            logger.warning("No request found in context")
+            self._logger.warning("No request found in context")
             return None
             
         # Framework-specific session access
         if hasattr(request, 'session'):  # FastAPI
-            logger.warning("FastAPI session found")
-            session = request.session
-            logger.warning(f"session type: {type(session)}")
-            logger.warning(f"session content: {dict(session) if session else None}")
-            logger.warning(f"session is None: {session is None}")
-            logger.warning(f"session is empty: {not session if session else True}")
-            return session
+            self._logger.debug("FastAPI session found")
+            return request.session
         elif hasattr(request, 'environ'):  # Flask
-            logger.warning("Flask session found")
-            return request.environ.get('flask.session')
-        logger.warning("No session found")
+            self._logger.debug("Flask session found")
+            from flask import session
+            return session
+        self._logger.warning("No session found")
         return None
         
     def get(self, key: str) -> Optional[Dict]:
@@ -54,7 +49,11 @@ class FrameworkAwareStorage(StorageInterface):
             Optional[Dict]: The stored data or None if not found
         """
         session = self._get_session()
-        return session.get(key) if session else None
+        if session is not None:
+            value = session.get(key)
+            self._logger.debug(f"Getting key '{key}' from session: {value}")
+            return value
+        return None
         
     def set(self, key: str, value: Dict) -> None:
         """
@@ -65,8 +64,13 @@ class FrameworkAwareStorage(StorageInterface):
             value (Dict): The data to store
         """
         session = self._get_session()
-        if session:
+        if session is not None:
+            self._logger.debug(f"Setting key '{key}' in session with value: {value}")
             session[key] = value
+            # Mark session as modified for Flask
+            if hasattr(session, 'modified'):
+                session.modified = True
+                self._logger.debug(f"Marked session as modified after setting '{key}'")
             
     def delete(self, key: str) -> None:
         """
@@ -77,7 +81,12 @@ class FrameworkAwareStorage(StorageInterface):
         """
         session = self._get_session()
         if session and key in session:
+            self._logger.debug(f"Deleting key '{key}' from session")
             del session[key]
+            # Mark session as modified for Flask
+            if hasattr(session, 'modified'):
+                session.modified = True
+                self._logger.debug(f"Marked session as modified after deleting '{key}'")
             
     def set_flat(self, value: str) -> None:
         """
@@ -87,5 +96,10 @@ class FrameworkAwareStorage(StorageInterface):
             value (str): The data to store
         """
         session = self._get_session()
-        if session:
-            session["_flat_data"] = value 
+        if session is not None:
+            self._logger.debug(f"Setting flat data in session: {value}")
+            session["_flat_data"] = value
+            # Mark session as modified for Flask
+            if hasattr(session, 'modified'):
+                session.modified = True
+                self._logger.debug("Marked session as modified after setting flat data") 

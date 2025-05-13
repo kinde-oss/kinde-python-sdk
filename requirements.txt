@@ -20,7 +20,7 @@ black>=23.7.0
 flake8>=6.1.0
 isort>=5.12.0
 mypy>=1.5.0
-yaml>=6.0.1
+PyYAML>=6.0.1
 
 # Other dependencies
 httpx>=0.25.0

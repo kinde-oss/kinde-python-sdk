@@ -129,22 +129,21 @@ class UserSession:
 
     def is_authenticated(self, user_id: str) -> bool:
         """Check if the user is authenticated with a valid token."""
-        with self.lock:
-            token_manager = self.get_token_manager(user_id)
-            if not token_manager:
-                return False
-            
-            try:
-                # Try to get a valid access token
-                # This will handle refreshing if needed
-                access_token = token_manager.get_access_token()
-                return access_token is not None and len(access_token) > 0
-            except ValueError:
-                # Token is expired and cannot be refreshed
-                return False
-            except Exception:
-                # Any other error means authentication failed
-                return False
+        token_manager = self.get_token_manager(user_id)
+        if not token_manager:
+            return False
+        
+        try:
+            # Try to get a valid access token
+            # This will handle refreshing if needed
+            access_token = token_manager.get_access_token()
+            return access_token is not None and len(access_token) > 0
+        except ValueError:
+            # Token is expired and cannot be refreshed
+            return False
+        except Exception:
+            # Any other error means authentication failed
+            return False
 
     def logout(self, user_id: str) -> None:
         """Clear user session and tokens."""

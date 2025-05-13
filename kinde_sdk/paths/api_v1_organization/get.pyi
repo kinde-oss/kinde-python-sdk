@@ -11,7 +11,7 @@ import typing_extensions
 import urllib3
 from urllib3._collections import HTTPHeaderDict
 
-from kinde_sdk import api_client, exceptions
+from kinde_sdk import exceptions
 from datetime import date, datetime  # noqa: F401
 import decimal  # noqa: F401
 import functools  # noqa: F401
@@ -25,6 +25,7 @@ import frozendict  # noqa: F401
 
 from kinde_sdk import schemas  # noqa: F401
 
+from kinde_sdk.management import api_client
 from kinde_sdk.model.organization import Organization
 from kinde_sdk.model.error_response import ErrorResponse
 

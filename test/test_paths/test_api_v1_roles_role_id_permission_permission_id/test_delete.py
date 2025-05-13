@@ -13,7 +13,8 @@ import urllib3
 
 import kinde_sdk
 # from kinde_sdk.paths.api_v1_roles_role_id_permission_permission_id import delete  # noqa: E501
-from kinde_sdk import configuration, schemas, api_client
+from kinde_sdk import schemas
+from kinde_sdk.management import api_client, configuration
 
 from .. import ApiTestMixin
 

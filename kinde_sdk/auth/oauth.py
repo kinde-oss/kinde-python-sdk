@@ -7,11 +7,13 @@ from urllib.parse import urlencode, urlparse, quote
 
 from .user_session import UserSession
 from kinde_sdk.core.storage.storage_manager import StorageManager
+from kinde_sdk.core.storage.storage_factory import StorageFactory
+from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from .config_loader import load_config
 from .enums import GrantType, IssuerRouteTypes, PromptTypes
 from .login_options import LoginOptions
 from kinde_sdk.core.helpers import generate_random_string, base64_url_encode, generate_pkce_pair, get_user_details as helper_get_user_details
-from kinde_sdk.exceptions import (
+from kinde_sdk.core.exceptions import (
     KindeConfigurationException,
     KindeLoginException,
     KindeTokenException,
@@ -24,12 +26,13 @@ class OAuth:
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
         redirect_uri: Optional[str] = None,
-        config_file: Optional[str] = None,  #  config_file optional
-        storage_config: Optional[Dict[str, Any]] = None,  # Add storage_config parameter
-        framework: Optional[str] = None,  # Add framework property
+        config_file: Optional[str] = None,
+        storage_config: Optional[Dict[str, Any]] = None,
+        framework: Optional[str] = None,
         audience: Optional[str] = None,
         host: Optional[str] = None,
         state: Optional[str] = None,
+        app: Optional[Any] = None,
     ):
         """Initialize the OAuth client."""
         # Fetch values from environment variables if not provided
@@ -40,36 +43,128 @@ class OAuth:
         self.audience = audience or os.getenv("KINDE_AUDIENCE")
         self.state = state
         self.framework = framework
+        self.app = app
         
         # Validate required configurations
         if not self.client_id:
             raise KindeConfigurationException("Client ID is required.")
         
-        
         # Initialize API endpoints
         self._set_api_endpoints()
 
-
-        # Load configuration and create the appropriate storage backend
+        # Load configuration
         if config_file:
-            config = load_config(config_file)
-            storage_config = config.get("storage", {"type": "memory"})  # Default to "memory"
+            self._config = load_config(config_file)
+            storage_config = self._config.get("storage", {"type": "memory"})
         elif storage_config is None:
-            storage_config = {"type": "memory"}  # Default to in-memory storage if no config is provided
-        
-        storage_manager = StorageManager()
-        storage_manager.initialize(storage_config)
+            storage_config = {"type": "memory"}
+            self._config = {"storage": storage_config}
 
-        self.session_manager = UserSession()
+        # Create storage manager
+        self._storage_manager = StorageManager()
+        
+        # Initialize framework if specified (this will also set up framework-specific storage)
+        if framework:
+            self._initialize_framework()
+        else:
+            # Use configuration-based storage if no framework specified
+            self._storage = StorageFactory.create_storage(storage_config)
+            self._storage_manager.initialize(config=storage_config, storage=self._storage)
+
+        self._session_manager = UserSession()
 
         # Logging settings
-        self.logger = logging.getLogger("kinde_sdk")
-        self.logger.setLevel(logging.INFO)
+        self._logger = logging.getLogger("kinde_sdk")
+        self._logger.setLevel(logging.INFO)
 
         # Authentication properties
         self.verify_ssl = True
         self.proxy = None
         self.proxy_headers = None
+
+    def _initialize_framework(self) -> None:
+        """
+        Initialize the framework-specific components.
+        This will set up the framework and its associated storage.
+        """
+        if not self.framework:
+            raise KindeConfigurationException("Framework must be specified for initialization")
+
+        # Get the framework implementation from the factory
+        framework_impl = FrameworkFactory.create_framework(
+            config={"type": self.framework},
+            app=self.app
+        )
+
+        # Set the OAuth instance in the framework
+        framework_impl.set_oauth(self)
+
+        # Start the framework (this will set up middleware and routes)
+        framework_impl.start()
+
+        # Store the framework implementation
+        self._framework = framework_impl
+
+        # Create storage using the framework's storage factory
+        self._storage = StorageFactory.create_storage({"type": self.framework})
+        
+        # Initialize storage manager with the framework-specific storage
+        self._storage_manager.initialize(config={"type": self.framework, "device_id": self._framework.get_name()}, storage=self._storage)
+
+    def is_authenticated(self) -> bool:
+        """
+        Check if the user is authenticated using the session manager.
+        
+        Args:
+            request (Optional[Any]): The current request object
+            
+        Returns:
+            bool: True if the user is authenticated, False otherwise
+        """
+        # Get user ID from framework
+        self._logger.warning(f"self._framework: {self._framework}")
+        user_id = self._framework.get_user_id()
+        self._logger.warning(f"user_id: {user_id}")
+        if not user_id:
+            self._logger.warning("No user ID found in session")
+            return False
+            
+        # Check authentication using session manager
+        self._logger.warning(f"self._session_manager: {self._session_manager}")
+        return self._session_manager.is_authenticated(user_id)
+
+    def get_user_info(self) -> Dict[str, Any]:
+        """
+        Get the user information from the session.
+        
+        Args:
+            request (Optional[Any]): The current request object
+            
+        Returns:
+            Dict[str, Any]: The user information
+            
+        Raises:
+            KindeConfigurationException: If no user ID is found in session
+        """
+        # Get user ID from framework
+        self._logger.warning(f"Retrieve the user id")
+        user_id = self._framework.get_user_id()
+        if not user_id:
+            raise KindeConfigurationException("No user ID found in session")
+            
+        # Get token manager for the user
+        self._logger.warning(f"User id: {user_id} retrieve the token for the user id")
+        token_manager = self._session_manager.get_token_manager(user_id)
+        if not token_manager:
+            raise KindeConfigurationException("No token manager found for user")
+            
+        # Get claims from token manager
+        self._logger.warning(f"Get the claims from the token manager")
+        claims = token_manager.get_claims()
+        if not claims:
+            raise KindeConfigurationException("No user claims found")
+        self._logger.warning(f"Return the claims")
+        return claims
 
     def _set_api_endpoints(self):
         """Set API endpoints based on the host URL."""
@@ -186,12 +281,12 @@ class OAuth:
         # Generate state if not provided
         state = login_options.get(LoginOptions.STATE, generate_random_string(32))
         search_params["state"] = state
-        self.session_manager.storage_manager.setItems("state", {"value": state})
+        self._session_manager.storage_manager.setItems("state", {"value": state})
         
         # Generate nonce if not provided
         nonce = login_options.get(LoginOptions.NONCE, generate_random_string(16))
         search_params["nonce"] = nonce
-        self.session_manager.storage_manager.setItems("nonce", {"value": nonce})
+        self._session_manager.storage_manager.setItems("nonce", {"value": nonce})
         
         # Handle PKCE
         code_verifier = ""
@@ -202,7 +297,7 @@ class OAuth:
             pkce_data = await generate_pkce_pair(52)  # Use 52 chars to match JS implementation
             code_verifier = pkce_data["code_verifier"]
             search_params["code_challenge"] = pkce_data["code_challenge"]
-            self.session_manager.storage_manager.setItems("code_verifier", {"value": code_verifier})
+            self._session_manager.storage_manager.setItems("code_verifier", {"value": code_verifier})
         
         # Set code challenge method
         code_challenge_method = login_options.get(LoginOptions.CODE_CHALLENGE_METHOD, "S256")
@@ -326,14 +421,14 @@ class OAuth:
         if user_id:
             # Get ID token before logging out if not provided in options
             if "id_token_hint" not in logout_options and user_id:
-                token_manager = self.session_manager.get_token_manager(user_id)
+                token_manager = self._session_manager.get_token_manager(user_id)
                 if token_manager:
                     id_token = token_manager.get_id_token()
                     if id_token:
                         logout_options["id_token_hint"] = id_token
             
             # Perform logout (clear session)
-            self.session_manager.logout(user_id)
+            self._session_manager.logout(user_id)
         
         # Generate logout URL
         params = {
@@ -371,25 +466,26 @@ class OAuth:
         """
         # Verify state if provided
         if state:
-            stored_state = self.session_manager.storage_manager.get("state")
+            stored_state = self._session_manager.storage_manager.get("state")
+            self._logger.warning(f"stored_state: {stored_state}, state: {state}")
             if not stored_state or state != stored_state.get("value"):
-                self.logger.error(f"State mismatch: received {state}, stored {stored_state}")
+                self._logger.error(f"State mismatch: received {state}, stored {stored_state}")
                 raise KindeLoginException("Invalid state parameter")
         
         # Get code verifier for PKCE
         code_verifier = None
-        stored_code_verifier = self.session_manager.storage_manager.get("code_verifier")
+        stored_code_verifier = self._session_manager.storage_manager.get("code_verifier")
         if stored_code_verifier:
             code_verifier = stored_code_verifier.get("value")
             
             # Clean up the used code verifier
-            self.session_manager.storage_manager.delete("code_verifier")
+            self._session_manager.storage_manager.delete("code_verifier")
         
         # Exchange code for tokens
         try:
             token_data = await self.exchange_code_for_tokens(code, code_verifier)
         except Exception as e:
-            self.logger.error(f"Token exchange failed: {str(e)}")
+            self._logger.error(f"Token exchange failed: {str(e)}")
             raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}")
         
         # Store tokens
@@ -401,10 +497,10 @@ class OAuth:
         }
         
         # Store session data
-        self.session_manager.set_user_data(user_id, user_info, token_data)
+        self._session_manager.set_user_data(user_id, user_info, token_data)
         
         # Get user details using the token
-        token_manager = self.session_manager.get_token_manager(user_id)
+        token_manager = self._session_manager.get_token_manager(user_id)
         if not token_manager:
             raise KindeRetrieveException("Failed to get token manager")
         
@@ -412,15 +508,15 @@ class OAuth:
         user_details = await helper_get_user_details(
             userinfo_url=self.userinfo_url,
             token_manager=token_manager,
-            logger=self.logger
+            logger=self._logger
         )
         
         # Clean up state
         if state:
-            self.session_manager.storage_manager.delete("state")
+            self._session_manager.storage_manager.delete("state")
         
         # Clean up nonce
-        self.session_manager.storage_manager.delete("nonce")
+        self._session_manager.storage_manager.delete("nonce")
         
         return {
             "tokens": token_data,
@@ -473,7 +569,7 @@ class OAuth:
             ValueError: If no tokens are available for the user
         """
         # Get token manager
-        token_manager = self.session_manager.get_token_manager(user_id)
+        token_manager = self._session_manager.get_token_manager(user_id)
         if not token_manager:
             raise ValueError(f"No token manager available for user {user_id}")
         
@@ -511,5 +607,5 @@ class OAuth:
                 
             return tokens
         except Exception as e:
-            self.logger.error(f"Error retrieving tokens: {str(e)}")
+            self._logger.error(f"Error retrieving tokens: {str(e)}")
             raise ValueError(f"Failed to retrieve tokens: {str(e)}")

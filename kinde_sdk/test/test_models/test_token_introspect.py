@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.token_introspect import TokenIntrospect
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestTokenIntrospect(unittest.TestCase):

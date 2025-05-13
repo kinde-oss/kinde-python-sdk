@@ -12,8 +12,9 @@ from unittest.mock import patch
 import urllib3
 
 import kinde_sdk
+from kinde_sdk.management import api_client, configuration
 from kinde_sdk.paths.api_v1_environment_feature_flags_feature_flag_key import patch  # noqa: E501
-from kinde_sdk import configuration, schemas, api_client
+from kinde_sdk import schemas
 
 from .. import ApiTestMixin
 

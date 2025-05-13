@@ -12,7 +12,8 @@ from unittest.mock import patch
 import urllib3
 
 import kinde_sdk
-from kinde_sdk import configuration, schemas, api_client
+from kinde_sdk import schemas
+from kinde_sdk.management import api_client, configuration
 
 from .. import ApiTestMixin
 

@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.organization_user_role import OrganizationUserRole
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestOrganizationUserRole(unittest.TestCase):

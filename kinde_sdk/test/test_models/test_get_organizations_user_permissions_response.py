@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.get_organizations_user_permissions_response import GetOrganizationsUserPermissionsResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestGetOrganizationsUserPermissionsResponse(unittest.TestCase):

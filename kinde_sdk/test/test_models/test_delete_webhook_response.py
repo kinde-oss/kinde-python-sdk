@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.delete_webhook_response import DeleteWebhookResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestDeleteWebhookResponse(unittest.TestCase):

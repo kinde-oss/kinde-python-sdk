@@ -25,9 +25,9 @@ class StorageManager:
         self._storage = None
         self._initialized = True
         self._device_id = None
+        self._storage_type = "memory"  # Default storage type
 
-
-    def initialize(self, config: Dict[str, Any] = None, device_id: Optional[str] = None):
+    def initialize(self, config: Dict[str, Any] = None, device_id: Optional[str] = None, storage: Optional[StorageInterface] = None):
         """
         Initialize the storage with the provided configuration.
         
@@ -36,14 +36,24 @@ class StorageManager:
                 If None, defaults to in-memory storage.
             device_id (str, optional): A unique identifier for the current device/session.
                 If None, a random identifier will be generated.
+            storage (StorageInterface, optional): A pre-configured storage instance.
+                If provided, this will be used instead of creating a new one.
         """
         with self._lock:
             if config is None:
                 config = {"type": "memory"}
                 
+            # Set storage type
+            self._storage_type = config.get("type", "memory")
+                
             # Clear any existing storage first
             self._storage = None
-            self._storage = StorageFactory.create_storage(config)
+            
+            # Use provided storage or create new one
+            if storage is not None:
+                self._storage = storage
+            else:
+                self._storage = StorageFactory.create_storage(config)
             
             # Set or generate device ID
             if device_id:
@@ -87,6 +97,16 @@ class StorageManager:
             self.initialize()
             
         return self._storage
+
+    @property
+    def storage_type(self) -> str:
+        """
+        Get the current storage type.
+        
+        Returns:
+            str: The current storage type
+        """
+        return self._storage_type
 
     def _get_namespaced_key(self, key: str) -> str:
         """

@@ -9,6 +9,7 @@ flask>=3.0.0
 uvicorn>=0.25.0
 python-dotenv>=1.0.0
 itsdangerous>=2.2.0
+nest-asyncio>=1.5.8
 
 # Development dependencies
 pytest>=7.4.0

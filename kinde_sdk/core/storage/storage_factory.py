@@ -40,15 +40,20 @@ class StorageFactory:
             logger.warning(f"Storage type: {storage_type}")
             logger.warning(f"Framework factories: {cls._framework_factories}")
             if storage_type in cls._framework_factories:
-                factory_class = cls._framework_factories[storage_type]
-                return factory_class.create_storage(config)
+                try:
+                    factory_class = cls._framework_factories[storage_type]
+                    return factory_class.create_storage(config)
+                except Exception as e:
+                    logger.warning(f"Failed to create {storage_type} storage, falling back to memory storage: {str(e)}")
+                    return MemoryStorage()
             # Handle built-in storage types
             elif storage_type == "memory":
                 return MemoryStorage()
             elif storage_type == "local_storage":
                 return LocalStorage()
             else:
-                raise ValueError(f"Unsupported storage type: {storage_type}")
+                logger.warning(f"Unsupported storage type: {storage_type}, falling back to memory storage")
+                return MemoryStorage()
         
         # If no specific type, try to use the framework factory
         framework = FrameworkFactory.create_framework()
@@ -58,5 +63,6 @@ class StorageFactory:
             factory_class = cls._framework_factories[framework_name]
             return factory_class.create_storage(config)
         
-        # Default to memory storage if no framework factory registered
+        # If all else fails, use memory storage
+        logger.warning("No storage type specified and auto-detection failed, using memory storage")
         return MemoryStorage()

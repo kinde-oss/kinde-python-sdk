@@ -8,6 +8,9 @@ pyjwt>=2.8.0
 # Development dependencies
 pytest>=7.4.0
 pytest-django>=4.5.2
+pytest-asyncio>=0.21.1
+pytest-cov>=4.1.0
+pytest-timeout>=2.2.0
 black>=23.7.0
 flake8>=6.1.0
 isort>=5.12.0

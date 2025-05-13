@@ -25,6 +25,7 @@ class StorageManager:
         self._storage = None
         self._initialized = True
         self._device_id = None
+        self._storage_type = "memory"  # Default storage type
 
     def initialize(self, config: Dict[str, Any] = None, device_id: Optional[str] = None, storage: Optional[StorageInterface] = None):
         """
@@ -41,6 +42,9 @@ class StorageManager:
         with self._lock:
             if config is None:
                 config = {"type": "memory"}
+                
+            # Set storage type
+            self._storage_type = config.get("type", "memory")
                 
             # Clear any existing storage first
             self._storage = None
@@ -93,6 +97,16 @@ class StorageManager:
             self.initialize()
             
         return self._storage
+
+    @property
+    def storage_type(self) -> str:
+        """
+        Get the current storage type.
+        
+        Returns:
+            str: The current storage type
+        """
+        return self._storage_type
 
     def _get_namespaced_key(self, key: str) -> str:
         """

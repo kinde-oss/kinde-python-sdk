@@ -1067,8 +1067,8 @@ class TestForIncreasedCoverage(unittest.TestCase):
         self.assertEqual(query_params["state"][0], "logout_state")
         self.assertNotIn("redirect_uri", query_params)
 
-    def test_get_tokens_exception(self):
-        """Test getting tokens with error handling"""
+    #def test_get_tokens_exception(self):
+    #    """Test getting tokens with error handling"""
         #with patch.object(self.oauth._token_manager, 'get_tokens') as mock_get_tokens:
         #    mock_get_tokens.side_effect = Exception("Token error")
             

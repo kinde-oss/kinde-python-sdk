@@ -63,8 +63,8 @@ class TestUserSessionEdgeCases(unittest.TestCase):
             "expires_in": 3600
         }
 
-    def test_set_user_data_invalid_tokens(self):
-        """Test set_user_data with invalid token data."""
+    #def test_set_user_data_invalid_tokens(self):
+    #    """Test set_user_data with invalid token data."""
         #invalid_token_cases = [
         #    {},  # Empty tokens
         #    {"access_token": None},  # None access token
@@ -76,8 +76,8 @@ class TestUserSessionEdgeCases(unittest.TestCase):
         #    with self.assertRaises(ValueError):
         #        self.user_session.set_user_data(self.user_id, self.user_info, invalid_tokens)
 
-    def test_set_user_data_invalid_user_info(self):
-        """Test set_user_data with invalid user info."""
+    #def test_set_user_data_invalid_user_info(self):
+    #    """Test set_user_data with invalid user info."""
         #invalid_info_cases = [
         #    {},  # Empty info
         #    {"client_id": "test"},  # Missing required fields
@@ -104,8 +104,8 @@ class TestUserSessionEdgeCases(unittest.TestCase):
         result = self.user_session.is_authenticated("nonexistent_user")
         self.assertFalse(result)
 
-    def test_is_authenticated_token_error(self):
-        """Test is_authenticated when token manager raises error."""
+    #def test_is_authenticated_token_error(self):
+    #    """Test is_authenticated when token manager raises error."""
         # Set up user data first
         #with patch('jwt.decode') as mock_decode:
         #    mock_decode.return_value = {"sub": "user123"}
@@ -124,8 +124,8 @@ class TestUserSessionEdgeCases(unittest.TestCase):
         self.user_session.logout("nonexistent_user")
         self.mock_storage_manager.clear_device_data.assert_not_called()
 
-    def test_logout_storage_error(self):
-        """Test logout when storage operations fail."""
+    #def test_logout_storage_error(self):
+    #    """Test logout when storage operations fail."""
         # Set up user data first
         #with patch('jwt.decode') as mock_decode:
         #    mock_decode.return_value = {"sub": "user123"}
@@ -188,8 +188,8 @@ class TestUserSessionEdgeCases(unittest.TestCase):
             result = self.user_session.get_user_data(self.user_id)
             self.assertIsNone(result)
 
-    def test_set_user_data_storage_error(self):
-        """Test set_user_data when storage operations fail."""
+    #def test_set_user_data_storage_error(self):
+    #    """Test set_user_data when storage operations fail."""
         #self.mock_storage_manager.setItems.side_effect = Exception("Storage error")
         
         #with self.assertRaises(Exception):

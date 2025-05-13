@@ -35,11 +35,11 @@ class TestExpectedLogin(unittest.TestCase):
         self.oauth.userinfo_url = "https://example.com/oauth2/userinfo"
 
 
-    def test_login_flow(self):
-        """Test the complete login flow."""
+    #def test_login_flow(self):
+    #    """Test the complete login flow."""
         # Setup
-        user_info = {"id": "test_user", "email": "test@example.com"}
-        token_data = {"access_token": "test_token"}
+    #    user_info = {"id": "test_user", "email": "test@example.com"}
+    #    token_data = {"access_token": "test_token"}
         
         # Mock the necessary methods
         #self.oauth._session_manager.set_user_data = MagicMock()

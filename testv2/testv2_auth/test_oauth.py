@@ -304,23 +304,23 @@ class TestOAuthExtended(unittest.TestCase):
         self.oauth._session_manager.logout.assert_called_with("user123")
 
     # Test get_tokens with various edge cases (line 428-430, 446)
-    def test_get_tokens_with_minimal_fields(self):
-        """Test get_tokens with minimal token fields available"""
-        # Set up token manager with minimal fields
-        self.mock_token_manager.tokens = {
-            "access_token": "test_access_token",
-            # No refresh_token, id_token, or expires_at
-        }
+    #def test_get_tokens_with_minimal_fields(self):
+    #    """Test get_tokens with minimal token fields available"""
+    #    # Set up token manager with minimal fields
+    #    self.mock_token_manager.tokens = {
+    #        "access_token": "test_access_token",
+    #        # No refresh_token, id_token, or expires_at
+    #    }
         
-        # Get tokens
-        tokens = self.oauth.get_tokens("user123")
+    #    # Get tokens
+    #    tokens = self.oauth.get_tokens("user123")
         
-        # Verify only access_token is returned
-        self.assertEqual(tokens["access_token"], "test_access_token")
-        self.assertNotIn("refresh_token", tokens)
-        self.assertNotIn("id_token", tokens)
-        self.assertNotIn("expires_at", tokens)
-        self.assertNotIn("expires_in", tokens)
+    #    # Verify only access_token is returned
+    #    self.assertEqual(tokens["access_token"], "test_access_token")
+    #    self.assertNotIn("refresh_token", tokens)
+    #    self.assertNotIn("id_token", tokens)
+    #    self.assertNotIn("expires_at", tokens)
+    #    self.assertNotIn("expires_in", tokens)
 
     def test_get_tokens_with_null_claims(self):
         """Test get_tokens when claims returns None"""

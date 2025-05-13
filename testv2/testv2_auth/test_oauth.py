@@ -96,6 +96,21 @@ class TestOAuthExtended(unittest.TestCase):
         # Make session manager return token manager
         self.oauth._session_manager.get_token_manager = MagicMock(return_value=self.mock_token_manager)
         
+        # Mock framework
+        self.mock_framework = MagicMock()
+        self.mock_framework.get_name.return_value = "flask"
+        self.mock_framework.get_description.return_value = "Flask framework implementation"
+        self.mock_framework.start = MagicMock()
+        self.mock_framework.stop = MagicMock()
+        self.mock_framework.get_app = MagicMock(return_value=None)
+        self.mock_framework.get_request = MagicMock(return_value=None)
+        self.mock_framework.get_user_id = MagicMock(return_value=None)
+        self.mock_framework.set_oauth = MagicMock()
+        self.mock_framework.can_auto_detect = MagicMock(return_value=True)
+        
+        # Set the framework in OAuth
+        self.oauth._framework = self.mock_framework
+        
     # Test for None value handling in auth_params
     def test_none_values_in_auth_params(self):
         """Test how None values are handled in auth_params"""

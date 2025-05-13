@@ -100,6 +100,18 @@ class FlaskFramework(FrameworkInterface):
         from kinde_sdk.core.framework.framework_context import FrameworkContext
         return FrameworkContext.get_request()
     
+    def get_user_id(self) -> Optional[str]:
+        """
+        Get the user ID from the current request.
+        
+        Returns:
+            Optional[str]: The user ID, or None if not available
+        """
+        session_id = session.get('user_id')
+        if not session_id:
+            return None
+        return session_id
+    
     def set_oauth(self, oauth: OAuth) -> None:
         """
         Set the OAuth instance for this framework.

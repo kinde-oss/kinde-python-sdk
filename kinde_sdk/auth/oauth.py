@@ -74,8 +74,8 @@ class OAuth:
         self._session_manager = UserSession()
 
         # Logging settings
-        self.logger = logging.getLogger("kinde_sdk")
-        self.logger.setLevel(logging.INFO)
+        self._logger = logging.getLogger("kinde_sdk")
+        self._logger.setLevel(logging.INFO)
 
         # Authentication properties
         self.verify_ssl = True
@@ -109,9 +109,9 @@ class OAuth:
         self._storage = StorageFactory.create_storage({"type": self.framework})
         
         # Initialize storage manager with the framework-specific storage
-        self._storage_manager.initialize(config={"type": self.framework}, storage=self._storage)
+        self._storage_manager.initialize(config={"type": self.framework, "device_id": self._framework.get_name()}, storage=self._storage)
 
-    def is_authenticated(self, request: Optional[Any] = None) -> bool:
+    def is_authenticated(self) -> bool:
         """
         Check if the user is authenticated using the session manager.
         
@@ -121,18 +121,19 @@ class OAuth:
         Returns:
             bool: True if the user is authenticated, False otherwise
         """
-        if not request:
-            return False
-            
-        # Get user ID from session
-        user_id = request.session.get("user_id")
+        # Get user ID from framework
+        self._logger.warning(f"self._framework: {self._framework}")
+        user_id = self._framework.get_user_id()
+        self._logger.warning(f"user_id: {user_id}")
         if not user_id:
+            self._logger.warning("No user ID found in session")
             return False
             
         # Check authentication using session manager
+        self._logger.warning(f"self._session_manager: {self._session_manager}")
         return self._session_manager.is_authenticated(user_id)
 
-    def get_user_info(self, request: Optional[Any] = None) -> Dict[str, Any]:
+    def get_user_info(self) -> Dict[str, Any]:
         """
         Get the user information from the session.
         
@@ -143,26 +144,26 @@ class OAuth:
             Dict[str, Any]: The user information
             
         Raises:
-            KindeConfigurationException: If the request is not provided
+            KindeConfigurationException: If no user ID is found in session
         """
-        if not request:
-            raise KindeConfigurationException("Request object is required")
-            
-        # Get user ID from session
-        user_id = request.session.get("user_id")
+        # Get user ID from framework
+        self._logger.warning(f"Retrieve the user id")
+        user_id = self._framework.get_user_id()
         if not user_id:
             raise KindeConfigurationException("No user ID found in session")
             
         # Get token manager for the user
+        self._logger.warning(f"User id: {user_id} retrieve the token for the user id")
         token_manager = self._session_manager.get_token_manager(user_id)
         if not token_manager:
             raise KindeConfigurationException("No token manager found for user")
             
         # Get claims from token manager
+        self._logger.warning(f"Get the claims from the token manager")
         claims = token_manager.get_claims()
         if not claims:
             raise KindeConfigurationException("No user claims found")
-            
+        self._logger.warning(f"Return the claims")
         return claims
 
     def _set_api_endpoints(self):
@@ -466,9 +467,9 @@ class OAuth:
         # Verify state if provided
         if state:
             stored_state = self._session_manager.storage_manager.get("state")
-            self.logger.warning(f"stored_state: {stored_state}, state: {state}")
+            self._logger.warning(f"stored_state: {stored_state}, state: {state}")
             if not stored_state or state != stored_state.get("value"):
-                self.logger.error(f"State mismatch: received {state}, stored {stored_state}")
+                self._logger.error(f"State mismatch: received {state}, stored {stored_state}")
                 raise KindeLoginException("Invalid state parameter")
         
         # Get code verifier for PKCE
@@ -484,7 +485,7 @@ class OAuth:
         try:
             token_data = await self.exchange_code_for_tokens(code, code_verifier)
         except Exception as e:
-            self.logger.error(f"Token exchange failed: {str(e)}")
+            self._logger.error(f"Token exchange failed: {str(e)}")
             raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}")
         
         # Store tokens
@@ -507,7 +508,7 @@ class OAuth:
         user_details = await helper_get_user_details(
             userinfo_url=self.userinfo_url,
             token_manager=token_manager,
-            logger=self.logger
+            logger=self._logger
         )
         
         # Clean up state
@@ -606,5 +607,5 @@ class OAuth:
                 
             return tokens
         except Exception as e:
-            self.logger.error(f"Error retrieving tokens: {str(e)}")
+            self._logger.error(f"Error retrieving tokens: {str(e)}")
             raise ValueError(f"Failed to retrieve tokens: {str(e)}")

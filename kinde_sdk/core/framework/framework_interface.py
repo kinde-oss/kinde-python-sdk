@@ -62,7 +62,18 @@ class FrameworkInterface(ABC):
             Optional[Any]: The current request object, or None if not available
         """
         pass
+
+    @abstractmethod
+    def get_user_id(self) -> Optional[str]:
+        """
+        Get the user ID from the current request.
+        
+        Returns:
+            Optional[str]: The user ID, or None if not available
+        """
+        pass
     
+    @abstractmethod
     def can_auto_detect(self) -> bool:
         """
         Check if this framework can be auto-detected.

@@ -1,10 +1,8 @@
 from typing import Optional, Dict, Any
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
-from starlette.middleware.sessions import SessionMiddleware
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
-from starlette.middleware.sessions import SessionMiddleware
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
 from ..middleware.framework_middleware import FrameworkMiddleware
@@ -31,7 +29,7 @@ class FastAPIFramework(FrameworkInterface):
         self.app = app or FastAPI()
         self._initialized = False
         self._oauth = None
-        self._oauth = None
+        self._logger = logging.getLogger(__name__)
     
     def get_name(self) -> str:
         """
@@ -58,17 +56,6 @@ class FastAPIFramework(FrameworkInterface):
         This method initializes any necessary FastAPI components and registers Kinde routes.
         """
         if not self._initialized:
-            # Add session middleware with proper configuration
-            self.app.add_middleware(
-                SessionMiddleware,
-                secret_key=os.getenv("SECRET_KEY", "your-secret-key"),
-                #session_cookie="kinde_session",
-                max_age=3600,  # 1 hour
-                same_site="lax",  # Protect against CSRF
-                https_only=False,  # Set to True in production
-                path="/"  # Ensure cookie is available for all paths
-            )
-            
             # Add framework middleware
             self.app.add_middleware(FrameworkMiddleware)
             
@@ -104,6 +91,18 @@ class FastAPIFramework(FrameworkInterface):
         from kinde_sdk.core.framework.framework_context import FrameworkContext
         return FrameworkContext.get_request()
     
+    def get_user_id(self) -> Optional[str]:
+        """
+        Get the user ID from the current request.
+        
+        Returns:
+            Optional[str]: The user ID, or None if not available
+        """
+        request = self.get_request()
+        if not request:
+            return None
+        return request.session.get("user_id")
+    
     def set_oauth(self, oauth: OAuth) -> None:
         """
         Set the OAuth instance for this framework.
@@ -130,8 +129,9 @@ class FastAPIFramework(FrameworkInterface):
         @self.app.get("/login")
         async def login(request: Request):
             """Redirect to Kinde login page."""
-            request.session["testvalue"] = "123"
-            return RedirectResponse(url=await self._oauth.login())
+            url=await self._oauth.login()
+            self._logger.warning(f"[Login] Session is: {request.session}")
+            return RedirectResponse(url=url)
         
         # Callback route
         @self.app.get("/callback")
@@ -148,14 +148,10 @@ class FastAPIFramework(FrameworkInterface):
                 request.session["user_id"] = user_id
                 
                 # Create response with explicit session cookie settings
+                self._logger.warning(f"[Callback] Request session is: {request.session}")
+                self._logger.warning(f"[Callback] The full result: {result}")
                 response = RedirectResponse(url="/")
-                response.set_cookie(
-                    key="kinde_session",
-                    value=request.cookies.get("kinde_session", ""),
-                    max_age=3600,
-                    httponly=True,
-                    samesite="lax"
-                )
+                
                 return response
             except Exception as e:
                 logger.error(f"Authentication failed: {str(e)}")

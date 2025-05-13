@@ -105,22 +105,23 @@ class StorageManager:
         Returns:
             str: A namespaced key including device ID
         """
-        device_id = self.get_device_id()
+        #device_id = self.get_device_id()
         
         # If the key is for the device ID itself, don't namespace it
-        if key == "_device_id":
-            return key
-            
+        #if key == "_device_id":
+        #    return key
+        #    
         # Special handling for keys that should be global (shared across devices)
-        if key.startswith("global:"):
-            return key
+        #if key.startswith("global:"):
+        #    return key
             
         # For user-specific but device-independent storage (like OAuth state)
-        if key.startswith("user:"):
-            return key
+        #if key.startswith("user:"):
+        #    return key
             
         # For device-specific user data (default)
-        return f"device:{device_id}:{key}"
+        #return f"device:{device_id}:{key}"
+        return key
     
     def get(self, key: str) -> Optional[Dict]:
         """

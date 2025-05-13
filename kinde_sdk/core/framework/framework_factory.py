@@ -84,7 +84,9 @@ class FrameworkFactory:
         if framework_class is None:
             # If not found, try auto-detection
             for name, impl in cls._frameworks.items():
-                if hasattr(impl, 'can_auto_detect') and impl.can_auto_detect():
+                # Create an instance to check auto-detection
+                instance = impl(app)
+                if hasattr(instance, 'can_auto_detect') and instance.can_auto_detect():
                     logger.info(f"Auto-detected framework: {name}")
                     framework_class = impl
                     break

@@ -11,8 +11,20 @@ def run_async(coro):
     return asyncio.run(coro)
 
 class TestExpectedLogin(unittest.TestCase):
-    def setUp(self):
+    @patch('requests.get')
+    def setUp(self, mock_get):
         """Set up test fixtures."""
+        # Mock the OpenID configuration response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "authorization_endpoint": "https://example.com/oauth2/auth",
+            "token_endpoint": "https://example.com/oauth2/token",
+            "end_session_endpoint": "https://example.com/logout",
+            "userinfo_endpoint": "https://example.com/oauth2/userinfo"
+        }
+        mock_get.return_value = mock_response
+
         self.oauth = OAuth(
             client_id="test_client_id",
             client_secret="test_client_secret",

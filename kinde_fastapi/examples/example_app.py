@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from starlette.middleware.sessions import SessionMiddleware
+from .session import InMemorySessionMiddleware
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -17,13 +18,9 @@ app = FastAPI(title="Kinde FastAPI Example")
 
 # Add session middleware with proper configuration
 app.add_middleware(
-    SessionMiddleware,
-    secret_key=os.getenv("SECRET_KEY", "your-secret-key"),
-    session_cookie="kinde_session",
+    InMemorySessionMiddleware,
     max_age=3600,  # 1 hour
-    same_site="lax",  # Protect against CSRF
-    https_only=False,  # Set to True in production
-    path="/"  # Ensure cookie is available for all paths
+    https_only=False
 )
 
 # Initialize Kinde OAuth with FastAPI framework
@@ -35,7 +32,6 @@ kinde_oauth = OAuth(
 # Example home route
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    logger.warning(f"Request session is: {request.session}")
     """
     Home page that shows different content based on authentication status.
     """

@@ -125,6 +125,169 @@ data = storage_manager.get("some_key")
 # After initializing both OAuth and KindeApiClient use the following fn to get proper urls
 api_client.fetch_openid_configuration(oauth)
 
+## Framework Integrations
+
+The Kinde Python SDK provides seamless integration with popular Python web frameworks. Below are detailed guides for using Kinde with FastAPI and Flask.
+
+### FastAPI Integration
+
+The `kinde_fastapi` module provides easy integration with FastAPI applications.
+
+#### Installation
+
+```bash
+pip install fastapi uvicorn python-multipart
+```
+
+#### Basic Setup
+
+```python
+from fastapi import FastAPI
+from kinde_sdk.auth.oauth import OAuth
+
+# Initialize FastAPI app
+app = FastAPI()
+
+# Initialize Kinde OAuth with FastAPI framework
+kinde_oauth = OAuth(
+    framework="fastapi",
+    app=app
+)
+
+# Example home route
+@app.get("/")
+async def home(request: Request):
+    if kinde_oauth.is_authenticated():
+        user = kinde_oauth.get_user_info()
+        return f"Welcome, {user.get('email', 'User')}!"
+    return "Please log in"
+```
+
+#### Configuration
+
+Create a `.env` file with your Kinde credentials:
+
+```env
+KINDE_CLIENT_ID=your_client_id
+KINDE_CLIENT_SECRET=your_client_secret
+KINDE_REDIRECT_URI=http://localhost:8000/callback
+KINDE_DOMAIN=your_kinde_domain
+```
+
+#### Available Routes
+
+The FastAPI integration automatically provides these routes:
+
+- `/login` - Redirects to Kinde login
+- `/callback` - Handles OAuth callback
+- `/logout` - Logs out the user
+- `/register` - Redirects to Kinde registration
+- `/user` - Returns user information
+
+#### Protected Routes
+
+```python
+from fastapi import Depends
+from kinde_sdk.kinde_api_client import KindeApiClient
+
+@router.get("/protected")
+async def protected_route(
+    kinde_client: KindeApiClient = Depends(get_kinde_client)
+):
+    return {"message": "This is a protected route"}
+```
+
+### Flask Integration
+
+The `kinde_flask` module provides easy integration with Flask applications.
+
+#### Installation
+
+```bash
+pip install flask python-dotenv flask-session
+```
+
+#### Basic Setup
+
+```python
+from flask import Flask
+from kinde_sdk.auth.oauth import OAuth
+
+# Initialize Flask app
+app = Flask(__name__)
+
+# Configure Flask session
+app.config['SECRET_KEY'] = 'your-secret-key'
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+
+# Initialize Kinde OAuth with Flask framework
+kinde_oauth = OAuth(
+    framework="flask",
+    app=app
+)
+
+# Example home route
+@app.route('/')
+def home():
+    if kinde_oauth.is_authenticated():
+        user = kinde_oauth.get_user_info()
+        return f"Welcome, {user.get('email', 'User')}!"
+    return "Please log in"
+```
+
+#### Configuration
+
+Create a `.env` file with your Kinde credentials:
+
+```env
+KINDE_CLIENT_ID=your_client_id
+KINDE_CLIENT_SECRET=your_client_secret
+KINDE_REDIRECT_URI=http://localhost:5000/callback
+KINDE_DOMAIN=your_kinde_domain
+```
+
+#### Available Routes
+
+The Flask integration automatically provides these routes:
+
+- `/login` - Redirects to Kinde login
+- `/callback` - Handles OAuth callback
+- `/logout` - Logs out the user
+- `/register` - Redirects to Kinde registration
+- `/user` - Returns user information
+
+#### Protected Routes
+
+```python
+from functools import wraps
+from flask import session, redirect
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not kinde_oauth.is_authenticated():
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/protected')
+@login_required
+def protected_route():
+    return {"message": "This is a protected route"}
+```
+
+#### Security Considerations
+
+For both FastAPI and Flask integrations:
+
+1. Always use HTTPS in production
+2. Use a secure session secret key
+3. Implement proper state parameter validation
+4. Handle OAuth errors appropriately
+5. Implement proper session management
+6. Consider implementing CSRF protection
+
 # Kinde Management API Module
 
 This module provides a client for the Kinde Management API, allowing you to manage users, organizations, roles, permissions, and feature flags programmatically.
@@ -501,15 +664,13 @@ def main():
 if __name__ == "__main__":
     main()
 
-```    
-
 ## Publishing
 
 The core team handles publishing.
 
 ## Contributing
 
-Please refer to Kinde’s [contributing guidelines](https://github.com/kinde-oss/.github/blob/489e2ca9c3307c2b2e098a885e22f2239116394a/CONTRIBUTING.md).
+Please refer to Kinde's [contributing guidelines](https://github.com/kinde-oss/.github/blob/489e2ca9c3307c2b2e098a885e22f2239116394a/CONTRIBUTING.md).
 
 ## License
 

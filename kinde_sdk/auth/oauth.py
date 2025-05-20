@@ -21,6 +21,42 @@ from kinde_sdk.core.exceptions import (
 )
 
 class OAuth:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(OAuth, cls).__new__(cls)
+        return cls._instance
+
+    @classmethod
+    def get_instance(cls) -> 'OAuth':
+        """Get the singleton instance of OAuth."""
+        if cls._instance is None:
+            raise KindeConfigurationException("OAuth instance not initialized. Please create an instance first.")
+        return cls._instance
+
+    @classmethod
+    def _reset(cls) -> None:
+        """Reset the singleton instance and its state.
+        This is primarily used for testing to ensure a clean state between tests."""
+        if cls._instance:
+            # Clear any stored state
+            if hasattr(cls._instance, '_session_manager'):
+                cls._instance._session_manager = None
+            if hasattr(cls._instance, '_storage_manager'):
+                cls._instance._storage_manager = None
+            if hasattr(cls._instance, '_framework'):
+                cls._instance._framework = None
+            if hasattr(cls._instance, '_storage'):
+                cls._instance._storage = None
+            if hasattr(cls._instance, '_config'):
+                cls._instance._config = None
+            
+            # Reset class variables
+            cls._instance = None
+            cls._initialized = False
+
     def __init__(
         self,
         client_id: Optional[str] = None,
@@ -35,6 +71,16 @@ class OAuth:
         app: Optional[Any] = None,
     ):
         """Initialize the OAuth client."""
+        
+        # Store original environment variables
+        self._original_env = {
+            "KINDE_CLIENT_ID": os.getenv("KINDE_CLIENT_ID"),
+            "KINDE_CLIENT_SECRET": os.getenv("KINDE_CLIENT_SECRET"),
+            "KINDE_REDIRECT_URI": os.getenv("KINDE_REDIRECT_URI"),
+            "KINDE_HOST": os.getenv("KINDE_HOST"),
+            "KINDE_AUDIENCE": os.getenv("KINDE_AUDIENCE")
+        }
+
         # Fetch values from environment variables if not provided
         self.client_id = client_id or os.getenv("KINDE_CLIENT_ID")
         self.client_secret = client_secret or os.getenv("KINDE_CLIENT_SECRET")
@@ -81,6 +127,9 @@ class OAuth:
         self.verify_ssl = True
         self.proxy = None
         self.proxy_headers = None
+
+        # Mark as initialized
+        self._initialized = True
 
     def _initialize_framework(self) -> None:
         """
@@ -542,7 +591,7 @@ class OAuth:
         }
         
         # Add client secret if available (for non-PKCE flow)
-        if self.client_secret:
+        if self.client_secret and not code_verifier:
             data["client_secret"] = self.client_secret
         
         # Add code verifier for PKCE flow

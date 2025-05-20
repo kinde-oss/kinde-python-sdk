@@ -54,6 +54,26 @@ class TestOAuthExtended(unittest.TestCase):
         # Setup mocks
         self.setup_mocks()
         
+    def tearDown(self):
+        """Clean up after each test"""
+        # Reset any mocks
+        if hasattr(self, 'mock_storage'):
+            self.mock_storage.reset_mock()
+        if hasattr(self, 'mock_token_manager'):
+            self.mock_token_manager.reset_mock()
+        if hasattr(self, 'mock_framework'):
+            self.mock_framework.reset_mock()
+            
+        # Reset the OAuth singleton instance
+        if hasattr(self, 'oauth'):
+            OAuth._reset()
+            self.oauth = None
+            
+        # Reset any environment variables that might have been set
+        for key in ['KINDE_CLIENT_ID', 'KINDE_CLIENT_SECRET', 'KINDE_REDIRECT_URI', 'KINDE_HOST', 'KINDE_AUDIENCE']:
+            if key in os.environ:
+                del os.environ[key]
+        
     def setup_mocks(self):
         """Set up mocks for the tests"""
         # Mock storage manager

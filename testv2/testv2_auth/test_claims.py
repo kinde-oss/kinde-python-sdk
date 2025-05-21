@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch
-from kinde_sdk.auth.claims import claims
-from kinde_sdk.auth.oauth import OAuth
+from kinde_sdk.auth import claims
+from kinde_sdk.auth import OAuth
 
 @pytest.fixture
 def mock_oauth():

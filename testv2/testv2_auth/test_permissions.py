@@ -5,7 +5,7 @@ from kinde_sdk.auth import permissions
 
 @pytest.fixture
 def mock_oauth():
-    with patch('kinde_sdk.auth.permissions.OAuth.get_instance') as mock:
+    with patch('kinde_sdk.auth.oauth.OAuth.get_instance') as mock:
         oauth = Mock(spec=OAuth)
         oauth.is_authenticated.return_value = True
         oauth._framework = Mock()

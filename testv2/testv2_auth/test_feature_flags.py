@@ -6,7 +6,7 @@ from kinde_sdk.auth import feature_flags
 
 @pytest.fixture
 def mock_oauth():
-    with patch('kinde_sdk.auth.feature_flags.OAuth.get_instance') as mock:
+    with patch('kinde_sdk.auth.oauth.OAuth.get_instance') as mock:
         oauth = Mock(spec=OAuth)
         oauth.is_authenticated.return_value = True
         oauth._framework = Mock()

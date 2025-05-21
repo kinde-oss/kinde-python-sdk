@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional, TypeVar, Generic, Union
 import logging
-from .oauth import OAuth
+from kinde_sdk.auth import OAuth
 
 T = TypeVar('T')
 

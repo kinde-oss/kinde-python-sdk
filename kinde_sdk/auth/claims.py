@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 import logging
-from .oauth import OAuth
+from kinde_sdk.auth import OAuth
 
 class Claims:
     def __init__(self):

@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch
-from kinde_sdk.auth import OAuth, permissions
+from kinde_sdk.auth import OAuth
+from kinde_sdk.auth import permissions
 
 @pytest.fixture
 def mock_oauth():

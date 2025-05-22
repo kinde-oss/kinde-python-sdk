@@ -1,6 +1,6 @@
 [project]
 name = "kinde-python-sdk"
-version = "2.0.0-beta.3"
+version = "2.0.0-beta.4"
 authors = [
     { name = "Kinde Engineering", email = "engineering@kinde.com" },
 ]
@@ -55,6 +55,14 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["kinde_sdk", "kinde_fastapi", "kinde_flask"]
+package-dir = {"" = "."}
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.package-data]
+"kinde_sdk" = ["**/*.py", "**/*.json", "**/*.yaml", "**/*.yml"]
+"kinde_fastapi" = ["**/*.py", "**/*.json", "**/*.yaml", "**/*.yml"]
+"kinde_flask" = ["**/*.py", "**/*.json", "**/*.yaml", "**/*.yml"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.4.0"

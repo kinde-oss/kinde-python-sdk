@@ -1,0 +1,14 @@
+include README.md
+include LICENSE
+recursive-include kinde_sdk *.py
+recursive-include kinde_sdk *.json
+recursive-include kinde_sdk *.yaml
+recursive-include kinde_sdk *.yml
+recursive-include kinde_fastapi *.py
+recursive-include kinde_fastapi *.json
+recursive-include kinde_fastapi *.yaml
+recursive-include kinde_fastapi *.yml
+recursive-include kinde_flask *.py
+recursive-include kinde_flask *.json
+recursive-include kinde_flask *.yaml
+recursive-include kinde_flask *.yml 

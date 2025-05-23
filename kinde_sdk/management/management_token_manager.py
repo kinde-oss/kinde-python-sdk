@@ -23,15 +23,14 @@ class ManagementTokenManager:
         with cls._lock:
             cls._instances = {}
 
-    def __new__(cls, domain, *args, **kwargs):
+    def __new__(cls, domain, client_id, client_secret):
         """
         Ensure only one instance per domain and client_id combination.
         """
         with cls._lock:
-            instance_key = f"{domain}-{kwargs.get('client_id', '')}"
+            instance_key = f"{domain}-{client_id}"
             if instance_key not in cls._instances:
                 cls._instances[instance_key] = super(ManagementTokenManager, cls).__new__(cls)
-                # Pass all initialization to __init__
             return cls._instances[instance_key]
 
     def __init__(self, domain, client_id, client_secret):
@@ -50,10 +49,13 @@ class ManagementTokenManager:
     def set_tokens(self, token_data: Dict[str, Any]):
         """ Store tokens with expiration. """
         with self.lock:
+            # Handle None values by using default
+            expires_in = token_data.get("expires_in") or 3600
+            token_type = token_data.get("token_type") or "Bearer"
             self.tokens = {
-                "access_token": token_data.get("access_token"),
-                "expires_at": time.time() + token_data.get("expires_in", 3600),
-                "token_type": token_data.get("token_type", "Bearer")
+            "access_token": token_data.get("access_token"),
+            "expires_at": time.time() + expires_in,
+            "token_type": token_type
             }
 
     def get_access_token(self):

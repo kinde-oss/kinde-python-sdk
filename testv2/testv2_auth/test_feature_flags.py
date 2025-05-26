@@ -47,7 +47,7 @@ def mock_session_manager(mock_token_manager):
 class TestFeatureFlags:
     @pytest.mark.asyncio
     async def test_get_flag_string_when_authenticated(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.feature_flags.feature_flags._session_manager', mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_flag("theme")
             
             assert isinstance(result, FeatureFlag)
@@ -57,7 +57,7 @@ class TestFeatureFlags:
 
     @pytest.mark.asyncio
     async def test_get_flag_boolean_when_authenticated(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.feature_flags.feature_flags._session_manager', mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_flag("is_dark_mode")
             
             assert isinstance(result, FeatureFlag)
@@ -67,7 +67,7 @@ class TestFeatureFlags:
 
     @pytest.mark.asyncio
     async def test_get_flag_integer_when_authenticated(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.feature_flags.feature_flags._session_manager', mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_flag("competitions_limit")
             
             assert isinstance(result, FeatureFlag)
@@ -90,7 +90,7 @@ class TestFeatureFlags:
     async def test_get_flag_when_token_manager_not_available(self, mock_framework_factory, mock_session_manager):
         mock_session_manager.get_token_manager.return_value = None
         
-        with patch('kinde_sdk.auth.feature_flags.feature_flags._session_manager', mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_flag("theme", default_value="light")
             
             assert isinstance(result, FeatureFlag)
@@ -100,7 +100,7 @@ class TestFeatureFlags:
 
     @pytest.mark.asyncio
     async def test_get_flag_when_flag_not_found(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.feature_flags.feature_flags._session_manager', mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_flag("non_existent_flag", default_value=False)
             
             assert isinstance(result, FeatureFlag)
@@ -110,7 +110,7 @@ class TestFeatureFlags:
 
     @pytest.mark.asyncio
     async def test_get_all_flags_when_authenticated(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.feature_flags.feature_flags._session_manager', mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_all_flags()
             
             assert isinstance(result, dict)
@@ -144,7 +144,7 @@ class TestFeatureFlags:
     async def test_get_all_flags_when_token_manager_not_available(self, mock_framework_factory, mock_session_manager):
         mock_session_manager.get_token_manager.return_value = None
         
-        with patch('kinde_sdk.auth.feature_flags.feature_flags._session_manager', mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_all_flags()
             
             assert isinstance(result, dict)
@@ -154,7 +154,7 @@ class TestFeatureFlags:
     async def test_get_all_flags_when_no_feature_flags_in_claims(self, mock_framework_factory, mock_session_manager, mock_token_manager):
         mock_token_manager.get_claims.return_value = {}
         
-        with patch('kinde_sdk.auth.feature_flags.feature_flags._session_manager', mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_all_flags()
             
             assert isinstance(result, dict)

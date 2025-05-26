@@ -37,7 +37,7 @@ def mock_session_manager(mock_token_manager):
 class TestClaims:
     @pytest.mark.asyncio
     async def test_get_claim_when_authenticated(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.claims.claims._session_manager', mock_session_manager):
+        with patch.object(claims, '_session_manager', mock_session_manager):
             result = await claims.get_claim("aud")
             
             assert result["name"] == "aud"
@@ -56,7 +56,7 @@ class TestClaims:
     async def test_get_claim_when_token_manager_not_available(self, mock_framework_factory, mock_session_manager):
         mock_session_manager.get_token_manager.return_value = None
         
-        with patch('kinde_sdk.auth.claims.claims._session_manager', mock_session_manager):
+        with patch.object(claims, '_session_manager', mock_session_manager):
             result = await claims.get_claim("aud")
             
             assert result["name"] == "aud"
@@ -64,7 +64,7 @@ class TestClaims:
 
     @pytest.mark.asyncio
     async def test_get_claim_when_claim_not_found(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.claims.claims._session_manager', mock_session_manager):
+        with patch.object(claims, '_session_manager', mock_session_manager):
             result = await claims.get_claim("non_existent_claim")
             
             assert result["name"] == "non_existent_claim"
@@ -72,7 +72,7 @@ class TestClaims:
 
     @pytest.mark.asyncio
     async def test_get_claim_with_id_token(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.claims.claims._session_manager', mock_session_manager):
+        with patch.object(claims, '_session_manager', mock_session_manager):
             result = await claims.get_claim("given_name", token_type="id_token")
             
             assert result["name"] == "given_name"
@@ -80,7 +80,7 @@ class TestClaims:
 
     @pytest.mark.asyncio
     async def test_get_all_claims_when_authenticated(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.claims.claims._session_manager', mock_session_manager):
+        with patch.object(claims, '_session_manager', mock_session_manager):
             result = await claims.get_all_claims()
             
             assert result["aud"] == ["api.yourapp.com"]
@@ -101,14 +101,14 @@ class TestClaims:
     async def test_get_all_claims_when_token_manager_not_available(self, mock_framework_factory, mock_session_manager):
         mock_session_manager.get_token_manager.return_value = None
         
-        with patch('kinde_sdk.auth.claims.claims._session_manager', mock_session_manager):
+        with patch.object(claims, '_session_manager', mock_session_manager):
             result = await claims.get_all_claims()
             
             assert result == {}
 
     @pytest.mark.asyncio
     async def test_get_all_claims_with_id_token(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.claims.claims._session_manager', mock_session_manager):
+        with patch.object(claims, '_session_manager', mock_session_manager):
             result = await claims.get_all_claims(token_type="id_token")
             
             assert result["given_name"] == "John"

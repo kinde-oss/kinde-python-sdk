@@ -34,7 +34,7 @@ def mock_session_manager(mock_token_manager):
 class TestPermissions:
     @pytest.mark.asyncio
     async def test_get_permission_when_authenticated(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.permissions.permissions._session_manager', mock_session_manager):
+        with patch.object(permissions, '_session_manager', mock_session_manager):
             result = await permissions.get_permission("create:todos")
             
             assert result["permissionKey"] == "create:todos"
@@ -55,7 +55,7 @@ class TestPermissions:
     async def test_get_permission_when_token_manager_not_available(self, mock_framework_factory, mock_session_manager):
         mock_session_manager.get_token_manager.return_value = None
         
-        with patch('kinde_sdk.auth.permissions.permissions._session_manager', mock_session_manager):
+        with patch.object(permissions, '_session_manager', mock_session_manager):
             result = await permissions.get_permission("create:todos")
             
             assert result["permissionKey"] == "create:todos"
@@ -64,7 +64,7 @@ class TestPermissions:
 
     @pytest.mark.asyncio
     async def test_get_permission_when_permission_not_found(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.permissions.permissions._session_manager', mock_session_manager):
+        with patch.object(permissions, '_session_manager', mock_session_manager):
             result = await permissions.get_permission("delete:todos")
             
             assert result["permissionKey"] == "delete:todos"
@@ -73,7 +73,7 @@ class TestPermissions:
 
     @pytest.mark.asyncio
     async def test_get_permissions_when_authenticated(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        with patch('kinde_sdk.auth.permissions.permissions._session_manager', mock_session_manager):
+        with patch.object(permissions, '_session_manager', mock_session_manager):
             result = await permissions.get_permissions()
             
             assert result["orgCode"] == "org_123"
@@ -94,7 +94,7 @@ class TestPermissions:
     async def test_get_permissions_when_token_manager_not_available(self, mock_framework_factory, mock_session_manager):
         mock_session_manager.get_token_manager.return_value = None
         
-        with patch('kinde_sdk.auth.permissions.permissions._session_manager', mock_session_manager):
+        with patch.object(permissions, '_session_manager', mock_session_manager):
             result = await permissions.get_permissions()
             
             assert result["orgCode"] is None
@@ -106,7 +106,7 @@ class TestPermissions:
             "org_code": "org_123"
         }
         
-        with patch('kinde_sdk.auth.permissions.permissions._session_manager', mock_session_manager):
+        with patch.object(permissions, '_session_manager', mock_session_manager):
             result = await permissions.get_permissions()
             
             assert result["orgCode"] == "org_123"

@@ -139,12 +139,15 @@ class FastAPIFramework(FrameworkInterface):
             """Handle the OAuth callback from Kinde."""
             try:
                 # Generate a unique user ID for the session
+                logger.warning(f"[Callback] Request session is: {request.session}")
                 user_id = request.session.get("user_id") or str(uuid.uuid4())
                 
                 # Use OAuth's handle_redirect method to process the callback
+                logger.warning(f"[Callback] code[{code}] state[{state}] user_id[{user_id}]")
                 result = await self._oauth.handle_redirect(code, user_id, state)
                 
                 # Store user ID in session
+                logger.warning(f"[Callback] Storing user ID in session: {user_id}")
                 request.session["user_id"] = user_id
                 
                 # Create response with explicit session cookie settings

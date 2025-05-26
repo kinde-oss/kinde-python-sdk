@@ -6,6 +6,7 @@ from typing import Dict, Type, Optional, Any
 import importlib
 import pkgutil
 import logging
+import threading
 from .framework_interface import FrameworkInterface
 from .null_framework import NullFramework
 
@@ -17,6 +18,8 @@ class FrameworkFactory:
     """
     _frameworks = {}
     _initialized = False
+    _framework_instance = None
+    _lock = threading.RLock()
     
     @classmethod
     def _discover_frameworks(cls) -> None:
@@ -54,13 +57,26 @@ class FrameworkFactory:
             name: The name of the framework
             framework_class: The framework implementation class
         """
-        cls._frameworks[name] = framework_class
-        logger.warning(f"Registered framework: {name}")
+        with cls._lock:
+            cls._frameworks[name] = framework_class
+            logger.warning(f"Registered framework: {name}")
+    
+    @classmethod
+    def get_framework_instance(cls) -> Optional[FrameworkInterface]:
+        """
+        Get the current framework instance if it exists.
+        
+        Returns:
+            Optional[FrameworkInterface]: The current framework instance or None if not created yet
+        """
+        with cls._lock:
+            return cls._framework_instance
     
     @classmethod
     def create_framework(cls, config: Dict[str, Any], app: Optional[Any] = None) -> FrameworkInterface:
         """
-        Create a framework instance.
+        Create a framework instance or return existing instance if already created.
+        Thread-safe implementation.
         
         Args:
             config: Dictionary containing framework configuration
@@ -72,27 +88,33 @@ class FrameworkFactory:
         Raises:
             ValueError: If the framework is not found
         """
-        # Ensure frameworks are discovered
-        cls._discover_frameworks()
-        
-        framework_type = config.get('type')
-        if framework_type is None:
-            raise ValueError("Framework type not specified in configuration")
+        with cls._lock:
+            # Return existing instance if it exists
+            if cls._framework_instance is not None:
+                return cls._framework_instance
+                
+            # Ensure frameworks are discovered
+            cls._discover_frameworks()
             
-        # Try to get the framework class
-        framework_class = cls._frameworks.get(framework_type)
-        if framework_class is None:
-            # If not found, try auto-detection
-            for name, impl in cls._frameworks.items():
-                # Create an instance to check auto-detection
-                instance = impl(app)
-                if hasattr(instance, 'can_auto_detect') and instance.can_auto_detect():
-                    logger.info(f"Auto-detected framework: {name}")
-                    framework_class = impl
-                    break
-            
+            framework_type = config.get('type')
+            if framework_type is None:
+                raise ValueError("Framework type not specified in configuration")
+                
+            # Try to get the framework class
+            framework_class = cls._frameworks.get(framework_type)
             if framework_class is None:
-                raise ValueError(f"Framework not found: {framework_type}")
-        
-        # Create and return the framework instance
-        return framework_class(app) 
+                # If not found, try auto-detection
+                for name, impl in cls._frameworks.items():
+                    # Create an instance to check auto-detection
+                    instance = impl(app)
+                    if hasattr(instance, 'can_auto_detect') and instance.can_auto_detect():
+                        logger.info(f"Auto-detected framework: {name}")
+                        framework_class = impl
+                        break
+                
+                if framework_class is None:
+                    raise ValueError(f"Framework not found: {framework_type}")
+            
+            # Create and store the framework instance
+            cls._framework_instance = framework_class(app)
+            return cls._framework_instance 

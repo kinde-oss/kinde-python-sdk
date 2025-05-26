@@ -5,7 +5,7 @@ on:
     branches: [ "main", "staging" ]
 
   push:
-    branches: [ "main", "staging", "main_V2", "main_V2_auth_fixes_and_enhancements", "main_V2_Management", "main_V2_Management_fastapi" ]
+    branches: [ "main", "staging", "main_V2", "feat/add-permission-claims-access-functions" ]
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}

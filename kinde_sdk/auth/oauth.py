@@ -35,6 +35,16 @@ class OAuth:
         app: Optional[Any] = None,
     ):
         """Initialize the OAuth client."""
+        
+        # Store original environment variables
+        self._original_env = {
+            "KINDE_CLIENT_ID": os.getenv("KINDE_CLIENT_ID"),
+            "KINDE_CLIENT_SECRET": os.getenv("KINDE_CLIENT_SECRET"),
+            "KINDE_REDIRECT_URI": os.getenv("KINDE_REDIRECT_URI"),
+            "KINDE_HOST": os.getenv("KINDE_HOST"),
+            "KINDE_AUDIENCE": os.getenv("KINDE_AUDIENCE")
+        }
+
         # Fetch values from environment variables if not provided
         self.client_id = client_id or os.getenv("KINDE_CLIENT_ID")
         self.client_secret = client_secret or os.getenv("KINDE_CLIENT_SECRET")
@@ -549,7 +559,10 @@ class OAuth:
         if code_verifier:
             data["code_verifier"] = code_verifier
         
+        self._logger.warning(f"[Exchange code for tokens] [{self.token_url}] [{data}]")
+
         response = requests.post(self.token_url, data=data)
+        self._logger.warning(f"[Exchange code for tokens] [{response.status_code}] [{response.text}]")
         if response.status_code != 200:
             raise KindeTokenException(f"Token exchange failed: {response.text}")
         

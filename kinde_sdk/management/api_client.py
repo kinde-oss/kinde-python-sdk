@@ -29,10 +29,10 @@ from urllib3.fields import RequestField as RequestFieldBase
 
 import frozendict
 
-from kinde_sdk import rest
+# from kinde_sdk import rest
 from kinde_sdk.management.configuration import Configuration
-from kinde_sdk.exceptions import ApiTypeError, ApiValueError
-from kinde_sdk.schemas import (
+from kinde_sdk.core.exceptions import ApiTypeError, ApiValueError
+from kinde_sdk.management.schemas import (
     NoneClass,
     BoolClass,
     Schema,
@@ -998,7 +998,7 @@ class ApiClient:
         self.configuration = configuration
         self.pool_threads = pool_threads
 
-        self.rest_client = rest.RESTClientObject(configuration)
+        # self.rest_client = rest.RESTClientObject(configuration)
         self.default_headers = HTTPHeaderDict()
         if header_name is not None:
             self.default_headers[header_name] = header_value

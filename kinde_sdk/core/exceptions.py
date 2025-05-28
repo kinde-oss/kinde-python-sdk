@@ -17,3 +17,11 @@ class KindeTokenException(KindeException):
 class KindeRetrieveException(KindeException):
     """Raised when there is an error retrieving data."""
     pass 
+
+class ApiValueError(KindeException):
+    """Raised when there is an error with API values."""
+    pass
+
+class ApiTypeError(KindeException):
+    """Raised when there is a type error with API values."""
+    pass

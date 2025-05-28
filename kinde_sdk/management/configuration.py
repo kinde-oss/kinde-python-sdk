@@ -17,7 +17,7 @@ import sys
 import urllib3
 
 from http import client as http_client
-from kinde_sdk.exceptions import ApiValueError
+from kinde_sdk.core.exceptions import ApiValueError
 
 
 JSON_SCHEMA_VALIDATION_KEYWORDS = {

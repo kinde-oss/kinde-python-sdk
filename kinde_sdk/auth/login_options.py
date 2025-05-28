@@ -24,6 +24,7 @@ class LoginOptions:
     REDIRECT_URL = "redirect_url"
     HAS_SUCCESS_PAGE = "has_success_page"
     WORKFLOW_DEPLOYMENT_ID = "workflow_deployment_id"
+    PLAN_INTEREST = "plan_interest"
     
     # Additional parameters container
     AUTH_PARAMS = "auth_params"

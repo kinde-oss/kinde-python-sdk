@@ -253,6 +253,8 @@ class OAuth:
             LoginOptions.REDIRECT_URL: "redirect_url",
             LoginOptions.HAS_SUCCESS_PAGE: "has_success_page",
             LoginOptions.WORKFLOW_DEPLOYMENT_ID: "workflow_deployment_id",
+            # Registration params
+            LoginOptions.PLAN_INTEREST: "plan_interest",
         }
         
         # Base search parameters with defaults
@@ -386,6 +388,7 @@ class OAuth:
                 - redirect_url: URL to redirect after authentication
                 - has_success_page: Whether to show success page
                 - workflow_deployment_id: Workflow deployment ID
+                - plan_interest: Optional string indicating the plan of interest
                 - auth_params: Additional auth parameters
                 
         Returns:

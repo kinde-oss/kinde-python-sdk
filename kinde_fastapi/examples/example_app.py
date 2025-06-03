@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from kinde_sdk.auth.oauth import OAuth
+from kinde_sdk.auth import claims, feature_flags, permissions
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,9 @@ async def home(request: Request):
         <html>
             <body>
                 <h1>Welcome, {user.get('email', 'User')}!</h1>
+                <p>claims: {await claims.get_all_claims()}</p>
+                <p>feature flags: {await feature_flags.get_all_flags()}</p>
+                <p>permissions: {await permissions.get_permissions()}</p>
                 <p>You are logged in.</p>
                 <a href="/logout">Logout</a>
             </body>

@@ -130,8 +130,9 @@ class TestTokenManagerExtended(unittest.TestCase):
             # Should handle the exception and set empty claims
             self.token_manager.set_tokens(token_data)
             
-            # Verify claims is empty
-            self.assertEqual(self.token_manager.tokens.get("claims", None), {})
+            # Verify both claims dicts are empty
+            self.assertEqual(self.token_manager.tokens.get("access_token_claims", {}), {})
+            self.assertEqual(self.token_manager.tokens.get("id_token_claims", {}), {})
 
     def test_exchange_code_missing_redirect_uri(self):
         """Test exchange_code_for_token without setting redirect URI"""
@@ -296,7 +297,7 @@ class TestTokenManagerExtended(unittest.TestCase):
         
         # Set claims
         test_claims = {"sub": "123", "name": "Test User"}
-        self.token_manager.tokens = {"claims": test_claims}
+        self.token_manager.tokens = {"access_token_claims": test_claims}
         
         # Now should return the claims
         self.assertEqual(self.token_manager.get_claims(), test_claims)
@@ -321,7 +322,8 @@ class TestTokenManagerExtended(unittest.TestCase):
             self.token_manager.set_tokens(token_data)
             
             # Verify claims were set correctly
-            self.assertEqual(self.token_manager.tokens.get("claims"), test_claims)
+            self.assertEqual(self.token_manager.tokens.get("access_token_claims"), test_claims)
+            self.assertEqual(self.token_manager.tokens.get("id_token_claims"), test_claims)
 
     def test_exchange_code_with_code_verifier(self):
         """Test exchange_code_for_token with code_verifier (PKCE flow)"""

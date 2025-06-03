@@ -1,6 +1,7 @@
 import time
 import requests
 import threading
+import logging
 from typing import Any, Dict, Optional
 import jwt
 
@@ -39,14 +40,27 @@ class TokenManager:
     def set_tokens(self, token_data: Dict[str, Any]):
         """ Store tokens with expiration. """
         with self.lock:
-            self.tokens = {
+            # Update existing tokens instead of creating new dict
+            self.tokens.update({
                 "access_token": token_data.get("access_token"),
                 "expires_at": time.time() + token_data.get("expires_in", 3600),
-            }
+            })
             
             # Store refresh token if available
             if "refresh_token" in token_data:
                 self.tokens["refresh_token"] = token_data["refresh_token"]
+            
+            # Decode access token claims
+            if "access_token" in token_data:
+                try:
+                    access_token_payload = jwt.decode(
+                        token_data["access_token"],
+                        options={"verify_signature": False}
+                    )
+                    self.tokens["access_token_claims"] = access_token_payload
+                except Exception as e:
+                    logging.error(f"Failed to decode access token claims: {str(e)}")
+                    self.tokens["access_token_claims"] = {}
                 
             # Store ID token if available
             if "id_token" in token_data:
@@ -54,15 +68,14 @@ class TokenManager:
                 
                 # Parse claims from ID token
                 try:
-                    # Note: This is not secure verification, just for claims extraction
-                    # For proper verification, use the full JWT verification process
-                    payload = jwt.decode(
+                    id_token_payload = jwt.decode(
                         token_data["id_token"],
                         options={"verify_signature": False}
                     )
-                    self.tokens["claims"] = payload
-                except Exception:
-                    self.tokens["claims"] = {}
+                    self.tokens["id_token_claims"] = id_token_payload
+                except Exception as e:
+                    logging.error(f"Failed to decode ID token claims: {str(e)}")
+                    self.tokens["id_token_claims"] = {}
 
     def set_redirect_uri(self, redirect_uri: str):
         """Set the redirect URI for token exchange."""
@@ -141,8 +154,15 @@ class TokenManager:
         return self.tokens.get("id_token")
         
     def get_claims(self):
-        """Get the claims from the ID token if available."""
-        return self.tokens.get("claims", {})
+        """Get the claims from the access token if available, falling back to ID token claims."""
+        # First try to get claims from access token
+        claims = self.tokens.get("access_token_claims", {})
+        if not claims:
+            # Fall back to ID token claims if access token claims are not available
+            claims = self.tokens.get("id_token_claims", {})
+            if not claims:
+                logging.warning("No claims available in token manager")
+        return claims
     
     def revoke_token(self):
         """ Revoke the current access token. """

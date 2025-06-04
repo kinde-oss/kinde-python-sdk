@@ -1,12 +1,12 @@
 from typing import Dict, Any, Optional
 import logging
 import urllib.parse
-from urllib.parse import urlparse
+from urllib.parse import urlparse, URL
 import httpx
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.auth.user_session import UserSession
 
-class Profiles:
+class Portals:
     def __init__(self):
         self._logger = logging.getLogger("kinde_sdk")
         self._logger.setLevel(logging.INFO)
@@ -50,39 +50,46 @@ class Profiles:
             url = 'https://' + url
         return url.rstrip('/')
 
-    async def generate_profile_url(self, domain: str, return_url: str, sub_nav: str) -> Dict[str, str]:
+    async def generate_portal_url(self, domain: str, return_url: str, sub_nav: str = "profile") -> Dict[str, URL]:
         """
-        Generates a URL to the user profile portal.
+        Generates a URL to the user portal.
         
         Args:
             domain: The domain of the Kinde instance
-            return_url: URL to redirect to after completing the profile flow
-            sub_nav: Sub-navigation section to display
+            return_url: URL to redirect to after completing the portal flow
+            sub_nav: Sub-navigation section to display (defaults to "profile")
             
         Returns:
             Dict containing the URL to redirect to:
             {
-                "url": str
+                "url": URL
             }
             
         Raises:
             Exception: If active storage is not found
             Exception: If access token is not found
+            Exception: If return_url is not an absolute URL
             Exception: If the API request fails
             Exception: If the response contains an invalid URL
         """
         token_manager = self._get_token_manager()
         if not token_manager:
-            raise Exception("generate_profile_url: Active storage not found")
+            raise Exception("generate_portal_url: Active storage not found")
 
         token = token_manager.get_access_token()
         if not token:
-            raise Exception("generate_profile_url: Access Token not found")
+            raise Exception("generate_portal_url: Access Token not found")
+
+        if not return_url.startswith(('http://', 'https://')):
+            raise Exception("generate_portal_url: return_url must be an absolute URL")
 
         sanitized_domain = self._sanitize_url(domain)
-        encoded_return_url = urllib.parse.quote(return_url)
+        params = urllib.parse.urlencode({
+            'sub_nav': sub_nav,
+            'return_url': return_url
+        })
         
-        url = f"{sanitized_domain}/account_api/v1/portal_link?return_url={encoded_return_url}&sub_nav={sub_nav}"
+        url = f"{sanitized_domain}/account_api/v1/portal_link?{params}"
         
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -91,22 +98,18 @@ class Profiles:
             )
             
             if not response.is_success:
-                raise Exception(f"Failed to fetch profile URL: {response.status_code} {response.reason_phrase}")
+                raise Exception(f"Failed to fetch portal URL: {response.status_code} {response.reason_phrase}")
             
             result = response.json()
             if not result.get("url") or not isinstance(result["url"], str):
                 raise Exception("Invalid URL received from API")
             
             try:
-                # Validate the URL format
-                parsed_url = urlparse(result["url"])
-                if not all([parsed_url.scheme, parsed_url.netloc]):
-                    raise ValueError("Invalid URL format")
-                
-                return {"url": result["url"]}
+                portal_url = URL(result["url"])
+                return {"url": portal_url}
             except Exception as e:
                 self._logger.error(f"Error parsing URL: {e}")
                 raise Exception(f"Invalid URL format received from API: {result['url']}")
 
 # Create a singleton instance
-profiles = Profiles() 
+portals = Portals() 

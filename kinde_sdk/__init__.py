@@ -19,7 +19,7 @@ __all__ = [
     "UserSession",
     "permissions",
     "claims",
-    "profiles",
+    "portals",
     "feature_flags"
     "StorageFactory",
     "FrameworkFactory",

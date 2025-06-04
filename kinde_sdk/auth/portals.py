@@ -3,8 +3,18 @@ import logging
 import urllib.parse
 from urllib.parse import urlparse, URL
 import httpx
+from enum import Enum
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.auth.user_session import UserSession
+
+class PortalPage(str, Enum):
+    """Enum representing the different portal pages available."""
+    ORGANIZATION_DETAILS = "organization_details"
+    ORGANIZATION_MEMBERS = "organization_members"
+    ORGANIZATION_PLAN_DETAILS = "organization_plan_details"
+    ORGANIZATION_PAYMENT_DETAILS = "organization_payment_details"
+    ORGANIZATION_PLAN_SELECTION = "organization_plan_selection"
+    PROFILE = "profile"
 
 class Portals:
     def __init__(self):
@@ -50,14 +60,14 @@ class Portals:
             url = 'https://' + url
         return url.rstrip('/')
 
-    async def generate_portal_url(self, domain: str, return_url: str, sub_nav: str = "profile") -> Dict[str, URL]:
+    async def generate_portal_url(self, domain: str, return_url: str, sub_nav: PortalPage = PortalPage.PROFILE) -> Dict[str, URL]:
         """
         Generates a URL to the user portal.
         
         Args:
             domain: The domain of the Kinde instance
             return_url: URL to redirect to after completing the portal flow
-            sub_nav: Sub-navigation section to display (defaults to "profile")
+            sub_nav: Sub-navigation section to display (defaults to PortalPage.PROFILE)
             
         Returns:
             Dict containing the URL to redirect to:
@@ -85,7 +95,7 @@ class Portals:
 
         sanitized_domain = self._sanitize_url(domain)
         params = urllib.parse.urlencode({
-            'sub_nav': sub_nav,
+            'sub_nav': sub_nav.value,
             'return_url': return_url
         })
         

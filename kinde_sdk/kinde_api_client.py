@@ -342,8 +342,8 @@ class KindeApiClient(ApiClient):
         if isinstance(token, bytes):
             try:
                 token = token.decode('utf-8')
-            except UnicodeDecodeError:
-                raise KindeTokenException(f"Token {token_name} contains invalid UTF-8 bytes.")
+            except UnicodeDecodeError as err:
+                raise KindeTokenException(f"Token {token_name} contains invalid UTF-8 bytes.") from err
         
         if not isinstance(token, str):
             return token_value

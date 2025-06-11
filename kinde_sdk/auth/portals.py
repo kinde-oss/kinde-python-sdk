@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 import logging
 import urllib.parse
-from urllib.parse import urlparse, URL
+from urllib.parse import urlparse
 import httpx
 from enum import Enum
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
@@ -60,7 +60,7 @@ class Portals:
             url = 'https://' + url
         return url.rstrip('/')
 
-    async def generate_portal_url(self, domain: str, return_url: str, sub_nav: PortalPage = PortalPage.PROFILE) -> Dict[str, URL]:
+    async def generate_portal_url(self, domain: str, return_url: str, sub_nav: PortalPage = PortalPage.PROFILE) -> Dict[str, str]:
         """
         Generates a URL to the user portal.
         
@@ -115,8 +115,8 @@ class Portals:
                 raise Exception("Invalid URL received from API")
             
             try:
-                portal_url = URL(result["url"])
-                return {"url": portal_url}
+                portal_url = urlparse(result["url"])
+                return {"url": result["url"]}
             except Exception as e:
                 self._logger.error(f"Error parsing URL: {e}")
                 raise Exception(f"Invalid URL format received from API: {result['url']}")

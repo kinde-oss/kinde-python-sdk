@@ -133,12 +133,13 @@ class TestManagementTokenManager:
             "expires_in": 3600,
             "token_type": "Bearer"
         }
+        mock_response.raise_for_status.return_value = None  # Add this line
         mock_post.return_value = mock_response
         
         with patch('kinde_sdk.management.management_token_manager.time.time', return_value=2000):
             token = manager.request_new_token()
         
-        # Verify request was made correctly
+        # Verify request was made correctly (NOW INCLUDING TIMEOUT)
         mock_post.assert_called_once_with(
             "https://test.kinde.com/oauth2/token",
             data={
@@ -147,7 +148,8 @@ class TestManagementTokenManager:
                 "client_secret": "client_secret",
                 "audience": "https://test.kinde.com/api"
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=30  # ADD THIS LINE - our fix added timeout
         )
         
         # Verify token was stored and returned
@@ -165,8 +167,13 @@ class TestManagementTokenManager:
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("401 Unauthorized")
         mock_post.return_value = mock_response
         
-        with pytest.raises(requests.exceptions.HTTPError):
+        # NOW EXPECT OUR CUSTOM EXCEPTION, NOT THE ORIGINAL HTTPError
+        with pytest.raises(Exception) as exc_info:
             manager.request_new_token()
+        
+        # Verify it's our custom exception with the expected message format
+        assert "Token request failed for domain test.kinde.com" in str(exc_info.value)
+        assert "401 Unauthorized" in str(exc_info.value)
     
     @patch('kinde_sdk.management.management_token_manager.requests.post')
     def test_get_access_token_with_valid_token(self, mock_post):

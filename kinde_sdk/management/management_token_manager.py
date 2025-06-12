@@ -15,7 +15,7 @@ class ManagementTokenManager:
     Uses client credentials grant type to obtain access tokens.
     """
     _instances = {}
-    _lock = threading.Lock()  # Add a lock for thread safety
+    _lock = threading.RLock()  # Add a lock for thread safety
 
     @classmethod
     def reset_instances(cls):
@@ -23,11 +23,14 @@ class ManagementTokenManager:
         with cls._lock:
             cls._instances = {}
 
-    def __new__(cls, domain, client_id, client_secret):
+    def __new__(cls, domain, *args, **kwargs):
         """
         Ensure only one instance per domain and client_id combination.
+        FIXED: Restore original signature to match the original design
         """
         with cls._lock:
+            # Extract client_id from args or kwargs
+            client_id = args[0] if args else kwargs.get('client_id', '')
             instance_key = f"{domain}-{client_id}"
             if instance_key not in cls._instances:
                 cls._instances[instance_key] = super(ManagementTokenManager, cls).__new__(cls)
@@ -43,7 +46,7 @@ class ManagementTokenManager:
         self.client_secret = client_secret
         self.token_url = f"https://{domain}/oauth2/token"
         self.tokens = {}  # Store tokens
-        self.lock = threading.Lock()  # Add a lock for thread safety
+        self.lock = threading.RLock()  # Add a lock for thread safety
         self.initialized = True
 
     def set_tokens(self, token_data: Dict[str, Any]):
@@ -69,7 +72,7 @@ class ManagementTokenManager:
             return self.request_new_token()
 
     def request_new_token(self):
-        """ Use client credentials to get a new access token. """
+        """Use client credentials to get a new access token."""
         data = {
             "grant_type": "client_credentials",
             "client_id": self.client_id,
@@ -80,13 +83,26 @@ class ManagementTokenManager:
         headers = {
             "Content-Type": "application/x-www-form-urlencoded"
         }
-            
-        response = requests.post(self.token_url, data=data, headers=headers)
-        response.raise_for_status()
-        token_data = response.json()
         
-        self.set_tokens(token_data)
-        return self.tokens["access_token"]
+        # CHANGE 3: Add timeout to prevent hanging on network issues
+        try:
+            response = requests.post(
+                self.token_url, 
+                data=data, 
+                headers=headers,
+                timeout=30  # 30-second timeout
+            )
+            response.raise_for_status()
+            token_data = response.json()
+            
+            # This call now works because we use RLock
+            self.set_tokens(token_data)
+            return self.tokens["access_token"]
+            
+        except requests.exceptions.Timeout:
+            raise Exception(f"Token request timed out after 30 seconds for domain {self.domain}")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Token request failed for domain {self.domain}: {str(e)}")
 
     def clear_tokens(self):
         """ Clear stored tokens. """

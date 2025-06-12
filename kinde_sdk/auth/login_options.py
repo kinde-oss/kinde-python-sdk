@@ -25,6 +25,7 @@ class LoginOptions:
     HAS_SUCCESS_PAGE = "has_success_page"
     WORKFLOW_DEPLOYMENT_ID = "workflow_deployment_id"
     PLAN_INTEREST = "plan_interest"
+    PRICING_TABLE_KEY = "pricing_table_key"
     
     # Additional parameters container
     AUTH_PARAMS = "auth_params"

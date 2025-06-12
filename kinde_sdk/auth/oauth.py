@@ -255,6 +255,7 @@ class OAuth:
             LoginOptions.WORKFLOW_DEPLOYMENT_ID: "workflow_deployment_id",
             # Registration params
             LoginOptions.PLAN_INTEREST: "plan_interest",
+            LoginOptions.PRICING_TABLE_KEY: "pricing_table_key",
         }
         
         # Base search parameters with defaults
@@ -351,6 +352,7 @@ class OAuth:
                 - redirect_url: URL to redirect after authentication
                 - has_success_page: Whether to show success page
                 - workflow_deployment_id: Workflow deployment ID
+                - pricing_table_key: Optional string indicating the pricing table key
                 - auth_params: Additional auth parameters
                 
         Returns:
@@ -389,6 +391,7 @@ class OAuth:
                 - has_success_page: Whether to show success page
                 - workflow_deployment_id: Workflow deployment ID
                 - plan_interest: Optional string indicating the plan of interest
+                - pricing_table_key: Optional string indicating the pricing table key
                 - auth_params: Additional auth parameters
                 
         Returns:

@@ -1,0 +1,276 @@
+"""
+Test cases for SDK tracking header functionality.
+
+Tests the implementation of Kinde-SDK tracking headers as per specification requirements.
+"""
+
+import pytest
+import sys
+import unittest
+from unittest.mock import patch, Mock, MagicMock
+import importlib.metadata
+
+from kinde_sdk.management.management_token_manager import ManagementTokenManager
+
+
+class TestSDKTracking(unittest.TestCase):
+    """Test cases for SDK tracking header functionality."""
+    
+    def setUp(self):
+        """Reset instances before each test."""
+        ManagementTokenManager.reset_instances()
+    
+    def tearDown(self):
+        """Clean up after each test."""
+        ManagementTokenManager.reset_instances()
+
+    def test_sdk_version_detection(self):
+        """Test SDK version detection."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Test that version detection works
+        version = manager._get_sdk_version()
+        
+        # Should return either the actual version or the dev fallback
+        assert isinstance(version, str)
+        assert len(version) > 0
+        
+        # Version should be in semantic version format or dev format
+        assert any([
+            version.count('.') >= 2,  # Semantic version (e.g., "2.0.0")
+            'dev' in version.lower()   # Development version
+        ])
+
+    def test_python_version_detection(self):
+        """Test Python version detection."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        version = manager._get_python_version()
+        
+        # Should return current Python version
+        expected = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        assert version == expected
+        
+        # Version should have at least 2 dots (major.minor.micro)
+        assert version.count('.') >= 2
+
+    def test_framework_detection_no_framework(self):
+        """Test framework detection when no framework is present."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Mock importlib to simulate no frameworks installed
+        with patch('importlib.import_module') as mock_import:
+            mock_import.side_effect = ImportError("No module found")
+            
+            framework = manager._detect_framework()
+            assert framework is None
+
+    def test_framework_detection_with_flask(self):
+        """Test framework detection when Flask is present."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Mock importlib to simulate Flask being installed
+        with patch('importlib.import_module') as mock_import:
+            def mock_import_func(module_name):
+                if module_name == 'flask':
+                    return Mock()  # Simulate successful import
+                else:
+                    raise ImportError("Module not found")
+            
+            mock_import.side_effect = mock_import_func
+            
+            framework = manager._detect_framework()
+            assert framework == "Flask"
+
+    def test_framework_detection_with_django(self):
+        """Test framework detection when Django is present."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Mock importlib to simulate Django being installed
+        with patch('importlib.import_module') as mock_import:
+            def mock_import_func(module_name):
+                if module_name == 'django':
+                    return Mock()  # Simulate successful import
+                else:
+                    raise ImportError("Module not found")
+            
+            mock_import.side_effect = mock_import_func
+            
+            framework = manager._detect_framework()
+            assert framework == "Django"
+
+    def test_tracking_header_no_framework(self):
+        """Test tracking header generation when no framework is detected."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Mock version methods and framework detection
+        with patch.object(manager, '_get_sdk_version', return_value='2.0.0'):
+            with patch.object(manager, '_get_python_version', return_value='3.11.0'):
+                with patch.object(manager, '_detect_framework', return_value=None):
+                    
+                    header = manager._generate_tracking_header()
+                    
+                    # Should be in format: Python/[SDK_VERSION]
+                    assert header == "Python/2.0.0"
+
+    def test_tracking_header_with_framework(self):
+        """Test tracking header generation with framework detected."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Mock version methods and framework detection
+        with patch.object(manager, '_get_sdk_version', return_value='2.0.0'):
+            with patch.object(manager, '_get_python_version', return_value='3.11.0'):
+                with patch.object(manager, '_detect_framework', return_value='Flask'):
+                    
+                    header = manager._generate_tracking_header()
+                    
+                    # Should be in format: Python-[framework]/[SDK_VERSION]/[PYTHON_VERSION]/python
+                    assert header == "Python-Flask/2.0.0/3.11.0/python"
+
+    def test_tracking_header_with_override_framework(self):
+        """Test tracking header generation with framework override."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Mock version methods
+        with patch.object(manager, '_get_sdk_version', return_value='2.0.0'):
+            with patch.object(manager, '_get_python_version', return_value='3.11.0'):
+                
+                # Test with explicit framework override
+                header = manager._generate_tracking_header(framework="Django")
+                
+                # Should use the override framework
+                assert header == "Python-Django/2.0.0/3.11.0/python"
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_tracking_header_in_token_request(self, mock_post):
+        """Test that tracking header is included in actual token requests."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Mock successful response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "access_token": "test_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+        
+        # Mock tracking header generation
+        expected_header = "Python-TestFramework/2.0.0/3.11.0/python"
+        with patch.object(manager, '_generate_tracking_header', return_value=expected_header):
+            
+            # Make token request
+            token = manager.request_new_token()
+            
+            # Verify request was made with tracking header
+            mock_post.assert_called_once()
+            call_args = mock_post.call_args
+            
+            # Check headers include tracking header
+            headers = call_args[1]['headers']  # kwargs['headers']
+            assert 'Kinde-SDK' in headers
+            assert headers['Kinde-SDK'] == expected_header
+            
+            # Verify other required headers are still present
+            assert headers['Content-Type'] == 'application/x-www-form-urlencoded'
+            
+            # Verify timeout is still included
+            assert call_args[1]['timeout'] == 30
+
+    def test_framework_detection_priority(self):
+        """Test that framework detection stops at first match."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Mock importlib to simulate multiple frameworks installed
+        # Should return the first one found (based on detection order)
+        with patch('importlib.import_module') as mock_import:
+            def mock_import_func(module_name):
+                if module_name in ['django', 'flask']:
+                    return Mock()  # Both available
+                else:
+                    raise ImportError("Module not found")
+            
+            mock_import.side_effect = mock_import_func
+            
+            framework = manager._detect_framework()
+            
+            # Should return the first one in the detection order (Django comes before Flask)
+            assert framework == "Django"
+
+    def test_tracking_header_real_environment(self):
+        """Test tracking header generation in real environment."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Generate header with real environment values
+        header = manager._generate_tracking_header()
+        
+        # Should be a valid string
+        assert isinstance(header, str)
+        assert len(header) > 0
+        
+        # Should start with "Python"
+        assert header.startswith("Python")
+        
+        # Should contain version information
+        assert any(char.isdigit() for char in header)
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_tracking_header_format_compliance(self, mock_post):
+        """Test that tracking header format complies with specification."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        
+        # Mock successful response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "access_token": "test_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+        
+        # Make token request
+        manager.request_new_token()
+        
+        # Get the actual header sent
+        headers = mock_post.call_args[1]['headers']
+        tracking_header = headers.get('Kinde-SDK')
+        
+        # Verify header format compliance
+        assert tracking_header is not None
+        assert tracking_header.startswith('Python')
+        
+        # Check if it's one of the two expected formats:
+        # Format 1: Python/[version]
+        # Format 2: Python-[framework]/[sdk_version]/[python_version]/python
+        
+        if '/' in tracking_header:
+            parts = tracking_header.split('/')
+            assert len(parts) >= 2  # At minimum: Python/version
+            
+            if len(parts) == 4:  # Full format with framework
+                assert parts[0].startswith('Python-')  # Python-[framework]
+                assert parts[3] == 'python'  # Should end with 'python'
+        
+        print(f"Generated tracking header: {tracking_header}")
+
+    def test_multiple_managers_same_tracking(self):
+        """Test that multiple managers generate consistent tracking headers."""
+        manager1 = ManagementTokenManager("test1.kinde.com", "client1", "secret1")
+        manager2 = ManagementTokenManager("test2.kinde.com", "client2", "secret2")
+        
+        header1 = manager1._generate_tracking_header()
+        header2 = manager2._generate_tracking_header()
+        
+        # Headers should be identical since they're from the same environment
+        assert header1 == header2
+
+
+if __name__ == '__main__':
+    print("TESTING SDK TRACKING HEADER FUNCTIONALITY")
+    print("=" * 55)
+    print("Testing compliance with Kinde SDK tracking specification")
+    print("=" * 55)
+    
+    unittest.main(verbosity=2)

@@ -664,6 +664,27 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+# Version Tracking And Framework detection
+
+The implementation generates headers in the exact format specified:
+
+No Framework: Python/2.0.0
+
+With Framework: Python-Flask/2.0.0/3.11.0/python
+
+
+## Framework Detection
+
+Auto-detects these frameworks:
+
+Django, Flask, FastAPI (more frameworks can be added)
+
+## Version Detection
+
+SDK Version: Automatically detected from package metadata
+Python Version: Detected from  ```sys.version_info```          
+Fallback: Uses "2.0.0-dev" during development
+
 
 ## Publishing
 

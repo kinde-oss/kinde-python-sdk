@@ -182,6 +182,40 @@ class ManagementClient:
         """
         resource_singular = resource[:-1] if resource.endswith('s') else resource
         
+        # def api_method(*args, **kwargs) -> Dict[str, Any]:
+        #     # Format path with any path parameters from args
+        #     formatted_path = path
+        #     if '{' in path and args:
+        #         param_values = list(args)
+        #         while '{' in formatted_path and param_values:
+        #             start_idx = formatted_path.find('{')
+        #             end_idx = formatted_path.find('}')
+        #             if start_idx >= 0 and end_idx >= 0:
+        #                 formatted_path = formatted_path[:start_idx] + str(param_values.pop(0)) + formatted_path[end_idx + 1:]
+            
+        #     # Handle query params or body data based on HTTP method
+        #     query_params = None
+        #     body = None
+            
+        #     if http_method in ('GET', 'DELETE'):
+        #         query_params = {k: v for k, v in kwargs.items() if v is not None}
+        #     else:
+        #         body = {k: v for k, v in kwargs.items() if v is not None}
+            
+        #     # Make the API call
+        #     response = self.api_client.call_api(
+        #         formatted_path,
+        #         http_method,
+        #         auth_settings=['kindeBearerAuth'],
+        #         _return_http_data_only=True,
+        #         _preload_content=True,
+        #         _request_timeout=None,
+        #         query_params=query_params,
+        #         body=body
+        #     )
+            
+        #     return response
+
         def api_method(*args, **kwargs) -> Dict[str, Any]:
             # Format path with any path parameters from args
             formatted_path = path
@@ -202,16 +236,22 @@ class ManagementClient:
             else:
                 body = {k: v for k, v in kwargs.items() if v is not None}
             
-            # Make the API call
+            # FIXED: Use correct parameter names that match ApiClient.call_api() signature
+            # Handle query parameters by appending them to the path
+            final_path = formatted_path
+            if query_params and http_method in ('GET', 'DELETE'):
+                query_string = '&'.join([f"{k}={v}" for k, v in query_params.items() if v is not None])
+                if query_string:
+                    separator = '&' if '?' in final_path else '?'
+                    final_path = f"{final_path}{separator}{query_string}"
+            
             response = self.api_client.call_api(
-                formatted_path,
-                http_method,
+                resource_path=final_path,
+                method=http_method,
                 auth_settings=['kindeBearerAuth'],
-                _return_http_data_only=True,
-                _preload_content=True,
-                _request_timeout=None,
-                query_params=query_params,
-                body=body
+                timeout=None,  # Fixed: was _request_timeout
+                body=body if http_method not in ('GET', 'DELETE') else None
+                # Removed: _return_http_data_only, _preload_content, query_params (don't exist)
             )
             
             return response

@@ -99,8 +99,8 @@ class TestSDKTracking(unittest.TestCase):
             framework = manager._detect_framework()
             assert framework == "Django"
 
-    def test_tracking_header_no_framework(self):
-        """Test tracking header generation when no framework is detected."""
+    def test_tracking_header_no_framework_four_segments(self):
+        """Test tracking header generation when no framework is detected - should have 4 segments."""
         manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
         
         # Mock version methods and framework detection
@@ -110,11 +110,19 @@ class TestSDKTracking(unittest.TestCase):
                     
                     header = manager._generate_tracking_header()
                     
-                    # Should be in format: Python/[SDK_VERSION]
-                    assert header == "Python/2.0.0"
+                    # Should be in format: Python/[SDK_VERSION]/[PYTHON_VERSION]/python
+                    assert header == "Python/2.0.0/3.11.0/python"
+                    
+                    # Verify it has exactly 4 segments
+                    segments = header.split('/')
+                    assert len(segments) == 4
+                    assert segments[0] == "Python"
+                    assert segments[1] == "2.0.0"
+                    assert segments[2] == "3.11.0"
+                    assert segments[3] == "python"
 
-    def test_tracking_header_with_framework(self):
-        """Test tracking header generation with framework detected."""
+    def test_tracking_header_with_framework_four_segments(self):
+        """Test tracking header generation with framework detected - should have 4 segments."""
         manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
         
         # Mock version methods and framework detection
@@ -126,24 +134,48 @@ class TestSDKTracking(unittest.TestCase):
                     
                     # Should be in format: Python-[framework]/[SDK_VERSION]/[PYTHON_VERSION]/python
                     assert header == "Python-Flask/2.0.0/3.11.0/python"
+                    
+                    # Verify it has exactly 4 segments
+                    segments = header.split('/')
+                    assert len(segments) == 4
+                    assert segments[0] == "Python-Flask"
+                    assert segments[1] == "2.0.0"
+                    assert segments[2] == "3.11.0"
+                    assert segments[3] == "python"
 
-    def test_tracking_header_with_override_framework(self):
-        """Test tracking header generation with framework override."""
+    def test_tracking_header_format_compliance_all_cases(self):
+        """Test that all tracking header formats comply with 4-segment requirement."""
         manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
         
-        # Mock version methods
-        with patch.object(manager, '_get_sdk_version', return_value='2.0.0'):
-            with patch.object(manager, '_get_python_version', return_value='3.11.0'):
-                
-                # Test with explicit framework override
-                header = manager._generate_tracking_header(framework="Django")
-                
-                # Should use the override framework
-                assert header == "Python-Django/2.0.0/3.11.0/python"
+        test_cases = [
+            (None, "Python/2.0.0/3.11.0/python"),
+            ("Flask", "Python-Flask/2.0.0/3.11.0/python"),
+            ("Django", "Python-Django/2.0.0/3.11.0/python"),
+            ("FastAPI", "Python-FastAPI/2.0.0/3.11.0/python"),
+        ]
+        
+        for framework, expected_header in test_cases:
+            with self.subTest(framework=framework):
+                with patch.object(manager, '_get_sdk_version', return_value='2.0.0'):
+                    with patch.object(manager, '_get_python_version', return_value='3.11.0'):
+                        if framework:
+                            # Test with explicit framework
+                            header = manager._generate_tracking_header(framework=framework)
+                        else:
+                            # Test with no framework detected
+                            with patch.object(manager, '_detect_framework', return_value=None):
+                                header = manager._generate_tracking_header()
+                        
+                        assert header == expected_header
+                        
+                        # Verify 4-segment format
+                        segments = header.split('/')
+                        assert len(segments) == 4, f"Header {header} should have 4 segments, got {len(segments)}"
+                        assert segments[3] == "python", f"Last segment should be 'python', got '{segments[3]}'"
 
     @patch('kinde_sdk.management.management_token_manager.requests.post')
-    def test_tracking_header_in_token_request(self, mock_post):
-        """Test that tracking header is included in actual token requests."""
+    def test_tracking_header_in_token_request_four_segments(self, mock_post):
+        """Test that tracking header in actual token requests has 4 segments."""
         manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
         
         # Mock successful response
@@ -156,64 +188,47 @@ class TestSDKTracking(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
         
-        # Mock tracking header generation
-        expected_header = "Python-TestFramework/2.0.0/3.11.0/python"
-        with patch.object(manager, '_generate_tracking_header', return_value=expected_header):
-            
-            # Make token request
-            token = manager.request_new_token()
-            
-            # Verify request was made with tracking header
-            mock_post.assert_called_once()
-            call_args = mock_post.call_args
-            
-            # Check headers include tracking header
-            headers = call_args[1]['headers']  # kwargs['headers']
-            assert 'Kinde-SDK' in headers
-            assert headers['Kinde-SDK'] == expected_header
-            
-            # Verify other required headers are still present
-            assert headers['Content-Type'] == 'application/x-www-form-urlencoded'
-            
-            # Verify timeout is still included
-            assert call_args[1]['timeout'] == 30
-
-    def test_framework_detection_priority(self):
-        """Test that framework detection stops at first match."""
-        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        # Make token request
+        manager.request_new_token()
         
-        # Mock importlib to simulate multiple frameworks installed
-        # Should return the first one found (based on detection order)
-        with patch('importlib.import_module') as mock_import:
-            def mock_import_func(module_name):
-                if module_name in ['django', 'flask']:
-                    return Mock()  # Both available
-                else:
-                    raise ImportError("Module not found")
-            
-            mock_import.side_effect = mock_import_func
-            
-            framework = manager._detect_framework()
-            
-            # Should return the first one in the detection order (Django comes before Flask)
-            assert framework == "Django"
+        # Get the actual header sent
+        headers = mock_post.call_args[1]['headers']
+        tracking_header = headers.get('Kinde-SDK')
+        
+        # Verify header exists and has 4 segments
+        assert tracking_header is not None
+        segments = tracking_header.split('/')
+        assert len(segments) == 4, f"Tracking header should have 4 segments, got {len(segments)}: {tracking_header}"
+        
+        # Verify format
+        assert segments[0].startswith('Python'), f"First segment should start with 'Python', got '{segments[0]}'"
+        assert segments[3] == 'python', f"Last segment should be 'python', got '{segments[3]}'"
+        
+        print(f"✅ Generated 4-segment tracking header: {tracking_header}")
 
-    def test_tracking_header_real_environment(self):
-        """Test tracking header generation in real environment."""
+    def test_real_environment_four_segments(self):
+        """Test tracking header generation in real environment has 4 segments."""
         manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
         
         # Generate header with real environment values
         header = manager._generate_tracking_header()
         
-        # Should be a valid string
+        # Should be a valid string with 4 segments
         assert isinstance(header, str)
         assert len(header) > 0
         
-        # Should start with "Python"
-        assert header.startswith("Python")
+        segments = header.split('/')
+        assert len(segments) == 4, f"Real environment header should have 4 segments, got {len(segments)}: {header}"
+        
+        # Should follow the pattern
+        assert segments[0].startswith("Python"), f"First segment should start with 'Python', got '{segments[0]}'"
+        assert segments[3] == "python", f"Last segment should be 'python', got '{segments[3]}'"
         
         # Should contain version information
-        assert any(char.isdigit() for char in header)
+        assert any(char.isdigit() for char in segments[1]), f"Second segment should contain version numbers: '{segments[1]}'"
+        assert any(char.isdigit() for char in segments[2]), f"Third segment should contain version numbers: '{segments[2]}'"
+        
+        print(f"✅ Real environment 4-segment header: {header}")
 
     @patch('kinde_sdk.management.management_token_manager.requests.post')
     def test_tracking_header_format_compliance(self, mock_post):

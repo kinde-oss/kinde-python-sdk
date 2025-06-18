@@ -33,6 +33,15 @@ Update your `requirements.txt` or `pyproject.toml` to use the new SDK:
 kinde-python-sdk = "^2.0.0"
 ```
 
+Or install directly using pip:
+```bash
+# Install the latest v2 version
+pip install kinde-python-sdk>=2.0.0
+
+# Install a specific v2 version
+pip install kinde-python-sdk==2.0.0b11
+```
+
 ### 2. Framework-Specific Changes
 
 #### Flask
@@ -124,6 +133,49 @@ user_claims = claims.get_claims()
 3. Token management is now handled through the `TokenManager` class
 4. Session management is now handled through the `UserSession` class
 5. Storage and framework abstractions are now required
+
+### Historical v1 Methods
+
+#### Feature Flags
+```python
+# Old (v1)
+client.get_flag(code="flag_name", default_value=None, flag_type="")
+client.get_boolean_flag(code="flag_name", default_value=None)
+client.get_string_flag(code="flag_name", default_value=None)
+client.get_integer_flag(code="flag_name", default_value=None)
+
+# New (v2)
+from kinde_sdk import feature_flags
+
+flag = await feature_flags.get_flag("flag_name", default_value=None)
+all_flags = await feature_flags.get_all_flags()
+```
+
+#### Permissions
+```python
+# Old (v1)
+client.get_permission(permission="permission_name")
+client.get_permissions()
+
+# New (v2)
+from kinde_sdk import permissions
+
+permission = await permissions.get_permission("permission_name")
+all_permissions = await permissions.get_permissions()
+```
+
+#### Claims
+```python
+# Old (v1)
+client.get_claim(key="claim_name", token_name="access_token")
+client.get_claim_token(token_value={}, key="claim_name", token_name="access_token")
+
+# New (v2)
+from kinde_sdk import claims
+
+claim = await claims.get_claim("claim_name")
+all_claims = await claims.get_all_claims()
+```
 
 ## Additional Notes
 

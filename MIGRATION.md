@@ -1,11 +1,11 @@
-# Migrating from Kinde Python SDK v1 to v2.1
+# Migrating from Kinde Python SDK v1 to v2
 
-This document outlines the key changes and migration steps when upgrading from Kinde Python SDK v1 to v2.1.
+This document outlines the key changes and migration steps when upgrading from Kinde Python SDK v1 to v2.
 
 ## Major Changes
 
 ### 1. Framework-Specific Implementations
-The v2.1 SDK introduces dedicated framework implementations for:
+The v2.0 SDK introduces dedicated framework implementations for:
 - Flask
 - FastAPI
 
@@ -30,7 +30,7 @@ The authentication implementation has been completely revamped:
 ### 1. Update Dependencies
 Update your `requirements.txt` or `pyproject.toml` to use the new SDK:
 ```toml
-kinde-python-sdk = "^2.1.0"
+kinde-python-sdk = "^2.0.0"
 ```
 
 ### 2. Framework-Specific Changes
@@ -40,13 +40,13 @@ kinde-python-sdk = "^2.1.0"
 # Old (v1)
 from kinde_sdk import KindeClient
 
-# New (v2.1)
+# New (v2)
 from kinde_flask import KindeFlask
 ```
 
 #### FastAPI
 ```python
-# New (v2.1)
+# New (v2)
 from kinde_fastapi import KindeFastAPI
 ```
 
@@ -59,7 +59,7 @@ client = KindeClient(
     domain="your_domain"
 )
 
-# New (v2.1)
+# New (v2)
 from kinde_sdk import OAuth
 
 oauth = OAuth(
@@ -75,7 +75,7 @@ oauth = OAuth(
 # Old (v1)
 token = client.get_token()
 
-# New (v2.1)
+# New (v2)
 from kinde_sdk import TokenManager
 
 token_manager = TokenManager(oauth)
@@ -84,7 +84,7 @@ token = token_manager.get_token()
 
 ### 5. User Session
 ```python
-# New (v2.1)
+# New (v2)
 from kinde_sdk import UserSession
 
 session = UserSession(oauth)
@@ -95,7 +95,7 @@ user_info = session.get_user_info()
 
 ### 1. Feature Flags
 ```python
-# New (v2.1)
+# New (v2)
 from kinde_sdk import feature_flags
 
 flags = feature_flags.get_flags()
@@ -103,7 +103,7 @@ flags = feature_flags.get_flags()
 
 ### 2. Permissions
 ```python
-# New (v2.1)
+# New (v2)
 from kinde_sdk import permissions
 
 has_permission = permissions.check("permission_name")
@@ -111,7 +111,7 @@ has_permission = permissions.check("permission_name")
 
 ### 3. Claims
 ```python
-# New (v2.1)
+# New (v2)
 from kinde_sdk import claims
 
 user_claims = claims.get_claims()
@@ -127,7 +127,7 @@ user_claims = claims.get_claims()
 
 ## Additional Notes
 
-- The v2.1 SDK provides better type hints and documentation
+- The v2.0 SDK provides better type hints and documentation
 - Improved error handling and logging
 - Better support for custom implementations
 - More robust token refresh mechanism

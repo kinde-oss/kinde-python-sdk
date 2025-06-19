@@ -185,11 +185,13 @@ class ManagementTokenManager:
         """
         Generate the Kinde-SDK tracking header value.
         
+        Format: [SDK Used]/[Version of SDK]/[Version of language]/python
+        
         Args:
             framework: Optional framework name to override auto-detection
             
         Returns:
-            str: Header value in format as per specification
+            str: Header value in 4-segment format as per client specification
         """
         sdk_version = self._get_sdk_version()
         python_version = self._get_python_version()
@@ -201,8 +203,8 @@ class ManagementTokenManager:
             # Format: Python-[framework]/[SDK_VERSION]/[PYTHON_VERSION]/python
             return f"Python-{detected_framework}/{sdk_version}/{python_version}/python"
         else:
-            # Format: Python/[SDK_VERSION] (when no framework detected)
-            return f"Python/{sdk_version}"
+            # Format: Python/[SDK_VERSION]/[PYTHON_VERSION]/python (FIXED - now 4 segments)
+            return f"Python/{sdk_version}/{python_version}/python"
 
     def set_tokens(self, token_data: Dict[str, Any]):
         """ Store tokens with expiration. """
@@ -226,39 +228,6 @@ class ManagementTokenManager:
             # Need to get a new token
             return self.request_new_token()
 
-    # def request_new_token(self):
-    #     """Use client credentials to get a new access token."""
-    #     data = {
-    #         "grant_type": "client_credentials",
-    #         "client_id": self.client_id,
-    #         "client_secret": self.client_secret,
-    #         "audience": f"https://{self.domain}/api"
-    #     }
-            
-    #     headers = {
-    #         "Content-Type": "application/x-www-form-urlencoded"
-    #     }
-        
-    #     # CHANGE 3: Add timeout to prevent hanging on network issues
-    #     try:
-    #         response = requests.post(
-    #             self.token_url, 
-    #             data=data, 
-    #             headers=headers,
-    #             timeout=30  # 30-second timeout
-    #         )
-    #         response.raise_for_status()
-    #         token_data = response.json()
-            
-    #         # This call now works because we use RLock
-    #         self.set_tokens(token_data)
-    #         return self.tokens["access_token"]
-            
-    #     except requests.exceptions.Timeout:
-    #         raise Exception(f"Token request timed out after 30 seconds for domain {self.domain}")
-    #     except requests.exceptions.RequestException as e:
-    #         raise Exception(f"Token request failed for domain {self.domain}: {str(e)}")
-
     def request_new_token(self):
         """Use client credentials to get a new access token with tracking headers."""
         data = {
@@ -275,6 +244,7 @@ class ManagementTokenManager:
         
         # Add SDK tracking header as per specification
         # This is required for analytics and support purposes
+        # Format: [SDK Used]/[Version of SDK]/[Version of language]/python
         headers["Kinde-SDK"] = self._generate_tracking_header()
         
         # Add timeout to prevent hanging on network issues

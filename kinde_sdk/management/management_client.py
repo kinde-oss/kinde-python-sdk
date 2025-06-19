@@ -181,40 +181,6 @@ class ManagementClient:
             A callable method that makes the API request
         """
         resource_singular = resource[:-1] if resource.endswith('s') else resource
-        
-        # def api_method(*args, **kwargs) -> Dict[str, Any]:
-        #     # Format path with any path parameters from args
-        #     formatted_path = path
-        #     if '{' in path and args:
-        #         param_values = list(args)
-        #         while '{' in formatted_path and param_values:
-        #             start_idx = formatted_path.find('{')
-        #             end_idx = formatted_path.find('}')
-        #             if start_idx >= 0 and end_idx >= 0:
-        #                 formatted_path = formatted_path[:start_idx] + str(param_values.pop(0)) + formatted_path[end_idx + 1:]
-            
-        #     # Handle query params or body data based on HTTP method
-        #     query_params = None
-        #     body = None
-            
-        #     if http_method in ('GET', 'DELETE'):
-        #         query_params = {k: v for k, v in kwargs.items() if v is not None}
-        #     else:
-        #         body = {k: v for k, v in kwargs.items() if v is not None}
-            
-        #     # Make the API call
-        #     response = self.api_client.call_api(
-        #         formatted_path,
-        #         http_method,
-        #         auth_settings=['kindeBearerAuth'],
-        #         _return_http_data_only=True,
-        #         _preload_content=True,
-        #         _request_timeout=None,
-        #         query_params=query_params,
-        #         body=body
-        #     )
-            
-        #     return response
 
         def api_method(*args, **kwargs) -> Dict[str, Any]:
             # Format path with any path parameters from args

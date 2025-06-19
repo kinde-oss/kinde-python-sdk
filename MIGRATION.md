@@ -50,13 +50,43 @@ pip install kinde-python-sdk==2.0.0b11
 from kinde_sdk import KindeClient
 
 # New (v2)
-from kinde_flask import KindeFlask
+from kinde_sdk.auth.oauth import OAuth
+
+# Initialize Flask app
+app = Flask(__name__)
+
+# Initialize Kinde OAuth with Flask framework
+kinde_oauth = OAuth(
+    framework="flask",
+    app=app
+)
+
+# Check authentication
+if kinde_oauth.is_authenticated():
+    user = kinde_oauth.get_user_info()
 ```
 
 #### FastAPI
 ```python
 # New (v2)
-from kinde_fastapi import KindeFastAPI
+from kinde_sdk.auth.oauth import OAuth
+from kinde_sdk.auth import claims, feature_flags, permissions
+
+# Initialize FastAPI app
+app = FastAPI(title="Kinde FastAPI Example")
+
+# Initialize Kinde OAuth with FastAPI framework
+kinde_oauth = OAuth(
+    framework="fastapi",
+    app=app
+)
+
+# Check authentication and get user info
+if kinde_oauth.is_authenticated():
+    user = kinde_oauth.get_user_info()
+    all_claims = await claims.get_all_claims()
+    all_flags = await feature_flags.get_all_flags()
+    all_permissions = await permissions.get_permissions()
 ```
 
 ### 3. Authentication Changes
@@ -85,19 +115,21 @@ oauth = OAuth(
 token = client.get_token()
 
 # New (v2)
-from kinde_sdk import TokenManager
+# Token management is handled internally by the SDK for most use cases.
+# For advanced use cases, you can access the token manager via the new tokens class:
+from kinde_sdk.auth import tokens
 
-token_manager = TokenManager(oauth)
-token = token_manager.get_token()
-```
+token_manager = tokens.get_token_manager()
+if token_manager:
+    # Access raw tokens and claims
+    access_token = token_manager.tokens.get("access_token")
+    id_token = token_manager.tokens.get("id_token")
+    refresh_token = token_manager.tokens.get("refresh_token")
+    claims = token_manager.get_claims()
 
-### 5. User Session
-```python
-# New (v2)
-from kinde_sdk import UserSession
-
-session = UserSession(oauth)
-user_info = session.get_user_info()
+# You can also get a summary of the token state:
+token_info = tokens.get_token_info()
+print(token_info)
 ```
 
 ## New Features

@@ -181,29 +181,6 @@ class ManagementTokenManager:
                 continue
         return None
 
-    # def _generate_tracking_header(self, framework: Optional[str] = None) -> str:
-    #     """
-    #     Generate the Kinde-SDK tracking header value.
-        
-    #     Args:
-    #         framework: Optional framework name to override auto-detection
-            
-    #     Returns:
-    #         str: Header value in format as per specification
-    #     """
-    #     sdk_version = self._get_sdk_version()
-    #     python_version = self._get_python_version()
-        
-    #     # Use provided framework or auto-detect
-    #     detected_framework = framework or self._detect_framework()
-        
-    #     if detected_framework:
-    #         # Format: Python-[framework]/[SDK_VERSION]/[PYTHON_VERSION]/python
-    #         return f"Python-{detected_framework}/{sdk_version}/{python_version}/python"
-    #     else:
-    #         # Format: Python/[SDK_VERSION] (when no framework detected)
-    #         return f"Python/{sdk_version}"
-
     def _generate_tracking_header(self, framework: Optional[str] = None) -> str:
         """
         Generate the Kinde-SDK tracking header value.

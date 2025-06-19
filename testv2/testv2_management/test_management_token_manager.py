@@ -123,7 +123,7 @@ class TestManagementTokenManager:
     
     # @patch('kinde_sdk.management.management_token_manager.requests.post')
     # def test_request_new_token_success(self, mock_post):
-    #     """Test successful token request."""
+    #     """Test successful token request with SDK tracking header."""
     #     manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
         
     #     # Mock successful response
@@ -133,13 +133,13 @@ class TestManagementTokenManager:
     #         "expires_in": 3600,
     #         "token_type": "Bearer"
     #     }
-    #     mock_response.raise_for_status.return_value = None  # Add this line
+    #     mock_response.raise_for_status.return_value = None
     #     mock_post.return_value = mock_response
         
     #     with patch('kinde_sdk.management.management_token_manager.time.time', return_value=2000):
     #         token = manager.request_new_token()
         
-    #     # Verify request was made correctly (NOW INCLUDING TIMEOUT)
+    #     # Verify request was made correctly
     #     mock_post.assert_called_once_with(
     #         "https://test.kinde.com/oauth2/token",
     #         data={
@@ -148,9 +148,17 @@ class TestManagementTokenManager:
     #             "client_secret": "client_secret",
     #             "audience": "https://test.kinde.com/api"
     #         },
-    #         headers={"Content-Type": "application/x-www-form-urlencoded"},
-    #         timeout=30  # ADD THIS LINE - our fix added timeout
+    #         headers={
+    #             "Content-Type": "application/x-www-form-urlencoded",
+    #             "Kinde-SDK": mock_post.call_args[1]['headers']['Kinde-SDK']  # UPDATED: Accept whatever tracking header is generated
+    #         },
+    #         timeout=30
     #     )
+        
+    #     # Verify the tracking header exists and has correct format
+    #     actual_headers = mock_post.call_args[1]['headers']
+    #     assert 'Kinde-SDK' in actual_headers
+    #     assert actual_headers['Kinde-SDK'].startswith('Python')
         
     #     # Verify token was stored and returned
     #     assert token == "new_access_token"
@@ -159,7 +167,7 @@ class TestManagementTokenManager:
 
     @patch('kinde_sdk.management.management_token_manager.requests.post')
     def test_request_new_token_success(self, mock_post):
-        """Test successful token request with SDK tracking header."""
+        """Test successful token request with corrected 4-segment tracking header."""
         manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
         
         # Mock successful response
@@ -175,26 +183,33 @@ class TestManagementTokenManager:
         with patch('kinde_sdk.management.management_token_manager.time.time', return_value=2000):
             token = manager.request_new_token()
         
-        # Verify request was made correctly
-        mock_post.assert_called_once_with(
-            "https://test.kinde.com/oauth2/token",
-            data={
-                "grant_type": "client_credentials",
-                "client_id": "client_id",
-                "client_secret": "client_secret",
-                "audience": "https://test.kinde.com/api"
-            },
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Kinde-SDK": mock_post.call_args[1]['headers']['Kinde-SDK']  # UPDATED: Accept whatever tracking header is generated
-            },
-            timeout=30
-        )
+        # Verify request was made
+        mock_post.assert_called_once()
         
-        # Verify the tracking header exists and has correct format
-        actual_headers = mock_post.call_args[1]['headers']
-        assert 'Kinde-SDK' in actual_headers
-        assert actual_headers['Kinde-SDK'].startswith('Python')
+        # Get the actual call arguments
+        call_args = mock_post.call_args
+        
+        # Verify the URL, data, and timeout
+        assert call_args[0][0] == "https://test.kinde.com/oauth2/token"
+        assert call_args[1]['timeout'] == 30
+        assert call_args[1]['data'] == {
+            "grant_type": "client_credentials",
+            "client_id": "client_id",
+            "client_secret": "client_secret",
+            "audience": "https://test.kinde.com/api"
+        }
+        
+        # Verify headers include both required headers
+        headers = call_args[1]['headers']
+        assert headers['Content-Type'] == 'application/x-www-form-urlencoded'
+        assert 'Kinde-SDK' in headers
+        
+        # Verify tracking header format is corrected (4 segments)
+        tracking_header = headers['Kinde-SDK']
+        segments = tracking_header.split('/')
+        assert len(segments) == 4, f"Tracking header should have 4 segments, got {len(segments)}: {tracking_header}"
+        assert segments[0].startswith('Python'), f"First segment should start with 'Python', got '{segments[0]}'"
+        assert segments[3] == 'python', f"Last segment should be 'python', got '{segments[3]}'"
         
         # Verify token was stored and returned
         assert token == "new_access_token"

@@ -66,6 +66,8 @@ if kinde_oauth.is_authenticated():
     user = kinde_oauth.get_user_info()
 ```
 
+**📖 See complete Flask example:** `kinde_flask/examples/example_app.py`
+
 #### FastAPI
 ```python
 # New (v2)
@@ -88,6 +90,8 @@ if kinde_oauth.is_authenticated():
     all_flags = await feature_flags.get_all_flags()
     all_permissions = await permissions.get_permissions()
 ```
+
+**📖 See complete FastAPI example:** `kinde_fastapi/examples/example_app.py`
 
 ### 3. Authentication Changes
 ```python
@@ -131,6 +135,27 @@ if token_manager:
 token_info = tokens.get_token_info()
 print(token_info)
 ```
+
+## Framework Examples
+
+For complete, working examples of how to integrate the Kinde Python SDK v2 with your framework, see:
+
+### Flask Example
+- **Location:** `kinde_flask/examples/example_app.py`
+- **Features:** Basic authentication flow, user info display, login/logout functionality
+- **Key highlights:** Simple Flask integration with session management
+
+### FastAPI Example  
+- **Location:** `kinde_fastapi/examples/example_app.py`
+- **Features:** Full authentication flow, claims, feature flags, permissions, and token access
+- **Key highlights:** Async/await support, comprehensive SDK feature demonstration
+
+Both examples include:
+- Environment variable configuration
+- Session middleware setup
+- Authentication status checking
+- User information retrieval
+- Login/logout endpoints
 
 ## New Features
 

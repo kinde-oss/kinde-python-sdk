@@ -206,6 +206,27 @@ class UnprocessableEntityException(ApiException):
     pass
 
 
+# Kinde-specific exceptions
+class KindeConfigurationException(Exception):
+    """Exception raised for Kinde configuration errors."""
+    pass
+
+
+class KindeLoginException(Exception):
+    """Exception raised for Kinde login errors."""
+    pass
+
+
+class KindeTokenException(Exception):
+    """Exception raised for Kinde token errors."""
+    pass
+
+
+class KindeRetrieveException(Exception):
+    """Exception raised for Kinde retrieve errors."""
+    pass
+
+
 def render_path(path_to_item):
     """Returns a string representation of a path"""
     result = ""

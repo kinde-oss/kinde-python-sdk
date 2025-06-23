@@ -1,0 +1,8 @@
+# openapi-generator-cli config for python
+
+packageName: kinde_sdk
+projectName: kinde-python-sdk
+packageVersion: 1.0.0
+# It is recommended to use a released version of the generator.
+# For example:
+# generatorVersion: "6.2.1" 

@@ -2,6 +2,10 @@
 
 This document outlines the key changes and migration steps when upgrading from Kinde Python SDK v1 to v2.
 
+## ⚠️ Important: Breaking Changes
+
+**The `KindeClient` class from v1 has been completely replaced.** If you're getting import errors for `KindeClient`, this is expected - you need to use the new `OAuth` class instead.
+
 ## Major Changes
 
 ### 1. Framework-Specific Implementations
@@ -15,7 +19,8 @@ Each framework has its own package with optimized implementations:
 
 ### 2. Authentication Flow
 The authentication implementation has been completely revamped:
-- New `OAuth` class for handling authentication flows
+- **NEW**: `OAuth` class replaces `KindeClient` for authentication flows
+- **NEW**: `ManagementClient` class for management API operations
 - Improved token management with `TokenManager`
 - Better session handling with `UserSession`
 - Support for feature flags and permissions
@@ -25,32 +30,56 @@ The authentication implementation has been completely revamped:
 - Framework abstraction with `FrameworkFactory` and `FrameworkInterface`
 - Support for custom storage implementations
 
+## Which Client Should You Use?
+
+### For User Authentication (Most Common)
+```python
+from kinde_sdk import OAuth
+
+# Use this for:
+# - User login/logout flows
+# - Checking if users are authenticated
+# - Getting user information
+# - Accessing user claims, permissions, feature flags
+```
+
+### For Management Operations (Admin/Backend)
+```python
+from kinde_sdk.management import ManagementClient
+
+# Use this for:
+# - Managing users, organizations, roles
+# - Creating/updating permissions
+# - Managing feature flags
+# - Administrative operations
+```
+
 ## Migration Steps
 
 ### 1. Update Dependencies
 Update your `requirements.txt` or `pyproject.toml` to use the new SDK:
 ```toml
-kinde-python-sdk = "^2.0.0"
+kinde-python-sdk = "^2.X.X"
 ```
 
 Or install directly using pip:
 ```bash
 # Install the latest v2 version
-pip install kinde-python-sdk>=2.0.0
+pip install kinde-python-sdk>=2.X.X
 
 # Install a specific v2 version
-pip install kinde-python-sdk==2.0.0b11
+pip install kinde-python-sdk==2.0.0b12
 ```
 
 ### 2. Framework-Specific Changes
 
 #### Flask
 ```python
-# Old (v1)
-from kinde_sdk import KindeClient
+# ❌ OLD (v1) - This will NOT work in v2
+from kinde_sdk import KindeClient  # This class no longer exists!
 
-# New (v2)
-from kinde_sdk.auth.oauth import OAuth
+# ✅ NEW (v2) - Use this instead
+from kinde_sdk import OAuth
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -70,8 +99,8 @@ if kinde_oauth.is_authenticated():
 
 #### FastAPI
 ```python
-# New (v2)
-from kinde_sdk.auth.oauth import OAuth
+# ✅ NEW (v2)
+from kinde_sdk import OAuth
 from kinde_sdk.auth import claims, feature_flags, permissions
 
 # Initialize FastAPI app
@@ -95,14 +124,14 @@ if kinde_oauth.is_authenticated():
 
 ### 3. Authentication Changes
 ```python
-# Old (v1)
+# ❌ OLD (v1) - This will NOT work in v2
 client = KindeClient(
     client_id="your_client_id",
     client_secret="your_client_secret",
     domain="your_domain"
 )
 
-# New (v2)
+# ✅ NEW (v2) - Use this instead
 from kinde_sdk import OAuth
 
 oauth = OAuth(
@@ -115,10 +144,10 @@ oauth = OAuth(
 
 ### 4. Token Management
 ```python
-# Old (v1)
+# ❌ OLD (v1)
 token = client.get_token()
 
-# New (v2)
+# ✅ NEW (v2)
 # Token management is handled internally by the SDK for most use cases.
 # For advanced use cases, you can access the token manager via the new tokens class:
 from kinde_sdk.auth import tokens
@@ -161,48 +190,49 @@ Both examples include:
 
 ### 1. Feature Flags
 ```python
-# New (v2)
-from kinde_sdk import feature_flags
+# ✅ NEW (v2)
+from kinde_sdk.auth import feature_flags
 
-flags = feature_flags.get_flags()
+flags = await feature_flags.get_flags()
 ```
 
 ### 2. Permissions
 ```python
-# New (v2)
-from kinde_sdk import permissions
+# ✅ NEW (v2)
+from kinde_sdk.auth import permissions
 
-has_permission = permissions.check("permission_name")
+has_permission = await permissions.check("permission_name")
 ```
 
 ### 3. Claims
 ```python
-# New (v2)
-from kinde_sdk import claims
+# ✅ NEW (v2)
+from kinde_sdk.auth import claims
 
-user_claims = claims.get_claims()
+user_claims = await claims.get_claims()
 ```
 
 ## Breaking Changes
 
-1. The authentication flow has been completely redesigned
-2. Framework-specific implementations are now separate packages
-3. Token management is now handled through the `TokenManager` class
-4. Session management is now handled through the `UserSession` class
-5. Storage and framework abstractions are now required
+1. **`KindeClient` class has been completely removed** - use `OAuth` instead
+2. The authentication flow has been completely redesigned
+3. Framework-specific implementations are now separate packages
+4. Token management is now handled through the `TokenManager` class
+5. Session management is now handled through the `UserSession` class
+6. Storage and framework abstractions are now required
 
 ### Historical v1 Methods
 
 #### Feature Flags
 ```python
-# Old (v1)
+# ❌ OLD (v1) - These methods no longer exist
 client.get_flag(code="flag_name", default_value=None, flag_type="")
 client.get_boolean_flag(code="flag_name", default_value=None)
 client.get_string_flag(code="flag_name", default_value=None)
 client.get_integer_flag(code="flag_name", default_value=None)
 
-# New (v2)
-from kinde_sdk import feature_flags
+# ✅ NEW (v2) - Use these instead
+from kinde_sdk.auth import feature_flags
 
 flag = await feature_flags.get_flag("flag_name", default_value=None)
 all_flags = await feature_flags.get_all_flags()
@@ -210,12 +240,12 @@ all_flags = await feature_flags.get_all_flags()
 
 #### Permissions
 ```python
-# Old (v1)
+# ❌ OLD (v1) - These methods no longer exist
 client.get_permission(permission="permission_name")
 client.get_permissions()
 
-# New (v2)
-from kinde_sdk import permissions
+# ✅ NEW (v2) - Use these instead
+from kinde_sdk.auth import permissions
 
 permission = await permissions.get_permission("permission_name")
 all_permissions = await permissions.get_permissions()
@@ -223,15 +253,57 @@ all_permissions = await permissions.get_permissions()
 
 #### Claims
 ```python
-# Old (v1)
+# ❌ OLD (v1) - These methods no longer exist
 client.get_claim(key="claim_name", token_name="access_token")
 client.get_claim_token(token_value={}, key="claim_name", token_name="access_token")
 
-# New (v2)
-from kinde_sdk import claims
+# ✅ NEW (v2) - Use these instead
+from kinde_sdk.auth import claims
 
 claim = await claims.get_claim("claim_name")
 all_claims = await claims.get_all_claims()
+```
+
+## Troubleshooting Common Issues
+
+### Issue: "ImportError: cannot import name 'KindeClient'"
+**Solution:** The `KindeClient` class has been removed in v2. Use `OAuth` instead:
+```python
+# ❌ This will fail
+from kinde_sdk import KindeClient
+
+# ✅ Use this instead
+from kinde_sdk import OAuth
+```
+
+### Issue: "AttributeError: 'OAuth' object has no attribute 'get_flag'"
+**Solution:** Feature flag methods have moved to a separate module:
+```python
+# ❌ This will fail
+oauth.get_flag("flag_name")
+
+# ✅ Use this instead
+from kinde_sdk.auth import feature_flags
+await feature_flags.get_flag("flag_name")
+```
+
+### Issue: "ModuleNotFoundError: No module named 'kinde_sdk.auth'"
+**Solution:** Make sure you're using the correct SDK version:
+```bash
+pip install kinde-python-sdk>=2.0.0
+```
+
+### Issue: "TypeError: 'OAuth' object is not callable"
+**Solution:** Make sure you're instantiating the class correctly:
+```python
+# ❌ Wrong
+oauth = OAuth()
+
+# ✅ Correct
+oauth = OAuth(
+    framework="flask",  # or "fastapi"
+    app=app
+)
 ```
 
 ## Additional Notes

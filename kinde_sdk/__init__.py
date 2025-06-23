@@ -6,6 +6,9 @@ This is the Kinde Python SDK for interacting with the Kinde API.
 """
 
 from kinde_sdk.auth.oauth import OAuth
+from kinde_sdk.auth.token_manager import TokenManager
+from kinde_sdk.auth.user_session import UserSession
+from kinde_sdk.auth import permissions, claims, portals, feature_flags
 from kinde_sdk.core.storage.storage_factory import StorageFactory
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
@@ -20,7 +23,7 @@ __all__ = [
     "permissions",
     "claims",
     "portals",
-    "feature_flags"
+    "feature_flags",
     "StorageFactory",
     "FrameworkFactory",
     "FrameworkInterface",

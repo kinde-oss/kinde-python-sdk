@@ -292,3 +292,10 @@ from kinde_sdk.management.models.user_profile_v2 import UserProfileV2
 from kinde_sdk.management.models.users_response import UsersResponse
 from kinde_sdk.management.models.users_response_users_inner import UsersResponseUsersInner
 from kinde_sdk.management.models.webhook import Webhook
+
+# Custom imports for Kinde Management Client
+from .management_client import ManagementClient
+from .management_token_manager import ManagementTokenManager
+
+# Re-export for convenience
+__all__ = ['ManagementClient', 'ManagementTokenManager']

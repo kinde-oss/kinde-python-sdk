@@ -36,6 +36,45 @@ def fix_imports(directory):
                 except Exception as e:
                     print(f"Warning: Could not fix imports in {filepath}: {e}")
 
+def preserve_custom_imports():
+    """Preserve custom imports in the __init__.py file after generation."""
+    init_file = os.path.join(OUTPUT_DIR, "__init__.py")
+    if not os.path.exists(init_file):
+        print("Warning: __init__.py file not found, cannot preserve custom imports")
+        return
+    
+    # Custom imports to preserve
+    custom_imports = [
+        "# Custom imports for Kinde Management Client",
+        "from .management_client import ManagementClient",
+        "from .management_token_manager import ManagementTokenManager",
+        "",
+        "# Re-export for convenience",
+        "__all__ = ['ManagementClient', 'ManagementTokenManager']",
+        ""
+    ]
+    
+    try:
+        with open(init_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Check if custom imports are already present
+        if "from .management_client import ManagementClient" in content:
+            print("Custom imports already present in __init__.py")
+            return
+        
+        # Add custom imports at the end of the file
+        custom_imports_text = "\n".join(custom_imports)
+        updated_content = content + "\n" + custom_imports_text
+        
+        with open(init_file, 'w', encoding='utf-8') as f:
+            f.write(updated_content)
+        
+        print("Added custom imports to __init__.py")
+        
+    except Exception as e:
+        print(f"Warning: Could not preserve custom imports in {init_file}: {e}")
+
 # Check if openapi-generator-cli is available
 if not any(
     os.access(os.path.join(path, 'openapi-generator-cli'), os.X_OK)
@@ -118,6 +157,9 @@ with tempfile.TemporaryDirectory() as temp_dir:
         if os.path.exists(main_kinde_sdk):
             print("Fixing imports in main kinde_sdk directory...")
             fix_imports(main_kinde_sdk)
+        
+        # Preserve custom imports
+        preserve_custom_imports()
     else:
         print(f"Warning: Generated management directory not found at {generated_management}")
         print(f"Available directories in {temp_dir}: {os.listdir(temp_dir)}")

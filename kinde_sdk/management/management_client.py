@@ -127,25 +127,8 @@ class ManagementClient:
     
     def _setup_token_handling(self):
         """Set up automatic token refresh for API calls."""
-        original_call_api = self.api_client.call_api
-        
-        def call_api_with_token(*args, **kwargs):
-            # Get the current token and add it to the headers
-            token = self.token_manager.get_access_token()
-            
-            # Add or update headers
-            if 'headers' not in kwargs:
-                kwargs['headers'] = {}
-            
-            if isinstance(kwargs['headers'], dict):
-                kwargs['headers']['Authorization'] = f"Bearer {token}"
-            else:
-                # HTTPHeaderDict case
-                kwargs['headers'].update({'Authorization': f"Bearer {token}"})
-            
-            return original_call_api(*args, **kwargs)
-        
-        self.api_client.call_api = call_api_with_token
+        # Token will be added directly in the API method since we're calling REST client directly
+        pass
     
     def _generate_methods(self):
         """Generate dynamic methods for each API endpoint."""
@@ -202,7 +185,7 @@ class ManagementClient:
             else:
                 body = {k: v for k, v in kwargs.items() if v is not None}
             
-            # FIXED: Use correct parameter names that match ApiClient.call_api() signature
+            # FIXED: Use param_serialize to properly construct the full URL with host
             # Handle query parameters by appending them to the path
             final_path = formatted_path
             if query_params and http_method in ('GET', 'DELETE'):
@@ -211,16 +194,37 @@ class ManagementClient:
                     separator = '&' if '?' in final_path else '?'
                     final_path = f"{final_path}{separator}{query_string}"
             
-            response = self.api_client.call_api(
-                resource_path=final_path,
+            # Use param_serialize to get the proper URL with host
+            method, url, header_params, body, post_params = self.api_client.param_serialize(
                 method=http_method,
-                auth_settings=['kindeBearerAuth'],
-                timeout=None,  # Fixed: was _request_timeout
+                resource_path=formatted_path,  # Use original path, not with query params
+                query_params=query_params if http_method in ('GET', 'DELETE') else None,
+                header_params={},
                 body=body if http_method not in ('GET', 'DELETE') else None
-                # Removed: _return_http_data_only, _preload_content, query_params (don't exist)
             )
             
-            return response
+            # Add the authorization token to headers
+            token = self.token_manager.get_access_token()
+            header_params['Authorization'] = f"Bearer {token}"
+            
+            # Call the REST client directly with the constructed URL
+            response = self.api_client.rest_client.request(
+                method=http_method,
+                url=url,
+                headers=header_params,
+                body=body if http_method not in ('GET', 'DELETE') else None,
+                post_params=post_params,
+                _request_timeout=None
+            )
+            
+            # Use the API client's response_deserialize to properly handle the response
+            # First read the response data
+            response.read()
+            
+            # Then deserialize it
+            api_response = self.api_client.response_deserialize(response, {})
+            
+            return api_response.data
         
         # Add docstring to the method based on the action and resource
         if action == 'list':

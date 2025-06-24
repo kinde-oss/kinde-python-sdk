@@ -29,7 +29,7 @@ class ManagementClient:
         'users': {
             'list': ('GET', '/api/v1/users'),
             'get': ('GET', '/api/v1/users/{user_id}'),
-            'create': ('POST', '/api/v1/users'),
+            'create': ('POST', '/api/v1/user'),
             'update': ('PATCH', '/api/v1/users/{user_id}'),
             'delete': ('DELETE', '/api/v1/users/{user_id}'),
         },
@@ -38,7 +38,7 @@ class ManagementClient:
         'organizations': {
             'list': ('GET', '/api/v1/organizations'),
             'get': ('GET', '/api/v1/organizations/{org_code}'),
-            'create': ('POST', '/api/v1/organizations'),
+            'create': ('POST', '/api/v1/organization'),
             'update': ('PATCH', '/api/v1/organizations/{org_code}'),
             'delete': ('DELETE', '/api/v1/organizations/{org_code}'),
         },
@@ -47,7 +47,7 @@ class ManagementClient:
         'roles': {
             'list': ('GET', '/api/v1/roles'),
             'get': ('GET', '/api/v1/roles/{role_id}'),
-            'create': ('POST', '/api/v1/roles'),
+            'create': ('POST', '/api/v1/role'),
             'update': ('PATCH', '/api/v1/roles/{role_id}'),
             'delete': ('DELETE', '/api/v1/roles/{role_id}'),
         },
@@ -56,7 +56,7 @@ class ManagementClient:
         'permissions': {
             'list': ('GET', '/api/v1/permissions'),
             'get': ('GET', '/api/v1/permissions/{permission_id}'),
-            'create': ('POST', '/api/v1/permissions'),
+            'create': ('POST', '/api/v1/permission'),
             'update': ('PATCH', '/api/v1/permissions/{permission_id}'),
             'delete': ('DELETE', '/api/v1/permissions/{permission_id}'),
         },
@@ -65,7 +65,7 @@ class ManagementClient:
         'feature_flags': {
             'list': ('GET', '/api/v1/feature_flags'),
             'get': ('GET', '/api/v1/feature_flags/{feature_flag_key}'),
-            'create': ('POST', '/api/v1/feature_flags'),
+            'create': ('POST', '/api/v1/feature_flag'),
             'update': ('PATCH', '/api/v1/feature_flags/{feature_flag_key}'),
             'delete': ('DELETE', '/api/v1/feature_flags/{feature_flag_key}'),
         },
@@ -74,7 +74,7 @@ class ManagementClient:
         'connected_apps': {
             'list': ('GET', '/api/v1/applications'),
             'get': ('GET', '/api/v1/applications/{application_id}'),
-            'create': ('POST', '/api/v1/applications'),
+            'create': ('POST', '/api/v1/application'),
             'update': ('PATCH', '/api/v1/applications/{application_id}'),
             'delete': ('DELETE', '/api/v1/applications/{application_id}'),
         },
@@ -83,7 +83,7 @@ class ManagementClient:
         'api_applications': {
             'list': ('GET', '/api/v1/apis'),
             'get': ('GET', '/api/v1/apis/{api_id}'),
-            'create': ('POST', '/api/v1/apis'),
+            'create': ('POST', '/api/v1/api'),
             'update': ('PATCH', '/api/v1/apis/{api_id}'),
             'delete': ('DELETE', '/api/v1/apis/{api_id}'),
         },

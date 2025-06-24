@@ -27,78 +27,144 @@ class ManagementClient:
     API_ENDPOINTS = {
         # Users API
         'users': {
-            'list': ('GET', '/users'),
-            'get': ('GET', '/users/{user_id}'),
-            'create': ('POST', '/users'),
-            'update': ('PATCH', '/users/{user_id}'),
-            'delete': ('DELETE', '/users/{user_id}'),
+            'list': ('GET', '/api/v1/users'),
+            'get': ('GET', '/api/v1/users/{user_id}'),
+            'create': ('POST', '/api/v1/users'),
+            'update': ('PATCH', '/api/v1/users/{user_id}'),
+            'delete': ('DELETE', '/api/v1/users/{user_id}'),
         },
         
         # Organizations API
         'organizations': {
-            'list': ('GET', '/organizations'),
-            'get': ('GET', '/organizations/{org_code}'),
-            'create': ('POST', '/organizations'),
-            'update': ('PATCH', '/organizations/{org_code}'),
-            'delete': ('DELETE', '/organizations/{org_code}'),
+            'list': ('GET', '/api/v1/organizations'),
+            'get': ('GET', '/api/v1/organizations/{org_code}'),
+            'create': ('POST', '/api/v1/organizations'),
+            'update': ('PATCH', '/api/v1/organizations/{org_code}'),
+            'delete': ('DELETE', '/api/v1/organizations/{org_code}'),
         },
         
         # Roles API
         'roles': {
-            'list': ('GET', '/roles'),
-            'get': ('GET', '/roles/{role_id}'),
-            'create': ('POST', '/roles'),
-            'update': ('PATCH', '/roles/{role_id}'),
-            'delete': ('DELETE', '/roles/{role_id}'),
+            'list': ('GET', '/api/v1/roles'),
+            'get': ('GET', '/api/v1/roles/{role_id}'),
+            'create': ('POST', '/api/v1/roles'),
+            'update': ('PATCH', '/api/v1/roles/{role_id}'),
+            'delete': ('DELETE', '/api/v1/roles/{role_id}'),
         },
 
         # Permissions API
         'permissions': {
-            'list': ('GET', '/permissions'),
-            'get': ('GET', '/permissions/{permission_id}'),
-            'create': ('POST', '/permissions'),
-            'update': ('PATCH', '/permissions/{permission_id}'),
-            'delete': ('DELETE', '/permissions/{permission_id}'),
+            'list': ('GET', '/api/v1/permissions'),
+            'get': ('GET', '/api/v1/permissions/{permission_id}'),
+            'create': ('POST', '/api/v1/permissions'),
+            'update': ('PATCH', '/api/v1/permissions/{permission_id}'),
+            'delete': ('DELETE', '/api/v1/permissions/{permission_id}'),
         },
         
         # Feature Flags API
         'feature_flags': {
-            'list': ('GET', '/feature_flags'),
-            'get': ('GET', '/feature_flags/{feature_flag_id}'),
-            'create': ('POST', '/feature_flags'),
-            'update': ('PATCH', '/feature_flags/{feature_flag_id}'),
-            'delete': ('DELETE', '/feature_flags/{feature_flag_id}'),
+            'list': ('GET', '/api/v1/feature_flags'),
+            'get': ('GET', '/api/v1/feature_flags/{feature_flag_key}'),
+            'create': ('POST', '/api/v1/feature_flags'),
+            'update': ('PATCH', '/api/v1/feature_flags/{feature_flag_key}'),
+            'delete': ('DELETE', '/api/v1/feature_flags/{feature_flag_key}'),
         },
 
         # Connected Apps API
         'connected_apps': {
-            'list': ('GET', '/connected_apps'),
-            'get': ('GET', '/connected_apps/{app_id}'),
+            'list': ('GET', '/api/v1/applications'),
+            'get': ('GET', '/api/v1/applications/{application_id}'),
+            'create': ('POST', '/api/v1/applications'),
+            'update': ('PATCH', '/api/v1/applications/{application_id}'),
+            'delete': ('DELETE', '/api/v1/applications/{application_id}'),
         },
 
         # API Applications API
         'api_applications': {
-            'list': ('GET', '/api/applications'),
-            'get': ('GET', '/api/applications/{app_id}'),
-            'create': ('POST', '/api/applications'),
-            'update': ('PATCH', '/api/applications/{app_id}'),
-            'delete': ('DELETE', '/api/applications/{app_id}'),
+            'list': ('GET', '/api/v1/apis'),
+            'get': ('GET', '/api/v1/apis/{api_id}'),
+            'create': ('POST', '/api/v1/apis'),
+            'update': ('PATCH', '/api/v1/apis/{api_id}'),
+            'delete': ('DELETE', '/api/v1/apis/{api_id}'),
         },
 
         # Subscribers API
         'subscribers': {
-            'list': ('GET', '/subscribers'),
-            'get': ('GET', '/subscribers/{subscriber_id}'),
+            'list': ('GET', '/api/v1/subscribers'),
+            'get': ('GET', '/api/v1/subscribers/{subscriber_id}'),
         },
 
         # Timezones API
         'timezones': {
-            'list': ('GET', '/timezones'),
+            'list': ('GET', '/api/v1/timezones'),
         },
 
         # Industries API
         'industries': {
-            'list': ('GET', '/industries'),
+            'list': ('GET', '/api/v1/industries'),
+        },
+    }
+    
+    # Define response types for each endpoint
+    RESPONSE_TYPES = {
+        'users': {
+            'list': {'200': 'GetUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'UpdateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'organizations': {
+            'list': {'200': 'GetOrganizationsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'roles': {
+            'list': {'200': 'GetRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'UpdateRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'permissions': {
+            'list': {'200': 'GetPermissionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetPermissionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreatePermissionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'UpdatePermissionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'feature_flags': {
+            'list': {'200': 'GetFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetFeatureFlagResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateFeatureFlagResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'UpdateFeatureFlagResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'subscribers': {
+            'list': {'200': 'GetSubscribersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetSubscriberResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'api_applications': {
+            'list': {'200': 'GetApisResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'UpdateApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'connected_apps': {
+            'list': {'200': 'GetApplicationsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetApplicationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateApplicationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'UpdateApplicationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'timezones': {
+            'list': {'200': 'GetTimezonesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'industries': {
+            'list': {'200': 'GetIndustriesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
         },
     }
     
@@ -195,9 +261,12 @@ class ManagementClient:
                     final_path = f"{final_path}{separator}{query_string}"
             
             # Use param_serialize to get the proper URL with host
+            # Remove /api/v1 prefix from resource_path since host already includes it
+            resource_path_for_serialize = formatted_path.replace('/api/v1', '', 1)
+            
             method, url, header_params, body, post_params = self.api_client.param_serialize(
                 method=http_method,
-                resource_path=formatted_path,  # Use original path, not with query params
+                resource_path=resource_path_for_serialize,  # Use path without /api/v1 prefix
                 query_params=query_params if http_method in ('GET', 'DELETE') else None,
                 header_params={},
                 body=body if http_method not in ('GET', 'DELETE') else None
@@ -222,7 +291,7 @@ class ManagementClient:
             response.read()
             
             # Then deserialize it
-            api_response = self.api_client.response_deserialize(response, {})
+            api_response = self.api_client.response_deserialize(response, self.RESPONSE_TYPES[resource][action])
             
             return api_response.data
         

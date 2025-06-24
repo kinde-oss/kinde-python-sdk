@@ -5,7 +5,7 @@ on:
     branches: [ "main", "staging" ]
 
   push:
-    branches: [ "main", "staging", "main_V2", "fix/openapi-management-client-import" ]
+    branches: [ "main", "staging", "main_V2", "fix/management-api-endpoints" ]
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}

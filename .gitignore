@@ -79,6 +79,12 @@ ENV/
 # mypy
 .mypy_cache/
 
+# Temporary directories and generated files
+/tmp/
+/temp/
+generator/
+.openapi-generator/
+
 
 ### Node template
 # Logs

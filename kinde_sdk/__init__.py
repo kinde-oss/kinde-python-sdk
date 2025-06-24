@@ -3,6 +3,11 @@ Kinde Python SDK
 ~~~~~~~~~~~~~~~
 
 This is the Kinde Python SDK for interacting with the Kinde API.
+
+The SDK is organized into three main components:
+- auth: Authentication and OAuth functionality
+- core: Core utilities and framework support
+- management: Management API client (separate module)
 """
 
 from kinde_sdk.auth.oauth import OAuth

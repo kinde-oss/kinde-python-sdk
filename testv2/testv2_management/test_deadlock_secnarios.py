@@ -131,7 +131,26 @@ class TestManagementClientDeadlock(unittest.TestCase):
             # Mock the ApiClient and Configuration to avoid parameter mismatch
             with patch('kinde_sdk.management.management_client.ApiClient') as mock_api_client_class:
                 mock_api_client_instance = Mock()
-                mock_api_client_instance.call_api.return_value = {"users": []}
+                
+                # Mock param_serialize to return expected values
+                mock_api_client_instance.param_serialize.return_value = (
+                    'GET', 'https://test.kinde.com/api/v1/users', {}, None, None
+                )
+                
+                # Mock REST client response
+                mock_rest_response = Mock()
+                mock_rest_response.read.return_value = None
+                mock_rest_response.status = 200
+                mock_rest_response.data = b'{"users": []}'
+                mock_rest_response.getheader.return_value = 'application/json'
+                
+                mock_api_client_instance.rest_client.request.return_value = mock_rest_response
+                
+                # Mock response_deserialize
+                mock_api_response = Mock()
+                mock_api_response.data = {"users": []}
+                mock_api_client_instance.response_deserialize.return_value = mock_api_response
+                
                 mock_api_client_class.return_value = mock_api_client_instance
                 
                 with patch('kinde_sdk.management.management_client.Configuration') as mock_config:

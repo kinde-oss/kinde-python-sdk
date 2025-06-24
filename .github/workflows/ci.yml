@@ -50,3 +50,13 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          ignore:
+            - "kinde_sdk/management/api/*"
+            - "kinde_sdk/management/models/*"
+            - "kinde_sdk/management/schemas.py"
+            - "kinde_sdk/management/rest.py"
+            - "kinde_sdk/management/api_client.py"
+            - "kinde_sdk/management/configuration.py"
+            - "kinde_sdk/management/api_response.py"
+            - "kinde_sdk/management/exceptions.py"
+            - "kinde_sdk/management/__init__.py"

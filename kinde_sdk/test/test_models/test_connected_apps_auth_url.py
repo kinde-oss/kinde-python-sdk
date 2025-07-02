@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.connected_apps_auth_url import ConnectedAppsAuthUrl
-from kinde_sdk import schemas
+from kinde_sdk.management import schemas
 
 
 class TestConnectedAppsAuthUrl(unittest.TestCase):

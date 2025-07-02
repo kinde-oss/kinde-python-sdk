@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.property_value import PropertyValue
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestPropertyValue(unittest.TestCase):

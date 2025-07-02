@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.model_property import ModelProperty
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestModelProperty(unittest.TestCase):

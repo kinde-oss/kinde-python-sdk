@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.create_user_response import CreateUserResponse
-from kinde_sdk import schemas
+from kinde_sdk.management import schemas
 
 
 class TestCreateUserResponse(unittest.TestCase):

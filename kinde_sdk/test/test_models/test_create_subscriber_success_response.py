@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.create_subscriber_success_response import CreateSubscriberSuccessResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestCreateSubscriberSuccessResponse(unittest.TestCase):

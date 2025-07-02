@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.add_organization_users_response import AddOrganizationUsersResponse
-from kinde_sdk import schemas
+from kinde_sdk.management import schemas
 
 
 class TestAddOrganizationUsersResponse(unittest.TestCase):

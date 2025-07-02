@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.success_response import SuccessResponse
-from kinde_sdk import schemas
+from kinde_sdk.management import schemas
 
 
 class TestSuccessResponse(unittest.TestCase):

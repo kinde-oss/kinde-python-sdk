@@ -19,7 +19,7 @@ class StorageFactory:
             framework (str): The framework name (e.g., 'fastapi', 'flask')
             factory_class (Type): The storage factory class for the framework
         """
-        logger.warning(f"Registering storage factory: {framework}")
+        logger.info(f"Registering storage factory: {framework}")
         cls._framework_factories[framework] = factory_class
     
     @classmethod
@@ -37,8 +37,8 @@ class StorageFactory:
         storage_type = config.get("type")
         if storage_type:
             # Check if it's a framework-specific storage type
-            logger.warning(f"Storage type: {storage_type}")
-            logger.warning(f"Framework factories: {cls._framework_factories}")
+            logger.info(f"Storage type: {storage_type}")
+            logger.info(f"Framework factories: {cls._framework_factories}")
             if storage_type in cls._framework_factories:
                 try:
                     factory_class = cls._framework_factories[storage_type]
@@ -64,5 +64,5 @@ class StorageFactory:
             return factory_class.create_storage(config)
         
         # If all else fails, use memory storage
-        logger.warning("No storage type specified and auto-detection failed, using memory storage")
+        logger.info("No storage type specified and auto-detection failed, using memory storage")
         return MemoryStorage()

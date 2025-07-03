@@ -329,7 +329,7 @@ def get_organization_users(api_url: str, org_code: str, token_manager, logger) -
         logger.error(error_message)
         raise
 
-def get_user_permissions(api_url: str, token_manager, org_code: Optional[str] = None, logger = None) -> List[str]:
+def get_user_permissions(api_url: str, token_manager, org_code: Optional[str] = None, logger=None) -> List[str]:
     """
     Retrieve permissions for the authenticated user.
     

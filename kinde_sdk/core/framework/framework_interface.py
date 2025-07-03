@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
+
 class FrameworkInterface(ABC):
     """
     Interface for framework implementations.

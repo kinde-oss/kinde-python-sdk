@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
+
 class StorageInterface(ABC):
     @abstractmethod
     def get(self, key: str) -> Optional[Dict]:
@@ -33,8 +34,7 @@ class StorageInterface(ABC):
         Store data associated with the given key.
         
         Args:
-            key (str): The key to store the data under.
-            value (Dict): The data to store.
+            value (str): The data to store.
         """
         pass
 

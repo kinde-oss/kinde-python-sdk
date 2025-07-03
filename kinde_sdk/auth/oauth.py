@@ -502,7 +502,7 @@ class OAuth:
             token_data = await self.exchange_code_for_tokens(code, code_verifier)
         except Exception as e:
             self._logger.error(f"Token exchange failed: {str(e)}")
-            raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}")
+            raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}") from e
         
         # Store tokens
         user_info = {

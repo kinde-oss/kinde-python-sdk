@@ -20,7 +20,4 @@ class FastAPIStorageFactory:
         Returns:
             StorageInterface: A FastAPI storage instance.
         """
-        return FastAPIStorage()
-
-# Register the FastAPI storage factory
-StorageFactory.register_framework_factory("fastapi", FastAPIStorageFactory) 
+        return FastAPIStorage() 

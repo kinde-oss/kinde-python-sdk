@@ -1,7 +1,7 @@
 from fastapi import Request
 import secrets
 from typing import Optional, Any, Dict
-from threading import Lock
+import asyncio
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
@@ -20,7 +20,7 @@ class InMemorySessionMiddleware(BaseHTTPMiddleware):
         self.same_site = same_site
         self.https_only = https_only
         self._sessions: Dict[str, Dict[str, Any]] = {}
-        self._lock = Lock()  # Thread safety for session operations
+        self._lock = asyncio.Lock()  # Non-blocking lock for async context
 
     async def dispatch(self, request: Request, call_next):
         session_id = request.cookies.get(self.session_cookie)
@@ -29,7 +29,7 @@ class InMemorySessionMiddleware(BaseHTTPMiddleware):
             session_id = secrets.token_urlsafe(32)
             session_data = {}
         else:
-            session_data = self._get_session(session_id) or {}
+            session_data = await self._get_session(session_id) or {}
 
         # Add session to request scope
         request.scope["session"] = session_data
@@ -39,7 +39,7 @@ class InMemorySessionMiddleware(BaseHTTPMiddleware):
 
         # Update session in memory
         if "session" in request.scope:
-            self._set_session(session_id, request.scope["session"])
+            await self._set_session(session_id, request.scope["session"])
             
             # Set cookie
             response.set_cookie(
@@ -53,20 +53,20 @@ class InMemorySessionMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
-        with self._lock:
+    async def _get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        async with self._lock:
             return self._sessions.get(session_id)
 
-    def _set_session(self, session_id: str, data: Dict[str, Any]) -> None:
-        with self._lock:
+    async def _set_session(self, session_id: str, data: Dict[str, Any]) -> None:
+        async with self._lock:
             self._sessions[session_id] = data
 
-    def delete_session(self, session_id: str) -> None:
-        with self._lock:
+    async def delete_session(self, session_id: str) -> None:
+        async with self._lock:
             self._sessions.pop(session_id, None)
 
-    def cleanup_expired_sessions(self) -> None:
+    async def cleanup_expired_sessions(self) -> None:
         """Optional: Method to clean up expired sessions if needed"""
-        with self._lock:
+        async with self._lock:
             # Implementation would depend on how you want to track session expiration
             pass 

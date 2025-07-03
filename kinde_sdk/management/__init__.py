@@ -31,7 +31,6 @@ from kinde_sdk.management.api.connections_api import ConnectionsApi
 from kinde_sdk.management.api.environment_variables_api import EnvironmentVariablesApi
 from kinde_sdk.management.api.environments_api import EnvironmentsApi
 from kinde_sdk.management.api.feature_flags_api import FeatureFlagsApi
-from kinde_sdk.management.api.feature_flags_api import FeatureFlagsApi
 from kinde_sdk.management.api.identities_api import IdentitiesApi
 from kinde_sdk.management.api.industries_api import IndustriesApi
 from kinde_sdk.management.api.mfa_api import MFAApi

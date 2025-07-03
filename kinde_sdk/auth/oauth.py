@@ -627,4 +627,4 @@ class OAuth:
             return tokens
         except Exception as e:
             self._logger.error(f"Error retrieving tokens: {str(e)}")
-            raise ValueError(f"Failed to retrieve tokens: {str(e)}")
+            raise ValueError(f"Failed to retrieve tokens: {str(e)}") from e

@@ -1,4 +1,3 @@
-
 from typing import Dict, Optional
 import json
 from .storage_interface import StorageInterface
@@ -19,7 +18,7 @@ class LocalStorage(StorageInterface):
         Returns:
             Optional[Dict]: The stored data or None if not found.
         """
-        data = self.storage.getItem(key)
+        data = self.storage.get(key)
         return json.loads(data) if data else None
 
     def set(self, key: str, value: Dict) -> None:
@@ -30,17 +29,18 @@ class LocalStorage(StorageInterface):
             key (str): The key to store the data under.
             value (Dict): The data to store.
         """
-        self.storage.setItem(key, json.dumps(value))
+        self.storage[key] = json.dumps(value)
 
     def set_flat(self, data: str) -> None:
         """
         Store data associated with the given key.
         
         Args:
-            key (str): The key to store the data under.
-            value (Dict): The data to store.
+            data (str): The data to store.
         """
-        self.storage.set(json.dumps(data))
+        # For flat storage, we'll use a special key or store it directly
+        # This method seems to be for storing data without a specific key
+        self.storage['_flat_data'] = json.dumps(data)
 
     def delete(self, key: str) -> None:
         """
@@ -49,4 +49,4 @@ class LocalStorage(StorageInterface):
         Args:
             key (str): The key to delete data for.
         """
-        self.storage.removeItem(key)
+        self.storage.pop(key, None)

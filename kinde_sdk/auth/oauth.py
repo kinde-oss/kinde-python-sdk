@@ -565,10 +565,10 @@ class OAuth:
         if code_verifier:
             data["code_verifier"] = code_verifier
         
-        self._logger.warning(f"[Exchange code for tokens] [{self.token_url}] [{data}]")
+        self._logger.debug(f"[Exchange code for tokens] [{self.token_url}] [{data}]")
 
         response = requests.post(self.token_url, data=data)
-        self._logger.warning(f"[Exchange code for tokens] [{response.status_code}] [{response.text}]")
+        self._logger.debug(f"[Exchange code for tokens] [{response.status_code}] [{response.text}]")
         if response.status_code != 200:
             raise KindeTokenException(f"Token exchange failed: {response.text}")
         

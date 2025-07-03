@@ -132,15 +132,15 @@ class OAuth:
             bool: True if the user is authenticated, False otherwise
         """
         # Get user ID from framework
-        self._logger.warning(f"self._framework: {self._framework}")
+        self._logger.debug(f"self._framework: {self._framework}")
         user_id = self._framework.get_user_id()
-        self._logger.warning(f"user_id: {user_id}")
+        self._logger.debug(f"user_id: {user_id}")
         if not user_id:
-            self._logger.warning("No user ID found in session")
+            self._logger.debug("No user ID found in session")
             return False
             
         # Check authentication using session manager
-        self._logger.warning(f"self._session_manager: {self._session_manager}")
+        self._logger.debug(f"self._session_manager: {self._session_manager}")
         return self._session_manager.is_authenticated(user_id)
 
     def get_user_info(self) -> Dict[str, Any]:
@@ -157,23 +157,23 @@ class OAuth:
             KindeConfigurationException: If no user ID is found in session
         """
         # Get user ID from framework
-        self._logger.warning(f"Retrieve the user id")
+        self._logger.debug(f"Retrieve the user id")
         user_id = self._framework.get_user_id()
         if not user_id:
             raise KindeConfigurationException("No user ID found in session")
             
         # Get token manager for the user
-        self._logger.warning(f"User id: {user_id} retrieve the token for the user id")
+        self._logger.debug(f"User id: {user_id} retrieve the token for the user id")
         token_manager = self._session_manager.get_token_manager(user_id)
         if not token_manager:
             raise KindeConfigurationException("No token manager found for user")
             
         # Get claims from token manager
-        self._logger.warning(f"Get the claims from the token manager")
+        self._logger.debug(f"Get the claims from the token manager")
         claims = token_manager.get_claims()
         if not claims:
             raise KindeConfigurationException("No user claims found")
-        self._logger.warning(f"Return the claims")
+        self._logger.debug(f"Return the claims")
         return claims
 
     def _set_api_endpoints(self):

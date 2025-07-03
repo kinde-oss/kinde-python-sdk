@@ -72,17 +72,18 @@ class StorageManager:
         Returns:
             str: The current device ID
         """
-        if not self._device_id:
-            # Try to load from storage
-            stored_device = self.get("_device_id")
-            if stored_device and "value" in stored_device:
-                self._device_id = stored_device["value"]
-            else:
-                # Generate a new device ID
-                self._device_id = str(uuid.uuid4())
-                self.setItems("_device_id", {"value": self._device_id, "timestamp": time.time()})
-                
-        return self._device_id
+        with self._lock:
+            if not self._device_id:
+                # Try to load from storage
+                stored_device = self.get("_device_id")
+                if stored_device and "value" in stored_device:
+                    self._device_id = stored_device["value"]
+                else:
+                    # Generate a new device ID
+                    self._device_id = str(uuid.uuid4())
+                    self.setItems("_device_id", {"value": self._device_id, "timestamp": time.time()})
+                    
+            return self._device_id
     
     @property
     def storage(self) -> Optional[StorageInterface]:

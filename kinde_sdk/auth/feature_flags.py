@@ -1,5 +1,4 @@
-from typing import Dict, Any, Optional, TypeVar, Generic, Union
-import logging
+from typing import Dict, Any, Optional, TypeVar, Generic
 from .base_auth import BaseAuth
 
 T = TypeVar('T')

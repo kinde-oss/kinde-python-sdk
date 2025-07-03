@@ -12,13 +12,10 @@
     Do not edit the class manually.
 """  # noqa: E501
 
-import warnings
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
-from pydantic import Field, StrictStr
-from typing_extensions import Annotated
 from kinde_sdk.management.models.logout_redirect_urls import LogoutRedirectUrls
 from kinde_sdk.management.models.redirect_callback_urls import RedirectCallbackUrls
 from kinde_sdk.management.models.replace_logout_redirect_urls_request import ReplaceLogoutRedirectURLsRequest

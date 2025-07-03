@@ -19,7 +19,12 @@ class LocalStorage(StorageInterface):
             Optional[Dict]: The stored data or None if not found.
         """
         data = self.storage.get(key)
-        return json.loads(data) if data else None
+        if data:
+            try:
+                return json.loads(data)
+            except json.JSONDecodeError:
+                return None
+        return None
 
     def set(self, key: str, value: Dict) -> None:
         """

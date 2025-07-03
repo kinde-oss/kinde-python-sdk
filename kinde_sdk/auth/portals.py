@@ -119,7 +119,7 @@ class Portals:
                 return {"url": result["url"]}
             except Exception as e:
                 self._logger.error(f"Error parsing URL: {e}")
-                raise Exception(f"Invalid URL format received from API: {result['url']}")
+                raise Exception(f"Invalid URL format received from API: {result['url']}") from e
 
 # Create a singleton instance
 portals = Portals() 

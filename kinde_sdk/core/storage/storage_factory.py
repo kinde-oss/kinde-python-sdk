@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Type
+from typing import Dict, Any, Type
 from .storage_interface import StorageInterface
 from .memory_storage import MemoryStorage
 from .local_storage import LocalStorage
@@ -56,7 +56,7 @@ class StorageFactory:
                 return MemoryStorage()
         
         # If no specific type, try to use the framework factory
-        framework = FrameworkFactory.create_framework()
+        framework = FrameworkFactory.create_framework(config)
         framework_name = framework.get_name()
         
         if framework_name in cls._framework_factories:

@@ -1,11 +1,9 @@
-from fastapi import Request, Response
-import json
+from fastapi import Request
 import secrets
-from datetime import datetime, timedelta
-from typing import Optional, Any, Dict, Callable, Awaitable
+from typing import Optional, Any, Dict
 from threading import Lock
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp
 
 class InMemorySessionMiddleware(BaseHTTPMiddleware):
     def __init__(

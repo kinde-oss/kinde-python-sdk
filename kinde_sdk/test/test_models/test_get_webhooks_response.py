@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.get_webhooks_response import GetWebhooksResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestGetWebhooksResponse(unittest.TestCase):

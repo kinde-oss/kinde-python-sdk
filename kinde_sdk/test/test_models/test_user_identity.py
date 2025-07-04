@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.user_identity import UserIdentity
-from kinde_sdk import schemas
+from kinde_sdk.management import schemas
 
 
 class TestUserIdentity(unittest.TestCase):

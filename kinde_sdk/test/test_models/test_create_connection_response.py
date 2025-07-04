@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.create_connection_response import CreateConnectionResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestCreateConnectionResponse(unittest.TestCase):

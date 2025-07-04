@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.token_error_response import TokenErrorResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestTokenErrorResponse(unittest.TestCase):

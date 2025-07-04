@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.get_categories_response import GetCategoriesResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestGetCategoriesResponse(unittest.TestCase):

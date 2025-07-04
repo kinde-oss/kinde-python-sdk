@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.organization_user import OrganizationUser
-from kinde_sdk import schemas
+from kinde_sdk.management import schemas
 
 
 class TestOrganizationUser(unittest.TestCase):

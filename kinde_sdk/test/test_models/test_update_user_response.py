@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.update_user_response import UpdateUserResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestUpdateUserResponse(unittest.TestCase):

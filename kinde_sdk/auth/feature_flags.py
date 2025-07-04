@@ -22,6 +22,10 @@ class FeatureFlags(BaseAuth):
         Returns:
             FeatureFlag object with parsed value
         """
+        if not isinstance(flag_data, dict):
+            raise ValueError("flag_data must be a dictionary")
+
+        # Extract raw type and value
         flag_type = flag_data.get("t", "")
         raw_value = flag_data.get("v")
         
@@ -33,14 +37,22 @@ class FeatureFlags(BaseAuth):
         }
         
         # Convert value based on type
-        if flag_type == "s":
-            value = str(raw_value)
-        elif flag_type == "b":
-            value = bool(raw_value)
-        elif flag_type == "i":
-            value = int(raw_value)
-        else:
-            value = raw_value
+        try:
+            if flag_type == "s":
+                # None → empty string
+                value = str(raw_value) if raw_value is not None else ""
+            elif flag_type == "b":
+                value = bool(raw_value)
+            elif flag_type == "i":
+                # None → zero
+                value = int(raw_value) if raw_value is not None else 0
+            else:
+                # Unknown type code: return raw as-is
+                value = raw_value
+        except (TypeError, ValueError) as e:
+            raise ValueError(
+                f"Cannot convert flag value {raw_value!r} to type {flag_type!r}: {e}"
+            )
             
         return FeatureFlag(
             code=flag_data.get("code", ""),

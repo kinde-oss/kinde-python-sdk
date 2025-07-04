@@ -1,6 +1,6 @@
 [project]
 name = "kinde-python-sdk"
-version = "2.0.0-beta.17"
+version = "2.0.1"
 authors = [
     { name = "Kinde Engineering", email = "engineering@kinde.com" },
 ]
@@ -8,7 +8,7 @@ description = "Connect your app to the Kinde platform"
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: OS Independent",

@@ -2,6 +2,7 @@ import os
 import requests
 import logging
 import time
+import asyncio
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlencode, urlparse, quote
 
@@ -12,7 +13,7 @@ from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from .config_loader import load_config
 from .enums import GrantType, IssuerRouteTypes, PromptTypes
 from .login_options import LoginOptions
-from kinde_sdk.core.helpers import generate_random_string, base64_url_encode, generate_pkce_pair, get_user_details as helper_get_user_details
+from kinde_sdk.core.helpers import generate_random_string, base64_url_encode, generate_pkce_pair, get_user_details as helper_get_user_details, get_user_details_sync
 from kinde_sdk.core.exceptions import (
     KindeConfigurationException,
     KindeLoginException,
@@ -167,14 +168,16 @@ class OAuth:
         token_manager = self._session_manager.get_token_manager(user_id)
         if not token_manager:
             raise KindeConfigurationException("No token manager found for user")
+        
+        user_details = get_user_details_sync(
+            userinfo_url=self.userinfo_url,
+            token_manager=token_manager,
+            logger=self._logger
+        )
             
         # Get claims from token manager
-        self._logger.debug(f"Get the claims from the token manager")
-        claims = token_manager.get_claims()
-        if not claims:
-            raise KindeConfigurationException("No user claims found")
-        self._logger.debug(f"Return the claims")
-        return claims
+        self._logger.info(f"Get the claims from the token manager {user_details}")
+        return user_details
 
     def _set_api_endpoints(self):
         """Set API endpoints based on the host URL."""

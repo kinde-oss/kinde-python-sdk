@@ -6,6 +6,7 @@ import requests
 import json
 import re
 import time
+import asyncio
 from typing import Dict, Union, Any, Optional, List
 
 logger = logging.getLogger("kinde_sdk")
@@ -693,3 +694,38 @@ def sanitize_url(url: str) -> str:
     """
     # Basic URL sanitization
     return url.strip()
+
+def get_user_details_sync(userinfo_url: str, token_manager, logger) -> Dict[str, Any]:
+    """
+    Retrieve user information synchronously, handling both sync and async contexts.
+    
+    This function works in both Flask (no event loop) and FastAPI (has event loop) environments.
+    
+    Args:
+        userinfo_url: URL for user information endpoint
+        token_manager: Token manager instance
+        logger: Logger instance
+            
+    Returns:
+        Dictionary with user profile information
+        
+    Raises:
+        ValueError: If token is not available or is invalid
+        requests.RequestException: If the API request fails
+    """
+    try:
+        # Check if we're in an event loop
+        asyncio.get_running_loop()
+        # We're in an event loop (FastAPI), so we can't use asyncio.run()
+        # Instead, we'll make a synchronous request directly
+        access_token = token_manager.get_access_token()
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/json"
+        }
+        response = requests.get(userinfo_url, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except RuntimeError:
+        # No event loop running (Flask), use asyncio.run
+        return asyncio.run(get_user_details(userinfo_url, token_manager, logger))

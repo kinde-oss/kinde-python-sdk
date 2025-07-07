@@ -41,7 +41,7 @@ async def home(request: Request):
         return f"""
         <html>
             <body>
-                <h1>Welcome, {user.get('email', 'User')}!</h1>
+                <h1>Welcome, {user.get('email')}!</h1>
                 <p>claims: {await claims.get_all_claims()}</p>
                 <p>feature flags: {await feature_flags.get_all_flags()}</p>
                 <p>permissions: {await permissions.get_permissions()}</p>

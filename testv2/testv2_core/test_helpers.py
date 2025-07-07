@@ -1,4 +1,5 @@
 import unittest
+import warnings
 from unittest.mock import patch, MagicMock, Mock
 import json
 import base64
@@ -14,6 +15,7 @@ from kinde_sdk.core.helpers import (
     base64_url_encode,
     generate_pkce_pair,
     get_user_details,
+    get_user_details_sync,
     decode_jwt,
     is_authenticated,
     get_user_organizations,
@@ -1088,6 +1090,125 @@ class TestHelpers(unittest.TestCase):
         url = "\thttps://example.com/path\t"
         result = sanitize_url(url)
         self.assertEqual(result, "https://example.com/path")
+
+    def test_get_user_details_sync_no_event_loop(self):
+        """Test get_user_details_sync when no event loop is running (Flask scenario)."""
+        # Mock dependencies
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_access_token"
+        logger = MagicMock()
+        
+        # Mock asyncio.get_running_loop to raise RuntimeError (no event loop)
+        with patch('kinde_sdk.core.helpers.asyncio.get_running_loop') as mock_get_loop:
+            with patch('kinde_sdk.core.helpers.asyncio.run') as mock_run:
+                with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+                    mock_get_loop.side_effect = RuntimeError("No running event loop")
+                    
+                    # Mock the async get_user_details function
+                    mock_run.return_value = {"id": "user1", "name": "Test User"}
+                    
+                    result = get_user_details_sync(userinfo_url, token_manager, logger)
+                    
+                    # Check the result
+                    self.assertEqual(result, {"id": "user1", "name": "Test User"})
+                    
+                    # Verify asyncio.run was called with the async function
+                    mock_run.assert_called_once()
+
+    def test_get_user_details_sync_with_event_loop(self):
+        """Test get_user_details_sync when event loop is running (FastAPI scenario)."""
+        # Mock dependencies
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_access_token"
+        logger = MagicMock()
+        
+        # Mock asyncio.get_running_loop to return a mock loop (event loop exists)
+        with patch('kinde_sdk.core.helpers.asyncio.get_running_loop') as mock_get_loop:
+            with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+                mock_loop = MagicMock()
+                mock_get_loop.return_value = mock_loop
+                
+                # Mock response
+                mock_response = MagicMock()
+                mock_response.json.return_value = {"id": "user1", "name": "Test User"}
+                mock_get.return_value = mock_response
+                
+                result = get_user_details_sync(userinfo_url, token_manager, logger)
+                
+                # Check the result
+                self.assertEqual(result, {"id": "user1", "name": "Test User"})
+                
+                # Verify the direct request was made (not asyncio.run)
+                mock_get.assert_called_once_with(
+                    userinfo_url,
+                    headers={
+                        "Authorization": "Bearer test_access_token",
+                        "Accept": "application/json"
+                    }
+                )
+
+    def test_get_user_details_sync_token_error(self):
+        """Test get_user_details_sync handles token errors."""
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.side_effect = ValueError("No token")
+        logger = MagicMock()
+        
+        # Mock asyncio.get_running_loop to raise RuntimeError (no event loop)
+        with patch('kinde_sdk.core.helpers.asyncio.get_running_loop') as mock_get_loop:
+            mock_get_loop.side_effect = RuntimeError("No running event loop")
+            
+            with self.assertRaises(ValueError):
+                get_user_details_sync(userinfo_url, token_manager, logger)
+
+    def test_get_user_details_sync_request_error(self):
+        """Test get_user_details_sync handles request errors."""
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Mock asyncio.get_running_loop to return a mock loop (event loop exists)
+        with patch('kinde_sdk.core.helpers.asyncio.get_running_loop') as mock_get_loop:
+            with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
+                mock_loop = MagicMock()
+                mock_get_loop.return_value = mock_loop
+                
+                # Mock response that raises an exception
+                mock_response = MagicMock()
+                mock_response.raise_for_status.side_effect = RequestException("Network error")
+                mock_get.return_value = mock_response
+                
+                with self.assertRaises(RequestException):
+                    get_user_details_sync(userinfo_url, token_manager, logger)
+
+    def test_get_user_details_sync_no_event_loop_with_error(self):
+        """Test get_user_details_sync when no event loop and async function raises error."""
+        userinfo_url = "https://test.kinde.com/api/v1/user"
+        token_manager = MagicMock()
+        token_manager.get_access_token.return_value = "test_token"
+        logger = MagicMock()
+        
+        # Mock asyncio.get_running_loop to raise RuntimeError (no event loop)
+        with patch('kinde_sdk.core.helpers.asyncio.get_running_loop') as mock_get_loop:
+            with patch('kinde_sdk.core.helpers.asyncio.run') as mock_run:
+                mock_get_loop.side_effect = RuntimeError("No running event loop")
+                
+                # Mock asyncio.run to raise an exception
+                mock_run.side_effect = ValueError("Token error")
+                
+                # Suppress the RuntimeWarning about coroutine not being awaited
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", RuntimeWarning)
+                    
+                    # Test that the exception is properly propagated
+                    with self.assertRaises(ValueError) as context:
+                        get_user_details_sync(userinfo_url, token_manager, logger)
+                    
+                    # Verify the error message
+                    self.assertEqual(str(context.exception), "Token error")
 
 
 if __name__ == "__main__":

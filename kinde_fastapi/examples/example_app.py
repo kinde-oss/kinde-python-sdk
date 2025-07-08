@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import logging
 from kinde_sdk.auth.oauth import OAuth
 from kinde_sdk.auth import claims, feature_flags, permissions, tokens
+from kinde_sdk.management import ManagementClient;
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,35 @@ async def home(request: Request):
     """
     if kinde_oauth.is_authenticated():
         user = kinde_oauth.get_user_info()
+
+        # Validate environment variables
+        domain = os.getenv("KINDE_DOMAIN")
+        client_id = os.getenv("KINDE_MANAGEMENT_CLIENT_ID")
+        client_secret = os.getenv("KINDE_MANAGEMENT_CLIENT_SECRET")
+        
+        if not all([domain, client_id, client_secret]):
+            return """
+            <html>
+                <body>
+                    <h1>Configuration Error</h1>
+                    <p>Missing required environment variables for management client.</p>
+                    <a href="/logout">Logout</a>
+                </body>
+            </html>
+            """
+        
+        management_client = ManagementClient(
+            domain=domain,
+            client_id=client_id,
+            client_secret=client_secret
+        )
+        try:
+            api_response = management_client.get_users()
+            user_count = len(api_response.users) if hasattr(api_response, 'users') else 0
+        except Exception as e:
+            logger.error(f"Failed to fetch users: {e}")
+            user_count = 0
+
         return f"""
         <html>
             <body>
@@ -46,6 +76,7 @@ async def home(request: Request):
                 <p>feature flags: {await feature_flags.get_all_flags()}</p>
                 <p>permissions: {await permissions.get_permissions()}</p>
                 <p>tokens: {tokens.get_token_manager().get_access_token()}</p>
+                <p>users: {user_count} user(s) found</p>
                 <p>You are logged in.</p>
                 <a href="/logout">Logout</a>
             </body>

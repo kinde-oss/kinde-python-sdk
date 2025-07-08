@@ -153,16 +153,45 @@ class TokenManager:
         """Get the ID token if available."""
         return self.tokens.get("id_token")
         
-    def get_claims(self):
-        """Get the claims from the access token if available, falling back to ID token claims."""
-        # First try to get claims from access token
-        claims = self.tokens.get("access_token_claims", {})
+    def get_claims(self, token_type: str = "access_token"):
+        """Get the claims from the specified token type.
+        
+        Args:
+            token_type (str): The type of token to get claims from. 
+                            Valid values are "access_token" or "id_token".
+                            
+        Returns:
+            dict: The claims from the specified token, or empty dict if not available.
+        """
+        # Validate token type
+        valid_token_types = ["access_token", "id_token"]
+        if token_type not in valid_token_types:
+            logging.warning(f"Invalid token_type '{token_type}'. Valid types are: {valid_token_types}")
+            return {}
+        
+        # Use f-string for safer string formatting
+        claims_key = f"{token_type}_claims"
+        claims = self.tokens.get(claims_key, {})
+        
         if not claims:
-            # Fall back to ID token claims if access token claims are not available
-            claims = self.tokens.get("id_token_claims", {})
-            if not claims:
-                logging.warning("No claims available in token manager")
+            logging.warning(f"No claims available for token type: {token_type}")
+            
         return claims
+    
+    def get_claim(self, key: str, token_type: str = "access_token"):
+        """Get a specific claim from the specified token type.
+        
+        Args:
+            key (str): The claim key to retrieve
+            token_type (str): The type of token to get the claim from.
+                            Valid values are "access_token" or "id_token".
+                            
+        Returns:
+            dict: Dictionary containing the claim name and value, or empty dict if not found.
+        """
+        claims = self.get_claims(token_type)
+        value = claims.get(key)
+        return {"name": key, "value": value}
     
     def revoke_token(self):
         """ Revoke the current access token. """

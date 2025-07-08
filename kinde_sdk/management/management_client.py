@@ -43,6 +43,28 @@ class ManagementClient:
             'delete': ('DELETE', '/api/v1/organizations/{org_code}'),
         },
         
+        # Organization Users API
+        'organization_users': {
+            'list': ('GET', '/api/v1/organizations/{org_code}/users'),
+            'add': ('POST', '/api/v1/organizations/{org_code}/users'),
+            'update': ('PATCH', '/api/v1/organizations/{org_code}/users'),
+            'remove': ('DELETE', '/api/v1/organizations/{org_code}/users/{user_id}'),
+        },
+        
+        # Organization User Roles API
+        'organization_user_roles': {
+            'list': ('GET', '/api/v1/organizations/{org_code}/users/{user_id}/roles'),
+            'add': ('POST', '/api/v1/organizations/{org_code}/users/{user_id}/roles'),
+            'remove': ('DELETE', '/api/v1/organizations/{org_code}/users/{user_id}/roles/{role_id}'),
+        },
+        
+        # Organization User Permissions API
+        'organization_user_permissions': {
+            'list': ('GET', '/api/v1/organizations/{org_code}/users/{user_id}/permissions'),
+            'add': ('POST', '/api/v1/organizations/{org_code}/users/{user_id}/permissions'),
+            'remove': ('DELETE', '/api/v1/organizations/{org_code}/users/{user_id}/permissions/{permission_id}'),
+        },
+        
         # Roles API
         'roles': {
             'list': ('GET', '/api/v1/roles'),
@@ -103,6 +125,94 @@ class ManagementClient:
         'industries': {
             'list': ('GET', '/api/v1/industries'),
         },
+        
+        # Properties API
+        'properties': {
+            'list': ('GET', '/api/v1/properties'),
+            'get': ('GET', '/api/v1/properties/{property_id}'),
+            'create': ('POST', '/api/v1/properties'),
+            'update': ('PATCH', '/api/v1/properties/{property_id}'),
+            'delete': ('DELETE', '/api/v1/properties/{property_id}'),
+        },
+        
+        # User Properties API
+        'user_properties': {
+            'list': ('GET', '/api/v1/users/{user_id}/properties'),
+            'get': ('GET', '/api/v1/users/{user_id}/properties/{property_key}'),
+            'update': ('PUT', '/api/v1/users/{user_id}/properties/{property_key}'),
+        },
+        
+        # Organization Properties API
+        'organization_properties': {
+            'list': ('GET', '/api/v1/organizations/{org_code}/properties'),
+            'get': ('GET', '/api/v1/organizations/{org_code}/properties/{property_key}'),
+            'update': ('PUT', '/api/v1/organizations/{org_code}/properties/{property_key}'),
+        },
+        
+        # Webhooks API
+        'webhooks': {
+            'list': ('GET', '/api/v1/webhooks'),
+            'get': ('GET', '/api/v1/webhooks/{webhook_id}'),
+            'create': ('POST', '/api/v1/webhooks'),
+            'update': ('PATCH', '/api/v1/webhooks/{webhook_id}'),
+            'delete': ('DELETE', '/api/v1/webhooks/{webhook_id}'),
+        },
+        
+        # Events API
+        'events': {
+            'get': ('GET', '/api/v1/events/{event_id}'),
+        },
+        
+        # Event Types API
+        'event_types': {
+            'list': ('GET', '/api/v1/event_types'),
+        },
+        
+        # Connections API
+        'connections': {
+            'list': ('GET', '/api/v1/connections'),
+            'get': ('GET', '/api/v1/connections/{connection_id}'),
+            'create': ('POST', '/api/v1/connections'),
+            'update': ('PATCH', '/api/v1/connections/{connection_id}'),
+            'delete': ('DELETE', '/api/v1/connections/{connection_id}'),
+        },
+        
+        # Business API
+        'business': {
+            'get': ('GET', '/api/v1/business'),
+        },
+        
+        # Environment Feature Flags API
+        'environment_feature_flags': {
+            'list': ('GET', '/api/v1/environment/feature_flags'),
+            'get': ('GET', '/api/v1/environment/feature_flags/{feature_flag_key}'),
+            'update': ('PATCH', '/api/v1/environment/feature_flags/{feature_flag_key}'),
+            'delete': ('DELETE', '/api/v1/environment/feature_flags/{feature_flag_key}'),
+        },
+        
+        # Organization Feature Flags API
+        'organization_feature_flags': {
+            'list': ('GET', '/api/v1/organizations/{org_code}/feature_flags'),
+            'get': ('GET', '/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}'),
+            'update': ('PATCH', '/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}'),
+            'delete': ('DELETE', '/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}'),
+        },
+        
+        # User Feature Flags API
+        'user_feature_flags': {
+            'get': ('GET', '/api/v1/users/{user_id}/feature_flags/{feature_flag_key}'),
+            'update': ('PATCH', '/api/v1/users/{user_id}/feature_flags/{feature_flag_key}'),
+        },
+        
+        # User Password API
+        'user_password': {
+            'update': ('PUT', '/api/v1/users/{user_id}/password'),
+        },
+        
+        # User Refresh Claims API
+        'user_refresh_claims': {
+            'refresh': ('POST', '/api/v1/users/{user_id}/refresh_claims'),
+        },
     }
     
     # Define response types for each endpoint
@@ -120,6 +230,22 @@ class ManagementClient:
             'create': {'201': 'CreateOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'organization_users': {
+            'list': {'200': 'GetOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'add': {'201': 'AddOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'UpdateOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'remove': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'organization_user_roles': {
+            'list': {'200': 'GetOrganizationsUserRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'add': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'remove': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'organization_user_permissions': {
+            'list': {'200': 'GetOrganizationsUserPermissionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'add': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'remove': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'roles': {
             'list': {'200': 'GetRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
@@ -166,6 +292,68 @@ class ManagementClient:
         'industries': {
             'list': {'200': 'GetIndustriesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
         },
+        'properties': {
+            'list': {'200': 'GetPropertiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetPropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreatePropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'user_properties': {
+            'list': {'200': 'GetUserPropertiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetUserPropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'organization_properties': {
+            'list': {'200': 'GetOrganizationPropertiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetOrganizationPropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'webhooks': {
+            'list': {'200': 'GetWebhooksResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetWebhookResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateWebhookResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'events': {
+            'get': {'200': 'GetEventResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'event_types': {
+            'list': {'200': 'GetEventTypesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'connections': {
+            'list': {'200': 'GetConnectionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetConnectionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateConnectionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'business': {
+            'get': {'200': 'GetBusinessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'environment_feature_flags': {
+            'list': {'200': 'GetEnvironmentFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetEnvironmentFeatureFlagsResponseDataFeatureFlagsInner', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'organization_feature_flags': {
+            'list': {'200': 'GetOrganizationFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetOrganizationFeatureFlagsResponseDataFeatureFlagsInner', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'user_feature_flags': {
+            'get': {'200': 'GetUserFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'user_password': {
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'user_refresh_claims': {
+            'refresh': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
     }
     
     def __init__(self, domain: str, client_id: str, client_secret: str):
@@ -199,7 +387,11 @@ class ManagementClient:
     def _generate_methods(self):
         """Generate dynamic methods for each API endpoint."""
         for resource, endpoints in self.API_ENDPOINTS.items():
-            resource_singular = resource[:-1] if resource.endswith('s') else resource
+            # Handle special cases for singularization
+            if resource == 'business':
+                resource_singular = 'business'  # Don't remove 's' from 'business'
+            else:
+                resource_singular = resource[:-1] if resource.endswith('s') else resource
             
             for action, (method, path) in endpoints.items():
                 # Create method name based on action and resource
@@ -229,7 +421,11 @@ class ManagementClient:
         Returns:
             A callable method that makes the API request
         """
-        resource_singular = resource[:-1] if resource.endswith('s') else resource
+        # Handle special cases for singularization
+        if resource == 'business':
+            resource_singular = 'business'  # Don't remove 's' from 'business'
+        else:
+            resource_singular = resource[:-1] if resource.endswith('s') else resource
 
         def api_method(*args, **kwargs) -> Dict[str, Any]:
             # Format path with any path parameters from args

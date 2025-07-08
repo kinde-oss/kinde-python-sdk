@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import logging
 from kinde_sdk.auth.oauth import OAuth
 from kinde_sdk.auth import claims, feature_flags, permissions, tokens
+from kinde_sdk.management import ManagementClient;
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,14 @@ async def home(request: Request):
     """
     if kinde_oauth.is_authenticated():
         user = kinde_oauth.get_user_info()
+
+        management_client = ManagementClient(
+            domain=os.getenv("KINDE_DOMAIN"),
+            client_id=os.getenv("KINDE_MANAGEMENT_CLIENT_ID"),
+            client_secret=os.getenv("KINDE_MANAGEMENT_CLIENT_SECRET")
+        )
+        api_response = management_client.get_users()
+
         return f"""
         <html>
             <body>
@@ -46,6 +55,7 @@ async def home(request: Request):
                 <p>feature flags: {await feature_flags.get_all_flags()}</p>
                 <p>permissions: {await permissions.get_permissions()}</p>
                 <p>tokens: {tokens.get_token_manager().get_access_token()}</p>
+                <p>tokens: {api_response}</p>
                 <p>You are logged in.</p>
                 <a href="/logout">Logout</a>
             </body>

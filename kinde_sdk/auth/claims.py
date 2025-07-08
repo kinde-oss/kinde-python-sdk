@@ -24,7 +24,7 @@ class Claims(BaseAuth):
                 "value": None
             }
 
-        claims = token_manager.get_claims()
+        claims = token_manager.get_claims(token_type)
         value = claims.get(claim_name)
 
         return {
@@ -46,7 +46,7 @@ class Claims(BaseAuth):
         if not token_manager:
             return {}
 
-        return token_manager.get_claims()
+        return token_manager.get_claims(token_type)
 
 # Create a singleton instance
 claims = Claims() 

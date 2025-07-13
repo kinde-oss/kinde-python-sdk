@@ -1,633 +1,721 @@
-import os
+from typing import Optional, Dict, Any
+import urllib.parse
 import requests
-import logging
-import time
-import asyncio
-from typing import Any, Dict, List, Optional, Tuple, Union
-from urllib.parse import urlencode, urlparse, quote
+from .tokens import Tokens
+from .utils import generate_random_string, generate_code_challenge
+from .session import SessionInterface, InMemorySession
 
-from .user_session import UserSession
-from kinde_sdk.core.storage.storage_manager import StorageManager
-from kinde_sdk.core.storage.storage_factory import StorageFactory
-from kinde_sdk.core.framework.framework_factory import FrameworkFactory
-from .config_loader import load_config
-from .enums import GrantType, IssuerRouteTypes, PromptTypes
-from .login_options import LoginOptions
-from kinde_sdk.core.helpers import generate_random_string, base64_url_encode, generate_pkce_pair, get_user_details as helper_get_user_details, get_user_details_sync
-from kinde_sdk.core.exceptions import (
-    KindeConfigurationException,
-    KindeLoginException,
-    KindeTokenException,
-    KindeRetrieveException,
-)
+class RedirectRequired(Exception):
+    """Custom exception to signal a redirect is needed."""
+    def __init__(self, url: str):
+        self.url = url
+        super().__init__(f"Redirect required to: {url}")
 
 class OAuth:
     def __init__(
         self,
-        client_id: Optional[str] = None,
-        client_secret: Optional[str] = None,
-        redirect_uri: Optional[str] = None,
-        config_file: Optional[str] = None,
-        storage_config: Optional[Dict[str, Any]] = None,
-        framework: Optional[str] = None,
-        audience: Optional[str] = None,
-        host: Optional[str] = None,
-        state: Optional[str] = None,
-        app: Optional[Any] = None,
+        client_id: str,
+        client_secret: str,
+        redirect_uri: str,
+        host: str,
+        scopes: Optional[list] = None,
+        session_interface: Optional[SessionInterface] = None,
+        callback_path: str = "/kinde_callback",
     ):
-        """Initialize the OAuth client."""
-        
-        # Store original environment variables
-        self._original_env = {
-            "KINDE_CLIENT_ID": os.getenv("KINDE_CLIENT_ID"),
-            "KINDE_CLIENT_SECRET": os.getenv("KINDE_CLIENT_SECRET"),
-            "KINDE_REDIRECT_URI": os.getenv("KINDE_REDIRECT_URI"),
-            "KINDE_HOST": os.getenv("KINDE_HOST"),
-            "KINDE_AUDIENCE": os.getenv("KINDE_AUDIENCE")
-        }
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.redirect_uri = redirect_uri
+        print(f'Configured redirect_uri: {redirect_uri}')  # Debug print
+        self.host = host
+        self.scopes = scopes or ["openid", "profile", "email", "offline"]
+        self.token_endpoint = f"{host}/oauth2/token"
+        self.authorize_endpoint = f"{host}/oauth2/auth"
+        self.callback_path = callback_path
+        self.session = session_interface or InMemorySession()
+        self._state = None
+        self._code_verifier = None
+        self._silent_reauth_attempted = False
 
-        # Fetch values from environment variables if not provided
-        self.client_id = client_id or os.getenv("KINDE_CLIENT_ID")
-        self.client_secret = client_secret or os.getenv("KINDE_CLIENT_SECRET")
-        self.redirect_uri = redirect_uri or os.getenv("KINDE_REDIRECT_URI")
-        self.host = host or os.getenv("KINDE_HOST", "https://app.kinde.com")
-        self.audience = audience or os.getenv("KINDE_AUDIENCE")
-        self.state = state
-        self.framework = framework
-        self.app = app
+    def get_authorize_url(self, additional_params: Optional[Dict[str, str]] = None) -> str:
+        """Generate OAuth authorization URL, similar to js-utils generateAuthUrl."""
+        # Generate new state and code verifier for each request
+        state = generate_random_string()
+        code_verifier = generate_random_string()
         
-        # Validate required configurations
-        if not self.client_id:
-            raise KindeConfigurationException("Client ID is required.")
+        # Store in session
+        self.session.set("code_verifier", code_verifier)
+        self.session.set("state", state)
         
-        # Initialize API endpoints
-        self._set_api_endpoints()
-
-        # Load configuration
-        if config_file:
-            self._config = load_config(config_file)
-            storage_config = self._config.get("storage", {"type": "memory"})
-        elif storage_config is None:
-            storage_config = {"type": "memory"}
-            self._config = {"storage": storage_config}
-
-        # Create storage manager
-        self._storage_manager = StorageManager()
+        # Also store in instance variables for backward compatibility
+        self._state = state
+        self._code_verifier = code_verifier
         
-        # Initialize framework if specified (this will also set up framework-specific storage)
-        if framework:
-            self._initialize_framework()
-        else:
-            # Use configuration-based storage if no framework specified
-            self._storage = StorageFactory.create_storage(storage_config)
-            self._storage_manager.initialize(config=storage_config, storage=self._storage)
-
-        self._session_manager = UserSession()
-
-        # Logging settings
-        self._logger = logging.getLogger("kinde_sdk")
-        self._logger.setLevel(logging.INFO)
-
-        # Authentication properties
-        self.verify_ssl = True
-        self.proxy = None
-        self.proxy_headers = None
-
-    def _initialize_framework(self) -> None:
-        """
-        Initialize the framework-specific components.
-        This will set up the framework and its associated storage.
-        """
-        if not self.framework:
-            raise KindeConfigurationException("Framework must be specified for initialization")
-
-        # Get the framework implementation from the factory
-        framework_impl = FrameworkFactory.create_framework(
-            config={"type": self.framework},
-            app=self.app
-        )
-
-        # Set the OAuth instance in the framework
-        framework_impl.set_oauth(self)
-
-        # Start the framework (this will set up middleware and routes)
-        framework_impl.start()
-
-        # Store the framework implementation
-        self._framework = framework_impl
-
-        # Create storage using the framework's storage factory
-        self._storage = StorageFactory.create_storage({"type": self.framework})
+        print(f"Generated new state: {state}")
+        print(f"Generated new code_verifier: {code_verifier}")
         
-        # Initialize storage manager with the framework-specific storage
-        self._storage_manager.initialize(config={"type": self.framework, "device_id": self._framework.get_name()}, storage=self._storage)
-
-    def is_authenticated(self) -> bool:
-        """
-        Check if the user is authenticated using the session manager.
-        
-        Args:
-            request (Optional[Any]): The current request object
-            
-        Returns:
-            bool: True if the user is authenticated, False otherwise
-        """
-        # Get user ID from framework
-        self._logger.debug(f"self._framework: {self._framework}")
-        user_id = self._framework.get_user_id()
-        self._logger.debug(f"user_id: {user_id}")
-        if not user_id:
-            self._logger.debug("No user ID found in session")
-            return False
-            
-        # Check authentication using session manager
-        self._logger.debug(f"self._session_manager: {self._session_manager}")
-        return self._session_manager.is_authenticated(user_id)
-
-    def get_user_info(self) -> Dict[str, Any]:
-        """
-        Get the user information from the session.
-        
-        Args:
-            request (Optional[Any]): The current request object
-            
-        Returns:
-            Dict[str, Any]: The user information
-            
-        Raises:
-            KindeConfigurationException: If no user ID is found in session
-        """
-        # Get user ID from framework
-        self._logger.debug(f"Retrieve the user id")
-        user_id = self._framework.get_user_id()
-        if not user_id:
-            raise KindeConfigurationException("No user ID found in session")
-            
-        # Get token manager for the user
-        self._logger.debug(f"User id: {user_id} retrieve the token for the user id")
-        token_manager = self._session_manager.get_token_manager(user_id)
-        if not token_manager:
-            raise KindeConfigurationException("No token manager found for user")
-        
-        user_details = get_user_details_sync(
-            userinfo_url=self.userinfo_url,
-            token_manager=token_manager,
-            logger=self._logger
-        )
-            
-        # Get claims from token manager
-        self._logger.info(f"Get the claims from the token manager {user_details}")
-        return user_details
-
-    def _set_api_endpoints(self):
-        """Set API endpoints based on the host URL."""
-        # Attempt to fetch OpenID Configuration first
-        try:
-            self._fetch_openid_configuration()
-        except Exception as e:
-            self.auth_url = f"{self.host}/oauth2/auth"
-            self.token_url = f"{self.host}/oauth2/token"
-            self.logout_url = f"{self.host}/logout"
-            self.userinfo_url = f"{self.host}/oauth2/userinfo"
-
-    def _fetch_openid_configuration(self):
-        """
-        Fetch OpenID Configuration and update endpoints accordingly.
-        """
-        import requests
-        
-        # Construct the OpenID Configuration URL
-        openid_config_url = f"{self.host}/.well-known/openid-configuration"
-        
-        # Make the request
-        response = requests.get(openid_config_url)
-        
-        if response.status_code == 200:
-            config = response.json()
-            
-            # Update endpoints with the values from the configuration
-            self.auth_url = config.get("authorization_endpoint", f"{self.host}/oauth2/auth")
-            self.token_url = config.get("token_endpoint", f"{self.host}/oauth2/token")
-            self.logout_url = config.get("end_session_endpoint", f"{self.host}/logout")
-            self.userinfo_url = config.get("userinfo_endpoint", f"{self.host}/oauth2/userinfo")
-            
-        else:
-            self.auth_url = f"{self.host}/oauth2/auth"
-            self.token_url = f"{self.host}/oauth2/token"
-            self.logout_url = f"{self.host}/logout"
-            self.userinfo_url = f"{self.host}/oauth2/userinfo"
-
-    async def generate_auth_url(
-        self,
-        route_type: IssuerRouteTypes = IssuerRouteTypes.LOGIN,
-        login_options: Dict[str, Any] = None,
-        disable_url_sanitization: bool = False
-    ) -> Dict[str, Any]:
-        """
-        Generate an authentication URL for login or registration.
-        
-        Args:
-            route_type: Type of authentication route (login or register)
-            login_options: Dictionary of login options
-            disable_url_sanitization: Flag to disable URL sanitization
-            
-        Returns:
-            Dictionary containing URL and security parameters
-        """
-        if login_options is None:
-            login_options = {}
-            
-        # Define standard login parameters mapping with constants
-        login_param_mapping = {
-            # Standard OAuth params
-            LoginOptions.RESPONSE_TYPE: "response_type", 
-            LoginOptions.REDIRECT_URI: "redirect_uri",
-            LoginOptions.SCOPE: "scope",
-            LoginOptions.AUDIENCE: "audience",
-            # Organization params
-            LoginOptions.ORG_CODE: "org_code",
-            LoginOptions.ORG_NAME: "org_name",
-            LoginOptions.IS_CREATE_ORG: "is_create_org",
-            # User experience params
-            LoginOptions.PROMPT: "prompt",
-            LoginOptions.LANG: "lang",
-            LoginOptions.LOGIN_HINT: "login_hint",
-            LoginOptions.CONNECTION_ID: "connection_id",
-            LoginOptions.REDIRECT_URL: "redirect_url",
-            LoginOptions.HAS_SUCCESS_PAGE: "has_success_page",
-            LoginOptions.WORKFLOW_DEPLOYMENT_ID: "workflow_deployment_id",
-            # Registration params
-            LoginOptions.PLAN_INTEREST: "plan_interest",
-            LoginOptions.PRICING_TABLE_KEY: "pricing_table_key",
-        }
-        
-        # Base search parameters with defaults
-        search_params = {
-            "client_id": self.client_id,
-            "response_type": login_options.get(LoginOptions.RESPONSE_TYPE, "code"),
-            "redirect_uri": login_options.get(LoginOptions.REDIRECT_URI, self.redirect_uri),
-            "scope": login_options.get(LoginOptions.SCOPE, "openid profile email"),
-        }
-        
-        # Add audience if specified in the instance or options
-        if self.audience or login_options.get(LoginOptions.AUDIENCE):
-            search_params["audience"] = login_options.get(LoginOptions.AUDIENCE, self.audience)
-        
-        # Merge all supported params from login_options
-        for option_key, param_key in login_param_mapping.items():
-            if option_key in login_options and login_options[option_key] is not None:
-                # Skip those already handled above
-                if option_key in [LoginOptions.RESPONSE_TYPE, LoginOptions.REDIRECT_URI, 
-                                 LoginOptions.SCOPE, LoginOptions.AUDIENCE]:
-                    continue
-                
-                # Handle boolean parameters
-                if option_key == LoginOptions.IS_CREATE_ORG or option_key == LoginOptions.HAS_SUCCESS_PAGE:
-                    search_params[param_key] = "true" if login_options[option_key] else "false"
-                else:
-                    # Use string representation for query params
-                    search_params[param_key] = str(login_options[option_key])
-        
-        # Add additional auth parameters
-        if LoginOptions.AUTH_PARAMS in login_options and isinstance(login_options[LoginOptions.AUTH_PARAMS], dict):
-            for key, value in login_options[LoginOptions.AUTH_PARAMS].items():
-                # Convert all values to strings for URL parameters
-                search_params[key] = str(value) if value is not None else ""
-        
-        # Generate state if not provided
-        state = login_options.get(LoginOptions.STATE, generate_random_string(32))
-        search_params["state"] = state
-        self._session_manager.storage_manager.setItems("state", {"value": state})
-        
-        # Generate nonce if not provided
-        nonce = login_options.get(LoginOptions.NONCE, generate_random_string(16))
-        search_params["nonce"] = nonce
-        self._session_manager.storage_manager.setItems("nonce", {"value": nonce})
-        
-        # Handle PKCE
-        code_verifier = ""
-        if login_options.get(LoginOptions.CODE_CHALLENGE):
-            search_params["code_challenge"] = login_options[LoginOptions.CODE_CHALLENGE]
-        else:
-            # Generate PKCE pair
-            pkce_data = await generate_pkce_pair(52)  # Use 52 chars to match JS implementation
-            code_verifier = pkce_data["code_verifier"]
-            search_params["code_challenge"] = pkce_data["code_challenge"]
-            self._session_manager.storage_manager.setItems("code_verifier", {"value": code_verifier})
-        
-        # Set code challenge method
-        code_challenge_method = login_options.get(LoginOptions.CODE_CHALLENGE_METHOD, "S256")
-        search_params["code_challenge_method"] = code_challenge_method
-        
-        # Set prompt for registration
-        if route_type == IssuerRouteTypes.REGISTER and not search_params.get("prompt"):
-            search_params["prompt"] = PromptTypes.CREATE.value
-        
-        # Build URL
-        query_string = urlencode(search_params)
-        auth_url = f"{self.auth_url}?{query_string}"
-        
-        return {
-            "url": auth_url,
-            "state": search_params["state"],
-            "nonce": search_params["nonce"],
-            "code_challenge": search_params.get("code_challenge", ""),
-            "code_verifier": code_verifier,
-        }
-    
-    async def login(self, login_options: Dict[str, Any] = None) -> str:
-        """
-        Generate login URL with the specified options.
-        
-        Args:
-            login_options: Dictionary of login options including:
-                - response_type: OAuth response type (default: 'code')
-                - redirect_uri: URI to redirect after login
-                - scope: OAuth scopes (default: 'openid profile email')
-                - audience: API audience
-                - org_code: Organization code
-                - org_name: Organization name
-                - is_create_org: Whether to create organization
-                - prompt: Prompt option
-                - lang: Language preference
-                - login_hint: Login hint (email)
-                - connection_id: Connection identifier
-                - redirect_url: URL to redirect after authentication
-                - has_success_page: Whether to show success page
-                - workflow_deployment_id: Workflow deployment ID
-                - pricing_table_key: Optional string indicating the pricing table key
-                - auth_params: Additional auth parameters
-                
-        Returns:
-            Login URL
-        """
-        if not self.framework:
-            raise KindeConfigurationException("Framework must be selected")
-        
-        if login_options is None:
-            login_options = {}
-        
-        auth_url_data = await self.generate_auth_url(
-            route_type=IssuerRouteTypes.LOGIN,
-            login_options=login_options
-        )
-        return auth_url_data["url"]
-    
-    async def register(self, login_options: Dict[str, Any] = None) -> str:
-        """
-        Generate registration URL with the specified options.
-        
-        Args:
-            login_options: Dictionary of login options including:
-                - response_type: OAuth response type (default: 'code')
-                - redirect_uri: URI to redirect after registration
-                - scope: OAuth scopes (default: 'openid profile email')
-                - audience: API audience
-                - org_code: Organization code
-                - org_name: Organization name
-                - is_create_org: Whether to create organization
-                - prompt: Prompt option (will be set to 'create' if not specified)
-                - lang: Language preference
-                - login_hint: Login hint (email)
-                - connection_id: Connection identifier
-                - redirect_url: URL to redirect after authentication
-                - has_success_page: Whether to show success page
-                - workflow_deployment_id: Workflow deployment ID
-                - plan_interest: Optional string indicating the plan of interest
-                - pricing_table_key: Optional string indicating the pricing table key
-                - auth_params: Additional auth parameters
-                
-        Returns:
-            Registration URL
-        """
-        if not self.framework:
-            raise KindeConfigurationException("Framework must be selected")
-
-        if login_options is None:
-            login_options = {}
-        
-        # Set prompt to 'create' for registration if not specified
-        if not login_options.get("prompt"):
-            login_options["prompt"] = PromptTypes.CREATE.value
-        
-        auth_url_data = await self.generate_auth_url(
-            route_type=IssuerRouteTypes.REGISTER,
-            login_options=login_options
-        )
-        return auth_url_data["url"]
-    
-    async def logout(self, user_id: Optional[str] = None, logout_options: Dict[str, Any] = None) -> str:
-        """
-        Generate the logout URL and clear session if user_id provided.
-        
-        Args:
-            user_id: User identifier to clear session
-            logout_options: Dictionary with logout options including:
-                - post_logout_redirect_uri: URI to redirect after logout
-                - state: State parameter for validation
-                - id_token_hint: ID token hint for validation
-            
-        Returns:
-            Logout URL
-        """
-        if not self.framework:
-            raise KindeConfigurationException("Framework must be selected")
-
-        if logout_options is None:
-            logout_options = {}
-        
-        # Clear session if user_id provided
-        if user_id:
-            # Get ID token before logging out if not provided in options
-            if "id_token_hint" not in logout_options and user_id:
-                token_manager = self._session_manager.get_token_manager(user_id)
-                if token_manager:
-                    id_token = token_manager.get_id_token()
-                    if id_token:
-                        logout_options["id_token_hint"] = id_token
-            
-            # Perform logout (clear session)
-            self._session_manager.logout(user_id)
-        
-        # Generate logout URL
         params = {
             "client_id": self.client_id,
-        }
-        
-        # Add redirect URI
-        redirect_uri = logout_options.get("post_logout_redirect_uri", self.redirect_uri)
-        if redirect_uri:
-            params["redirect_uri"] = redirect_uri
-        
-        # Add state if provided
-        if "state" in logout_options:
-            params["state"] = logout_options["state"]
-        
-        # Add ID token hint if provided
-        if "id_token_hint" in logout_options:
-            params["id_token_hint"] = logout_options["id_token_hint"]
-        
-        # Build logout URL
-        query_string = urlencode(params)
-        return f"{self.logout_url}?{query_string}"
-
-    async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Handle the OAuth redirect and exchange the code for tokens.
-        
-        Args:
-            code: Authorization code from the redirect
-            user_id: User identifier for token storage
-            state: State parameter for verification
-            
-        Returns:
-            Dict with user and token information
-        """
-        # Verify state if provided
-        if state:
-            stored_state = self._session_manager.storage_manager.get("state")
-            self._logger.warning(f"stored_state: {stored_state}, state: {state}")
-            if not stored_state or state != stored_state.get("value"):
-                self._logger.error(f"State mismatch: received {state}, stored {stored_state}")
-                raise KindeLoginException("Invalid state parameter")
-        
-        # Get code verifier for PKCE
-        code_verifier = None
-        stored_code_verifier = self._session_manager.storage_manager.get("code_verifier")
-        if stored_code_verifier:
-            code_verifier = stored_code_verifier.get("value")
-            
-            # Clean up the used code verifier
-            self._session_manager.storage_manager.delete("code_verifier")
-        
-        # Exchange code for tokens
-        try:
-            token_data = await self.exchange_code_for_tokens(code, code_verifier)
-        except Exception as e:
-            self._logger.error(f"Token exchange failed: {str(e)}")
-            raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}") from e
-        
-        # Store tokens
-        user_info = {
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "token_url": self.token_url,
             "redirect_uri": self.redirect_uri,
+            "response_type": "code",
+            "scope": " ".join(self.scopes),
+            "state": state,
+            "code_challenge": generate_code_challenge(code_verifier),
+            "code_challenge_method": "S256",
         }
+        if additional_params:
+            params.update(additional_params)
         
-        # Store session data
-        self._session_manager.set_user_data(user_id, user_info, token_data)
+        return f"{self.authorize_endpoint}?{urllib.parse.urlencode(params)}"
+
+    def get_token(self, code: str) -> Dict[str, str]:
+        """Exchange authorization code for tokens."""
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
         
-        # Get user details using the token
-        token_manager = self._session_manager.get_token_manager(user_id)
-        if not token_manager:
-            raise KindeRetrieveException("Failed to get token manager")
+        # Get code verifier from session
+        code_verifier = self.session.get("code_verifier")
+        print(f"Code verifier from session: {code_verifier}")
         
-        # This will now throw the exception if it fails, allowing proper error handling
-        user_details = await helper_get_user_details(
-            userinfo_url=self.userinfo_url,
-            token_manager=token_manager,
-            logger=self._logger
-        )
-        
-        # Clean up state
-        if state:
-            self._session_manager.storage_manager.delete("state")
-        
-        # Clean up nonce
-        self._session_manager.storage_manager.delete("nonce")
-        
-        return {
-            "tokens": token_data,
-            "user": user_details
-        }
-    
-    async def exchange_code_for_tokens(self, code: str, code_verifier: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Exchange authorization code for tokens.
-        
-        Args:
-            code: Authorization code
-            code_verifier: PKCE code verifier
-            
-        Returns:
-            Dict with token data
-        """
         data = {
             "grant_type": "authorization_code",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
             "code": code,
             "redirect_uri": self.redirect_uri,
-            "client_id": self.client_id,
+            "code_verifier": code_verifier,
         }
-        
-        # Add client secret if available (for non-PKCE flow)
-        if self.client_secret:
-            data["client_secret"] = self.client_secret
-        
-        # Add code verifier for PKCE flow
-        if code_verifier:
-            data["code_verifier"] = code_verifier
-        
-        self._logger.debug(f"[Exchange code for tokens] [{self.token_url}] [{data}]")
+        response = requests.post(self.token_endpoint, headers=headers, data=data)
+        response.raise_for_status()
+        tokens_data = response.json()
+        Tokens.set_access_token(tokens_data["access_token"])
+        if "refresh_token" in tokens_data:
+            Tokens.set_refresh_token(tokens_data["refresh_token"])
+        return tokens_data
 
-        response = requests.post(self.token_url, data=data)
-        self._logger.debug(f"[Exchange code for tokens] [{response.status_code}] [{response.text}]")
-        if response.status_code != 200:
-            raise KindeTokenException(f"Token exchange failed: {response.text}")
-        
-        return response.json()
+    def refresh_token(self, refresh_token: str) -> Dict[str, str]:
+        """Refresh access token using refresh token (silent)."""
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        data = {
+            "grant_type": "refresh_token",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "refresh_token": refresh_token,
+        }
+        response = requests.post(self.token_endpoint, headers=headers, data=data)
+        response.raise_for_status()
+        tokens_data = response.json()
+        Tokens.set_access_token(tokens_data["access_token"])
+        if "refresh_token" in tokens_data:
+            Tokens.set_refresh_token(tokens_data["refresh_token"])
+        return tokens_data
 
-    def get_tokens(self, user_id: str) -> Dict[str, Any]:
-        """
-        Retrieve tokens and related information for a user.
+    def is_authenticated(self) -> bool:
+        """Check if the user is authenticated, attempting silent refresh if needed."""
+        access_token = Tokens.get_access_token()
+        if access_token and Tokens.is_token_valid(access_token):
+            return True
         
-        Args:
-            user_id: User identifier
-                
-        Returns:
-            Dictionary containing tokens and token information
-            
-        Raises:
-            ValueError: If no tokens are available for the user
-        """
-        # Get token manager
-        token_manager = self._session_manager.get_token_manager(user_id)
-        if not token_manager:
-            raise ValueError(f"No token manager available for user {user_id}")
+        # Try silent refresh with refresh token
+        refresh_token = Tokens.get_refresh_token()
+        if refresh_token:
+            try:
+                self.refresh_token(refresh_token)
+                return True
+            except Exception:
+                pass  # Refresh failed
         
-        # Initialize tokens dictionary
-        tokens = {}
+        return False
+
+    def get_silent_auth_url(self, redirect_uri: Optional[str] = None) -> Optional[str]:
+        """Generate URL for silent re-authentication using prompt=none."""
+        additional_params = {"prompt": "none"}
+        redirect_uri = redirect_uri or self.redirect_uri
+        if redirect_uri:
+            additional_params["redirect_uri"] = redirect_uri
+        try:
+            return self.get_authorize_url(additional_params=additional_params)
+        except Exception as e:
+            print(f"Silent re-auth URL generation failed: {e}")
+            return None
+
+    def perform_silent_auth(self, silent_auth_url: str) -> bool:
+        """Perform silent auth in background (server-side simulation). 
+        Note: This is a placeholder; in a real web app, use client-side JS/iframe for true silence.
+        Here, we attempt a server-side request, but it may not fully work without browser context."""
+        try:
+            # Simulate a background request (not truly silent in Python, but attempts non-interactive)
+            response = requests.get(silent_auth_url, allow_redirects=False)
+            if response.status_code == 302:  # Redirect indicates success or failure
+                location = response.headers.get('Location', '')
+                parsed = urllib.parse.urlparse(location)
+                query_params = urllib.parse.parse_qs(parsed.query)
+                code = query_params.get('code', [None])[0]
+                state = query_params.get('state', [None])[0]
+                error = query_params.get('error', [None])[0]
+                return self.callback_handler(code, error, state)
+            return False
+        except Exception as e:
+            print(f"Silent auth failed: {e}")
+            return False
+
+    def callback_handler(self, code: Optional[str] = None, error: Optional[str] = None, state: Optional[str] = None) -> bool:
+        """Handle OAuth callback parameters."""
+        self._silent_reauth_attempted = False
+        
+        # Debug state comparison
+        stored_state = self.session.get("state")
+        print(f"Callback state: {state}")
+        print(f"Stored state: {stored_state}")
+        
+        if state != stored_state:
+            print("State mismatch: possible CSRF attack")
+            return False
+        if error:
+            print(f"Callback error: {error}")
+            return False
+        if not code:
+            return False
         
         try:
-            access_token = None
-            if "access_token" in token_manager.tokens:
-                access_token = token_manager.get_access_token()
-                if access_token:
-                    tokens["access_token"] = access_token
-                else:
-                    raise ValueError(f"Invalid access token for user {user_id}")
-            else:
-                raise ValueError(f"No access token available for user {user_id}")
-            
-            # Get token expiration time
-            if "expires_at" in token_manager.tokens:
-                tokens["expires_at"] = token_manager.tokens["expires_at"]
-                tokens["expires_in"] = max(0, int(token_manager.tokens["expires_at"] - time.time()))
-            
-            # Add refresh token if available
-            if token_manager.tokens.get("refresh_token"):
-                tokens["refresh_token"] = token_manager.tokens["refresh_token"]
-                
-            # Add ID token if available
-            if token_manager.tokens.get("id_token"):
-                tokens["id_token"] = token_manager.tokens["id_token"]
-            
-            # Add claims if available
-            claims = token_manager.get_claims()
-            if claims and len(claims) > 0:
-                tokens["claims"] = claims
-                
-            return tokens
+            tokens_data = self.get_token(code)
+            # Clear the state after successful callback
+            self.session.set("state", "")
+            return True
         except Exception as e:
-            self._logger.error(f"Error retrieving tokens: {str(e)}")
-            raise ValueError(f"Failed to retrieve tokens: {str(e)}") from e
+            print(f"Callback token exchange failed: {e}")
+            return False
+
+    def get_user_details(self) -> Dict[str, Any]:
+        """Get user details from the userinfo endpoint."""
+        if not self.is_authenticated():
+            raise ValueError("User is not authenticated")
+        access_token = Tokens.get_access_token()
+        headers = {"Authorization": f"Bearer {access_token}"}
+        
+        # Try the correct Kinde endpoints
+        endpoints = [
+            f"{self.host}/oauth2/v2/user_profile",  # Kinde v2 user profile endpoint
+            f"{self.host}/oauth2/user_profile",     # Kinde v1 user profile endpoint
+        ]
+        
+        for endpoint in endpoints:
+            try:
+                response = requests.get(endpoint, headers=headers)
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                print(f"Failed to fetch user details from {endpoint}: {e}")
+                continue
+        
+        raise ValueError("Could not fetch user details from any endpoint")
+
+    def get_access_token(self) -> Optional[str]:
+        """Retrieve the current access token."""
+        return Tokens.get_access_token()
+
+    def get_refresh_token(self) -> Optional[str]:
+        """Retrieve the current refresh token."""
+        return Tokens.get_refresh_token()
+
+"""
+def check_auth(self) -> Dict[str, Any]:
+    access_token = Tokens.get_access_token()
+    if access_token and Tokens.is_token_valid(access_token):
+        return {
+            'success': True,
+            'access_token': access_token,
+            'refresh_token': Tokens.get_refresh_token()
+        }
+    
+    refresh_token = Tokens.get_refresh_token()
+    if not refresh_token:
+        return {'success': False, 'error': 'No refresh token available'}
+    
+    try:
+        tokens_data = self.refresh_token(refresh_token)
+        return {
+            'success': True,
+            'access_token': tokens_data.get('access_token'),
+            'refresh_token': tokens_data.get('refresh_token')
+        }
+    except Exception as e:
+        return {'success': False, 'error': f'Refresh failed: {str(e)}'}
+"""
+from datetime import date
+from flask import Flask, url_for, render_template, request, session, jsonify, redirect
+from flask_session import Session
+from functools import wraps
+import asyncio
+import logging
+import os
+import sys
+from dotenv import load_dotenv
+
+# Add the local kinde-python-sdk to Python path if needed
+sys.path.insert(0, '/Users/brandtkruger/Projects/kinde-python-sdk')
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Import kinde_flask to register the Flask framework
+import kinde_flask
+
+from kinde_sdk.auth.oauth import OAuth
+from kinde_sdk.auth import claims, feature_flags, permissions, tokens
+from kinde_sdk.management import ManagementClient
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
+
+# Initialize Kinde OAuth with required parameters from environment
+kinde_oauth = OAuth(
+    client_id=os.getenv('KINDE_CLIENT_ID'),
+    client_secret=os.getenv('KINDE_CLIENT_SECRET'),
+    redirect_uri=os.getenv('KINDE_REDIRECT_URI'),
+    host=os.getenv('KINDE_HOST')
+)
+
+def get_authorized_data():
+    logger.info("get_authorized_data: Starting authentication check")
+    
+    if not kinde_oauth.is_authenticated():
+        logger.warning("get_authorized_data: User is not authenticated")
+        return {}
+    
+    logger.info("get_authorized_data: User is authenticated, getting user info")
+    try:
+        user = kinde_oauth.get_user_details()
+        logger.info(f"get_authorized_data: User: {user}")
+    except Exception as e:
+        logger.error(f"Error getting user details: {e}")
+        return {}
+    
+    if not user:
+        logger.warning("get_authorized_data: Failed to get user info")
+        return {}
+    
+    logger.info(f"get_authorized_data: Successfully retrieved user info for user ID: {user.get('id', 'unknown')}")
+    
+    try:
+        id_token = tokens.get_token_manager().get_id_token()
+        logger.info(f"get_authorized_data: ID token: {id_token}")
+        access_token = tokens.get_token_manager().get_access_token()
+        logger.info(f"get_authorized_data: Access token: {access_token}")
+        claims_data = tokens.get_token_manager().get_claims()
+        logger.info(f"get_authorized_data: Claims: {claims_data}")
+    except Exception as e:
+        logger.error(f"Error getting tokens: {e}")
+        id_token = None
+        access_token = None
+        claims_data = None
+    
+    user_data = {
+        "id": user.get("id"),
+        "user_given_name": user.get("given_name"),
+        "user_family_name": user.get("family_name"),
+        "user_email": user.get("email"),
+        "user_picture": user.get("picture"),
+    }
+    
+    logger.info(f"get_authorized_data: Returning user data: {user_data}")
+    return user_data
+
+
+def get_management_client():
+    """
+    Creates and returns a ManagementClient instance with proper error handling.
+    Returns None if environment variables are missing or client creation fails.
+    """
+    # Validate required environment variables
+    required_env_vars = ["KINDE_DOMAIN", "KINDE_MANAGEMENT_CLIENT_ID", "KINDE_MANAGEMENT_CLIENT_SECRET"]
+    missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+    
+    if missing_vars:
+        logger.error(f"Missing required environment variables: {missing_vars}")
+        return None
+    
+    try:
+        # Initialize ManagementClient with environment variables
+        management_client = ManagementClient(
+            domain=os.getenv("KINDE_DOMAIN"),
+            client_id=os.getenv("KINDE_MANAGEMENT_CLIENT_ID"),
+            client_secret=os.getenv("KINDE_MANAGEMENT_CLIENT_SECRET")
+        )
+        logger.info("ManagementClient created successfully")
+        return management_client
+        
+    except Exception as ex:
+        logger.error(f"Failed to create ManagementClient: {ex}")
+        return None
+
+
+@app.route("/test_silent_auth")
+def test_silent_auth():
+    """
+    Test endpoint for silent authentication using iframe approach.
+    This provides the same functionality as js-utils silent auth.
+    """
+    # If already authenticated, redirect to home
+    if kinde_oauth.is_authenticated():
+        return redirect(url_for('index'))
+    
+    try:
+        # Check if get_silent_auth_url method exists
+        if hasattr(kinde_oauth, 'get_silent_auth_url'):
+            silent_url = kinde_oauth.get_silent_auth_url(
+                redirect_uri=url_for('silent_callback', _external=True)
+            )
+        else:
+            # Fallback to regular authorize URL with prompt=none
+            silent_url = kinde_oauth.get_authorize_url(
+                additional_params={"prompt": "none"}
+            )
+        
+        # Return HTML page with iframe for silent authentication
+        return f'''<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Silent Authentication</title>
+            <meta http-equiv="Content-Security-Policy" content="
+                frame-src 'self' https://*.kinde.com;
+                script-src 'self' 'unsafe-inline';
+                connect-src 'self';
+            ">
+        </head>
+        <body>
+            <div id="status">Checking authentication...</div>
+            <iframe id="silent-iframe" src="{silent_url}" style="display:none;"></iframe>
+            <script>
+                let authTimeout = setTimeout(() => {{
+                    document.getElementById('status').innerHTML = 'Authentication required - <a href="/login">Please login</a>';
+                }}, 10000);
+                
+                window.addEventListener('message', function(event) {{
+                    clearTimeout(authTimeout);
+                    
+                    if (event.data && typeof event.data === 'string') {{
+                        if (event.data.includes('code=')) {{
+                            const urlParams = new URLSearchParams(event.data.split('?')[1]);
+                            const code = urlParams.get('code');
+                            const state = urlParams.get('state');
+                            
+                            if (code) {{
+                                fetch('/exchange_silent_code', {{
+                                    method: 'POST',
+                                    headers: {{'Content-Type': 'application/json'}},
+                                    body: JSON.stringify({{
+                                        code: code,
+                                        state: state
+                                    }})
+                                }}).then(response => {{
+                                    if (response.ok) {{
+                                        document.getElementById('status').innerHTML = 'Authentication successful! Redirecting...';
+                                        setTimeout(() => {{
+                                            window.location.href = '/';
+                                        }}, 1000);
+                                    }} else {{
+                                        document.getElementById('status').innerHTML = 'Authentication failed - <a href="/login">Please login</a>';
+                                    }}
+                                }}).catch(error => {{
+                                    console.error('Error during token exchange:', error);
+                                    document.getElementById('status').innerHTML = 'Authentication error - <a href="/login">Please login</a>';
+                                }});
+                            }}
+                        }} else if (event.data.includes('error=')) {{
+                            document.getElementById('status').innerHTML = 'Authentication failed - <a href="/login">Please login</a>';
+                        }}
+                    }}
+                }});
+            </script>
+        </body>
+        </html>'''
+        
+    except Exception as e:
+        logger.error(f"Error generating silent auth URL: {e}")
+        return redirect(url_for('login'))
+
+
+@app.route("/silent_callback")
+def silent_callback():
+    """
+    Handle the silent authentication callback from the iframe.
+    """
+    try:
+        if 'code' in request.args:
+            return f'''<!DOCTYPE html>
+            <html>
+            <head><title>Silent Auth Callback</title></head>
+            <body>
+                <script>
+                    if (window.parent && window.parent !== window) {{
+                        window.parent.postMessage(window.location.search, '*');
+                    }}
+                </script>
+            </body>
+            </html>'''
+        else:
+            error = request.args.get('error', 'unknown_error')
+            return f'''<!DOCTYPE html>
+            <html>
+            <head><title>Silent Auth Error</title></head>
+            <body>
+                <script>
+                    if (window.parent && window.parent !== window) {{
+                        window.parent.postMessage('error={error}', '*');
+                    }}
+                </script>
+            </body>
+            </html>'''
+    except Exception as e:
+        logger.error(f"Error in silent callback: {e}")
+        return f'''<!DOCTYPE html>
+        <html>
+        <head><title>Silent Auth Error</title></head>
+        <body>
+            <script>
+                if (window.parent && window.parent !== window) {{
+                    window.parent.postMessage('error=callback_error', '*');
+                }}
+            </script>
+        </body>
+        </html>'''
+
+
+@app.route("/exchange_silent_code", methods=['POST'])
+def exchange_silent_code():
+    """
+    Exchange the authorization code from silent auth for tokens.
+    """
+    try:
+        data = request.get_json()
+        code = data.get('code')
+        state = data.get('state')
+        
+        if not code:
+            logger.error("No authorization code received for silent auth")
+            return jsonify({'error': 'No authorization code'}), 400
+        
+        # Use the OAuth client to handle the callback
+        success = kinde_oauth.callback_handler(
+            code=code,
+            state=state
+        )
+        
+        if success:
+            logger.info("Silent authentication successful")
+            return jsonify({'success': True})
+        else:
+            logger.error("Silent authentication failed during token exchange")
+            return jsonify({'error': 'Authentication failed'}), 400
+            
+    except Exception as e:
+        logger.error(f"Error during silent auth token exchange: {e}")
+        return jsonify({'error': 'Server error'}), 500
+
+
+@app.before_request
+def check_auth_before_request():
+    """
+    Check authentication before each request.
+    The SDK should handle token refresh internally.
+    """
+    # Skip authentication check for these endpoints
+    skip_auth_endpoints = [
+        'login', 'logout', 'callback', 'silent_callback', 
+        'exchange_silent_code', 'test_silent_auth', 'static'
+    ]
+    
+    if request.endpoint in skip_auth_endpoints:
+        return
+    
+    # For protected routes, check if user is authenticated
+    if not kinde_oauth.is_authenticated():
+        if request.endpoint != 'index':
+            return redirect(url_for('test_silent_auth'))
+
+
+@app.route("/")
+def index():
+    data = {"current_year": date.today().year}
+    template = "logged_out.html"
+    if kinde_oauth.is_authenticated():
+        user_data = get_authorized_data()
+        data.update(user_data)
+        template = "home.html"
+    return render_template(template, **data)
+
+
+@app.route("/details")
+def get_details():
+    template = "logged_out.html"
+    data = {"current_year": date.today().year}
+
+    if kinde_oauth.is_authenticated():
+        user_data = get_authorized_data()
+        data.update(user_data)
+        try:
+            data["access_token"] = tokens.get_token_manager().get_access_token()
+        except Exception as e:
+            logger.error(f"Error getting access token: {e}")
+            data["access_token"] = None
+        template = "details.html"
+
+    return render_template(template, **data)
+
+
+@app.route("/helpers")
+def get_helper_functions():
+    template = "logged_out.html"
+    data = {"current_year": date.today().year}
+
+    if kinde_oauth.is_authenticated():
+        user_data = get_authorized_data()
+        data.update(user_data)
+        
+        try:
+            # Handle async calls using event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            # Get claims
+            data["claim"] = loop.run_until_complete(claims.get_all_claims())
+            
+            # Get feature flags
+            flag_result = loop.run_until_complete(feature_flags.get_flag("theme", "red"))
+            data["flag"] = flag_result.value if hasattr(flag_result, 'value') else flag_result
+            
+            bool_flag_result = loop.run_until_complete(feature_flags.get_flag("is_dark_mode", False))
+            data["bool_flag"] = bool_flag_result.value if hasattr(bool_flag_result, 'value') else bool_flag_result
+            
+            str_flag_result = loop.run_until_complete(feature_flags.get_flag("theme", "red"))
+            data["str_flag"] = str_flag_result.value if hasattr(str_flag_result, 'value') else str_flag_result
+            
+            int_flag_result = loop.run_until_complete(feature_flags.get_flag("competitions_limit", 10))
+            data["int_flag"] = int_flag_result.value if hasattr(int_flag_result, 'value') else int_flag_result
+
+            org_codes = loop.run_until_complete(claims.get_claim("org_codes","id_token"))
+            data["user_organizations"] = org_codes
+            
+            loop.close()
+        except Exception as e:
+            logger.error(f"Error retrieving async data: {e}")
+            data["claim"] = None
+            data["flag"] = "red"
+            data["bool_flag"] = False
+            data["str_flag"] = "red"
+            data["int_flag"] = 10
+            data["user_organizations"] = []
+
+        # Get organization data using Management API
+        management_client = get_management_client()
+        if management_client is not None:
+            try:
+                all_orgs_response = management_client.get_organizations()
+                data["organization"] = all_orgs_response.organizations if hasattr(all_orgs_response, 'organizations') else []
+                logger.info(f"Retrieved {len(data['organization'])} total organizations")
+            except Exception as org_ex:
+                logger.warning(f"Could not retrieve all organizations: {org_ex}")
+                data["organization"] = []
+        else:
+            data["organization"] = []
+        
+        template = "helpers.html"
+    else:
+        template = "logged_out.html"
+
+    return render_template(template, **data)
+
+
+@app.route("/api_demo")
+def get_api_demo():
+    template = "api_demo.html"
+    data = {"current_year": date.today().year}
+    
+    if kinde_oauth.is_authenticated():
+        user_data = get_authorized_data()
+        data.update(user_data)
+        
+        management_client = get_management_client()
+        if management_client is None:
+            data['is_api_call'] = False
+            data['error_message'] = "Failed to initialize management client"
+        else:
+            try:
+                api_response = management_client.get_users()
+                logger.info(f"Management API response received: {len(api_response.users) if api_response.users else 0} users")
+                data['users'] = [
+                    {
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'total_sign_ins': int(user.total_sign_ins)
+                    }
+                    for user in api_response.users
+                ]
+                data['is_api_call'] = True
+            except Exception as ex:
+                data['is_api_call'] = False
+                logger.error(f"Management API error: {ex}")
+                data['error_message'] = str(ex)
+
+    return render_template(template, **data)
+
+
+@app.route("/login")
+def login():
+    # Generate login URL and redirect
+    login_url = kinde_oauth.get_authorize_url()
+    return redirect(login_url)
+
+@app.route("/logout")
+def logout():
+    # Clear tokens and redirect to logout URL
+    tokens.get_token_manager().clear_tokens()
+    logout_url = f"{os.getenv('KINDE_HOST')}/logout?redirect={url_for('index', _external=True)}"
+    return redirect(logout_url)
+
+@app.route("/callback")
+def callback():
+    # Handle OAuth callback
+    code = request.args.get('code')
+    state = request.args.get('state')
+    error = request.args.get('error')
+    
+    if error:
+        logger.error(f"OAuth callback error: {error}")
+        return redirect(url_for('index'))
+    
+    if not code:
+        logger.error("No authorization code received")
+        return redirect(url_for('index'))
+    
+    # Use callback handler
+    success = kinde_oauth.callback_handler(code=code, state=state)
+    
+    if success:
+        logger.info("OAuth callback successful")
+        return redirect(url_for('index'))
+    else:
+        logger.error("OAuth callback failed")
+        return redirect(url_for('index'))
+
+if __name__ == "__main__":
+    # Print SDK version info for debugging
+    try:
+        import kinde_sdk
+        print(f"Using kinde_sdk from: {kinde_sdk.__file__}")
+        if hasattr(kinde_sdk, '__version__'):
+            print(f"kinde_sdk version: {kinde_sdk.__version__}")
+    except Exception as e:
+        print(f"Error importing kinde_sdk: {e}")
+    
+    # Print OAuth configuration for debugging
+    print(f"OAuth configured with:")
+    print(f"  Client ID: {os.getenv('KINDE_CLIENT_ID')}")
+    print(f"  Host: {os.getenv('KINDE_HOST')}")
+    print(f"  Redirect URI: {os.getenv('KINDE_REDIRECT_URI')}")
+    
+    app.run(debug=True, host="0.0.0.0", port=5001)

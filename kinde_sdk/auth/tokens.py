@@ -1,78 +1,34 @@
-from typing import Optional, Any, Dict
-from .base_auth import BaseAuth
+# kinde_sdk/auth/tokens.py
+from typing import Optional
+import jwt
+import time
 
-class Tokens(BaseAuth):
-    """
-    Tokens wrapper that provides direct access to the token manager
-    for SDK consumers who need low-level token access.
-    """
-    
-    def get_token_manager(self) -> Optional[Any]:
-        """
-        Get the token manager for the current user.
-        
-        Returns:
-            Optional[Any]: The token manager if available, None otherwise
-        """
-        return self._get_token_manager()
-    
-    def get_user_id(self) -> Optional[str]:
-        """
-        Get the current user ID.
-        
-        Returns:
-            Optional[str]: The user ID if available, None otherwise
-        """
-        framework = self._get_framework()
-        if not framework:
-            return None
-        return framework.get_user_id()
-    
-    def is_authenticated(self) -> bool:
-        """
-        Check if the current user is authenticated.
-        
-        Returns:
-            bool: True if authenticated, False otherwise
-        """
-        token_manager = self._get_token_manager()
-        return token_manager is not None
-    
-    def get_token_info(self) -> Dict[str, Any]:
-        """
-        Get basic information about the current token state.
-        
-        Returns:
-            Dict containing token information:
-            {
-                "isAuthenticated": bool,
-                "userId": Optional[str],
-                "hasAccessToken": bool,
-                "hasIdToken": bool,
-                "hasRefreshToken": bool
-            }
-        """
-        token_manager = self._get_token_manager()
-        framework = self._get_framework()
-        
-        if not token_manager or not framework:
-            return {
-                "isAuthenticated": False,
-                "userId": None,
-                "hasAccessToken": False,
-                "hasIdToken": False,
-                "hasRefreshToken": False
-            }
-        
-        tokens = token_manager.tokens if hasattr(token_manager, 'tokens') else {}
-        
-        return {
-            "isAuthenticated": True,
-            "userId": framework.get_user_id(),
-            "hasAccessToken": "access_token" in tokens,
-            "hasIdToken": "id_token" in tokens,
-            "hasRefreshToken": "refresh_token" in tokens
-        }
+class Tokens:
+    _access_token: Optional[str] = None
+    _refresh_token: Optional[str] = None
 
-# Create a singleton instance
-tokens = Tokens() 
+    @classmethod
+    def set_access_token(cls, token: str) -> None:
+        cls._access_token = token
+
+    @classmethod
+    def get_access_token(cls) -> Optional[str]:
+        return cls._access_token
+
+    @classmethod
+    def set_refresh_token(cls, token: str) -> None:
+        cls._refresh_token = token
+
+    @classmethod
+    def get_refresh_token(cls) -> Optional[str]:
+        return cls._refresh_token
+
+    @classmethod
+    def is_token_valid(cls, token: Optional[str]) -> bool:
+        if not token:
+            return False
+        try:
+            decoded = jwt.decode(token, options={"verify_signature": False})
+            return decoded.get("exp", 0) > time.time()
+        except jwt.InvalidTokenError:
+            return False

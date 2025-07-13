@@ -724,3 +724,15 @@ Please refer to Kinde's [contributing guidelines](https://github.com/kinde-oss/.
 ## License
 
 By contributing to Kinde, you agree that your contributions will be licensed under its MIT License.
+
+## Testing Silent Auth
+
+1. Ensure you have Flask and required dependencies installed: `pip install flask pyjwt requests mock`.
+2. Update `examples/silent_auth_example.py` with your Kinde credentials (client_id, client_secret, host).
+3. Run the example: `python examples/silent_auth_example.py`.
+4. Test the flow:
+   - Visit `http://localhost:8000/` to login if needed.
+   - Visit `http://localhost:8000/test_silent_auth` to simulate token expiry and verify silent refresh (should succeed without prompting).
+5. Run unit tests: `python -m unittest test/test_silent_auth.py` to verify logic.
+
+If linter errors occur (e.g., import issues), ensure the module paths are correct or consult the documentation.

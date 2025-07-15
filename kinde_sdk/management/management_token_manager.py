@@ -265,7 +265,7 @@ class ManagementTokenManager:
         except requests.exceptions.Timeout:
             raise Exception(f"Token request timed out after 30 seconds for domain {self.domain}")
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Token request failed for domain {self.domain}: {str(e)}")
+            raise Exception(f"Token request failed for domain {self.domain}: {str(e)}") from e
 
     def clear_tokens(self):
         """ Clear stored tokens. """
@@ -310,16 +310,22 @@ class ManagementTokenManager:
             if not introspection_result.get("active", False):
                 raise ValueError("Token is inactive or invalid")
             
-            # Set the validated token
+            # Set the validated token - calculate proper expiration
+            exp_time = introspection_result.get("exp")
+            if exp_time:
+                expires_in = max(0, exp_time - int(time.time()))
+            else:
+                expires_in = 3600  # Default 1 hour if no exp claim
+            
             token_data = {
                 "access_token": bearer_token,
-                "expires_in": introspection_result.get("exp", int(time.time()) + 3600) - int(time.time())
+                "expires_in": expires_in
             }
             self.set_tokens(token_data)
             
             return introspection_result
             
         except requests.exceptions.Timeout:
-            raise Exception(f"Introspection request timed out after 30 seconds for domain {self.domain}")
+            raise Exception(f"Introspection request timed out after 30 seconds for domain {self.domain}") from None
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Introspection request failed for domain {self.domain}: {str(e)}")
+            raise Exception(f"Introspection request failed for domain {self.domain}: {str(e)}") from e

@@ -111,7 +111,7 @@ async def get_users(token_manager: ManagementTokenManager = Depends(get_manageme
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch users: {str(e)}"
-        )
+        ) from e
 
 # Run the app
 if __name__ == "__main__":

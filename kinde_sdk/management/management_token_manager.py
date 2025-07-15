@@ -312,10 +312,7 @@ class ManagementTokenManager:
             
             # Set the validated token - calculate proper expiration
             exp_time = introspection_result.get("exp")
-            if exp_time:
-                expires_in = max(0, exp_time - int(time.time()))
-            else:
-                expires_in = 3600  # Default 1 hour if no exp claim
+            expires_in = max(0, exp_time - int(time.time())) if exp_time else 3600
             
             token_data = {
                 "access_token": bearer_token,

@@ -9,6 +9,8 @@ import logging
 from kinde_sdk.auth.oauth import OAuth
 from kinde_sdk.auth import claims, feature_flags, permissions, tokens
 from kinde_sdk.management import ManagementClient;
+from kinde_sdk.management.management_token_manager import ManagementTokenManager
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +80,7 @@ async def home(request: Request):
                 <p>tokens: {tokens.get_token_manager().get_access_token()}</p>
                 <p>users: {user_count} user(s) found</p>
                 <p>You are logged in.</p>
+                <a href="/call_management_users">Call Management Users</a>
                 <a href="/logout">Logout</a>
             </body>
         </html>
@@ -91,6 +94,36 @@ async def home(request: Request):
         </body>
     </html>
     """
+
+@app.get("/call_management_users")
+async def call_management_users():
+    if not kinde_oauth.is_authenticated():
+        return {"error": "Not authenticated"}
+    
+    domain = os.getenv("KINDE_DOMAIN")
+    client_id = os.getenv("KINDE_MANAGEMENT_CLIENT_ID")
+    client_secret = os.getenv("KINDE_MANAGEMENT_CLIENT_SECRET")
+    
+    if not all([domain, client_id, client_secret]):
+        return {"error": "Missing management credentials"}
+    
+    try:
+        token_manager = ManagementTokenManager(
+            domain=domain,
+            client_id=client_id,
+            client_secret=client_secret
+        )
+        access_token = token_manager.get_access_token()
+        
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+        response = requests.get("http://localhost:8000/management/users", headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logger.error(f"Failed to call management users: {e}")
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

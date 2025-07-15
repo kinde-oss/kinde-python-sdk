@@ -209,13 +209,15 @@ class ManagementTokenManager:
     def set_tokens(self, token_data: Dict[str, Any]):
         """ Store tokens with expiration. """
         with self.lock:
-            # Handle None values by using default
-            expires_in = token_data.get("expires_in") or 3600
+            # Handle None values by using default, but allow 0
+            expires_in = token_data.get("expires_in")
+            if expires_in is None:
+                expires_in = 3600
             token_type = token_data.get("token_type") or "Bearer"
             self.tokens = {
-            "access_token": token_data.get("access_token"),
-            "expires_at": time.time() + expires_in,
-            "token_type": token_type
+                "access_token": token_data.get("access_token"),
+                "expires_at": time.time() + expires_in,
+                "token_type": token_type
             }
 
     def get_access_token(self):
@@ -265,9 +267,64 @@ class ManagementTokenManager:
         except requests.exceptions.Timeout:
             raise Exception(f"Token request timed out after 30 seconds for domain {self.domain}")
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Token request failed for domain {self.domain}: {str(e)}")
+            raise Exception(f"Token request failed for domain {self.domain}: {str(e)}") from e
 
     def clear_tokens(self):
         """ Clear stored tokens. """
         with self.lock:
             self.tokens = {}
+
+    def validate_and_set_via_introspection(self, bearer_token: str) -> Dict[str, Any]:
+        """
+        Validate a bearer token via introspection and set it if valid.
+        
+        Args:
+            bearer_token: The bearer token to introspect and validate.
+        
+        Returns:
+            Dict: The introspection result if valid.
+        
+        Raises:
+            Exception: If introspection fails or token is invalid.
+        """
+        # First, get a management token using client credentials
+        management_token = self.get_access_token()
+        
+        introspection_url = f"https://{self.domain}/oauth2/introspect"
+        introspect_data = {
+            "token": bearer_token
+        }
+        
+        try:
+            response = requests.post(
+                introspection_url, 
+                data=introspect_data,
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Authorization": f"Bearer {management_token}",
+                    "Kinde-SDK": self._generate_tracking_header()
+                },
+                timeout=30
+            )
+            response.raise_for_status()
+            introspection_result = response.json()
+            
+            if not introspection_result.get("active", False):
+                raise ValueError("Token is inactive or invalid")
+            
+            # Set the validated token - calculate proper expiration
+            exp_time = introspection_result.get("exp")
+            expires_in = max(0, exp_time - int(time.time())) if exp_time else 3600
+            
+            token_data = {
+                "access_token": bearer_token,
+                "expires_in": expires_in
+            }
+            self.set_tokens(token_data)
+            
+            return introspection_result
+            
+        except requests.exceptions.Timeout:
+            raise Exception(f"Introspection request timed out after 30 seconds for domain {self.domain}") from None
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Introspection request failed for domain {self.domain}: {str(e)}") from e

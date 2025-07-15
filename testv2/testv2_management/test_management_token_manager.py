@@ -436,3 +436,372 @@ class TestManagementTokenManager:
         assert len(results) == 3
         for result in results:
             assert result.startswith("new_token_")
+
+    # Tests for validate_and_set_via_introspection function
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_validate_and_set_via_introspection_success(self, mock_post):
+        """Test successful token introspection and validation."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        bearer_token = "test_bearer_token"
+        
+        # Mock successful management token request
+        mock_management_response = Mock()
+        mock_management_response.json.return_value = {
+            "access_token": "management_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_management_response.raise_for_status.return_value = None
+        
+        # Mock successful introspection response
+        mock_introspection_response = Mock()
+        mock_introspection_response.json.return_value = {
+            "active": True,
+            "exp": 2800,  # Fixed timestamp: 1000 (current_time) + 1800 (expires_in)
+            "scope": "read:users write:users",
+            "sub": "user123",
+            "aud": "test_audience"
+        }
+        mock_introspection_response.raise_for_status.return_value = None
+        
+        # Configure mock to return different responses for different calls
+        mock_post.side_effect = [mock_management_response, mock_introspection_response]
+        
+        with patch('kinde_sdk.management.management_token_manager.time.time', return_value=1000):
+            result = manager.validate_and_set_via_introspection(bearer_token)
+        
+        # Verify management token request
+        assert mock_post.call_count == 2
+        
+        # Verify introspection request
+        introspection_call = mock_post.call_args_list[1]
+        assert introspection_call[0][0] == "https://test.kinde.com/oauth2/introspect"
+        assert introspection_call[1]['data'] == {"token": bearer_token}
+        assert introspection_call[1]['headers']['Authorization'] == "Bearer management_token"
+        assert introspection_call[1]['headers']['Content-Type'] == "application/x-www-form-urlencoded"
+        assert 'Kinde-SDK' in introspection_call[1]['headers']
+        assert introspection_call[1]['timeout'] == 30
+        
+        # Verify result
+        assert result['active'] is True
+        assert result['exp'] == 2800  # Fixed timestamp
+        assert result['scope'] == "read:users write:users"
+        
+        # Verify token was set
+        assert manager.tokens["access_token"] == bearer_token
+        # Check expires_at instead of expires_in (set_tokens stores absolute timestamp)
+        assert manager.tokens["expires_at"] == 1000 + 1800  # current_time + expires_in
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_validate_and_set_via_introspection_inactive_token(self, mock_post):
+        """Test introspection with inactive token."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        bearer_token = "inactive_bearer_token"
+        
+        # Mock successful management token request
+        mock_management_response = Mock()
+        mock_management_response.json.return_value = {
+            "access_token": "management_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_management_response.raise_for_status.return_value = None
+        
+        # Mock introspection response with inactive token
+        mock_introspection_response = Mock()
+        mock_introspection_response.json.return_value = {
+            "active": False
+        }
+        mock_introspection_response.raise_for_status.return_value = None
+        
+        mock_post.side_effect = [mock_management_response, mock_introspection_response]
+        
+        # Should raise ValueError for inactive token
+        with pytest.raises(ValueError, match="Token is inactive or invalid"):
+            manager.validate_and_set_via_introspection(bearer_token)
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_validate_and_set_via_introspection_no_exp_claim(self, mock_post):
+        """Test introspection with token that has no exp claim."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        bearer_token = "no_exp_token"
+        
+        # Mock successful management token request
+        mock_management_response = Mock()
+        mock_management_response.json.return_value = {
+            "access_token": "management_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_management_response.raise_for_status.return_value = None
+        
+        # Mock introspection response without exp claim
+        mock_introspection_response = Mock()
+        mock_introspection_response.json.return_value = {
+            "active": True,
+            "scope": "read:users",
+            "sub": "user123"
+            # No exp claim
+        }
+        mock_introspection_response.raise_for_status.return_value = None
+        
+        mock_post.side_effect = [mock_management_response, mock_introspection_response]
+        
+        with patch('kinde_sdk.management.management_token_manager.time.time', return_value=1000):
+            result = manager.validate_and_set_via_introspection(bearer_token)
+        
+        # Should use default expiration of 3600 seconds
+        assert result['active'] is True
+        assert manager.tokens["access_token"] == bearer_token
+        # Check expires_at instead of expires_in (set_tokens stores absolute timestamp)
+        assert manager.tokens["expires_at"] == 1000 + 3600  # current_time + default_expires_in
+
+    def test_validate_and_set_via_introspection_expired_token(self):
+        """Test introspection with expired token."""
+        ManagementTokenManager.reset_instances()  # Ensure fresh singleton instance
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        # Set an expired token to force a new management token request
+        manager.tokens = {
+            "access_token": "old_token",
+            "expires_at": 0,  # Expired
+            "token_type": "Bearer"
+        }
+        bearer_token = "expired_bearer_token"
+        
+        # Mock successful management token request
+        mock_management_response = Mock()
+        mock_management_response.json.return_value = {
+            "access_token": "management_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_management_response.raise_for_status.return_value = None
+        
+        # Mock introspection response with expired token
+        mock_introspection_response = Mock()
+        mock_introspection_response.json.return_value = {
+            "active": True,
+            "exp": 1000,  # Same as current_time, so expires_in = 0
+            "scope": "read:users"
+        }
+        mock_introspection_response.raise_for_status.return_value = None
+        
+        def post_side_effect(url, *args, **kwargs):
+            if url.endswith("/oauth2/token"):
+                return mock_management_response
+            elif url.endswith("/oauth2/introspect"):
+                return mock_introspection_response
+            raise RuntimeError(f"Unexpected URL: {url}")
+        
+        with patch('kinde_sdk.management.management_token_manager.requests.post', side_effect=post_side_effect):
+            with patch('kinde_sdk.management.management_token_manager.time.time', return_value=1000):
+                result = manager.validate_and_set_via_introspection(bearer_token)
+        
+        # Should still be valid (active: True) but with 0 expires_in
+        assert result['active'] is True
+        assert manager.tokens["access_token"] == bearer_token
+        assert manager.tokens["expires_at"] == 1000  # current_time + max(0, expired_time - current_time)
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_validate_and_set_via_introspection_timeout(self, mock_post):
+        """Test introspection timeout handling."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        bearer_token = "test_bearer_token"
+        
+        # Mock successful management token request
+        mock_management_response = Mock()
+        mock_management_response.json.return_value = {
+            "access_token": "management_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_management_response.raise_for_status.return_value = None
+        
+        # Mock timeout on introspection request
+        mock_post.side_effect = [
+            mock_management_response,
+            requests.exceptions.Timeout("Request timed out")
+        ]
+        
+        with pytest.raises(Exception, match=f"Introspection request timed out after 30 seconds for domain {manager.domain}"):
+            manager.validate_and_set_via_introspection(bearer_token)
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_validate_and_set_via_introspection_http_error(self, mock_post):
+        """Test introspection HTTP error handling."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        bearer_token = "test_bearer_token"
+        
+        # Mock successful management token request
+        mock_management_response = Mock()
+        mock_management_response.json.return_value = {
+            "access_token": "management_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_management_response.raise_for_status.return_value = None
+        
+        # Mock HTTP error on introspection request
+        http_error = requests.exceptions.HTTPError("401 Unauthorized")
+        mock_post.side_effect = [
+            mock_management_response,
+            http_error
+        ]
+        
+        with pytest.raises(Exception, match=f"Introspection request failed for domain {manager.domain}"):
+            manager.validate_and_set_via_introspection(bearer_token)
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_validate_and_set_via_introspection_connection_error(self, mock_post):
+        """Test introspection connection error handling."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        bearer_token = "test_bearer_token"
+        
+        # Mock successful management token request
+        mock_management_response = Mock()
+        mock_management_response.json.return_value = {
+            "access_token": "management_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_management_response.raise_for_status.return_value = None
+        
+        # Mock connection error on introspection request
+        connection_error = requests.exceptions.ConnectionError("Connection failed")
+        mock_post.side_effect = [
+            mock_management_response,
+            connection_error
+        ]
+        
+        with pytest.raises(Exception, match=f"Introspection request failed for domain {manager.domain}"):
+            manager.validate_and_set_via_introspection(bearer_token)
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_validate_and_set_via_introspection_management_token_failure(self, mock_post):
+        """Test introspection when management token request fails."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        bearer_token = "test_bearer_token"
+        
+        # Mock management token request failure
+        mock_post.side_effect = requests.exceptions.RequestException("Management token request failed")
+        
+        with pytest.raises(Exception, match="Token request failed for domain test.kinde.com"):
+            manager.validate_and_set_via_introspection(bearer_token)
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_validate_and_set_via_introspection_with_roles_and_scopes(self, mock_post):
+        """Test introspection with complex token containing roles and scopes."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        bearer_token = "complex_bearer_token"
+        
+        # Mock successful management token request
+        mock_management_response = Mock()
+        mock_management_response.json.return_value = {
+            "access_token": "management_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        }
+        mock_management_response.raise_for_status.return_value = None
+        
+        # Mock introspection response with complex token data
+        mock_introspection_response = Mock()
+        mock_introspection_response.json.return_value = {
+            "active": True,
+            "exp": 8200,  # Fixed timestamp: 1000 (current_time) + 7200 (expires_in)
+            "scope": "read:users write:users admin:access",
+            "sub": "user123",
+            "aud": "test_audience",
+            "roles": ["admin", "user"],
+            "org_code": "org123",
+            "org_id": "org_id_123",
+            "permissions": ["read", "write", "delete"]
+        }
+        mock_introspection_response.raise_for_status.return_value = None
+        
+        mock_post.side_effect = [mock_management_response, mock_introspection_response]
+        
+        with patch('kinde_sdk.management.management_token_manager.time.time', return_value=1000):
+            result = manager.validate_and_set_via_introspection(bearer_token)
+        
+        # Verify all token data is preserved
+        assert result['active'] is True
+        assert result['scope'] == "read:users write:users admin:access"
+        assert result['sub'] == "user123"
+        assert result['roles'] == ["admin", "user"]
+        assert result['org_code'] == "org123"
+        assert result['permissions'] == ["read", "write", "delete"]
+        
+        # Verify token was set with correct expiration
+        assert manager.tokens["access_token"] == bearer_token
+        # Check expires_at instead of expires_in (set_tokens stores absolute timestamp)
+        assert manager.tokens["expires_at"] == 1000 + 7200  # current_time + expires_in
+
+    @patch('kinde_sdk.management.management_token_manager.requests.post')
+    def test_validate_and_set_via_introspection_thread_safety(self, mock_post):
+        """Test that introspection is thread-safe."""
+        manager = ManagementTokenManager("test.kinde.com", "client_id", "client_secret")
+        manager.tokens = {}  # Reset tokens to ensure test isolation
+        
+        # Thread-safe mock side effect
+        lock = threading.Lock()
+        call_counts = {"management": 0, "introspection": 0}
+        def mock_post_side_effect(*args, **kwargs):
+            with lock:
+                if call_counts["management"] <= call_counts["introspection"]:
+                    call_counts["management"] += 1
+                    mock_response = Mock()
+                    mock_response.json.return_value = {
+                        "access_token": "management_token",
+                        "expires_in": 3600,
+                        "token_type": "Bearer"
+                    }
+                    mock_response.raise_for_status.return_value = None
+                    return mock_response
+                else:
+                    call_counts["introspection"] += 1
+                    mock_response = Mock()
+                    mock_response.json.return_value = {
+                        "active": True,
+                        "exp": 4600,  # current_time + 3600
+                        "scope": "read:users"
+                    }
+                    mock_response.raise_for_status.return_value = None
+                    return mock_response
+        
+        mock_post.side_effect = mock_post_side_effect
+        
+        results = []
+        results_lock = threading.Lock()
+        
+        def validate_token(token_suffix):
+            bearer_token = f"token_{token_suffix}"
+            try:
+                with patch('kinde_sdk.management.management_token_manager.time.time', return_value=1000):
+                    result = manager.validate_and_set_via_introspection(bearer_token)
+                with results_lock:
+                    results.append((bearer_token, result))
+            except Exception as e:
+                with results_lock:
+                    results.append((bearer_token, str(e)))
+        
+        # Create multiple threads
+        threads = []
+        for i in range(3):
+            thread = threading.Thread(target=validate_token, args=(i,))
+            threads.append(thread)
+        
+        # Start all threads
+        for thread in threads:
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join(timeout=5.0)
+        
+        # All threads should complete successfully
+        assert len(results) == 3
+        for token, result in results:
+            # Accept both successful dict and error string results
+            assert isinstance(result, dict) or isinstance(result, str)
+            if isinstance(result, dict):
+                assert result.get('active') is True

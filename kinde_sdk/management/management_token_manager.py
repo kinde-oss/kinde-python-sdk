@@ -209,13 +209,15 @@ class ManagementTokenManager:
     def set_tokens(self, token_data: Dict[str, Any]):
         """ Store tokens with expiration. """
         with self.lock:
-            # Handle None values by using default
-            expires_in = token_data.get("expires_in") or 3600
+            # Handle None values by using default, but allow 0
+            expires_in = token_data.get("expires_in")
+            if expires_in is None:
+                expires_in = 3600
             token_type = token_data.get("token_type") or "Bearer"
             self.tokens = {
-            "access_token": token_data.get("access_token"),
-            "expires_at": time.time() + expires_in,
-            "token_type": token_type
+                "access_token": token_data.get("access_token"),
+                "expires_at": time.time() + expires_in,
+                "token_type": token_type
             }
 
     def get_access_token(self):

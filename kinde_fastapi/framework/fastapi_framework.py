@@ -127,10 +127,7 @@ class FastAPIFramework(FrameworkInterface):
         @self.app.get("/login")
         async def login(request: Request):
             """Redirect to Kinde login page."""
-            login_options = {
-                "supports_reauth": "true"
-            }
-            url=await self._oauth.login(login_options)
+            url=await self._oauth.login()
             self._logger.warning(f"[Login] Session is: {request.session}")
             return RedirectResponse(url=url)
         
@@ -195,10 +192,7 @@ class FastAPIFramework(FrameworkInterface):
         @self.app.get("/register")
         async def register(request: Request):
             """Redirect to Kinde registration page."""
-            login_options = {
-                "supports_reauth": "true"
-            }
-            return RedirectResponse(url=await self._oauth.register(login_options))
+            return RedirectResponse(url=await self._oauth.register())
         
         # User info route
         @self.app.get("/user")

@@ -130,10 +130,7 @@ class FlaskFramework(FrameworkInterface):
         def login():
             """Redirect to Kinde login page."""
             loop = asyncio.get_event_loop()
-            login_options = {
-                "supports_reauth": "true"
-            }
-            login_url = loop.run_until_complete(self._oauth.login(login_options))
+            login_url = loop.run_until_complete(self._oauth.login())
             return redirect(login_url)
         
         # Callback route
@@ -206,10 +203,8 @@ class FlaskFramework(FrameworkInterface):
         @self.app.route('/register')
         def register():
             """Redirect to Kinde registration page."""
-            login_options = {
-                "supports_reauth": "true"
-            }
-            register_url = loop.run_until_complete(self._oauth.register(login_options))
+            loop = asyncio.get_event_loop()
+            register_url = loop.run_until_complete(self._oauth.register())
             return redirect(register_url)
         
         # User info route

@@ -366,7 +366,10 @@ class OAuth:
         
         if login_options is None:
             login_options = {}
-        
+
+        # Add support for re-authentication
+        login_options[LoginOptions.SUPPORT_RE_AUTH] = "true"
+
         auth_url_data = await self.generate_auth_url(
             route_type=IssuerRouteTypes.LOGIN,
             login_options=login_options
@@ -405,6 +408,9 @@ class OAuth:
 
         if login_options is None:
             login_options = {}
+
+        # Add support for re-authentication
+        login_options[LoginOptions.SUPPORT_RE_AUTH] = "true"
         
         # Set prompt to 'create' for registration if not specified
         if not login_options.get("prompt"):

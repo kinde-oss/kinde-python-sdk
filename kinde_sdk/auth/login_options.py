@@ -29,3 +29,4 @@ class LoginOptions:
     
     # Additional parameters container
     AUTH_PARAMS = "auth_params"
+    SUPPORT_RE_AUTH = "supports_reauth"

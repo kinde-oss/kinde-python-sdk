@@ -130,34 +130,67 @@ class FlaskFramework(FrameworkInterface):
         def login():
             """Redirect to Kinde login page."""
             loop = asyncio.get_event_loop()
-            login_url = loop.run_until_complete(self._oauth.login())
+            login_options = {
+                "supports_reauth": "true"
+            }
+            login_url = loop.run_until_complete(self._oauth.login(login_options))
             return redirect(login_url)
         
-
         # Callback route
-        @self.app.route('/callback')
-        def callback():
+        @self.app.get("/callback")
+        async def callback(request: Request, code: Optional[str] = None, state: Optional[str] = None):
             """Handle the OAuth callback from Kinde."""
+            import base64
+            import json
+            from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
+            
+            error = request.query_params.get('error')
+            if error:
+                if error.lower() == 'login_link_expired':
+                    reauth_state = request.query_params.get('reauth_state')
+                    if reauth_state:
+                        try:
+                            decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
+                            reauth_dict = json.loads(decoded_auth_state)
+                            if reauth_dict:
+                                params = urlencode(reauth_dict)
+                                login_url = str(request.url_for('login')) + '?' + params
+                                return RedirectResponse(login_url)
+                        except Exception as ex:
+                            raise Exception(f"Unknown Error parsing reauth state: {str(ex)}")
+                    return HTMLResponse("Login link expired", status_code=400)
+                return HTMLResponse(f"Authentication failed: {error}", status_code=400)
+
+            post_login_redirect = request.session.pop('post_login_redirect_url', None).get('url') or '/' if request.session.get('post_login_redirect_url') else '/'
+
+            if not code:
+                return HTMLResponse("Authentication failed: No code provided", status_code=400)
+
+            user_id = request.session.get('user_id') or str(uuid.uuid4())
+
             try:
-                code = request.args.get('code')
-                state = request.args.get('state')
-                
-                if not code:
-                    return "Authentication failed: No code provided", 400
-                
-                # Generate a unique user ID for the session
-                user_id = session.get('user_id') or str(uuid.uuid4())
-                
-                # Use OAuth's handle_redirect method to process the callback
-                loop = asyncio.get_event_loop()
-                result = loop.run_until_complete(self._oauth.handle_redirect(code, user_id, state))
-                
-                # Store user ID in session
-                session['user_id'] = user_id
-                
-                return redirect('/')
+                assert self._oauth is not None
+                result = await self._oauth.handle_redirect(code, user_id, state)
             except Exception as e:
-                return f"Authentication failed: {str(e)}", 400
+                if "State not found" in str(e):
+                    return HTMLResponse("Error: State not found. Please check Kinde Python SDK documentation.\n" + str(e), status_code=500)
+                raise e
+
+            request.session['user_id'] = user_id
+
+            if not post_login_redirect.startswith('http'):
+                post_login_redirect = str(request.base_url).rstrip('/') + post_login_redirect
+
+            parsed = urlparse(post_login_redirect)
+            if state:
+                query_dict = parse_qs(parsed.query)
+                query_dict['state'] = [state]
+                new_query = urlencode(query_dict, doseq=True)
+                redirect_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment))
+            else:
+                redirect_url = post_login_redirect
+
+            return RedirectResponse(redirect_url)
         
         # Logout route
         @self.app.route('/logout')
@@ -173,8 +206,10 @@ class FlaskFramework(FrameworkInterface):
         @self.app.route('/register')
         def register():
             """Redirect to Kinde registration page."""
-            loop = asyncio.get_event_loop()
-            register_url = loop.run_until_complete(self._oauth.register())
+            login_options = {
+                "supports_reauth": "true"
+            }
+            register_url = loop.run_until_complete(self._oauth.register(login_options))
             return redirect(register_url)
         
         # User info route
@@ -206,4 +241,4 @@ class FlaskFramework(FrameworkInterface):
             import flask
             return True
         except ImportError:
-            return False 
+            return False

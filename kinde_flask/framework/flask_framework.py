@@ -151,7 +151,7 @@ class FlaskFramework(FrameworkInterface):
                             reauth_dict = json.loads(decoded_auth_state)
                             if reauth_dict:
                                 params = urlencode(reauth_dict)
-                                login_url = str(request.url_for('login')) + '?' + params
+                                login_url =  await self._oauth.login()
                                 return RedirectResponse(login_url)
                         except Exception as ex:
                             raise Exception(f"Unknown Error parsing reauth state: {str(ex)}")

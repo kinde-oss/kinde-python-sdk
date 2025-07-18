@@ -144,7 +144,7 @@ class FastAPIFramework(FrameworkInterface):
                             decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
                             reauth_dict = json.loads(decoded_auth_state)
                             params = urlencode(reauth_dict)
-                            login_url = str(request.url_for('login')) + '?' + params
+                            login_url = await self._oauth.login()
                             return RedirectResponse(login_url)
                         except Exception as ex:
                             return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)

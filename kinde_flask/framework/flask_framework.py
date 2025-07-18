@@ -132,7 +132,7 @@ class FlaskFramework(FrameworkInterface):
             loop = asyncio.get_event_loop()
             login_url = loop.run_until_complete(self._oauth.login())
             return redirect(login_url)
-        
+
         # Callback route
         @self.app.get("/callback")
         async def callback(request: Request, code: Optional[str] = None, state: Optional[str] = None):
@@ -143,20 +143,43 @@ class FlaskFramework(FrameworkInterface):
             
             error = request.query_params.get('error')
             if error:
-                if error.lower() == 'login_link_expired':
-                    reauth_state = request.query_params.get('reauth_state')
-                    if reauth_state:
-                        try:
-                            decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
-                            reauth_dict = json.loads(decoded_auth_state)
-                            if reauth_dict:
-                                params = urlencode(reauth_dict)
-                                login_url =  await self._oauth.login()
-                                return RedirectResponse(login_url)
-                        except Exception as ex:
-                            raise Exception(f"Unknown Error parsing reauth state: {str(ex)}")
-                    return HTMLResponse("Login link expired", status_code=400)
-                return HTMLResponse(f"Authentication failed: {error}", status_code=400)
+        # In your callback route
+        if error.lower() == 'login_link_expired':
+            reauth_state = request.query_params.get('reauth_state')
+            if reauth_state:
+                try:
+                    decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
+                    reauth_dict = json.loads(decoded_auth_state)
+
+                    # Get the redirect URL from config
+                    redirect_url = os.getenv("KINDE_REDIRECT_URI")
+                    base_url = redirect_url.replace("/callback", "")
+
+                    # Build the login route URL
+                    login_route_url = f"{base_url}/login"
+
+                    # Parse and add parameters properly
+                    parsed = urlparse(login_route_url)
+                    query_dict = parse_qs(parsed.query)
+
+                    # Add reauth parameters
+                    for key, value in reauth_dict.items():
+                        query_dict[key] = [value]
+
+                    # Build final URL
+                    new_query = urlencode(query_dict, doseq=True)
+                    login_url = urlunparse((
+                        parsed.scheme,
+                        parsed.netloc,
+                        parsed.path,
+                        parsed.params,
+                        new_query,
+                        parsed.fragment
+                    ))
+
+                    return RedirectResponse(login_url)
+                except Exception as ex:
+                    return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)
 
             post_login_redirect = request.session.pop('post_login_redirect_url', None).get('url') or '/' if request.session.get('post_login_redirect_url') else '/'
 

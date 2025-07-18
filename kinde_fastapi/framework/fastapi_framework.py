@@ -137,23 +137,43 @@ class FastAPIFramework(FrameworkInterface):
             """Handle the OAuth callback from Kinde."""
             error = request.query_params.get('error')
             if error:
-                if error.lower() == 'login_link_expired':
-                    reauth_state = request.query_params.get('reauth_state')
-                    if reauth_state:
-                        try:
-                            decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
-                            reauth_dict = json.loads(decoded_auth_state)
-                            params = urlencode(reauth_dict)
-                            login_url = await self._oauth.login()
-                            return RedirectResponse(login_url)
-                        except Exception as ex:
-                            return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)
-                return HTMLResponse(f"Authentication failed: {error}", status_code=400)
+        # In your callback route
+        if error.lower() == 'login_link_expired':
+            reauth_state = request.query_params.get('reauth_state')
+            if reauth_state:
+                try:
+                    decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
+                    reauth_dict = json.loads(decoded_auth_state)
 
-            post_login_redirect = request.session.pop('post_login_redirect_url', None).get('url') or '/'
+                    # Get the redirect URL from config
+                    redirect_url = os.getenv("KINDE_REDIRECT_URI")
+                    base_url = redirect_url.replace("/callback", "")
 
-            if not code:
-                return HTMLResponse("Authentication failed: No code provided", status_code=400)
+                    # Build the login route URL
+                    login_route_url = f"{base_url}/login"
+
+                    # Parse and add parameters properly
+                    parsed = urlparse(login_route_url)
+                    query_dict = parse_qs(parsed.query)
+
+                    # Add reauth parameters
+                    for key, value in reauth_dict.items():
+                        query_dict[key] = [value]
+
+                    # Build final URL
+                    new_query = urlencode(query_dict, doseq=True)
+                    login_url = urlunparse((
+                        parsed.scheme,
+                        parsed.netloc,
+                        parsed.path,
+                        parsed.params,
+                        new_query,
+                        parsed.fragment
+                    ))
+
+                    return RedirectResponse(login_url)
+                except Exception as ex:
+                    return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)
 
             user_id = request.session.get('user_id') or str(uuid.uuid4())
 

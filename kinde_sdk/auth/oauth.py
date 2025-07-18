@@ -259,6 +259,8 @@ class OAuth:
             # Registration params
             LoginOptions.PLAN_INTEREST: "plan_interest",
             LoginOptions.PRICING_TABLE_KEY: "pricing_table_key",
+            # Re-authentication support
+            LoginOptions.SUPPORT_RE_AUTH: "supports_reauth",
         }
         
         # Base search parameters with defaults

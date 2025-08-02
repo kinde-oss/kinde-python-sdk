@@ -1,8 +1,7 @@
 import pytest
 from unittest.mock import patch, Mock
 from kinde_sdk.auth.entitlements import Entitlements
-from kinde_sdk.model.get_entitlements_response import GetEntitlementsResponse
-from kinde_sdk.model.get_entitlement_response import GetEntitlementResponse
+from kinde_sdk.management.models.get_entitlements_response import GetEntitlementsResponse
 
 class TestEntitlements:
     @pytest.fixture(autouse=True)
@@ -63,7 +62,7 @@ class TestEntitlements:
         }
         mock_get.return_value = mock_response
         result = self.entitlements.get_entitlement("feature-123")
-        assert isinstance(result, GetEntitlementResponse)
+        assert isinstance(result, GetEntitlementsResponse)
 
     @patch("kinde_sdk.auth.entitlements.requests.get")
     def test_get_entitlements_http_error(self, mock_get):
@@ -98,7 +97,7 @@ class TestEntitlements:
             "metadata": {}
         }
         mock_get.return_value = mock_response
-        with patch("kinde_sdk.model.get_entitlement_response.GetEntitlementResponse.model_validate") as mock_validate:
+        with patch("kinde_sdk.management.models.get_entitlements_response.GetEntitlementsResponse.model_validate") as mock_validate:
             mock_validate.side_effect = ValueError("validation error")
             with pytest.raises(ValueError, match="validation error"):
                 self.entitlements.get_entitlement("feature-123")
@@ -125,7 +124,7 @@ class TestEntitlements:
             }
         }
         mock_get.return_value = mock_response
-        with patch("kinde_sdk.model.get_entitlements_response.GetEntitlementsResponse.model_validate") as mock_validate:
+        with patch("kinde_sdk.management.models.get_entitlements_response.GetEntitlementsResponse.model_validate") as mock_validate:
             mock_validate.side_effect = ValueError("validation error")
             with pytest.raises(ValueError, match="validation error"):
                 self.entitlements.get_entitlements()

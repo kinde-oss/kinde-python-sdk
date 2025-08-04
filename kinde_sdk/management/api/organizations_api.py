@@ -4779,6 +4779,7 @@ class OrganizationsApi:
     def get_organization(
         self,
         code: Annotated[Optional[StrictStr], Field(description="The organization's code.")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"billing\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4798,6 +4799,8 @@ class OrganizationsApi:
 
         :param code: The organization's code.
         :type code: str
+        :param expand: Specify additional data to retrieve. Use \"billing\".
+        :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4822,6 +4825,7 @@ class OrganizationsApi:
 
         _param = self._get_organization_serialize(
             code=code,
+            expand=expand,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4849,6 +4853,7 @@ class OrganizationsApi:
     def get_organization_with_http_info(
         self,
         code: Annotated[Optional[StrictStr], Field(description="The organization's code.")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"billing\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4868,6 +4873,8 @@ class OrganizationsApi:
 
         :param code: The organization's code.
         :type code: str
+        :param expand: Specify additional data to retrieve. Use \"billing\".
+        :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4892,6 +4899,7 @@ class OrganizationsApi:
 
         _param = self._get_organization_serialize(
             code=code,
+            expand=expand,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4919,6 +4927,7 @@ class OrganizationsApi:
     def get_organization_without_preload_content(
         self,
         code: Annotated[Optional[StrictStr], Field(description="The organization's code.")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"billing\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4938,6 +4947,8 @@ class OrganizationsApi:
 
         :param code: The organization's code.
         :type code: str
+        :param expand: Specify additional data to retrieve. Use \"billing\".
+        :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4962,6 +4973,7 @@ class OrganizationsApi:
 
         _param = self._get_organization_serialize(
             code=code,
+            expand=expand,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4984,6 +4996,7 @@ class OrganizationsApi:
     def _get_organization_serialize(
         self,
         code,
+        expand,
         _request_auth,
         _content_type,
         _headers,
@@ -5009,6 +5022,10 @@ class OrganizationsApi:
         if code is not None:
             
             _query_params.append(('code', code))
+            
+        if expand is not None:
+            
+            _query_params.append(('expand', expand))
             
         # process the header parameters
         # process the form parameters

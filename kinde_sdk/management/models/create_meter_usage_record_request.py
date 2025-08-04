@@ -19,7 +19,7 @@ import re  # noqa: F401
 import json
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -32,7 +32,18 @@ class CreateMeterUsageRecordRequest(BaseModel):
     billing_feature_code: StrictStr = Field(description="The code of the feature within the agreement against which to record usage")
     meter_value: StrictStr = Field(description="The value of usage to record")
     meter_usage_timestamp: Optional[datetime] = Field(default=None, description="The date and time the usage needs to be recorded for (defaults to current date/time)")
-    __properties: ClassVar[List[str]] = ["customer_agreement_id", "billing_feature_code", "meter_value", "meter_usage_timestamp"]
+    meter_type_code: Optional[StrictStr] = Field(default=None, description="Absolutes overrides the current usage")
+    __properties: ClassVar[List[str]] = ["customer_agreement_id", "billing_feature_code", "meter_value", "meter_usage_timestamp", "meter_type_code"]
+
+    @field_validator('meter_type_code')
+    def meter_type_code_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['absolute', 'delta']):
+            raise ValueError("must be one of enum values ('absolute', 'delta')")
+        return value
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -88,7 +99,8 @@ class CreateMeterUsageRecordRequest(BaseModel):
             "customer_agreement_id": obj.get("customer_agreement_id"),
             "billing_feature_code": obj.get("billing_feature_code"),
             "meter_value": obj.get("meter_value"),
-            "meter_usage_timestamp": obj.get("meter_usage_timestamp")
+            "meter_usage_timestamp": obj.get("meter_usage_timestamp"),
+            "meter_type_code": obj.get("meter_type_code")
         })
         return _obj
 

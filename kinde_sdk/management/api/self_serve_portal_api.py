@@ -20,7 +20,7 @@ from typing_extensions import Annotated
 from pydantic import Field, StrictStr, field_validator
 from typing import Optional
 from typing_extensions import Annotated
-from kinde_sdk.management.models.get_portal_link import GetPortalLink
+from kinde_sdk.management.models.portal_link import PortalLink
 
 from kinde_sdk.management.api_client import ApiClient, RequestSerialized
 from kinde_sdk.management.api_response import ApiResponse
@@ -57,7 +57,7 @@ class SelfServePortalApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> GetPortalLink:
+    ) -> PortalLink:
         """Get self-serve portal link
 
         Returns a link to the self-serve portal for the authenticated user. The user can use this link to manage their account, update their profile, and view their entitlements. 
@@ -98,7 +98,7 @@ class SelfServePortalApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GetPortalLink",
+            '200': "PortalLink",
             '403': None,
             '429': None,
         }
@@ -130,7 +130,7 @@ class SelfServePortalApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[GetPortalLink]:
+    ) -> ApiResponse[PortalLink]:
         """Get self-serve portal link
 
         Returns a link to the self-serve portal for the authenticated user. The user can use this link to manage their account, update their profile, and view their entitlements. 
@@ -171,7 +171,7 @@ class SelfServePortalApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GetPortalLink",
+            '200': "PortalLink",
             '403': None,
             '429': None,
         }
@@ -244,7 +244,7 @@ class SelfServePortalApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "GetPortalLink",
+            '200': "PortalLink",
             '403': None,
             '429': None,
         }
@@ -310,7 +310,7 @@ class SelfServePortalApi:
 
         return self.api_client.param_serialize(
             method='GET',
-            resource_path='/account_api/v1/get_portal_link',
+            resource_path='/account_api/v1/portal_link',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,

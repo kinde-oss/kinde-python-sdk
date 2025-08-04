@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from kinde_sdk.kinde_api_client import KindeApiClient, GrantType
+from kinde_sdk.management.kinde_api_client import KindeApiClient, GrantType
 from kinde_sdk import __version__
 from urllib.parse import urlparse, parse_qs
 

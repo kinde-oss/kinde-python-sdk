@@ -19,7 +19,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,14 +28,15 @@ class CreateApplicationRequest(BaseModel):
     CreateApplicationRequest
     """ # noqa: E501
     name: StrictStr = Field(description="The application's name.")
-    type: StrictStr = Field(description="The application's type. Use `reg` for regular server rendered applications, `spa` for single-page applications, and `m2m` for machine-to-machine applications.")
-    __properties: ClassVar[List[str]] = ["name", "type"]
+    type: StrictStr = Field(description="The application's type. Use `reg` for regular server rendered applications, `spa` for single-page applications, `m2m` for machine-to-machine applications, and `device` for devices and IoT.")
+    org_code: Optional[StrictStr] = Field(default=None, description="Scope an M2M application to an org (Plus plan required).")
+    __properties: ClassVar[List[str]] = ["name", "type", "org_code"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['reg', 'spa', 'm2m']):
-            raise ValueError("must be one of enum values ('reg', 'spa', 'm2m')")
+        if value not in set(['reg', 'spa', 'm2m', 'device']):
+            raise ValueError("must be one of enum values ('reg', 'spa', 'm2m', 'device')")
         return value
 
     model_config = ConfigDict(
@@ -77,6 +78,11 @@ class CreateApplicationRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if org_code (nullable) is None
+        # and model_fields_set contains the field
+        if self.org_code is None and "org_code" in self.model_fields_set:
+            _dict['org_code'] = None
+
         return _dict
 
     @classmethod
@@ -90,7 +96,8 @@ class CreateApplicationRequest(BaseModel):
 
         _obj = cls.model_validate({
             "name": obj.get("name"),
-            "type": obj.get("type")
+            "type": obj.get("type"),
+            "org_code": obj.get("org_code")
         })
         return _obj
 

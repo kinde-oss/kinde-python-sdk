@@ -23,11 +23,11 @@ from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetEntitlementsResponseDataEntitlementsInner(BaseModel):
+class GetEntitlementResponseDataEntitlement(BaseModel):
     """
-    GetEntitlementsResponseDataEntitlementsInner
+    The entitlement data
     """ # noqa: E501
-    id: Optional[StrictStr] = Field(default=None, description="The friendly id of an entitlement")
+    id: Optional[StrictStr] = Field(default=None, description="The friendly ID of an entitlement")
     fixed_charge: Optional[StrictInt] = Field(default=None, description="The price charged if this is an entitlement for a fixed charged")
     price_name: Optional[StrictStr] = Field(default=None, description="The name of the price associated with the entitlement")
     unit_amount: Optional[StrictInt] = Field(default=None, description="The price charged for this entitlement in cents")
@@ -55,7 +55,7 @@ class GetEntitlementsResponseDataEntitlementsInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetEntitlementsResponseDataEntitlementsInner from a JSON string"""
+        """Create an instance of GetEntitlementResponseDataEntitlement from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -100,7 +100,7 @@ class GetEntitlementsResponseDataEntitlementsInner(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetEntitlementsResponseDataEntitlementsInner from a dict"""
+        """Create an instance of GetEntitlementResponseDataEntitlement from a dict"""
         if obj is None:
             return None
 

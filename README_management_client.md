@@ -284,7 +284,7 @@ If you were previously using the legacy `KindeApiClient` for management operatio
 
 ### Before (Legacy)
 ```python
-from kinde_sdk.kinde_api_client import KindeApiClient
+from kinde_sdk.management.kinde_api_client import KindeApiClient
 
 client = KindeApiClient(
     domain="your-domain.kinde.com",

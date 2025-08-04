@@ -36,7 +36,10 @@ class CreateConnectionRequestOptionsOneOf1(BaseModel):
     is_retrieve_provider_user_groups: Optional[StrictBool] = Field(default=None, description="Include user group info from MS Entra ID.")
     is_extended_attributes_required: Optional[StrictBool] = Field(default=None, description="Include additional user profile information.")
     is_auto_join_organization_enabled: Optional[StrictBool] = Field(default=None, description="Users automatically join organization when using this connection.")
-    __properties: ClassVar[List[str]] = ["client_id", "client_secret", "home_realm_domains", "entra_id_domain", "is_use_common_endpoint", "is_sync_user_profile_on_login", "is_retrieve_provider_user_groups", "is_extended_attributes_required", "is_auto_join_organization_enabled"]
+    is_create_missing_user: Optional[StrictBool] = Field(default=None, description="Create a user record in Kinde if the user signing in does not exist.")
+    is_force_show_sso_button: Optional[StrictBool] = Field(default=None, description="Force showing the SSO button for this connection.")
+    upstream_params: Optional[Dict[str, Any]] = Field(default=None, description="Additional upstream parameters to pass to the identity provider.")
+    __properties: ClassVar[List[str]] = ["client_id", "client_secret", "home_realm_domains", "entra_id_domain", "is_use_common_endpoint", "is_sync_user_profile_on_login", "is_retrieve_provider_user_groups", "is_extended_attributes_required", "is_auto_join_organization_enabled", "is_create_missing_user", "is_force_show_sso_button", "upstream_params"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -97,7 +100,10 @@ class CreateConnectionRequestOptionsOneOf1(BaseModel):
             "is_sync_user_profile_on_login": obj.get("is_sync_user_profile_on_login"),
             "is_retrieve_provider_user_groups": obj.get("is_retrieve_provider_user_groups"),
             "is_extended_attributes_required": obj.get("is_extended_attributes_required"),
-            "is_auto_join_organization_enabled": obj.get("is_auto_join_organization_enabled")
+            "is_auto_join_organization_enabled": obj.get("is_auto_join_organization_enabled"),
+            "is_create_missing_user": obj.get("is_create_missing_user"),
+            "is_force_show_sso_button": obj.get("is_force_show_sso_button"),
+            "upstream_params": obj.get("upstream_params")
         })
         return _obj
 

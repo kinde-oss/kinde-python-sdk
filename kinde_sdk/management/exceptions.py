@@ -215,3 +215,8 @@ def render_path(path_to_item):
         else:
             result += "['{0}']".format(pth)
     return result
+
+
+# Kinde-specific exceptions
+class KindeConfigurationException(Exception):
+    pass

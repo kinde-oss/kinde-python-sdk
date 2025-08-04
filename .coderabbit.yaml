@@ -137,6 +137,9 @@ reviews:
     - '!**/*.tfstate.backup'
     - '!kinde_sdk/management/api/**'
     - '!kinde_sdk/management/models/**'
+    - '!kinde_sdk/api/**'
+    - '!kinde_sdk/models/**'
+    - '!kinde_sdk/paths/**'
   path_instructions: []
   abort_on_close: true
   disable_cache: false

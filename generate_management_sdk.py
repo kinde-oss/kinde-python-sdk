@@ -164,17 +164,26 @@ def preserve_custom_files():
         kinde_exceptions = []
         lines = content.split('\n')
         in_kinde_exceptions = False
-        for line in lines:
+        current_class_indent = None
+        
+        for i, line in enumerate(lines):
             if line.strip() == "# Kinde-specific exceptions":
                 in_kinde_exceptions = True
                 kinde_exceptions.append(line)
-            elif in_kinde_exceptions and line.strip().startswith('class ') and 'Exception' in line:
-                kinde_exceptions.append(line)
-            elif in_kinde_exceptions and line.strip() == "pass":
-                kinde_exceptions.append(line)
-            elif in_kinde_exceptions and line.strip() == "" and kinde_exceptions:
-                # Stop when we hit an empty line after finding exceptions
-                break
+            elif in_kinde_exceptions:
+                # Detect class definition
+                if line.strip().startswith('class ') and 'Exception' in line:
+                    kinde_exceptions.append(line)
+                    current_class_indent = len(line) - len(line.lstrip())
+                # Include class body (pass statement or other content)
+                elif current_class_indent is not None and line.strip() and len(line) - len(line.lstrip()) > current_class_indent:
+                    kinde_exceptions.append(line)
+                # Include empty lines within the section
+                elif not line.strip() and i + 1 < len(lines) and lines[i + 1].strip():
+                    kinde_exceptions.append(line)
+                # Stop when we encounter a non-exception class or reach end of section
+                elif line.strip() and not line.strip().startswith('#') and current_class_indent is not None and len(line) - len(line.lstrip()) <= current_class_indent:
+                    break
         
         if kinde_exceptions:
             kinde_exceptions_text = "\n".join(kinde_exceptions)

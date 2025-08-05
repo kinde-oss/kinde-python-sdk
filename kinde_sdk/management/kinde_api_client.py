@@ -6,7 +6,7 @@ import jwt
 from jwt import PyJWKClient
 from authlib.integrations.requests_client import OAuth2Session
 from kinde_sdk.management.api_client import ApiClient
-from kinde_sdk.management.exceptions import (
+from kinde_sdk.management.custom_exceptions import (
     KindeConfigurationException,
     KindeLoginException,
     KindeTokenException,

@@ -138,7 +138,8 @@ def preserve_custom_files():
         "management_client.py",
         "management_token_manager.py", 
         "README.md",
-        "kinde_api_client.py"
+        "kinde_api_client.py",
+        "custom_exceptions.py"
     ]
     
     # Create backup directory
@@ -154,42 +155,8 @@ def preserve_custom_files():
             shutil.copy2(source, backup)
             print(f"Backed up: {file_name}")
     
-    # Also preserve Kinde-specific exceptions in exceptions.py
-    exceptions_file = os.path.join(OUTPUT_DIR, "exceptions.py")
-    if os.path.exists(exceptions_file):
-        with open(exceptions_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Extract Kinde-specific exceptions
-        kinde_exceptions = []
-        lines = content.split('\n')
-        in_kinde_exceptions = False
-        current_class_indent = None
-        
-        for i, line in enumerate(lines):
-            if line.strip() == "# Kinde-specific exceptions":
-                in_kinde_exceptions = True
-                kinde_exceptions.append(line)
-            elif in_kinde_exceptions:
-                # Detect class definition
-                if line.strip().startswith('class ') and 'Exception' in line:
-                    kinde_exceptions.append(line)
-                    current_class_indent = len(line) - len(line.lstrip())
-                # Include class body (pass statement or other content)
-                elif current_class_indent is not None and line.strip() and len(line) - len(line.lstrip()) > current_class_indent:
-                    kinde_exceptions.append(line)
-                # Include empty lines within the section
-                elif not line.strip() and i + 1 < len(lines) and lines[i + 1].strip():
-                    kinde_exceptions.append(line)
-                # Stop when we encounter a non-exception class or reach end of section
-                elif line.strip() and not line.strip().startswith('#') and current_class_indent is not None and len(line) - len(line.lstrip()) <= current_class_indent:
-                    break
-        
-        if kinde_exceptions:
-            kinde_exceptions_text = "\n".join(kinde_exceptions)
-            with open(os.path.join(backup_dir, "kinde_exceptions.txt"), 'w', encoding='utf-8') as f:
-                f.write(kinde_exceptions_text)
-            print("Backed up: Kinde-specific exceptions")
+    # Note: Kinde-specific exceptions are now in custom_exceptions.py
+    # which is preserved as a custom file, so no need to extract from exceptions.py
     
     return backup_dir
 
@@ -201,7 +168,8 @@ def restore_custom_files(backup_dir):
         "management_client.py",
         "management_token_manager.py",
         "README.md",
-        "kinde_api_client.py"
+        "kinde_api_client.py",
+        "custom_exceptions.py"
     ]
     
     # Restore custom files
@@ -212,30 +180,8 @@ def restore_custom_files(backup_dir):
             shutil.copy2(backup, destination)
             print(f"Restored: {file_name}")
     
-    # Restore Kinde-specific exceptions
-    kinde_exceptions_backup = os.path.join(backup_dir, "kinde_exceptions.txt")
-    if os.path.exists(kinde_exceptions_backup):
-        with open(kinde_exceptions_backup, 'r', encoding='utf-8') as f:
-            kinde_exceptions_text = f.read()
-        
-        exceptions_file = os.path.join(OUTPUT_DIR, "exceptions.py")
-        if os.path.exists(exceptions_file):
-            with open(exceptions_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            # Check if Kinde-specific exceptions are already present
-            if "# Kinde-specific exceptions" not in content:
-                # Add Kinde-specific exceptions at the end
-                kinde_exceptions_section = f"""
-
-{kinde_exceptions_text}"""
-                
-                content += kinde_exceptions_section
-                with open(exceptions_file, 'w', encoding='utf-8') as f:
-                    f.write(content)
-                print("Restored: Kinde-specific exceptions")
-            else:
-                print("Kinde-specific exceptions already present in exceptions.py")
+    # Note: Kinde-specific exceptions are now handled by custom_exceptions.py
+    # which is preserved as a custom file, so no need to restore to exceptions.py
     
     # Clean up backup directory
     if os.path.exists(backup_dir):

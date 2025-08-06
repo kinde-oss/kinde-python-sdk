@@ -1,5 +1,6 @@
-import requests
+import httpx
 from typing import Optional
+from kinde_sdk.management.models.get_entitlement_response import GetEntitlementResponse
 from kinde_sdk.management.models.get_entitlements_response import GetEntitlementsResponse
 
 class Entitlements:
@@ -13,7 +14,7 @@ class Entitlements:
             "Accept": "application/json"
         }
 
-    def get_entitlements(self, page_size: Optional[int] = None, starting_after: Optional[str] = None) -> GetEntitlementsResponse:
+    async def get_entitlements(self, page_size: Optional[int] = None, starting_after: Optional[str] = None) -> GetEntitlementsResponse:
         """
         Returns all the entitlements the user currently has access to.
         """
@@ -23,15 +24,17 @@ class Entitlements:
         if starting_after is not None:
             params['starting_after'] = starting_after
         url = f"{self.base_url}/account_api/v1/entitlements"
-        response = requests.get(url, headers=self.headers, params=params)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=self.headers, params=params)
         response.raise_for_status()
         return GetEntitlementsResponse.model_validate(response.json())
 
-    def get_entitlement(self, key: str) -> GetEntitlementsResponse:
+    async def get_entitlement(self, key: str) -> GetEntitlementResponse:
         """
         Returns a single entitlement by the feature key.
         """
         url = f"{self.base_url}/account_api/v1/entitlement/{key}"
-        response = requests.get(url, headers=self.headers)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=self.headers)
         response.raise_for_status()
-        return GetEntitlementsResponse.model_validate(response.json())
+        return GetEntitlementResponse.model_validate(response.json())

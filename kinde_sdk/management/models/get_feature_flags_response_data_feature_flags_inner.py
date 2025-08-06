@@ -20,6 +20,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from kinde_sdk.management.models.get_feature_flags_response_data_feature_flags_inner_value import GetFeatureFlagsResponseDataFeatureFlagsInnerValue
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -31,7 +32,7 @@ class GetFeatureFlagsResponseDataFeatureFlagsInner(BaseModel):
     name: Optional[StrictStr] = Field(default=None, description="The name of the flag")
     key: Optional[StrictStr] = Field(default=None, description="The key of the flag")
     type: Optional[StrictStr] = Field(default=None, description="The type of the flag")
-    value: Optional[StringBooleanIntegerObject] = Field(default=None, description="The value of the flag")
+    value: Optional[GetFeatureFlagsResponseDataFeatureFlagsInnerValue] = None
     __properties: ClassVar[List[str]] = ["id", "name", "key", "type", "value"]
 
     model_config = ConfigDict(
@@ -92,7 +93,7 @@ class GetFeatureFlagsResponseDataFeatureFlagsInner(BaseModel):
             "name": obj.get("name"),
             "key": obj.get("key"),
             "type": obj.get("type"),
-            "value": StringBooleanIntegerObject.from_dict(obj["value"]) if obj.get("value") is not None else None
+            "value": GetFeatureFlagsResponseDataFeatureFlagsInnerValue.from_dict(obj["value"]) if obj.get("value") is not None else None
         })
         return _obj
 

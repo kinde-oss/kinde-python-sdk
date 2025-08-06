@@ -17,6 +17,9 @@ from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
+from pydantic import Field, StrictInt, StrictStr
+from typing import Optional
+from typing_extensions import Annotated
 from kinde_sdk.management.models.connection import Connection
 from kinde_sdk.management.models.create_connection_request import CreateConnectionRequest
 from kinde_sdk.management.models.create_connection_response import CreateConnectionResponse

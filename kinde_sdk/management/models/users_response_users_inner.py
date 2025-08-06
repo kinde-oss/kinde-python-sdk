@@ -21,6 +21,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from kinde_sdk.management.models.user_identities_inner import UserIdentitiesInner
+from kinde_sdk.management.models.users_response_users_inner_billing import UsersResponseUsersInnerBilling
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -43,7 +44,8 @@ class UsersResponseUsersInner(BaseModel):
     created_on: Optional[StrictStr] = Field(default=None, description="Date of user creation in ISO 8601 format.")
     organizations: Optional[List[StrictStr]] = Field(default=None, description="Array of organizations a user belongs to.")
     identities: Optional[List[UserIdentitiesInner]] = Field(default=None, description="Array of identities belonging to the user.")
-    __properties: ClassVar[List[str]] = ["id", "provided_id", "email", "phone", "username", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities"]
+    billing: Optional[UsersResponseUsersInnerBilling] = None
+    __properties: ClassVar[List[str]] = ["id", "provided_id", "email", "phone", "username", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", "billing"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -91,6 +93,9 @@ class UsersResponseUsersInner(BaseModel):
                 if _item_identities:
                     _items.append(_item_identities.to_dict())
             _dict['identities'] = _items
+        # override the default output from pydantic by calling `to_dict()` of billing
+        if self.billing:
+            _dict['billing'] = self.billing.to_dict()
         # set to None if total_sign_ins (nullable) is None
         # and model_fields_set contains the field
         if self.total_sign_ins is None and "total_sign_ins" in self.model_fields_set:
@@ -137,7 +142,8 @@ class UsersResponseUsersInner(BaseModel):
             "last_signed_in": obj.get("last_signed_in"),
             "created_on": obj.get("created_on"),
             "organizations": obj.get("organizations"),
-            "identities": [UserIdentitiesInner.from_dict(_item) for _item in obj["identities"]] if obj.get("identities") is not None else None
+            "identities": [UserIdentitiesInner.from_dict(_item) for _item in obj["identities"]] if obj.get("identities") is not None else None,
+            "billing": UsersResponseUsersInnerBilling.from_dict(obj["billing"]) if obj.get("billing") is not None else None
         })
         return _obj
 

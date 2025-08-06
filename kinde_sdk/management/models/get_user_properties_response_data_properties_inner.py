@@ -20,6 +20,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from kinde_sdk.management.models.get_user_properties_response_data_properties_inner_value import GetUserPropertiesResponseDataPropertiesInnerValue
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -30,7 +31,7 @@ class GetUserPropertiesResponseDataPropertiesInner(BaseModel):
     id: Optional[StrictStr] = Field(default=None, description="The friendly ID of a property")
     name: Optional[StrictStr] = Field(default=None, description="The name of the property")
     key: Optional[StrictStr] = Field(default=None, description="The key of the property")
-    value: Optional[StringBooleanInteger] = Field(default=None, description="The value of the property")
+    value: Optional[GetUserPropertiesResponseDataPropertiesInnerValue] = None
     __properties: ClassVar[List[str]] = ["id", "name", "key", "value"]
 
     model_config = ConfigDict(
@@ -90,7 +91,7 @@ class GetUserPropertiesResponseDataPropertiesInner(BaseModel):
             "id": obj.get("id"),
             "name": obj.get("name"),
             "key": obj.get("key"),
-            "value": StringBooleanInteger.from_dict(obj["value"]) if obj.get("value") is not None else None
+            "value": GetUserPropertiesResponseDataPropertiesInnerValue.from_dict(obj["value"]) if obj.get("value") is not None else None
         })
         return _obj
 

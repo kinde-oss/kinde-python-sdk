@@ -20,7 +20,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from kinde_sdk.management.models.replace_connection_request_options import ReplaceConnectionRequestOptions
+from kinde_sdk.management.models.update_connection_request_options import UpdateConnectionRequestOptions
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -31,7 +31,7 @@ class UpdateConnectionRequest(BaseModel):
     name: Optional[StrictStr] = Field(default=None, description="The internal name of the connection.")
     display_name: Optional[StrictStr] = Field(default=None, description="The public facing name of the connection.")
     enabled_applications: Optional[List[StrictStr]] = Field(default=None, description="Client IDs of applications in which this connection is to be enabled.")
-    options: Optional[ReplaceConnectionRequestOptions] = None
+    options: Optional[UpdateConnectionRequestOptions] = None
     __properties: ClassVar[List[str]] = ["name", "display_name", "enabled_applications", "options"]
 
     model_config = ConfigDict(
@@ -91,7 +91,7 @@ class UpdateConnectionRequest(BaseModel):
             "name": obj.get("name"),
             "display_name": obj.get("display_name"),
             "enabled_applications": obj.get("enabled_applications"),
-            "options": ReplaceConnectionRequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None
+            "options": UpdateConnectionRequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None
         })
         return _obj
 

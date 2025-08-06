@@ -18,20 +18,19 @@ import pprint
 import re  # noqa: F401
 import json
 
-from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from kinde_sdk.management.models.get_entitlement_response_data_entitlement import GetEntitlementResponseDataEntitlement
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetEntitlementsResponseDataPlansInner(BaseModel):
+class GetEntitlementResponseData(BaseModel):
     """
-    GetEntitlementsResponseDataPlansInner
+    GetEntitlementResponseData
     """ # noqa: E501
-    key: Optional[StrictStr] = Field(default=None, description="A unique code for the plan")
-    name: Optional[StrictStr] = Field(default=None, description="Name of the plan")
-    subscribed_on: Optional[datetime] = Field(default=None, description="The date the user subscribed to the plan")
-    __properties: ClassVar[List[str]] = ["key", "name", "subscribed_on"]
+    org_code: Optional[StrictStr] = Field(default=None, description="The organization code the entitlements are associated with.")
+    entitlement: Optional[GetEntitlementResponseDataEntitlement] = None
+    __properties: ClassVar[List[str]] = ["org_code", "entitlement"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -51,7 +50,7 @@ class GetEntitlementsResponseDataPlansInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetEntitlementsResponseDataPlansInner from a JSON string"""
+        """Create an instance of GetEntitlementResponseData from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -72,11 +71,14 @@ class GetEntitlementsResponseDataPlansInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of entitlement
+        if self.entitlement:
+            _dict['entitlement'] = self.entitlement.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetEntitlementsResponseDataPlansInner from a dict"""
+        """Create an instance of GetEntitlementResponseData from a dict"""
         if obj is None:
             return None
 
@@ -84,9 +86,8 @@ class GetEntitlementsResponseDataPlansInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "key": obj.get("key"),
-            "name": obj.get("name"),
-            "subscribed_on": obj.get("subscribed_on")
+            "org_code": obj.get("org_code"),
+            "entitlement": GetEntitlementResponseDataEntitlement.from_dict(obj["entitlement"]) if obj.get("entitlement") is not None else None
         })
         return _obj
 

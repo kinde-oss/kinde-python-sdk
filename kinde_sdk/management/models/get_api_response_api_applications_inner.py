@@ -39,8 +39,8 @@ class GetApiResponseApiApplicationsInner(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['Machine to machine (M2M)', 'Back-end web', 'Front-end and mobile']):
-            raise ValueError("must be one of enum values ('Machine to machine (M2M)', 'Back-end web', 'Front-end and mobile')")
+        if value not in set(['Machine to machine (M2M)', 'Back-end web', 'Front-end and mobile', 'Device and IoT']):
+            raise ValueError("must be one of enum values ('Machine to machine (M2M)', 'Back-end web', 'Front-end and mobile', 'Device and IoT')")
         return value
 
     model_config = ConfigDict(

@@ -23,7 +23,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class ReplaceConnectionRequestOptionsOneOf(BaseModel):
+class UpdateConnectionRequestOptionsOneOf(BaseModel):
     """
     Azure AD connection options.
     """ # noqa: E501
@@ -35,7 +35,7 @@ class ReplaceConnectionRequestOptionsOneOf(BaseModel):
     is_sync_user_profile_on_login: Optional[StrictBool] = Field(default=None, description="Sync user profile data with IDP.")
     is_retrieve_provider_user_groups: Optional[StrictBool] = Field(default=None, description="Include user group info from MS Entra ID.")
     is_extended_attributes_required: Optional[StrictBool] = Field(default=None, description="Include additional user profile information.")
-    is_create_missing_user: Optional[StrictBool] = Field(default=None, description="Create a user record in Kinde if the user signing in does not exist.")
+    is_create_missing_user: Optional[StrictBool] = Field(default=None, description="Create users if they don't exist in the system.")
     is_force_show_sso_button: Optional[StrictBool] = Field(default=None, description="Force showing the SSO button for this connection.")
     upstream_params: Optional[Dict[str, Any]] = Field(default=None, description="Additional upstream parameters to pass to the identity provider.")
     __properties: ClassVar[List[str]] = ["client_id", "client_secret", "home_realm_domains", "entra_id_domain", "is_use_common_endpoint", "is_sync_user_profile_on_login", "is_retrieve_provider_user_groups", "is_extended_attributes_required", "is_create_missing_user", "is_force_show_sso_button", "upstream_params"]
@@ -58,7 +58,7 @@ class ReplaceConnectionRequestOptionsOneOf(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of ReplaceConnectionRequestOptionsOneOf from a JSON string"""
+        """Create an instance of UpdateConnectionRequestOptionsOneOf from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -83,7 +83,7 @@ class ReplaceConnectionRequestOptionsOneOf(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of ReplaceConnectionRequestOptionsOneOf from a dict"""
+        """Create an instance of UpdateConnectionRequestOptionsOneOf from a dict"""
         if obj is None:
             return None
 

@@ -86,7 +86,7 @@ The FastAPI integration automatically provides these routes:
 
 ```python
 from fastapi import Depends
-from kinde_sdk.kinde_api_client import KindeApiClient
+from kinde_sdk.management.kinde_api_client import KindeApiClient
 
 @router.get("/protected")
 async def protected_route(
@@ -211,7 +211,7 @@ The Management API client requires:
 You can access the Management API through the existing `KindeApiClient`:
 
 ```python
-from kinde_sdk.kinde_api_client import KindeApiClient
+from kinde_sdk.management.kinde_api_client import KindeApiClient
 from kinde_sdk.enums import GrantType
 
 # Initialize the client with client credentials
@@ -354,7 +354,7 @@ except Exception as e:
 Complete example given below
 
 ```python
-from kinde_sdk.kinde_api_client import KindeApiClient
+from kinde_sdk.management.kinde_api_client import KindeApiClient
 from kinde_sdk.enums import GrantType
 
 def main():

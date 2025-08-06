@@ -6,7 +6,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import logging
-from kinde_sdk.auth.oauth import OAuth
+from kinde_sdk import OAuth
 from kinde_sdk.auth import claims, feature_flags, permissions, tokens
 from kinde_sdk.management import ManagementClient;
 from kinde_sdk.management.management_token_manager import ManagementTokenManager

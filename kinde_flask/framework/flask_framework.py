@@ -142,44 +142,42 @@ class FlaskFramework(FrameworkInterface):
             from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
             
             error = request.args.get('error')
-            if error:
-                # In your callback route
-                if error.lower() == 'login_link_expired':
-                    reauth_state = request.args.get('reauth_state')
-                    if reauth_state:
-                        try:
-                            decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
-                            reauth_dict = json.loads(decoded_auth_state)
+            if error and error.lower() == 'login_link_expired':
+                reauth_state = request.args.get('reauth_state')
+                if reauth_state:
+                    try:
+                        decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
+                        reauth_dict = json.loads(decoded_auth_state)
 
-                            # Get the redirect URL from config
-                            redirect_url = os.getenv("KINDE_REDIRECT_URI")
-                            base_url = redirect_url.replace("/callback", "")
+                        # Get the redirect URL from config
+                        redirect_url = os.getenv("KINDE_REDIRECT_URI")
+                        base_url = redirect_url.replace("/callback", "")
 
-                            # Build the login route URL
-                            login_route_url = f"{base_url}/login"
+                        # Build the login route URL
+                        login_route_url = f"{base_url}/login"
 
-                            # Parse and add parameters properly
-                            parsed = urlparse(login_route_url)
-                            query_dict = parse_qs(parsed.query)
+                        # Parse and add parameters properly
+                        parsed = urlparse(login_route_url)
+                        query_dict = parse_qs(parsed.query)
 
-                            # Add reauth parameters
-                            for key, value in reauth_dict.items():
-                                query_dict[key] = [value]
+                        # Add reauth parameters
+                        for key, value in reauth_dict.items():
+                            query_dict[key] = [value]
 
-                            # Build final URL
-                            new_query = urlencode(query_dict, doseq=True)
-                            login_url = urlunparse((
-                                parsed.scheme,
-                                parsed.netloc,
-                                parsed.path,
-                                parsed.params,
-                                new_query,
-                                parsed.fragment
-                            ))
+                        # Build final URL
+                        new_query = urlencode(query_dict, doseq=True)
+                        login_url = urlunparse((
+                            parsed.scheme,
+                            parsed.netloc,
+                            parsed.path,
+                            parsed.params,
+                            new_query,
+                            parsed.fragment
+                        ))
 
-                            return redirect(login_url)
-                        except Exception as ex:
-                            return f"Error parsing reauth state: {str(ex)}", 400
+                        return redirect(login_url)
+                    except Exception as ex:
+                        return f"Error parsing reauth state: {str(ex)}", 400
 
             post_login_redirect = session.pop('post_login_redirect_url', None)
             if post_login_redirect:
@@ -202,7 +200,7 @@ class FlaskFramework(FrameworkInterface):
             try:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-                result = loop.run_until_complete(self._oauth.handle_redirect(code, user_id, state))
+                loop.run_until_complete(self._oauth.handle_redirect(code, user_id, state))
                 loop.close()
             except Exception as e:
                 return f"Authentication failed: {str(e)}", 400

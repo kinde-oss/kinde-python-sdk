@@ -140,50 +140,48 @@ class FastAPIFramework(FrameworkInterface):
         async def callback(request: Request, code: Optional[str] = None, state: Optional[str] = None):
             """Handle the OAuth callback from Kinde."""
             error = request.query_params.get('error')
-            if error:
-                # In your callback route
-                if error.lower() == 'login_link_expired':
-                    reauth_state = request.query_params.get('reauth_state')
-                    if reauth_state:
-                        try:
-                            decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
-                            reauth_dict = json.loads(decoded_auth_state)
+            if error and error.lower() == 'login_link_expired':
+                reauth_state = request.query_params.get('reauth_state')
+                if reauth_state:
+                    try:
+                        decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
+                        reauth_dict = json.loads(decoded_auth_state)
 
-                            # Get the redirect URL from config
-                            redirect_url = os.getenv("KINDE_REDIRECT_URI")
-                            base_url = redirect_url.replace("/callback", "")
+                        # Get the redirect URL from config
+                        redirect_url = os.getenv("KINDE_REDIRECT_URI")
+                        base_url = redirect_url.replace("/callback", "")
 
-                            # Build the login route URL
-                            login_route_url = f"{base_url}/login"
+                        # Build the login route URL
+                        login_route_url = f"{base_url}/login"
 
-                            # Parse and add parameters properly
-                            parsed = urlparse(login_route_url)
-                            query_dict = parse_qs(parsed.query)
+                        # Parse and add parameters properly
+                        parsed = urlparse(login_route_url)
+                        query_dict = parse_qs(parsed.query)
 
-                            # Add reauth parameters
-                            for key, value in reauth_dict.items():
-                                query_dict[key] = [value]
+                        # Add reauth parameters
+                        for key, value in reauth_dict.items():
+                            query_dict[key] = [value]
 
-                            # Build final URL
-                            new_query = urlencode(query_dict, doseq=True)
-                            login_url = urlunparse((
-                                parsed.scheme,
-                                parsed.netloc,
-                                parsed.path,
-                                parsed.params,
-                                new_query,
-                                parsed.fragment
-                            ))
+                        # Build final URL
+                        new_query = urlencode(query_dict, doseq=True)
+                        login_url = urlunparse((
+                            parsed.scheme,
+                            parsed.netloc,
+                            parsed.path,
+                            parsed.params,
+                            new_query,
+                            parsed.fragment
+                        ))
 
-                            return RedirectResponse(login_url)
-                        except Exception as ex:
-                            return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)
+                        return RedirectResponse(login_url)
+                    except Exception as ex:
+                        return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)
 
             user_id = request.session.get('user_id') or str(uuid.uuid4())
 
             try:
                 assert self._oauth is not None
-                result = await self._oauth.handle_redirect(code, user_id, state)
+                await self._oauth.handle_redirect(code, user_id, state)
             except Exception as e:
                 if "State not found" in str(e):
                     return HTMLResponse("Error: State not found. Please check Kinde Python SDK documentation.\n" + str(e), status_code=500)

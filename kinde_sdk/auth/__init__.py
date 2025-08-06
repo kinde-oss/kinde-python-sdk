@@ -6,6 +6,5 @@ from .claims import claims
 from .feature_flags import feature_flags
 from .portals import portals
 from .tokens import tokens
-from .entitlements import Entitlements
 
-__all__ = ["OAuth", "TokenManager", "UserSession", "permissions", "claims", "feature_flags", "portals", "tokens", "Entitlements"]
+__all__ = ["OAuth", "TokenManager", "UserSession", "permissions", "claims", "feature_flags", "portals", "tokens"]

@@ -7,6 +7,10 @@ from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
 import logging
+import base64
+import json
+from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlencode, urlunparse
 
 logger = logging.getLogger(__name__)
 
@@ -133,30 +137,78 @@ class FastAPIFramework(FrameworkInterface):
         
         # Callback route
         @self.app.get("/callback")
-        async def callback(request: Request, code: str, state: Optional[str] = None):
+        async def callback(request: Request, code: Optional[str] = None, state: Optional[str] = None):
             """Handle the OAuth callback from Kinde."""
+            error = request.query_params.get('error')
+            if error and error.lower() == 'login_link_expired':
+                reauth_state = request.query_params.get('reauth_state')
+                if reauth_state:
+                    try:
+                        decoded_auth_state = base64.b64decode(reauth_state).decode('utf-8')
+                        reauth_dict = json.loads(decoded_auth_state)
+
+                        # Get the redirect URL from config
+                        redirect_url = os.getenv("KINDE_REDIRECT_URI")
+                        base_url = redirect_url.replace("/callback", "")
+
+                        # Build the login route URL
+                        login_route_url = f"{base_url}/login"
+
+                        # Parse and add parameters properly
+                        parsed = urlparse(login_route_url)
+                        query_dict = parse_qs(parsed.query)
+
+                        # Add reauth parameters
+                        for key, value in reauth_dict.items():
+                            query_dict[key] = [value]
+
+                        # Build final URL
+                        new_query = urlencode(query_dict, doseq=True)
+                        login_url = urlunparse((
+                            parsed.scheme,
+                            parsed.netloc,
+                            parsed.path,
+                            parsed.params,
+                            new_query,
+                            parsed.fragment
+                        ))
+
+                        return RedirectResponse(login_url)
+                    except Exception as ex:
+                        return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)
+
+            user_id = request.session.get('user_id') or str(uuid.uuid4())
+
             try:
-                # Generate a unique user ID for the session
-                logger.warning(f"[Callback] Request session is: {request.session}")
-                user_id = request.session.get("user_id") or str(uuid.uuid4())
-                
-                # Use OAuth's handle_redirect method to process the callback
-                logger.warning(f"[Callback] code[{code}] state[{state}] user_id[{user_id}]")
-                result = await self._oauth.handle_redirect(code, user_id, state)
-                
-                # Store user ID in session
-                logger.warning(f"[Callback] Storing user ID in session: {user_id}")
-                request.session["user_id"] = user_id
-                
-                # Create response with explicit session cookie settings
-                self._logger.warning(f"[Callback] Request session is: {request.session}")
-                self._logger.warning(f"[Callback] The full result: {result}")
-                response = RedirectResponse(url="/")
-                
-                return response
+                assert self._oauth is not None
+                await self._oauth.handle_redirect(code, user_id, state)
             except Exception as e:
-                logger.error(f"Authentication failed: {str(e)}")
-                return HTMLResponse(f"Authentication failed: {str(e)}")
+                if "State not found" in str(e):
+                    return HTMLResponse("Error: State not found. Please check Kinde Python SDK documentation.\n" + str(e), status_code=500)
+                raise e
+
+            request.session['user_id'] = user_id
+
+            # Initialize post_login_redirect
+            post_login_redirect = request.session.pop('post_login_redirect_url', None)
+            if post_login_redirect:
+                post_login_redirect = post_login_redirect.get('url', '/')
+            else:
+                post_login_redirect = '/'
+
+            if not post_login_redirect.startswith('http'):
+                post_login_redirect = str(request.base_url).rstrip('/') + post_login_redirect
+
+            parsed = urlparse(post_login_redirect)
+            if state:
+                query_dict = parse_qs(parsed.query)
+                query_dict['state'] = [state]
+                new_query = urlencode(query_dict, doseq=True)
+                redirect_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment))
+            else:
+                redirect_url = post_login_redirect
+
+            return RedirectResponse(redirect_url)
         
         # Logout route
         @self.app.get("/logout")

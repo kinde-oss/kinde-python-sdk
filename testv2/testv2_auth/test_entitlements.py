@@ -500,12 +500,21 @@ class TestEntitlements:
             entitlements = Entitlements("https://test.kinde.com", "test_token")
             result = entitlements.get_all_entitlements()
             
-            # Verify the API was called only once (loop should break)
-            mock_billing.get_entitlements.assert_called_once_with(
+            # Verify the API was called twice (first call, then second call with same cursor)
+            assert mock_billing.get_entitlements.call_count == 2
+            
+            # First call should be with None
+            mock_billing.get_entitlements.assert_any_call(
                 page_size=None,
                 starting_after=None
             )
             
-            # Verify we got the entitlements from the first call
-            assert len(result) == 2
+            # Second call should be with the same cursor
+            mock_billing.get_entitlements.assert_any_call(
+                page_size=None,
+                starting_after="same_cursor"
+            )
+            
+            # Verify we got the entitlements from both calls (2 calls * 2 entitlements each = 4 total)
+            assert len(result) == 4
             assert isinstance(result, list)

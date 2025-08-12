@@ -473,3 +473,39 @@ class TestEntitlements:
             assert len(result) == 0
             # Should only call API once since has_more is falsy
             assert mock_billing.get_entitlements.call_count == 1
+
+    def test_infinite_loop_prevention(self):
+        """Test that infinite loops are prevented when cursor doesn't advance."""
+        with patch('kinde_sdk.auth.entitlements.Configuration') as mock_config_class, \
+             patch('kinde_sdk.auth.entitlements.ApiClient') as mock_api_client_class, \
+             patch('kinde_sdk.auth.entitlements.BillingApi') as mock_billing_class:
+            
+            mock_config = Mock()
+            mock_config_class.return_value = mock_config
+            mock_api_client = Mock()
+            mock_api_client_class.return_value = mock_api_client
+            mock_billing = Mock()
+            
+            # Create a mock response that indicates more pages but cursor doesn't advance
+            mock_response = Mock()
+            mock_response.data = Mock()
+            mock_response.data.entitlements = [Mock(), Mock()]  # Some entitlements
+            mock_response.metadata = Mock()
+            mock_response.metadata.has_more = True
+            mock_response.metadata.next_page_starting_after = "same_cursor"  # Same cursor
+
+            mock_billing.get_entitlements.return_value = mock_response
+            mock_billing_class.return_value = mock_billing
+            
+            entitlements = Entitlements("https://test.kinde.com", "test_token")
+            result = entitlements.get_all_entitlements()
+            
+            # Verify the API was called only once (loop should break)
+            mock_billing.get_entitlements.assert_called_once_with(
+                page_size=None,
+                starting_after=None
+            )
+            
+            # Verify we got the entitlements from the first call
+            assert len(result) == 2
+            assert isinstance(result, list)

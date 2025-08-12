@@ -31,8 +31,9 @@ class Entitlements:
         Returns:
             List of all entitlements across all pages.
         """
-        all_entitlements = []
+        all_entitlements: List[GetEntitlementsResponseDataEntitlementsInner] = []
         starting_after = None
+        prev_cursor = object()  # sentinel
         has_more = True
         
         while has_more:
@@ -54,7 +55,11 @@ class Entitlements:
                     has_more = has_more_value.lower() == 'true'
                 else:
                     has_more = bool(has_more_value)
-                starting_after = result.metadata.next_page_starting_after
+                next_cursor = result.metadata.next_page_starting_after
+                # break if cursor didn't advance to avoid infinite loop
+                if has_more and (next_cursor is None or next_cursor == starting_after):
+                    has_more = False
+                prev_cursor, starting_after = starting_after, next_cursor
             else:
                 has_more = False
         

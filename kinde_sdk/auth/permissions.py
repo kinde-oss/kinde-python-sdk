@@ -1,10 +1,19 @@
 from typing import Dict, List, Optional, Any
+
+from .permissions_options import PermissionsOptions
 from .base_auth import BaseAuth
 
+from kinde_sdk.frontend.api.permissions_api import PermissionsApi
+
 class Permissions(BaseAuth):
-    async def get_permission(self, permission_key: str) -> Dict[str, Any]:
+    async def get_permission(
+            self, 
+            permission_key: str,
+            options: Optional[PermissionsOptions] = None
+            ) -> Dict[str, Any]:
         """
         Get a specific permission for the current user.
+        If force_api is True, fetch from API instead of token claims.
         
         Args:
             permission_key: The permission key to check (e.g. "create:todos")
@@ -17,6 +26,9 @@ class Permissions(BaseAuth):
                 "isGranted": bool
             }
         """
+        if options and options.force_api:
+            return await self._call_account_api(permission_key)
+        
         token_manager = self._get_token_manager()
         if not token_manager:
             return {
@@ -35,9 +47,13 @@ class Permissions(BaseAuth):
             "isGranted": permission_key in permissions
         }
 
-    async def get_permissions(self) -> Dict[str, Any]:
+    async def get_permissions(
+            self,
+            options: Optional[PermissionsOptions] = None
+            ) -> Dict[str, Any]:
         """
         Get all permissions for the current user.
+        If force_api is True, fetch from API instead of token claims.
         
         Returns:
             Dict containing organization code and list of permissions:
@@ -46,6 +62,9 @@ class Permissions(BaseAuth):
                 "permissions": List[str]
             }
         """
+        if options and options.force_api:
+            return await self._call_account_api()
+    
         token_manager = self._get_token_manager()
         if not token_manager:
             return {
@@ -60,6 +79,25 @@ class Permissions(BaseAuth):
         return {
             "orgCode": org_code,
             "permissions": permissions
+        }
+    
+    async def _call_account_api(self, permission_key: Optional[str] = None) -> Dict[str, Any]:
+        permissions_api = PermissionsApi()
+        response = permissions_api.get_user_permissions()
+        permissions = getattr(response, "permissions", [])
+        org_code = getattr(response, "org_code", None)
+        
+        if permission_key is None:
+            return {
+                "orgCode": org_code,
+                "permissions": permissions
+            }
+        
+        is_granted = permission_key in permissions
+        return {
+            "permissionKey": permission_key,
+            "orgCode": org_code,
+            "isGranted": is_granted
         }
 
 # Create a singleton instance

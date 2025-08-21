@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 from kinde_sdk.auth.api_options import ApiOptions
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.auth.user_session import UserSession
@@ -171,7 +171,7 @@ class TestFeatureFlags:
             "v": "pink",
             "code": "theme"
         }
-        with patch.object(feature_flags, "_call_account_api", return_value=mock_feature_flags):
+        with patch.object(feature_flags, "_call_account_api", new_callable=AsyncMock, return_value=mock_feature_flags):
             options = ApiOptions(force_api=True)
             result = await feature_flags.get_flag("theme", None, options)
             assert isinstance(result, FeatureFlag)
@@ -202,7 +202,7 @@ class TestFeatureFlags:
             options = ApiOptions(force_api=True)
             result = await feature_flags.get_flag("is_dark_mode", None, options)
             assert isinstance(result, FeatureFlag)
-            assert result.code == ""
+            assert result.code == "is_dark_mode"
             assert result.type == "unknown"
             assert result.value is None
             assert result.is_default is False

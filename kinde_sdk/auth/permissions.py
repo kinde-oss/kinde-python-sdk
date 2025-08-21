@@ -13,16 +13,18 @@ class Permissions(BaseAuth):
             ) -> Dict[str, Any]:
         """
         Get a specific permission for the current user.
-        If force_api is True, fetch from API instead of token claims.
         
         Args:
             permission_key: The permission key to check (e.g. "create:todos")
+            options: Optional ApiOptions object. If provided and force_api=True,
+                    fetches permissions from the API instead of token claims.
+                    Defaults to None (use token claims).
             
         Returns:
             Dict containing permission details:
             {
                 "permissionKey": str,
-                "orgCode": str,
+                "orgCode": Optional[str],  # May be None if user has no associated organization
                 "isGranted": bool
             }
         """
@@ -53,12 +55,16 @@ class Permissions(BaseAuth):
             ) -> Dict[str, Any]:
         """
         Get all permissions for the current user.
-        If force_api is True, fetch from API instead of token claims.
+        
+        Args:
+            options: Optional ApiOptions object. If provided and force_api=True,
+                    fetches permissions from the API instead of token claims.
+                    Defaults to None (use token claims).
         
         Returns:
             Dict containing organization code and list of permissions:
             {
-                "orgCode": str,
+                "orgCode": Optional[str],  # May be None if user has no associated organization
                 "permissions": List[str]
             }
         """

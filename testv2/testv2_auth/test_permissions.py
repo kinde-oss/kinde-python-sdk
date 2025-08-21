@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 from kinde_sdk.auth.api_options import ApiOptions
 from kinde_sdk.auth.user_session import UserSession
 from kinde_sdk.auth import permissions
@@ -119,7 +119,7 @@ class TestPermissions:
             "orgCode": "org_123",
             "isGranted": True
         }
-        with patch.object(permissions, "_call_account_api", return_value=mock_result):
+        with patch.object(permissions, "_call_account_api", new_callable=AsyncMock, return_value=mock_result):
             options = ApiOptions(force_api=True)
             result = await permissions.get_permission("create:todos", options)
             assert result["permissionKey"] == "create:todos"
@@ -133,7 +133,7 @@ class TestPermissions:
             "orgCode": "org_456",
             "isGranted": False
         }
-        with patch.object(permissions, "_call_account_api", return_value=mock_result):
+        with patch.object(permissions, "_call_account_api", new_callable=AsyncMock, return_value=mock_result):
             options = ApiOptions(force_api=True)
             result = await permissions.get_permission("create:todos", options)
             assert result["permissionKey"] == "create:todos"
@@ -147,7 +147,7 @@ class TestPermissions:
             "orgCode": "org_789",
             "isGranted": False
         }
-        with patch.object(permissions, "_call_account_api", return_value=mock_result):
+        with patch.object(permissions, "_call_account_api", new_callable=AsyncMock, return_value=mock_result):
             options = ApiOptions(force_api=True)
             result = await permissions.get_permission("create:todos", options)
             assert result["permissionKey"] == "create:todos"

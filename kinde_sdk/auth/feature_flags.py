@@ -84,9 +84,13 @@ class FeatureFlags(BaseAuth):
         Returns:
             FeatureFlag object containing the flag value and metadata
         """
-
+        
         if options and options.force_api:
             result = await self._call_account_api(flag_code)
+            if not isinstance(result, dict):
+                result = {}
+            if "code" not in result:
+                result = {**(result or {}), "code": flag_code}
             return self._parse_flag_value(result)
 
         token_manager = self._get_token_manager()
@@ -123,7 +127,13 @@ class FeatureFlags(BaseAuth):
         """
 
         if options and options.force_api:
-            return await self._call_account_api()
+            flags = await self._call_account_api()
+            if not isinstance(flags, dict):
+                return {}
+            return {
+                code: self._parse_flag_value({**(data or {}), "code": code})
+                for code, data in flags.items()
+            }
     
         token_manager = self._get_token_manager()
         if not token_manager:

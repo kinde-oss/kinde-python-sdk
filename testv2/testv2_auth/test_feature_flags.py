@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
-from kinde_sdk.auth.options import Options
+from kinde_sdk.auth.api_options import ApiOptions
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.auth.user_session import UserSession
 from kinde_sdk.auth.feature_flags import FeatureFlag
@@ -172,7 +172,7 @@ class TestFeatureFlags:
             "code": "theme"
         }
         with patch.object(feature_flags, "_call_account_api", return_value=mock_feature_flags):
-            options = Options(force_api=True)
+            options = ApiOptions(force_api=True)
             result = await feature_flags.get_flag("theme", None, options)
             assert isinstance(result, FeatureFlag)
             assert result.code == "theme"
@@ -188,7 +188,7 @@ class TestFeatureFlags:
             "code": "is_dark_mode"
         }
         with patch.object(feature_flags, "_call_account_api", return_value=mock_feature_flags):
-            options = Options(force_api=True)
+            options = ApiOptions(force_api=True)
             result = await feature_flags.get_flag("is_dark_mode", None, options)
             assert isinstance(result, FeatureFlag)
             assert result.code == "is_dark_mode"
@@ -199,7 +199,7 @@ class TestFeatureFlags:
     async def test_get_feature_flag_force_api_true_no_feature_flags(self):
         mock_feature_flags = {}
         with patch.object(feature_flags, "_call_account_api", return_value=mock_feature_flags):
-            options = Options(force_api=True)
+            options = ApiOptions(force_api=True)
             result = await feature_flags.get_flag("is_dark_mode", None, options)
             assert isinstance(result, FeatureFlag)
             assert result.code == ""
@@ -210,7 +210,7 @@ class TestFeatureFlags:
     @pytest.mark.asyncio
     async def test_get_feature_flag_force_api_false_granted(self, mock_session_manager):
         with patch.object(feature_flags, '_session_manager', mock_session_manager):
-            options = Options(force_api=False)
+            options = ApiOptions(force_api=False)
             result = await feature_flags.get_flag("competitions_limit", None, options)
             assert isinstance(result, FeatureFlag)
             assert result.code == "competitions_limit"
@@ -220,7 +220,7 @@ class TestFeatureFlags:
     @pytest.mark.asyncio
     async def test_get_feature_flag_force_api_false_not_granted(self, mock_session_manager):
         with patch.object(feature_flags, '_session_manager', mock_session_manager):
-            options = Options(force_api=False)
+            options = ApiOptions(force_api=False)
             result = await feature_flags.get_flag("is_dark_mode", None, options)
 
             assert isinstance(result, FeatureFlag)
@@ -231,7 +231,7 @@ class TestFeatureFlags:
     @pytest.mark.asyncio
     async def test_get_feature_flag_force_api_false_no_feature_flags(self, mock_session_manager):
         with patch.object(feature_flags, '_session_manager', mock_session_manager):
-            options = Options(force_api=False)
+            options = ApiOptions(force_api=False)
             result = await feature_flags.get_flag("test", None, options)
             
             assert isinstance(result, FeatureFlag)

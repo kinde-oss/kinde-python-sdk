@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional, TypeVar, Generic
 
-from kinde_sdk.auth.options import Options
+from kinde_sdk.auth.api_options import ApiOptions
 from kinde_sdk.frontend.api.feature_flags_api import FeatureFlagsApi
 from .base_auth import BaseAuth
 
@@ -72,7 +72,7 @@ class FeatureFlags(BaseAuth):
             self, 
             flag_code: str, 
             default_value: Optional[T] = None,
-            options: Optional[Options] = None
+            options: Optional[ApiOptions] = None
             ) -> FeatureFlag[T]:
         """
         Get a specific feature flag value.
@@ -113,7 +113,7 @@ class FeatureFlags(BaseAuth):
 
     async def get_all_flags(
             self,
-            options: Optional[Options] = None
+            options: Optional[ApiOptions] = None
             ) -> Dict[str, FeatureFlag]:
         """
         Get all feature flags for the current user.

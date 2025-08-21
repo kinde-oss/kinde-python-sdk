@@ -1,4 +1,7 @@
 from typing import Dict, Any, Optional, TypeVar, Generic
+
+from kinde_sdk.auth.options import Options
+from kinde_sdk.frontend.api.feature_flags_api import FeatureFlagsApi
 from .base_auth import BaseAuth
 
 T = TypeVar('T')
@@ -11,7 +14,11 @@ class FeatureFlag(Generic[T]):
         self.is_default = is_default
 
 class FeatureFlags(BaseAuth):
-    def _parse_flag_value(self, flag_data: Dict[str, Any], expected_type: Optional[str] = None) -> FeatureFlag:
+    def _parse_flag_value(
+            self, 
+            flag_data: Dict[str, Any], 
+            expected_type: Optional[str] = None
+            ) -> FeatureFlag:
         """
         Parse a feature flag value from the token format.
         
@@ -61,7 +68,12 @@ class FeatureFlags(BaseAuth):
             is_default=False
         )
 
-    async def get_flag(self, flag_code: str, default_value: Optional[T] = None) -> FeatureFlag[T]:
+    async def get_flag(
+            self, 
+            flag_code: str, 
+            default_value: Optional[T] = None,
+            options: Optional[Options] = None
+            ) -> FeatureFlag[T]:
         """
         Get a specific feature flag value.
         
@@ -72,6 +84,11 @@ class FeatureFlags(BaseAuth):
         Returns:
             FeatureFlag object containing the flag value and metadata
         """
+
+        if options and options.force_api:
+            result = await self._call_account_api(flag_code)
+            return self._parse_flag_value(result)
+
         token_manager = self._get_token_manager()
         if not token_manager:
             return FeatureFlag(
@@ -94,13 +111,20 @@ class FeatureFlags(BaseAuth):
             
         return self._parse_flag_value(feature_flags[flag_code])
 
-    async def get_all_flags(self) -> Dict[str, FeatureFlag]:
+    async def get_all_flags(
+            self,
+            options: Optional[Options] = None
+            ) -> Dict[str, FeatureFlag]:
         """
         Get all feature flags for the current user.
         
         Returns:
             Dict mapping flag codes to FeatureFlag objects
         """
+
+        if options and options.force_api:
+            return await self._call_account_api()
+    
         token_manager = self._get_token_manager()
         if not token_manager:
             return {}
@@ -112,6 +136,21 @@ class FeatureFlags(BaseAuth):
             code: self._parse_flag_value(flag_data)
             for code, flag_data in feature_flags.items()
         }
+    
+    async def _call_account_api(self, flag_code: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Calls the Kinde Account API to get feature flags.
+        If flag_code is provided, returns only that flag's data.
+        Otherwise, returns all flags as a dict.
+        """
+        feature_flags_api = FeatureFlagsApi()
+        response = feature_flags_api.get_feature_flags()
+        flags = {}
+        if response and response.data and hasattr(response.data, "flags"):
+            flags = response.data.flags or {}
+        if flag_code is not None:
+            return flags.get(flag_code, {})
+        return flags
 
 # Create a singleton instance
 feature_flags = FeatureFlags() 

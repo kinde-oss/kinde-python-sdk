@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
-from kinde_sdk.auth.permissions_options import PermissionsOptions
+from kinde_sdk.auth.options import Options
 from kinde_sdk.auth.user_session import UserSession
 from kinde_sdk.auth import permissions
 
@@ -120,7 +120,7 @@ class TestPermissions:
             "isGranted": True
         }
         with patch.object(permissions, "_call_account_api", return_value=mock_result):
-            options = PermissionsOptions(force_api=True)
+            options = Options(force_api=True)
             result = await permissions.get_permission("create:todos", options)
             assert result["permissionKey"] == "create:todos"
             assert result["orgCode"] == "org_123"
@@ -134,7 +134,7 @@ class TestPermissions:
             "isGranted": False
         }
         with patch.object(permissions, "_call_account_api", return_value=mock_result):
-            options = PermissionsOptions(force_api=True)
+            options = Options(force_api=True)
             result = await permissions.get_permission("create:todos", options)
             assert result["permissionKey"] == "create:todos"
             assert result["orgCode"] == "org_456"
@@ -148,7 +148,7 @@ class TestPermissions:
             "isGranted": False
         }
         with patch.object(permissions, "_call_account_api", return_value=mock_result):
-            options = PermissionsOptions(force_api=True)
+            options = Options(force_api=True)
             result = await permissions.get_permission("create:todos", options)
             assert result["permissionKey"] == "create:todos"
             assert result["orgCode"] == "org_789"
@@ -156,7 +156,7 @@ class TestPermissions:
             
     @pytest.mark.asyncio
     async def test_get_permission_force_api_false_granted(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        options = PermissionsOptions(force_api=False)
+        options = Options(force_api=False)
         with patch.object(permissions, '_session_manager', mock_session_manager):
             result = await permissions.get_permission("create:todos", options)
             assert result["permissionKey"] == "create:todos"
@@ -165,7 +165,7 @@ class TestPermissions:
 
     @pytest.mark.asyncio
     async def test_get_permission_force_api_false_not_granted(self, mock_framework_factory, mock_session_manager, mock_token_manager):
-        options = PermissionsOptions(force_api=False)
+        options = Options(force_api=False)
         with patch.object(permissions, '_session_manager', mock_session_manager):
             result = await permissions.get_permission("delete:todos", options)
             assert result["permissionKey"] == "delete:todos"
@@ -177,7 +177,7 @@ class TestPermissions:
         mock_token_manager.get_claims.return_value = {
             "org_code": "org_123"
         }
-        options = PermissionsOptions(force_api=False)
+        options = Options(force_api=False)
         with patch.object(permissions, '_session_manager', mock_session_manager):
             result = await permissions.get_permission("create:todos", options)
             assert result["permissionKey"] == "create:todos"

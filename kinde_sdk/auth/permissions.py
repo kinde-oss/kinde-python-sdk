@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional, Any
 
-from .permissions_options import PermissionsOptions
+from .options import Options
 from .base_auth import BaseAuth
 
 from kinde_sdk.frontend.api.permissions_api import PermissionsApi
@@ -9,7 +9,7 @@ class Permissions(BaseAuth):
     async def get_permission(
             self, 
             permission_key: str,
-            options: Optional[PermissionsOptions] = None
+            options: Optional[Options] = None
             ) -> Dict[str, Any]:
         """
         Get a specific permission for the current user.
@@ -49,7 +49,7 @@ class Permissions(BaseAuth):
 
     async def get_permissions(
             self,
-            options: Optional[PermissionsOptions] = None
+            options: Optional[Options] = None
             ) -> Dict[str, Any]:
         """
         Get all permissions for the current user.
@@ -82,6 +82,11 @@ class Permissions(BaseAuth):
         }
     
     async def _call_account_api(self, permission_key: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Calls the Kinde Account API to get permissions.
+        If permissions_key is provided, returns only that permission's data.
+        Otherwise, returns all permissions as a dict.
+        """
         permissions_api = PermissionsApi()
         response = permissions_api.get_user_permissions()
         permissions = getattr(response, "permissions", [])

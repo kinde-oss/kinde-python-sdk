@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
+from kinde_sdk.auth.options import Options
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.auth.user_session import UserSession
 from kinde_sdk.auth.feature_flags import FeatureFlag
@@ -24,15 +25,18 @@ def mock_token_manager():
         "feature_flags": {
             "theme": {
                 "t": "s",
-                "v": "pink"
+                "v": "pink",
+                "code": "theme"
             },
             "is_dark_mode": {
                 "t": "b",
-                "v": True
+                "v": True,
+                "code": "is_dark_mode"
             },
             "competitions_limit": {
                 "t": "i",
-                "v": 5
+                "v": 5,
+                "code": "competitions_limit"
             }
         }
     }
@@ -87,7 +91,7 @@ class TestFeatureFlags:
         assert result.is_default is True
 
     @pytest.mark.asyncio
-    async def test_get_flag_when_token_manager_not_available(self, mock_framework_factory, mock_session_manager):
+    async def test_get_flag_when_token_manager_not_available(self, mock_session_manager):
         mock_session_manager.get_token_manager.return_value = None
         
         with patch.object(feature_flags, '_session_manager', mock_session_manager):
@@ -99,7 +103,7 @@ class TestFeatureFlags:
             assert result.is_default is True
 
     @pytest.mark.asyncio
-    async def test_get_flag_when_flag_not_found(self, mock_framework_factory, mock_session_manager, mock_token_manager):
+    async def test_get_flag_when_flag_not_found(self, mock_session_manager):
         with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_flag("non_existent_flag", default_value=False)
             
@@ -109,7 +113,7 @@ class TestFeatureFlags:
             assert result.is_default is True
 
     @pytest.mark.asyncio
-    async def test_get_all_flags_when_authenticated(self, mock_framework_factory, mock_session_manager, mock_token_manager):
+    async def test_get_all_flags_when_authenticated(self, mock_session_manager):
         with patch.object(feature_flags, '_session_manager', mock_session_manager):
             result = await feature_flags.get_all_flags()
             
@@ -158,4 +162,79 @@ class TestFeatureFlags:
             result = await feature_flags.get_all_flags()
             
             assert isinstance(result, dict)
-            assert len(result) == 0 
+            assert len(result) == 0
+
+    @pytest.mark.asyncio
+    async def test_get_feature_flag_force_api_true_granted(self):
+        mock_feature_flags = {
+            "t": "s",
+            "v": "pink",
+            "code": "theme"
+        }
+        with patch.object(feature_flags, "_call_account_api", return_value=mock_feature_flags):
+            options = Options(force_api=True)
+            result = await feature_flags.get_flag("theme", None, options)
+            assert isinstance(result, FeatureFlag)
+            assert result.code == "theme"
+            assert result.type == "string"
+            assert result.value == "pink"
+
+
+    @pytest.mark.asyncio
+    async def test_get_feature_flag_force_api_true_not_granted(self):
+        mock_feature_flags = {
+            "t": "b",
+            "v": False,
+            "code": "is_dark_mode"
+        }
+        with patch.object(feature_flags, "_call_account_api", return_value=mock_feature_flags):
+            options = Options(force_api=True)
+            result = await feature_flags.get_flag("is_dark_mode", None, options)
+            assert isinstance(result, FeatureFlag)
+            assert result.code == "is_dark_mode"
+            assert result.type == "boolean"
+            assert result.value is False
+
+    @pytest.mark.asyncio
+    async def test_get_feature_flag_force_api_true_no_feature_flags(self):
+        mock_feature_flags = {}
+        with patch.object(feature_flags, "_call_account_api", return_value=mock_feature_flags):
+            options = Options(force_api=True)
+            result = await feature_flags.get_flag("is_dark_mode", None, options)
+            assert isinstance(result, FeatureFlag)
+            assert result.code == ""
+            assert result.type == "unknown"
+            assert result.value is None
+            assert result.is_default is False
+            
+    @pytest.mark.asyncio
+    async def test_get_feature_flag_force_api_false_granted(self, mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
+            options = Options(force_api=False)
+            result = await feature_flags.get_flag("competitions_limit", None, options)
+            assert isinstance(result, FeatureFlag)
+            assert result.code == "competitions_limit"
+            assert result.type == "integer"
+            assert result.value == 5            
+
+    @pytest.mark.asyncio
+    async def test_get_feature_flag_force_api_false_not_granted(self, mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
+            options = Options(force_api=False)
+            result = await feature_flags.get_flag("is_dark_mode", None, options)
+
+            assert isinstance(result, FeatureFlag)
+            assert result.code == "is_dark_mode"
+            assert result.type == "boolean"
+            assert result.value is True
+
+    @pytest.mark.asyncio
+    async def test_get_feature_flag_force_api_false_no_feature_flags(self, mock_session_manager):
+        with patch.object(feature_flags, '_session_manager', mock_session_manager):
+            options = Options(force_api=False)
+            result = await feature_flags.get_flag("test", None, options)
+            
+            assert isinstance(result, FeatureFlag)
+            assert result.code == "test"
+            assert result.type == "unknown"
+            assert result.value == None

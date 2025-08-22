@@ -88,9 +88,22 @@ class FeatureFlags(BaseAuth):
         if options and options.force_api:
             result = await self._call_account_api(flag_code)
             if not isinstance(result, dict):
-                result = {}
+                return FeatureFlag(
+                    code=flag_code,
+                    type="unknown",
+                    value=default_value,
+                    is_default=False
+                )
+            # If shape is unexpected (no 't' and no 'v'), treat as missing
+            if "t" not in result and "v" not in result:
+                return FeatureFlag(
+                    code=flag_code,
+                    type="unknown",
+                    value=default_value,
+                    is_default=False
+                )
             if "code" not in result:
-                result = {**(result or {}), "code": flag_code}
+                result = {**result, "code": flag_code}
             return self._parse_flag_value(result)
 
         token_manager = self._get_token_manager()

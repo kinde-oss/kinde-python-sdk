@@ -40,6 +40,7 @@ class Roles(BaseAuth):
                 "name": None,
                 "description": None,
                 "is_default_role": False,
+                "orgCode": None,
                 "isGranted": False
             }
 
@@ -61,6 +62,7 @@ class Roles(BaseAuth):
                 "name": role_info.get('name'),
                 "description": role_info.get('description'),
                 "is_default_role": role_info.get('is_default_role', False),
+                "orgCode": org_code,
                 "isGranted": True
             }
         else:
@@ -121,11 +123,11 @@ class Roles(BaseAuth):
         If role_key is provided, returns only that role's data.
         Otherwise, returns all roles as a dict.
         """
-        roles_api = RolesApi()
-        response = roles_api.get_user_roles()
-        roles_data = getattr(response, "data", None)
-        
-        if roles_data is None:
+        try:
+            roles_api = RolesApi()
+            response = roles_api.get_user_roles()
+        except Exception as e:
+            self._logger.error(f"Failed to fetch roles from API: {str(e)}")
             if role_key is None:
                 return {
                     "orgCode": None,
@@ -138,8 +140,8 @@ class Roles(BaseAuth):
                 "description": None,
                 "is_default_role": False,
                 "isGranted": False
-            }
-        
+            }        
+        roles_data = getattr(response, "data", None)
         org_code = getattr(roles_data, "org_code", None)
         
         # Extract role information from the response

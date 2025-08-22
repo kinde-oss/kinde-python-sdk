@@ -153,11 +153,19 @@ class FeatureFlags(BaseAuth):
         If flag_code is provided, returns only that flag's data.
         Otherwise, returns all flags as a dict.
         """
-        feature_flags_api = FeatureFlagsApi()
-        response = feature_flags_api.get_feature_flags()
+        try:
+            feature_flags_api = FeatureFlagsApi()
+            response = feature_flags_api.get_feature_flags()
+        except Exception as e:
+            # Log error and return empty result
+            if hasattr(self, '_logger'):
+                self._logger.error(f"Failed to fetch feature flags from API: {str(e)}")
+            return {}
+        
         flags = {}
         if response and response.data and hasattr(response.data, "flags"):
             flags = response.data.flags or {}
+        
         if flag_code is not None:
             return flags.get(flag_code, {})
         return flags

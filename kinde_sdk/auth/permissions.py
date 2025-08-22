@@ -93,8 +93,15 @@ class Permissions(BaseAuth):
         If permissions_key is provided, returns only that permission's data.
         Otherwise, returns all permissions as a dict.
         """
-        permissions_api = PermissionsApi()
-        response = permissions_api.get_user_permissions()
+        try:
+            permissions_api = PermissionsApi()
+            response = permissions_api.get_user_permissions()
+        except Exception as e:
+            # Log error and return empty result
+            if hasattr(self, '_logger'):
+                self._logger.error(f"Failed to fetch permissions from API: {str(e)}")
+            return {}    
+            
         permissions = getattr(response, "permissions", [])
         org_code = getattr(response, "org_code", None)
         

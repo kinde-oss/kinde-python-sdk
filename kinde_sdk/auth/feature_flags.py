@@ -131,7 +131,7 @@ class FeatureFlags(BaseAuth):
                 is_default=True
             )
             
-        return self._parse_flag_value(feature_flags[flag_code])
+        return self._parse_flag_value({**feature_flags[flag_code], "code": flag_code})
 
     async def get_all_flags(
             self,

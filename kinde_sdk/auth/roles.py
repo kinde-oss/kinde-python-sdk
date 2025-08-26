@@ -140,7 +140,17 @@ class Roles(BaseAuth):
             # Create authenticated API client using shared method
             roles_api = self._create_authenticated_api_client(RolesApi)
             if not roles_api:
-                return {}
+                if role_key is None:
+                    return {"orgCode": None, "roles": []}
+                return {
+                    "id": None,
+                    "key": role_key,
+                    "name": None,
+                    "description": None,
+                    "is_default_role": False,
+                    "orgCode": None,
+                    "isGranted": False,
+                }
             
             response = roles_api.get_user_roles()
         except Exception as e:
@@ -158,24 +168,31 @@ class Roles(BaseAuth):
                 "is_default_role": False,
                 "isGranted": False
             }
-        roles_data = getattr(response, "data", None)
-        org_code = getattr(roles_data, "org_code", None)
-        
-        # Extract role information from the response
-        if hasattr(roles_data, "roles") and roles_data.roles:
-            roles = []
-            for role in roles_data.roles:
-                if hasattr(role, 'key') and role.key:
-                    role_info = {
-                        "id": getattr(role, 'id', None),
-                        "key": role.key,
-                        "name": getattr(role, 'name', None),
-                        "description": getattr(role, 'description', None),
-                        "is_default_role": getattr(role, 'is_default_role', False)
-                    }
-                    roles.append(role_info)
-        else:
-            roles = []
+        # Support both response.data.* and top-level response.* shapes
+        data = getattr(response, "data", None) or response
+        org_code = getattr(data, "org_code", getattr(response, "org_code", None))
+
+        raw_roles = getattr(data, "roles", getattr(response, "roles", None)) or []
+        roles = []
+        for role in raw_roles:
+            # SDK model instance
+            if hasattr(role, "key") and getattr(role, "key"):
+                roles.append({
+                    "id": getattr(role, "id", None),
+                    "key": getattr(role, "key"),
+                    "name": getattr(role, "name", None),
+                    "description": getattr(role, "description", None),
+                    "is_default_role": getattr(role, "is_default_role", False),
+                })
+            # Dict payload
+            elif isinstance(role, dict) and role.get("key"):
+                roles.append({
+                    "id": role.get("id"),
+                    "key": role.get("key"),
+                    "name": role.get("name"),
+                    "description": role.get("description"),
+                    "is_default_role": role.get("is_default_role", False),
+                })
         
         if role_key is None:
             return {

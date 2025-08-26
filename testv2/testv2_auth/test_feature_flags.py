@@ -188,7 +188,7 @@ class TestFeatureFlags:
             "v": False,
             "code": "is_dark_mode"
         }
-        with patch.object(feature_flags, "_call_account_api", return_value=mock_feature_flags):
+        with patch.object(feature_flags, "_call_account_api", new_callable=AsyncMock, return_value=mock_feature_flags):
             options = ApiOptions(force_api=True)
             result = await feature_flags.get_flag("is_dark_mode", None, options)
             assert isinstance(result, FeatureFlag)
@@ -199,7 +199,7 @@ class TestFeatureFlags:
     @pytest.mark.asyncio
     async def test_get_feature_flag_force_api_true_no_feature_flags(self):
         mock_feature_flags = {}
-        with patch.object(feature_flags, "_call_account_api", return_value=mock_feature_flags):
+        with patch.object(feature_flags, "_call_account_api", new_callable=AsyncMock, return_value=mock_feature_flags):
             options = ApiOptions(force_api=True)
             result = await feature_flags.get_flag("is_dark_mode", None, options)
             assert isinstance(result, FeatureFlag)

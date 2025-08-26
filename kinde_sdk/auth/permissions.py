@@ -100,24 +100,34 @@ class Permissions(BaseAuth):
     async def _call_account_api(self, permission_key: Optional[str] = None) -> Dict[str, Any]:
         """
         Calls the Kinde Account API to get permissions.
-        If permissions_key is provided, returns only that permission's data.
+        If permission_key is provided, returns only that permission's data.
         Otherwise, returns all permissions as a dict.
         """
         try:
             # Create authenticated API client using shared method
             permissions_api = self._create_authenticated_api_client(PermissionsApi)
             if not permissions_api:
-                return {}
+                if permission_key is None:
+                    return {"orgCode": None, "permissions": []}
+                return {"permissionKey": permission_key, "orgCode": None, "isGranted": False}
             
             response = permissions_api.get_user_permissions()
         except Exception as e:
             # Log error and return empty result
             if hasattr(self, '_logger'):
                 self._logger.error(f"Failed to fetch permissions from API: {str(e)}")
-            return {}
+            if permission_key is None:
+                return {"orgCode": None, "permissions": []}
+            return {"permissionKey": permission_key, "orgCode": None, "isGranted": False}
             
-        permissions = getattr(response, "permissions", [])
-        org_code = getattr(response, "org_code", None)
+        # Handle both direct attributes and response.data envelopes
+        if hasattr(response, "data"):
+            data = getattr(response, "data")
+            permissions = getattr(data, "permissions", []) or []
+            org_code = getattr(data, "org_code", None)
+        else:
+            permissions = getattr(response, "permissions", []) or []
+            org_code = getattr(response, "org_code", None)
         
         if permission_key is None:
             return {

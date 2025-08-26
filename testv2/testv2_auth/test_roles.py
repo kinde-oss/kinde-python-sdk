@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 from kinde_sdk.auth.api_options import ApiOptions
 from kinde_sdk.auth.user_session import UserSession
 from kinde_sdk.auth import roles
@@ -164,7 +164,7 @@ class TestRoles:
             "is_default_role": False,
             "isGranted": True
         }
-        with patch.object(roles, "_call_account_api", return_value=mock_result):
+        with patch.object(roles, "_call_account_api", new_callable=AsyncMock, return_value=mock_result):
             options = ApiOptions(force_api=True)
             result = await roles.get_role("admin", options)
             assert result["id"] == "role_1"
@@ -184,7 +184,7 @@ class TestRoles:
             "is_default_role": False,
             "isGranted": False
         }
-        with patch.object(roles, "_call_account_api", return_value=mock_result):
+        with patch.object(roles, "_call_account_api", new_callable=AsyncMock, return_value=mock_result):
             options = ApiOptions(force_api=True)
             result = await roles.get_role("super_admin", options)
             assert result["id"] is None
@@ -204,7 +204,7 @@ class TestRoles:
             "is_default_role": False,
             "isGranted": False
         }
-        with patch.object(roles, "_call_account_api", return_value=mock_result):
+        with patch.object(roles, "_call_account_api", new_callable=AsyncMock, return_value=mock_result):
             options = ApiOptions(force_api=True)
             result = await roles.get_role("admin", options)
             assert result["id"] is None

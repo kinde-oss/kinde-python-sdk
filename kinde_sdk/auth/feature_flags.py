@@ -85,7 +85,12 @@ class FeatureFlags(BaseAuth):
             FeatureFlag object containing the flag value and metadata
         """
         
+        # Check SDK-level force_api setting first, then fall back to options parameter
+        force_api = self._get_force_api_setting()
         if options and options.force_api:
+            force_api = True
+        
+        if force_api:
             result = await self._call_account_api(flag_code)
             if not isinstance(result, dict):
                 return FeatureFlag(
@@ -135,11 +140,19 @@ class FeatureFlags(BaseAuth):
         """
         Get all feature flags for the current user.
         
+        Args:
+            options: Optional ApiOptions object (deprecated, use SDK-level force_api setting)
+        
         Returns:
             Dict mapping flag codes to FeatureFlag objects
         """
 
+        # Check SDK-level force_api setting first, then fall back to options parameter
+        force_api = self._get_force_api_setting()
         if options and options.force_api:
+            force_api = True
+
+        if force_api:
             flags = await self._call_account_api()
             if not isinstance(flags, dict):
                 return {}
@@ -167,7 +180,11 @@ class FeatureFlags(BaseAuth):
         Otherwise, returns all flags as a dict.
         """
         try:
-            feature_flags_api = FeatureFlagsApi()
+            # Create authenticated API client using shared method
+            feature_flags_api = self._create_authenticated_api_client(FeatureFlagsApi)
+            if not feature_flags_api:
+                return {}
+            
             response = feature_flags_api.get_feature_flags()
         except Exception as e:
             # Log error and return empty result

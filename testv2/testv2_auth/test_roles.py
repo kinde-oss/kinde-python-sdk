@@ -38,6 +38,7 @@ def mock_token_manager():
         ],
         "org_code": "org_123"
     }
+    token_manager.get_force_api.return_value = False
     return token_manager
 
 @pytest.fixture

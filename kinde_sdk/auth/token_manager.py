@@ -35,7 +35,16 @@ class TokenManager:
         self.tokens = {}  # Store tokens (access/refresh)
         self.lock = threading.Lock()  # Add a lock for thread safety
         self.redirect_uri = None  # Initialize the redirect_uri attribute
+        self.force_api = False  # Initialize force_api setting
         self.initialized = True
+
+    def set_force_api(self, force_api: bool):
+        """Set the force_api setting for this token manager."""
+        self.force_api = force_api
+
+    def get_force_api(self) -> bool:
+        """Get the force_api setting for this token manager."""
+        return self.force_api
 
     def set_tokens(self, token_data: Dict[str, Any]):
         """ Store tokens with expiration. """

@@ -23,6 +23,7 @@ def mock_token_manager():
         "permissions": ["create:todos", "read:todos"],
         "org_code": "org_123"
     }
+    token_manager.get_force_api.return_value = False
     return token_manager
 
 @pytest.fixture

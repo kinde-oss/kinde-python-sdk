@@ -40,6 +40,7 @@ def mock_token_manager():
             }
         }
     }
+    token_manager.get_force_api.return_value = False
     return token_manager
 
 @pytest.fixture

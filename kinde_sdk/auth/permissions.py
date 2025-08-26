@@ -28,7 +28,12 @@ class Permissions(BaseAuth):
                 "isGranted": bool
             }
         """
+        # Check SDK-level force_api setting first, then fall back to options parameter
+        force_api = self._get_force_api_setting()
         if options and options.force_api:
+            force_api = True
+        
+        if force_api:
             return await self._call_account_api(permission_key)
         
         token_manager = self._get_token_manager()
@@ -68,7 +73,12 @@ class Permissions(BaseAuth):
                 "permissions": List[str]
             }
         """
+        # Check SDK-level force_api setting first, then fall back to options parameter
+        force_api = self._get_force_api_setting()
         if options and options.force_api:
+            force_api = True
+        
+        if force_api:
             return await self._call_account_api()
     
         token_manager = self._get_token_manager()
@@ -94,13 +104,17 @@ class Permissions(BaseAuth):
         Otherwise, returns all permissions as a dict.
         """
         try:
-            permissions_api = PermissionsApi()
+            # Create authenticated API client using shared method
+            permissions_api = self._create_authenticated_api_client(PermissionsApi)
+            if not permissions_api:
+                return {}
+            
             response = permissions_api.get_user_permissions()
         except Exception as e:
             # Log error and return empty result
             if hasattr(self, '_logger'):
                 self._logger.error(f"Failed to fetch permissions from API: {str(e)}")
-            return {}    
+            return {}
             
         permissions = getattr(response, "permissions", [])
         org_code = getattr(response, "org_code", None)

@@ -36,4 +36,55 @@ class BaseAuth:
         if not user_id:
             return None
 
-        return self._session_manager.get_token_manager(user_id) 
+        return self._session_manager.get_token_manager(user_id)
+
+    def _get_force_api_setting(self) -> bool:
+        """
+        Get the force_api setting from the current user's token manager.
+        
+        Returns:
+            bool: True if force_api is enabled, False otherwise
+        """
+        token_manager = self._get_token_manager()
+        if not token_manager:
+            return False
+        return token_manager.get_force_api()
+
+    def _create_authenticated_api_client(self, api_class):
+        """
+        Create an authenticated API client for the current user.
+        
+        Args:
+            api_class: The API class to instantiate (e.g., FeatureFlagsApi, RolesApi, PermissionsApi)
+            
+        Returns:
+            The configured API instance, or None if authentication fails
+            
+        Raises:
+            Exception: If there's an error creating the API client
+        """
+        # Get the current user's token manager
+        token_manager = self._get_token_manager()
+        if not token_manager:
+            self._logger.error("No token manager available for API call")
+            return None
+        
+        # Get the access token from the token manager
+        access_token = token_manager.get_access_token()
+        if not access_token:
+            self._logger.error("No access token available for API call")
+            return None
+        
+        # Create API client with the user's access token
+        from kinde_sdk.frontend.configuration import Configuration
+        from kinde_sdk.frontend.api_client import ApiClient
+        
+        # Create configuration with the access token
+        config = Configuration()
+        config.access_token = access_token
+        
+        # Create API client with the configuration
+        api_client = ApiClient(configuration=config)
+        
+        # Create and return the specific API class with the configured client
+        return api_class(api_client=api_client) 

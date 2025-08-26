@@ -29,7 +29,12 @@ class Roles(BaseAuth):
                 "isGranted": bool
             }
         """
+        # Check SDK-level force_api setting first, then fall back to options parameter
+        force_api = self._get_force_api_setting()
         if options and options.force_api:
+            force_api = True
+        
+        if force_api:
             return await self._call_account_api(role_key)
         
         token_manager = self._get_token_manager()
@@ -84,6 +89,9 @@ class Roles(BaseAuth):
         Get all roles for the current user.
         If force_api is True, fetch from API instead of token claims.
         
+        Args:
+            options: Optional ApiOptions object (deprecated, use SDK-level force_api setting)
+        
         Returns:
             Dict containing organization code and list of roles:
             {
@@ -98,7 +106,12 @@ class Roles(BaseAuth):
                     }
             }
         """
+        # Check SDK-level force_api setting first, then fall back to options parameter
+        force_api = self._get_force_api_setting()
         if options and options.force_api:
+            force_api = True
+        
+        if force_api:
             return await self._call_account_api()
     
         token_manager = self._get_token_manager()
@@ -124,7 +137,11 @@ class Roles(BaseAuth):
         Otherwise, returns all roles as a dict.
         """
         try:
-            roles_api = RolesApi()
+            # Create authenticated API client using shared method
+            roles_api = self._create_authenticated_api_client(RolesApi)
+            if not roles_api:
+                return {}
+            
             response = roles_api.get_user_roles()
         except Exception as e:
             self._logger.error(f"Failed to fetch roles from API: {str(e)}")
@@ -140,7 +157,7 @@ class Roles(BaseAuth):
                 "description": None,
                 "is_default_role": False,
                 "isGranted": False
-            }        
+            }
         roles_data = getattr(response, "data", None)
         org_code = getattr(roles_data, "org_code", None)
         

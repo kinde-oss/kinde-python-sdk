@@ -4,7 +4,7 @@ Tests for the AsyncOAuth client that verifies it provides async versions of all 
 
 import pytest
 import asyncio
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from kinde_sdk.auth.async_oauth import AsyncOAuth
 from kinde_sdk.auth.oauth import OAuth
 from kinde_sdk.core.exceptions import KindeConfigurationException
@@ -103,7 +103,7 @@ class TestAsyncOAuthAsyncMethods:
     async def test_get_user_info_async_success(self, async_oauth, mock_sync_oauth):
         """Test get_user_info_async method with successful response."""
         # Mock the async helper function
-        with patch('kinde_sdk.auth.async_oauth.get_user_details') as mock_get_details:
+        with patch('kinde_sdk.auth.async_oauth.get_user_details', new_callable=AsyncMock) as mock_get_details:
             mock_get_details.return_value = {"email": "test@example.com", "name": "Test User"}
             
             result = await async_oauth.get_user_info_async()
@@ -256,7 +256,7 @@ class TestAsyncOAuthErrorHandling:
     async def test_get_user_info_async_propagates_helper_exceptions(self, async_oauth, mock_sync_oauth):
         """Test that get_user_info_async propagates exceptions from helper function."""
         # Mock the async helper function to raise exception
-        with patch('kinde_sdk.auth.async_oauth.get_user_details') as mock_get_details:
+        with patch('kinde_sdk.auth.async_oauth.get_user_details', new_callable=AsyncMock) as mock_get_details:
             mock_get_details.side_effect = Exception("Helper error")
             
             with pytest.raises(Exception, match="Helper error"):
@@ -273,7 +273,7 @@ class TestAsyncOAuthIntegration:
         user_info_sync = async_oauth.get_user_info()
         
         # Use async methods (mock the helper function to avoid real HTTP calls)
-        with patch('kinde_sdk.auth.async_oauth.get_user_details') as mock_get_details:
+        with patch('kinde_sdk.auth.async_oauth.get_user_details', new_callable=AsyncMock) as mock_get_details:
             mock_get_details.return_value = {"email": "test@example.com", "name": "Test User"}
             user_info_async = await async_oauth.get_user_info_async()
         
@@ -294,7 +294,7 @@ class TestAsyncOAuthIntegration:
     async def test_full_oauth_flow(self, async_oauth, mock_sync_oauth):
         """Test a complete OAuth flow using async methods."""
         # Mock the helper function to avoid real HTTP calls
-        with patch('kinde_sdk.auth.async_oauth.get_user_details') as mock_get_details:
+        with patch('kinde_sdk.auth.async_oauth.get_user_details', new_callable=AsyncMock) as mock_get_details:
             mock_get_details.return_value = {"email": "test@example.com", "name": "Test User"}
             
             # Generate auth URL
@@ -336,7 +336,7 @@ class TestAsyncOAuthHelperIntegration:
         mock_sync_oauth._session_manager.get_token_manager.return_value = mock_token_manager
         
         # Mock the async helper function
-        with patch('kinde_sdk.auth.async_oauth.get_user_details') as mock_get_details:
+        with patch('kinde_sdk.auth.async_oauth.get_user_details', new_callable=AsyncMock) as mock_get_details:
             mock_get_details.return_value = {"email": "test@example.com"}
             
             result = await async_oauth.get_user_info_async()
@@ -361,7 +361,7 @@ class TestAsyncOAuthHelperIntegration:
         mock_sync_oauth._session_manager.get_token_manager.return_value = mock_token_manager
         
         # Mock the async helper function
-        with patch('kinde_sdk.auth.async_oauth.get_user_details') as mock_get_details:
+        with patch('kinde_sdk.auth.async_oauth.get_user_details', new_callable=AsyncMock) as mock_get_details:
             await async_oauth.get_user_info_async()
             
             # Verify helper was called with correct userinfo URL

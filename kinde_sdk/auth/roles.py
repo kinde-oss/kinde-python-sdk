@@ -166,6 +166,7 @@ class Roles(BaseAuth):
                 "name": None,
                 "description": None,
                 "is_default_role": False,
+                "orgCode": None,
                 "isGranted": False
             }
         # Support both response.data.* and top-level response.* shapes
@@ -214,6 +215,7 @@ class Roles(BaseAuth):
                 "name": role_info.get('name'),
                 "description": role_info.get('description'),
                 "is_default_role": role_info.get('is_default_role', False),
+                "orgCode": org_code,
                 "isGranted": True
             }
         else:
@@ -223,6 +225,7 @@ class Roles(BaseAuth):
                 "name": None,
                 "description": None,
                 "is_default_role": False,
+                "orgCode": org_code,
                 "isGranted": False
             }
 

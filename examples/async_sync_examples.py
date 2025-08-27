@@ -11,6 +11,9 @@ Prerequisites:
 1. A Kinde account
 2. Environment variables set up
 3. FastAPI and Flask installed for framework examples
+
+Note: This example can be run from command line but will show expected errors
+when trying to access web framework contexts outside of a web server.
 """
 
 import os
@@ -41,30 +44,38 @@ def example_sync_oauth():
     print("SYNC OAUTH EXAMPLE")
     print("="*50)
     
-    # Initialize sync OAuth client
-    oauth = OAuth(
-        framework="flask",  # or None for no framework
-        client_id=os.getenv("KINDE_CLIENT_ID"),
-        client_secret=os.getenv("KINDE_CLIENT_SECRET"),
-        redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
-        host=os.getenv("KINDE_HOST", "https://app.kinde.com")
-    )
-    
-    print("✅ Sync OAuth client initialized")
-    
-    # All methods are sync
-    is_auth = oauth.is_authenticated()
-    print(f"🔐 Is authenticated: {is_auth}")
-    
-    if is_auth:
-        user_info = oauth.get_user_info()
-        print(f"👤 User info: {user_info.get('email', 'N/A')}")
-    
-    # Note: login, register, logout are still async even in sync client
-    # This is the inconsistency we're addressing
-    print("⚠️  Note: login/register/logout methods are still async in sync client")
-    
-    return oauth
+    try:
+        # Initialize sync OAuth client without framework context
+        oauth = OAuth(
+            framework=None,  # No framework for command line usage
+            client_id=os.getenv("KINDE_CLIENT_ID"),
+            client_secret=os.getenv("KINDE_CLIENT_SECRET"),
+            redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
+            host=os.getenv("KINDE_HOST", "https://app.kinde.com")
+        )
+        
+        print("✅ Sync OAuth client initialized")
+        
+        # All methods are sync
+        is_auth = oauth.is_authenticated()
+        print(f"🔐 Is authenticated: {is_auth}")
+        
+        if is_auth:
+            user_info = oauth.get_user_info()
+            print(f"👤 User info: {user_info.get('email', 'N/A')}")
+        else:
+            print("ℹ️  Not authenticated - this is expected when running from command line")
+        
+        # Note: login, register, logout are still async even in sync client
+        # This is the inconsistency we're addressing
+        print("⚠️  Note: login/register/logout methods are still async in sync client")
+        
+        return oauth
+        
+    except Exception as e:
+        print(f"❌ Error initializing sync OAuth client: {e}")
+        print("   This is expected when running outside of a web server context")
+        return None
 
 async def example_async_oauth():
     """Example using the async OAuth client."""
@@ -72,29 +83,37 @@ async def example_async_oauth():
     print("ASYNC OAUTH EXAMPLE")
     print("="*50)
     
-    # Initialize async OAuth client
-    oauth = AsyncOAuth(
-        framework="fastapi",  # or None for no framework
-        client_id=os.getenv("KINDE_CLIENT_ID"),
-        client_secret=os.getenv("KINDE_CLIENT_SECRET"),
-        redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
-        host=os.getenv("KINDE_HOST", "https://app.kinde.com")
-    )
-    
-    print("✅ Async OAuth client initialized")
-    
-    # All methods are async
-    is_auth = oauth.is_authenticated()
-    print(f"🔐 Is authenticated: {is_auth}")
-    
-    if is_auth:
-        user_info = await oauth.get_user_info_async()
-        print(f"👤 User info: {user_info.get('email', 'N/A')}")
-    
-    # All methods are consistently async
-    print("✅ All methods are consistently async")
-    
-    return oauth
+    try:
+        # Initialize async OAuth client without framework context
+        oauth = AsyncOAuth(
+            framework=None,  # No framework for command line usage
+            client_id=os.getenv("KINDE_CLIENT_ID"),
+            client_secret=os.getenv("KINDE_CLIENT_SECRET"),
+            redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
+            host=os.getenv("KINDE_HOST", "https://app.kinde.com")
+        )
+        
+        print("✅ Async OAuth client initialized")
+        
+        # All methods are async
+        is_auth = oauth.is_authenticated()
+        print(f"🔐 Is authenticated: {is_auth}")
+        
+        if is_auth:
+            user_info = await oauth.get_user_info_async()
+            print(f"👤 User info: {user_info.get('email', 'N/A')}")
+        else:
+            print("ℹ️  Not authenticated - this is expected when running from command line")
+        
+        # All methods are consistently async
+        print("✅ All methods are consistently async")
+        
+        return oauth
+        
+    except Exception as e:
+        print(f"❌ Error initializing async OAuth client: {e}")
+        print("   This is expected when running outside of a web server context")
+        return None
 
 async def example_smart_oauth():
     """Example using the smart OAuth client."""
@@ -102,31 +121,39 @@ async def example_smart_oauth():
     print("SMART OAUTH EXAMPLE")
     print("="*50)
     
-    # Initialize smart OAuth client
-    oauth = SmartOAuth(
-        framework="fastapi",  # or None for no framework
-        client_id=os.getenv("KINDE_CLIENT_ID"),
-        client_secret=os.getenv("KINDE_CLIENT_SECRET"),
-        redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
-        host=os.getenv("KINDE_HOST", "https://app.kinde.com")
-    )
-    
-    print("✅ Smart OAuth client initialized")
-    
-    # Works in both sync and async contexts
-    is_auth = oauth.is_authenticated()
-    print(f"🔐 Is authenticated: {is_auth}")
-    
-    if is_auth:
-        # In async context, prefer async methods
-        user_info = await oauth.get_user_info_async()
-        print(f"👤 User info (async): {user_info.get('email', 'N/A')}")
+    try:
+        # Initialize smart OAuth client without framework context
+        oauth = SmartOAuth(
+            framework=None,  # No framework for command line usage
+            client_id=os.getenv("KINDE_CLIENT_ID"),
+            client_secret=os.getenv("KINDE_CLIENT_SECRET"),
+            redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
+            host=os.getenv("KINDE_HOST", "https://app.kinde.com")
+        )
         
-        # Sync methods work but show warnings in async context
-        user_info_sync = oauth.get_user_info()
-        print(f"👤 User info (sync): {user_info_sync.get('email', 'N/A')}")
-    
-    return oauth
+        print("✅ Smart OAuth client initialized")
+        
+        # Works in both sync and async contexts
+        is_auth = oauth.is_authenticated()
+        print(f"🔐 Is authenticated: {is_auth}")
+        
+        if is_auth:
+            # In async context, prefer async methods
+            user_info = await oauth.get_user_info_async()
+            print(f"👤 User info (async): {user_info.get('email', 'N/A')}")
+            
+            # Sync methods work but show warnings in async context
+            user_info_sync = oauth.get_user_info()
+            print(f"👤 User info (sync): {user_info_sync.get('email', 'N/A')}")
+        else:
+            print("ℹ️  Not authenticated - this is expected when running from command line")
+        
+        return oauth
+        
+    except Exception as e:
+        print(f"❌ Error initializing smart OAuth client: {e}")
+        print("   This is expected when running outside of a web server context")
+        return None
 
 def example_factory_function():
     """Example using the factory function."""
@@ -134,39 +161,45 @@ def example_factory_function():
     print("FACTORY FUNCTION EXAMPLE")
     print("="*50)
     
-    # Create explicit sync client
-    sync_oauth = create_oauth_client(
-        async_mode=False,
-        framework="flask",
-        client_id=os.getenv("KINDE_CLIENT_ID"),
-        client_secret=os.getenv("KINDE_CLIENT_SECRET"),
-        redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
-        host=os.getenv("KINDE_HOST", "https://app.kinde.com")
-    )
-    print("✅ Created explicit sync client")
-    
-    # Create explicit async client
-    async_oauth = create_oauth_client(
-        async_mode=True,
-        framework="fastapi",
-        client_id=os.getenv("KINDE_CLIENT_ID"),
-        client_secret=os.getenv("KINDE_CLIENT_SECRET"),
-        redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
-        host=os.getenv("KINDE_HOST", "https://app.kinde.com")
-    )
-    print("✅ Created explicit async client")
-    
-    # Create smart client (default)
-    smart_oauth = create_oauth_client(
-        framework="fastapi",
-        client_id=os.getenv("KINDE_CLIENT_ID"),
-        client_secret=os.getenv("KINDE_CLIENT_SECRET"),
-        redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
-        host=os.getenv("KINDE_HOST", "https://app.kinde.com")
-    )
-    print("✅ Created smart client")
-    
-    return sync_oauth, async_oauth, smart_oauth
+    try:
+        # Create explicit sync client without framework
+        sync_oauth = create_oauth_client(
+            async_mode=False,
+            framework=None,  # No framework for command line usage
+            client_id=os.getenv("KINDE_CLIENT_ID"),
+            client_secret=os.getenv("KINDE_CLIENT_SECRET"),
+            redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
+            host=os.getenv("KINDE_HOST", "https://app.kinde.com")
+        )
+        print("✅ Created explicit sync client")
+        
+        # Create explicit async client without framework
+        async_oauth = create_oauth_client(
+            async_mode=True,
+            framework=None,  # No framework for command line usage
+            client_id=os.getenv("KINDE_CLIENT_ID"),
+            client_secret=os.getenv("KINDE_CLIENT_SECRET"),
+            redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
+            host=os.getenv("KINDE_HOST", "https://app.kinde.com")
+        )
+        print("✅ Created explicit async client")
+        
+        # Create smart client (default) without framework
+        smart_oauth = create_oauth_client(
+            framework=None,  # No framework for command line usage
+            client_id=os.getenv("KINDE_CLIENT_ID"),
+            client_secret=os.getenv("KINDE_CLIENT_SECRET"),
+            redirect_uri=os.getenv("KINDE_REDIRECT_URI"),
+            host=os.getenv("KINDE_HOST", "https://app.kinde.com")
+        )
+        print("✅ Created smart client")
+        
+        return sync_oauth, async_oauth, smart_oauth
+        
+    except Exception as e:
+        print(f"❌ Error creating OAuth clients: {e}")
+        print("   This is expected when running outside of a web server context")
+        return None, None, None
 
 async def example_auth_modules():
     """Example using the auth modules (claims, permissions, roles, feature_flags)."""
@@ -181,6 +214,7 @@ async def example_auth_modules():
         print(f"✅ Claims: {len(user_claims)} claims found")
     except Exception as e:
         print(f"❌ Failed to get claims: {e}")
+        print("   This is expected when not authenticated")
     
     print("🔐 Getting user permissions...")
     try:
@@ -188,6 +222,7 @@ async def example_auth_modules():
         print(f"✅ Permissions: {len(user_permissions.get('permissions', []))} permissions found")
     except Exception as e:
         print(f"❌ Failed to get permissions: {e}")
+        print("   This is expected when not authenticated")
     
     print("👥 Getting user roles...")
     try:
@@ -195,6 +230,7 @@ async def example_auth_modules():
         print(f"✅ Roles: {len(user_roles.get('roles', []))} roles found")
     except Exception as e:
         print(f"❌ Failed to get roles: {e}")
+        print("   This is expected when not authenticated")
     
     print("🚩 Getting feature flags...")
     try:
@@ -202,6 +238,7 @@ async def example_auth_modules():
         print(f"✅ Feature flags: {len(user_flags.get('feature_flags', []))} flags found")
     except Exception as e:
         print(f"❌ Failed to get feature flags: {e}")
+        print("   This is expected when not authenticated")
 
 def example_framework_integration():
     """Example showing framework integration patterns."""
@@ -275,6 +312,10 @@ async def main():
     else:
         print("✅ All required environment variables are set")
     
+    print("\nℹ️  Note: This example runs outside of a web server context.")
+    print("   OAuth clients will show expected errors when trying to access")
+    print("   web framework contexts. This is normal for command-line usage.")
+    
     # Run examples
     try:
         # Sync OAuth example
@@ -303,6 +344,7 @@ async def main():
         print("3. Use SmartOAuth for mixed contexts")
         print("4. All auth modules (claims, permissions, roles, feature_flags) are async")
         print("5. Factory function provides explicit control")
+        print("6. OAuth clients need web server context for full functionality")
         
     except Exception as e:
         print(f"\n❌ Error running examples: {e}")

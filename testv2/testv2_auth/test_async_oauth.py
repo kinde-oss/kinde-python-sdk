@@ -3,8 +3,7 @@ Tests for the AsyncOAuth client that verifies it provides async versions of all 
 """
 
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import Mock, AsyncMock, patch
 from kinde_sdk.auth.async_oauth import AsyncOAuth
 from kinde_sdk.auth.oauth import OAuth
 from kinde_sdk.core.exceptions import KindeConfigurationException

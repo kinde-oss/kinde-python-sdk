@@ -91,17 +91,18 @@ sync_oauth = create_oauth_client(
 )
 ```
 
-### Auth Modules Integration
+### Auth Modules Integration (async)
 
 ```python
-from kinde_sdk.auth import claims, async_claims, feature_flags, permissions
+from kinde_sdk.auth import claims, feature_flags, permissions
 
-# Sync auth modules
+# Claims (async)
 claims_data = await claims.get_all_claims()
 
-# Async auth modules
-async_claims_data = await async_claims.get_all_claims()
+# Feature flags (async)
 feature_flags_data = await feature_flags.get_all_flags()
+
+# Permissions (async)
 permissions_data = await permissions.get_permissions()
 ```
 

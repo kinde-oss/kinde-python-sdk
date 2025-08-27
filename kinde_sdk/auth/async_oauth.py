@@ -8,6 +8,7 @@ from typing import Dict, Any, Optional
 from .base_oauth import BaseOAuth
 from .oauth import OAuth
 from kinde_sdk.core.helpers import get_user_details
+from kinde_sdk.core.exceptions import KindeConfigurationException
 
 class AsyncOAuth(BaseOAuth):
     """
@@ -36,12 +37,12 @@ class AsyncOAuth(BaseOAuth):
         # Get user ID from framework
         user_id = self._sync_oauth._framework.get_user_id()
         if not user_id:
-            raise self._sync_oauth.KindeConfigurationException("No user ID found in session")
+            raise KindeConfigurationException("No user ID found in session")
             
         # Get token manager for the user
         token_manager = self._sync_oauth._session_manager.get_token_manager(user_id)
         if not token_manager:
-            raise self._sync_oauth.KindeConfigurationException("No token manager found for user")
+            raise KindeConfigurationException("No token manager found for user")
         
         # Use the async helper function
         user_details = await get_user_details(

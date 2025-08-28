@@ -34,6 +34,7 @@ class OAuth:
         host: Optional[str] = None,
         state: Optional[str] = None,
         app: Optional[Any] = None,
+        force_api: bool = False,
     ):
         """Initialize the OAuth client."""
         
@@ -55,6 +56,7 @@ class OAuth:
         self.state = state
         self.framework = framework
         self.app = app
+        self.force_api = force_api
         
         # Validate required configurations
         if not self.client_id:
@@ -530,6 +532,9 @@ class OAuth:
         token_manager = self._session_manager.get_token_manager(user_id)
         if not token_manager:
             raise KindeRetrieveException("Failed to get token manager")
+        
+        # Set the force_api setting on the token manager
+        token_manager.set_force_api(self.force_api)
         
         # This will now throw the exception if it fails, allowing proper error handling
         user_details = await helper_get_user_details(

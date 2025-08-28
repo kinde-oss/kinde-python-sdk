@@ -4,7 +4,7 @@ Tests for the SmartOAuth client that verifies it works correctly in both sync an
 
 import pytest
 import asyncio
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, AsyncMock, patch
 from kinde_sdk.auth.smart_oauth import SmartOAuth
 from kinde_sdk.auth.oauth import OAuth
 from kinde_sdk.auth.async_oauth import AsyncOAuth
@@ -29,12 +29,12 @@ def mock_async_oauth():
     """Mock async OAuth instance."""
     mock = Mock(spec=AsyncOAuth)
     mock.is_authenticated.return_value = True
-    mock.get_user_info_async.return_value = {"email": "test@example.com", "name": "Test User"}
-    mock.generate_auth_url.return_value = {"url": "https://test.com/auth"}
-    mock.login.return_value = "https://test.com/login"
-    mock.register.return_value = "https://test.com/register"
-    mock.logout.return_value = "https://test.com/logout"
-    mock.handle_redirect.return_value = {"tokens": {}, "user": {}}
+    mock.get_user_info_async = AsyncMock(return_value={"email": "test@example.com", "name": "Test User"})
+    mock.generate_auth_url = AsyncMock(return_value={"url": "https://test.com/auth"})
+    mock.login = AsyncMock(return_value="https://test.com/login")
+    mock.register = AsyncMock(return_value="https://test.com/register")
+    mock.logout = AsyncMock(return_value="https://test.com/logout")
+    mock.handle_redirect = AsyncMock(return_value={"tokens": {}, "user": {}})
     return mock
 
 @pytest.fixture

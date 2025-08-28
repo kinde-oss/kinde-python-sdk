@@ -95,7 +95,7 @@ async def example_async_oauth():
         
         print("✅ Async OAuth client initialized")
         
-        # All methods are async
+        # Note: is_authenticated() is sync; other interactions are async
         is_auth = oauth.is_authenticated()
         print(f"🔐 Is authenticated: {is_auth}")
         
@@ -105,8 +105,8 @@ async def example_async_oauth():
         else:
             print("ℹ️  Not authenticated - this is expected when running from command line")
         
-        # All methods are consistently async
-        print("✅ All methods are consistently async")
+        # Async methods are used consistently where required
+        print("✅ Async methods used where appropriate")
         
         return oauth
         

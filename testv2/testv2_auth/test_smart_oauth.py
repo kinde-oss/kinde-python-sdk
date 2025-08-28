@@ -4,7 +4,7 @@ Tests for the SmartOAuth client that verifies it works correctly in both sync an
 
 import pytest
 import asyncio
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from kinde_sdk.auth.smart_oauth import SmartOAuth
 from kinde_sdk.auth.oauth import OAuth
 from kinde_sdk.auth.async_oauth import AsyncOAuth

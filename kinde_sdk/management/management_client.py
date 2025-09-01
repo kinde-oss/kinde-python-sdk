@@ -28,10 +28,10 @@ class ManagementClient:
         # Users API
         'users': {
             'list': ('GET', '/api/v1/users'),
-            'get': ('GET', '/api/v1/users/{user_id}'),
+            'get': ('GET', '/api/v1/user?id={user_id}'),
             'create': ('POST', '/api/v1/user'),
-            'update': ('PATCH', '/api/v1/users/{user_id}'),
-            'delete': ('DELETE', '/api/v1/users/{user_id}'),
+            'update': ('PATCH', '/api/v1/user?id={user_id}'),
+            'delete': ('DELETE', '/api/v1/user?id={user_id}'),
         },
         
         # Organizations API

@@ -21,6 +21,13 @@ from kinde_sdk.core.exceptions import (
     KindeRetrieveException,
 )
 
+# Import route protection (optional, graceful fallback if not available)
+try:
+    from .route_protection import RouteProtectionEngine
+    ROUTE_PROTECTION_AVAILABLE = True
+except ImportError:
+    ROUTE_PROTECTION_AVAILABLE = False
+
 class OAuth:
     def __init__(
         self,
@@ -35,6 +42,7 @@ class OAuth:
         state: Optional[str] = None,
         app: Optional[Any] = None,
         force_api: bool = False,
+        route_protection_file: Optional[str] = None,
     ):
         """Initialize the OAuth client."""
         
@@ -94,6 +102,19 @@ class OAuth:
         self.verify_ssl = True
         self.proxy = None
         self.proxy_headers = None
+
+        # Initialize route protection (optional)
+        self._route_protection = None
+        if route_protection_file and ROUTE_PROTECTION_AVAILABLE:
+            try:
+                self._route_protection = RouteProtectionEngine(route_protection_file)
+                self._logger.info(f"Route protection enabled with config: {route_protection_file}")
+            except Exception as e:
+                self._logger.error(f"Failed to initialize route protection: {e}")
+                # Note: We don't raise here to maintain backward compatibility
+                # Users can check is_route_protection_enabled() to verify if it worked
+        elif route_protection_file and not ROUTE_PROTECTION_AVAILABLE:
+            self._logger.warning("Route protection requested but RouteProtectionEngine not available")
 
     def _initialize_framework(self) -> None:
         """
@@ -644,3 +665,155 @@ class OAuth:
         except Exception as e:
             self._logger.error(f"Error retrieving tokens: {str(e)}")
             raise ValueError(f"Failed to retrieve tokens: {str(e)}") from e
+
+    # Route Protection Methods
+    
+    async def validate_route_access(
+        self, 
+        path: str, 
+        method: str = "GET", 
+        request: Optional[Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Validate if the current user has access to the specified route.
+        
+        Args:
+            path: Request path to validate (e.g., "/admin/users")
+            method: HTTP method (default: "GET") 
+            request: Optional request object for context (unused, for compatibility)
+            
+        Returns:
+            Dict containing validation result:
+            {
+                "allowed": bool,           # Whether access is granted
+                "reason": str,            # Human-readable reason
+                "required_roles": List[str],      # Required roles (if applicable)
+                "required_permissions": List[str], # Required permissions (if applicable)  
+                "matched_rule": str       # Name of the matched rule (if any)
+            }
+            
+        Raises:
+            ValueError: If route protection is not configured
+        """
+        if not self._route_protection:
+            return {
+                "allowed": True,
+                "reason": "Route protection not configured",
+                "required_roles": [],
+                "required_permissions": [],
+                "matched_rule": None
+            }
+        
+        # Use force_api setting if available
+        options = None
+        if hasattr(self, '_token_manager') and self._token_manager:
+            # Check if force_api is configured
+            try:
+                token_manager = self._get_token_manager()
+                if token_manager and hasattr(token_manager, 'get_force_api'):
+                    force_api = token_manager.get_force_api()
+                    if force_api:
+                        from .api_options import ApiOptions
+                        options = ApiOptions(force_api=True)
+            except Exception:
+                pass  # Ignore errors getting force_api setting
+        
+        return await self._route_protection.validate_route_access(path, method, options)
+
+    def check_route_access(
+        self,
+        path: str,
+        method: str = "GET", 
+        request: Optional[Any] = None
+    ) -> bool:
+        """
+        Synchronous convenience method to check route access.
+        
+        Args:
+            path: Request path to validate
+            method: HTTP method (default: "GET")
+            request: Optional request object for context (unused, for compatibility)
+            
+        Returns:
+            bool: True if access is allowed, False otherwise
+        """
+        import asyncio
+        
+        try:
+            result = asyncio.run(self.validate_route_access(path, method, request))
+            return result.get("allowed", False)
+        except Exception as e:
+            self._logger.error(f"Error checking route access: {e}")
+            return False
+
+    def get_route_protection_info(self) -> Optional[Dict[str, Any]]:
+        """
+        Get information about configured route protection rules.
+        
+        Returns:
+            Dict with route protection information or None if not configured:
+            {
+                "total_routes": int,
+                "global_settings": dict,
+                "routes": list  # List of route rule summaries
+            }
+        """
+        if not self._route_protection:
+            return None
+        
+        return self._route_protection.list_protected_routes()
+
+    def is_route_protection_enabled(self) -> bool:
+        """
+        Check if route protection is enabled and configured.
+        
+        Returns:
+            bool: True if route protection is configured and enabled, False otherwise
+        """
+        return self._route_protection is not None
+
+    def get_route_info(self, path: str, method: str = "GET") -> Optional[Dict[str, Any]]:
+        """
+        Get protection information for a specific route.
+        
+        Args:
+            path: Request path
+            method: HTTP method (default: "GET")
+            
+        Returns:
+            Dict containing route protection info or None if no matching rule:
+            {
+                "rule_name": str,
+                "path_pattern": str,
+                "methods": List[str],
+                "required_roles": List[str],
+                "required_permissions": List[str],
+                "is_public": bool
+            }
+        """
+        if not self._route_protection:
+            return None
+        
+        return self._route_protection.get_route_info(path, method)
+
+    def _get_token_manager(self):
+        """Get the token manager for the current user (internal helper)."""
+        try:
+            framework = self._get_framework()
+            if not framework:
+                return None
+
+            user_id = framework.get_user_id()
+            if not user_id:
+                return None
+
+            return self._session_manager.get_token_manager(user_id)
+        except Exception:
+            return None
+
+    def _get_framework(self):
+        """Get the framework instance (internal helper)."""
+        try:
+            return getattr(self, '_framework', None)
+        except Exception:
+            return None

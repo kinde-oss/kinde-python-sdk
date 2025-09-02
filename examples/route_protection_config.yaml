@@ -1,0 +1,185 @@
+# Route Protection Configuration Example
+# 
+# This file demonstrates how to configure role-based and permission-based
+# route protection for Kinde Python SDK applications.
+#
+# Usage:
+#   from kinde_sdk.auth import OAuth
+#   oauth = OAuth(
+#       framework="flask",  # or "fastapi"
+#       app=app,
+#       route_protection_file="route_protection_config.yaml"
+#   )
+
+# Global settings for route protection
+settings:
+  # Default behavior when no route rule matches
+  # true = allow access by default (permissive)
+  # false = deny access by default (secure)
+  default_allow: false
+
+# Route protection rules
+routes:
+  
+  # === ROLE-BASED PROTECTION ===
+  
+  # Admin-only routes - require admin role
+  admin_dashboard:
+    path: "/admin/*"                           # Matches /admin/users, /admin/settings, etc.
+    methods: ["GET", "POST", "PUT", "DELETE"]  # All HTTP methods protected
+    roles: ["admin"]                           # Only admin role allowed
+    
+  admin_api:
+    path: "/admin/api/*"
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    roles: ["admin"]
+  
+  # Manager-level routes - require manager or admin role  
+  management_panel:
+    path: "/manage/*"
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    roles: ["manager", "admin"]                # Either manager OR admin role
+    
+  user_management:
+    path: "/users/*"
+    methods: ["POST", "PUT", "DELETE"]         # Only modify operations protected
+    roles: ["manager", "admin"]
+  
+  # User-level routes - any authenticated user
+  profile_access:
+    path: "/profile/*"
+    methods: ["GET", "POST", "PUT"]
+    roles: ["user", "manager", "admin"]        # Any valid user role
+    
+  dashboard:
+    path: "/dashboard"
+    methods: ["GET"]
+    roles: ["user", "manager", "admin"]
+  
+  # === PERMISSION-BASED PROTECTION ===
+  
+  # API endpoints protected by permissions
+  users_read_api:
+    path: "/api/v1/users"
+    methods: ["GET"]
+    permissions: ["read:users"]                # Requires read:users permission
+    
+  users_write_api:
+    path: "/api/v1/users"  
+    methods: ["POST", "PUT", "DELETE"]
+    permissions: ["write:users"]               # Requires write:users permission
+    
+  reports_access:
+    path: "/api/v1/reports/*"
+    methods: ["GET"]
+    permissions: ["read:reports", "read:analytics"]  # Either permission works
+    
+  system_config:
+    path: "/api/v1/system/*"
+    methods: ["GET", "POST", "PUT", "DELETE"] 
+    permissions: ["admin:system"]              # System admin permission required
+  
+  # === COMBINED ROLE AND PERMISSION PROTECTION ===
+  
+  # Routes that require BOTH roles AND permissions (user must have both)
+  advanced_analytics:
+    path: "/analytics/advanced/*"
+    methods: ["GET"]
+    roles: ["manager", "admin"]                # Must have manager/admin role
+    permissions: ["read:analytics"]            # AND read:analytics permission
+  
+  # === PUBLIC ROUTES ===
+  
+  # Routes that require no authentication
+  public_content:
+    path: "/public/*"
+    methods: ["GET"]
+    public: true                               # No authentication required
+    
+  api_documentation:
+    path: "/docs/*"
+    methods: ["GET"] 
+    public: true
+    
+  health_check:
+    path: "/health"
+    methods: ["GET"]
+    public: true
+    
+  # === SPECIFIC ROUTE EXAMPLES ===
+  
+  # Exact path matches (no wildcards)
+  settings_page:
+    path: "/settings"                          # Matches exactly "/settings"
+    methods: ["GET", "POST"]
+    roles: ["admin"]
+    
+  # Multiple method-specific rules for same path
+  user_profile_read:
+    path: "/user/profile"
+    methods: ["GET"]
+    roles: ["user", "manager", "admin"]        # Anyone can read their profile
+    
+  user_profile_write:
+    path: "/user/profile" 
+    methods: ["POST", "PUT"]
+    roles: ["user", "manager", "admin"]        # Anyone can edit their profile
+    
+  user_profile_delete:
+    path: "/user/profile"
+    methods: ["DELETE"]
+    roles: ["admin"]                           # Only admin can delete profiles
+  
+  # === COMPLEX PATTERNS ===
+  
+  # Organization-specific routes
+  org_data:
+    path: "/org/*/data"                        # Matches /org/company1/data, etc.
+    methods: ["GET"]
+    roles: ["user", "manager", "admin"]
+    
+  # Feature flag examples
+  beta_features:
+    path: "/features/beta/*"
+    methods: ["GET"]
+    roles: ["admin", "beta_tester"]            # Admins and beta testers only
+    
+  # API versioning examples  
+  v1_api:
+    path: "/api/v1/*"
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    permissions: ["api:v1"]                    # Requires API access permission
+    
+  v2_api:
+    path: "/api/v2/*"
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    roles: ["admin"]                           # V2 API admin-only for now
+
+# === CONFIGURATION NOTES ===
+#
+# 1. Route Matching:
+#    - Exact matches: "/admin" matches only "/admin"
+#    - Wildcard matches: "/admin/*" matches "/admin/users", "/admin/settings/view", etc.
+#    - Patterns are checked in order - first match wins
+#
+# 2. Multiple Requirements:
+#    - If both "roles" and "permissions" are specified, user must have BOTH
+#    - Within "roles" array, user needs ANY of the listed roles (OR logic)
+#    - Within "permissions" array, user needs ANY of the listed permissions (OR logic)
+#
+# 3. HTTP Methods:
+#    - If no "methods" specified, defaults to ["GET"]
+#    - Methods are case-insensitive
+#
+# 4. Public Routes:
+#    - Use "public: true" for routes that need no authentication
+#    - Useful for health checks, documentation, public content
+#
+# 5. Default Behavior:
+#    - "default_allow: false" is recommended for security (deny by default)
+#    - "default_allow: true" is useful for development (allow by default)
+#
+# 6. Framework Integration:
+#    - Flask: Use with @app.before_request middleware
+#    - FastAPI: Use with app.add_middleware()
+#    - See framework-specific examples in the documentation

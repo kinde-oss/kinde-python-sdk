@@ -28,7 +28,7 @@ class ManagementClient:
         # Users API
         'users': {
             'list': ('GET', '/api/v1/users'),
-            'get': ('GET', '/api/v1/users/{user_id}'),
+            'get': ('GET', '/api/v1/user'),  # FIXED: Bug #89 - Use correct endpoint
             'create': ('POST', '/api/v1/user'),
             'update': ('PATCH', '/api/v1/users/{user_id}'),
             'delete': ('DELETE', '/api/v1/users/{user_id}'),
@@ -407,6 +407,30 @@ class ManagementClient:
                 
                 # Set the method on the class
                 setattr(self, method_name, api_method)
+                
+                # SPECIAL CASE: Add user-friendly wrapper for get_user to maintain backward compatibility
+                # Fixes Bug #89 - Management Client endpoint mismatch
+                if method_name == 'get_user':
+                    def get_user_wrapper(user_id: str, **kwargs):
+                        """
+                        Get user by ID (wrapper for backward compatibility).
+                        
+                        Bug #89 Fix: The actual API endpoint is GET /api/v1/user?id={user_id}
+                        but this wrapper maintains the original get_user(user_id) signature.
+                        
+                        Args:
+                            user_id: The user ID to retrieve
+                            **kwargs: Additional query parameters (expand, etc.)
+                            
+                        Returns:
+                            User data from the API
+                        """
+                        # Convert positional user_id to query parameter 'id'
+                        kwargs['id'] = user_id
+                        return api_method(**kwargs)
+                        
+                    # Replace the auto-generated method with our wrapper
+                    setattr(self, method_name, get_user_wrapper)
     
     def _create_api_method(self, http_method: str, path: str, resource: str, action: str) -> Callable:
         """

@@ -171,9 +171,11 @@ class RouteProtectionMiddleware(ABC):
         Returns:
             True if path matches pattern
         """
-        # Normalize paths
-        path = path.rstrip('/')
-        pattern = pattern.rstrip('/')
+        # Normalize paths but preserve root '/'
+        if path != '/':
+            path = path.rstrip('/')
+        if pattern != '/':
+            pattern = pattern.rstrip('/')
         
         # Exact match
         if pattern == path:
@@ -232,9 +234,9 @@ try:
                     pass
                     
                 return asyncio.run(self.validate_request_access(flask_request))
-            except Exception as e:
-                self._logger.error(f"Error in Flask route protection: {e}")
-                return self.error_handler(f"Route protection error: {str(e)}")
+            except Exception:
+                self._logger.exception("Error in Flask route protection")
+                return self.error_handler("Route protection error")
 
 except ImportError:
     # Flask not available

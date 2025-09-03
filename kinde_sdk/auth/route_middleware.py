@@ -131,10 +131,13 @@ class RouteProtectionMiddleware(ABC):
                 self._logger.info(f"Access denied for {method} {path}: {reason}")
                 return self.error_handler(reason, path=path, method=method, result=result)
             
-        except Exception as e:
-            self._logger.error(f"Error during route protection validation: {e}")
+        except (AttributeError, KeyError, TypeError) as e:
+            self._logger.exception("Error during route protection validation")
             # Fail closed - deny access if validation fails
-            return self.error_handler(f"Route protection validation failed: {str(e)}", path=path, method=method)
+            return self.error_handler(f"Route protection validation failed: {e!s}", path=path, method=method)
+        except Exception as e:
+            self._logger.exception("Unexpected error during route protection validation")
+            return self.error_handler(f"Route protection validation failed: {e!s}", path=path, method=method)
         
         return None
     
@@ -179,7 +182,8 @@ class RouteProtectionMiddleware(ABC):
         # Wildcard match
         if pattern.endswith('/*'):
             pattern_prefix = pattern[:-2]  # Remove /*
-            return path.startswith(pattern_prefix)
+            # Ensure we're matching a path segment boundary
+            return path == pattern_prefix or path.startswith(pattern_prefix + '/')
         
         return False
 
@@ -214,6 +218,19 @@ try:
             """
             # Use asyncio.run to handle async validation in sync Flask context
             try:
+                # Flask is synchronous, so asyncio.run should be safe here
+                # But let's still check for running loops to be extra safe
+                try:
+                    loop = asyncio.get_running_loop()
+                    if loop.is_running():
+                        self._logger.warning(
+                            "Unexpected: running event loop detected in Flask middleware. "
+                            "This may cause issues with route protection."
+                        )
+                except RuntimeError:
+                    # No running loop, which is expected for Flask
+                    pass
+                    
                 return asyncio.run(self.validate_request_access(flask_request))
             except Exception as e:
                 self._logger.error(f"Error in Flask route protection: {e}")
@@ -250,9 +267,16 @@ try:
             skip_patterns: Optional[List[str]] = None
         ):
             super().__init__(app)
-            self.protection_middleware = RouteProtectionMiddleware.__new__(RouteProtectionMiddleware)
-            RouteProtectionMiddleware.__init__(
-                self.protection_middleware,
+            # Create a concrete implementation
+            outer_self = self
+            class ConcreteProtectionMiddleware(RouteProtectionMiddleware):
+                def _default_error_handler(inner_self, reason: str, **kwargs) -> Any:
+                    return (error_handler or outer_self._default_error_handler)(reason, **kwargs)
+                
+                def _get_request_info(inner_self, request: Any) -> tuple[str, str]:
+                    return outer_self._get_request_info(request)
+            
+            self.protection_middleware = ConcreteProtectionMiddleware(
                 oauth_client=oauth_client,
                 error_handler=error_handler or self._default_error_handler,
                 skip_patterns=skip_patterns

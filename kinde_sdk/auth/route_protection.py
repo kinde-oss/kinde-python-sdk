@@ -129,12 +129,15 @@ class RouteProtectionEngine:
             
             self._logger.info(f"Loaded {len(self.routes)} route protection rules")
             
-        except FileNotFoundError:
-            self._logger.error(f"Route protection config file not found: {config_file}")
-            raise ValueError(f"Failed to load route protection configuration: Configuration file not found: {config_file}")
+        except FileNotFoundError as e:
+            self._logger.exception("Route protection config file not found: %s", config_file)
+            raise ValueError(
+                f"Failed to load route protection configuration: Configuration file not found: {config_file}"
+            ) from e
         except Exception as e:
-            self._logger.error(f"Failed to load route protection config: {e}")
-            raise ValueError(f"Failed to load route protection configuration: {e}")
+            # Parsing or validation error from load_config
+            self._logger.exception("Failed to load route protection config")
+            raise ValueError("Failed to load route protection configuration") from e
     
     async def validate_route_access(
         self, 
@@ -294,7 +297,8 @@ class RouteProtectionEngine:
         # Handle wildcard patterns
         if route_pattern.endswith('/*'):
             pattern_prefix = route_pattern[:-2]  # Remove /*
-            return request_path.startswith(pattern_prefix)
+            # Ensure we're matching a path segment boundary
+            return request_path == pattern_prefix or request_path.startswith(pattern_prefix + '/')
         
         # Handle regex patterns if route_pattern starts and ends with /
         if route_pattern.startswith('/') and route_pattern.count('/') > 1:
@@ -339,10 +343,10 @@ class RouteProtectionEngine:
             }
             
         except Exception as e:
-            self._logger.error(f"Error checking roles: {e}")
+            self._logger.exception("Error checking roles")
             return {
                 "allowed": False,
-                "reason": f"Error checking roles: {str(e)}"
+                "reason": f"Error checking roles: {e!s}"
             }
     
     async def _check_permissions(self, required_permissions: List[str], options: Optional[ApiOptions] = None) -> Dict[str, Any]:
@@ -375,10 +379,10 @@ class RouteProtectionEngine:
             }
             
         except Exception as e:
-            self._logger.error(f"Error checking permissions: {e}")
+            self._logger.exception("Error checking permissions")
             return {
                 "allowed": False,
-                "reason": f"Error checking permissions: {str(e)}"
+                "reason": f"Error checking permissions: {e!s}"
             }
     
     def get_route_info(self, path: str, method: str = "GET") -> Optional[Dict[str, Any]]:

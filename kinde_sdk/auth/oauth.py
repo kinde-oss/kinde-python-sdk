@@ -706,17 +706,14 @@ class OAuth:
         
         # Use force_api setting if available
         options = None
-        if hasattr(self, '_token_manager') and self._token_manager:
-            # Check if force_api is configured
-            try:
-                token_manager = self._get_token_manager()
-                if token_manager and hasattr(token_manager, 'get_force_api'):
-                    force_api = token_manager.get_force_api()
-                    if force_api:
-                        from .api_options import ApiOptions
-                        options = ApiOptions(force_api=True)
-            except Exception:
-                pass  # Ignore errors getting force_api setting
+        try:
+            token_manager = self._get_token_manager()
+            if token_manager and hasattr(token_manager, "get_force_api") and token_manager.get_force_api():
+                from .api_options import ApiOptions
+                options = ApiOptions(force_api=True)
+        except Exception:
+            # Intentionally swallow; route check should still proceed with defaults
+            self._logger.debug("Unable to determine force_api setting for route protection", exc_info=True)
         
         return await self._route_protection.validate_route_access(path, method, options)
 
@@ -737,13 +734,23 @@ class OAuth:
         Returns:
             bool: True if access is allowed, False otherwise
         """
-        import asyncio
-        
         try:
+            try:
+                loop = asyncio.get_running_loop()
+                # If we're already in an event loop (e.g., FastAPI), instruct callers to use the async API.
+                if loop.is_running():
+                    raise RuntimeError(
+                        "check_route_access() cannot be used inside a running event loop. "
+                        "Use `await validate_route_access(...)` instead."
+                    )
+            except RuntimeError:
+                # No running loop; safe to use asyncio.run (e.g., Flask/Werkzeug)
+                pass
+
             result = asyncio.run(self.validate_route_access(path, method, request))
             return result.get("allowed", False)
-        except Exception as e:
-            self._logger.error(f"Error checking route access: {e}")
+        except Exception:
+            self._logger.exception("Error checking route access")
             return False
 
     def get_route_protection_info(self) -> Optional[Dict[str, Any]]:

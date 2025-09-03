@@ -28,10 +28,10 @@ class ManagementClient:
         # Users API
         'users': {
             'list': ('GET', '/api/v1/users'),
-            'get': ('GET', '/api/v1/users/{user_id}'),
+            'get': ('GET', '/api/v1/user'),
             'create': ('POST', '/api/v1/user'),
-            'update': ('PATCH', '/api/v1/users/{user_id}'),
-            'delete': ('DELETE', '/api/v1/users/{user_id}'),
+            'update': ('PATCH', '/api/v1/user', ['id']),
+            'delete': ('DELETE', '/api/v1/user'),
         },
         
         # Organizations API
@@ -393,7 +393,13 @@ class ManagementClient:
             else:
                 resource_singular = resource[:-1] if resource.endswith('s') else resource
             
-            for action, (method, path) in endpoints.items():
+            for action, endpoint in endpoints.items():
+                if len(endpoint) == 3:
+                    method, path, query_keys = endpoint
+                else:
+                    method, path = endpoint
+                    query_keys = ()
+
                 # Create method name based on action and resource
                 if action == 'list':
                     method_name = f"get_{resource}"
@@ -403,12 +409,12 @@ class ManagementClient:
                     method_name = f"{action}_{resource_singular}"
                 
                 # Create the method
-                api_method = self._create_api_method(method, path, resource, action)
+                api_method = self._create_api_method(method, path, resource, action, query_keys)
                 
                 # Set the method on the class
                 setattr(self, method_name, api_method)
     
-    def _create_api_method(self, http_method: str, path: str, resource: str, action: str) -> Callable:
+    def _create_api_method(self, http_method: str, path: str, resource: str, action: str, query_keys=()) -> Callable:
         """
         Create a dynamic method for an API endpoint.
         
@@ -438,15 +444,17 @@ class ManagementClient:
                     if start_idx >= 0 and end_idx >= 0:
                         formatted_path = formatted_path[:start_idx] + str(param_values.pop(0)) + formatted_path[end_idx + 1:]
             
-            # Handle query params or body data based on HTTP method
-            query_params = None
-            body = None
-            
+            # Handle query/body split
             if http_method in ('GET', 'DELETE'):
                 query_params = {k: v for k, v in kwargs.items() if v is not None}
+                payload = None
             else:
-                body = {k: v for k, v in kwargs.items() if v is not None}
-            
+                # Lift ONLY declared query_keys into the query string
+                qset = set(query_keys or ())
+                query_params = {k: kwargs.pop(k) for k in list(kwargs) if k in qset and kwargs[k] is not None}
+                # Remaining kwargs go to JSON body
+                payload = {k: v for k, v in kwargs.items() if v is not None}
+
             # FIXED: Use param_serialize to properly construct the full URL with host
             # Handle query parameters by appending them to the path
             final_path = formatted_path
@@ -460,28 +468,33 @@ class ManagementClient:
             # Remove /api/v1 prefix from resource_path since host already includes it
             resource_path_for_serialize = formatted_path.replace('/api/v1', '', 1)
             
-            method, url, header_params, body, post_params = self.api_client.param_serialize(
+            method, url, header_params, serialized_body, post_params = self.api_client.param_serialize(
                 method=http_method,
                 resource_path=resource_path_for_serialize,  # Use path without /api/v1 prefix
-                query_params=query_params if http_method in ('GET', 'DELETE') else None,
+                query_params=query_params or None,
                 header_params={},
-                body=body if http_method not in ('GET', 'DELETE') else None
+                body=payload if http_method not in ('GET', 'DELETE') else None
             )
-            
+
+            # Ensure required headers for PATCH/POST/PUT
+            if http_method not in ('GET', 'DELETE'):
+                header_params.setdefault('Content-Type', 'application/json')
+                header_params.setdefault('Accept', 'application/json')
+
             # Add the authorization token to headers
             token = self.token_manager.get_access_token()
             header_params['Authorization'] = f"Bearer {token}"
-            
+
             # Call the REST client directly with the constructed URL
             response = self.api_client.rest_client.request(
                 method=http_method,
                 url=url,
                 headers=header_params,
-                body=body if http_method not in ('GET', 'DELETE') else None,
+                body=serialized_body if http_method not in ('GET', 'DELETE') else None,
                 post_params=post_params,
                 _request_timeout=None
             )
-            
+
             # Use the API client's response_deserialize to properly handle the response
             # First read the response data
             response.read()

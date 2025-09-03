@@ -468,19 +468,10 @@ class ManagementClient:
             # Remove /api/v1 prefix from resource_path since host already includes it
             resource_path_for_serialize = formatted_path.replace('/api/v1', '', 1)
             
-            # For non-GET/DELETE methods with query_params, append them to the path manually
-            if query_params and http_method not in ('GET', 'DELETE'):
-                query_string = '&'.join([f"{k}={v}" for k, v in query_params.items()])
-                if query_string:
-                    separator = '&' if '?' in resource_path_for_serialize else '?'
-                    resource_path_for_serialize = f"{resource_path_for_serialize}{separator}{query_string}"
-                # Clear query_params to avoid double-processing
-                query_params = None
-            
             method, url, header_params, serialized_body, post_params = self.api_client.param_serialize(
                 method=http_method,
                 resource_path=resource_path_for_serialize,  # Use path without /api/v1 prefix
-                query_params=query_params,
+                query_params=query_params or None,
                 header_params={},
                 body=payload if http_method not in ('GET', 'DELETE') else None
             )

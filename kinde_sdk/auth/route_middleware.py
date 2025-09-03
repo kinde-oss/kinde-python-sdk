@@ -44,7 +44,7 @@ FastAPI:
 
 import logging
 import asyncio
-from typing import Optional, Any, Dict, Callable, List, Union
+from typing import Optional, Any, Dict, Callable, List, Union, Tuple
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ class RouteProtectionMiddleware(ABC):
         pass
     
     @abstractmethod
-    def _get_request_info(self, request: Any) -> tuple[str, str]:
+    def _get_request_info(self, request: Any) -> Tuple[str, str]:
         """
         Extract path and method from framework-specific request object.
         Must be implemented by framework-specific subclasses.
@@ -205,7 +205,7 @@ try:
             """Default Flask error handler returns JSON response."""
             return flask_jsonify({"error": "Access Denied"}), 403
         
-        def _get_request_info(self, request: Any) -> tuple[str, str]:
+        def _get_request_info(self, request: Any) -> Tuple[str, str]:
             """Extract path and method from Flask request."""
             return request.path, request.method
         
@@ -273,7 +273,7 @@ try:
                 def _default_error_handler(inner_self, reason: str, **kwargs) -> Any:
                     return (error_handler or outer_self._default_error_handler)(reason, **kwargs)
                 
-                def _get_request_info(inner_self, request: Any) -> tuple[str, str]:
+                def _get_request_info(inner_self, request: Any) -> Tuple[str, str]:
                     return outer_self._get_request_info(request)
             
             self.protection_middleware = ConcreteProtectionMiddleware(
@@ -289,12 +289,12 @@ try:
                 content={"error": "Access Denied"}
             )
         
-        def _get_request_info(self, request: StarletteRequest) -> tuple[str, str]:
+        def _get_request_info(self, request: StarletteRequest) -> Tuple[str, str]:
             """Extract path and method from FastAPI/Starlette request."""
             return str(request.url.path), request.method
         
         # Override the RouteProtectionMiddleware method to work with FastAPI request objects
-        def _get_request_info_for_middleware(self, request: StarletteRequest) -> tuple[str, str]:
+        def _get_request_info_for_middleware(self, request: StarletteRequest) -> Tuple[str, str]:
             return str(request.url.path), request.method
         
         # Monkey patch the method for this instance

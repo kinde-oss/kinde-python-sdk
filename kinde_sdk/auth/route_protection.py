@@ -49,7 +49,7 @@ Configuration Format:
 
 import re
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 
 from .config_loader import load_config
 from .roles import Roles
@@ -97,6 +97,9 @@ class RouteProtectionEngine:
         try:
             config = load_config(config_file)
             self._logger.info(f"Loading route protection config from: {config_file}")
+            if not config:
+                self._logger.warning("Route protection config file is empty: %s", config_file)
+                config = {}
             
             # Load global settings
             self.global_settings = config.get("settings", {})
@@ -245,7 +248,7 @@ class RouteProtectionEngine:
             "matched_rule": matched_rule
         }
     
-    def _find_matching_route(self, path: str, method: str) -> tuple[Optional[str], Dict[str, Any]]:
+    def _find_matching_route(self, path: str, method: str) -> Tuple[Optional[str], Dict[str, Any]]:
         """
         Find the first route rule that matches the given path and method.
         
@@ -286,9 +289,11 @@ class RouteProtectionEngine:
         Returns:
             True if path matches the pattern
         """
-        # Normalize paths (remove trailing slashes for comparison)
-        request_path = request_path.rstrip('/')
-        route_pattern = route_pattern.rstrip('/')
+        # Normalize paths (remove trailing slashes) but preserve root '/'
+        if request_path != '/':
+            request_path = request_path.rstrip('/')
+        if route_pattern != '/':
+            route_pattern = route_pattern.rstrip('/')
         
         # Handle exact matches
         if route_pattern == request_path:

@@ -160,7 +160,7 @@ The route protection engine supports several path matching patterns:
 | Pattern | Description | Examples |
 |---------|-------------|----------|
 | `/admin` | Exact match | Matches only `/admin` |
-| `/admin/*` | Wildcard match | Matches `/admin/users`, `/admin/settings/view`, etc. |
+| `/admin/*` | Wildcard match | Matches `/admin/users`, `/admin/settings/view`, etc. (does not match `/admin` or `/adminXYZ`) |
 | `/api/v1/*` | Prefix wildcard | Matches `/api/v1/users`, `/api/v1/organizations`, etc. |
 
 ### Access Control Logic

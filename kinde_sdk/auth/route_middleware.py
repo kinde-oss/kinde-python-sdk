@@ -183,9 +183,9 @@ class RouteProtectionMiddleware(ABC):
         
         # Wildcard match
         if pattern.endswith('/*'):
-            pattern_prefix = pattern[:-2]  # Remove /*
-            # Ensure we're matching a path segment boundary
-            return path == pattern_prefix or path.startswith(pattern_prefix + '/')
+            prefix = pattern[:-2]  # Remove /*
+            # Match only subpaths with a segment boundary, not the base path
+            return path.startswith(prefix + '/')
         
         return False
 

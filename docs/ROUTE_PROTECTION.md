@@ -394,7 +394,8 @@ else:
 Synchronous convenience method for route access checking.
 
 ```python
-if oauth.check_route_access("/admin/users", "GET"):
+oauth_client = OAuth(framework="flask", app=app)
+if oauth_client.check_route_access("/admin/users", "GET"):
     print("Access granted")
 else:
     print("Access denied")
@@ -405,7 +406,8 @@ else:
 Get summary of all configured route protection rules.
 
 ```python
-info = oauth.get_route_protection_info()
+oauth_client = OAuth(framework="flask", app=app)
+info = oauth_client.get_route_protection_info()
 if info:
     print(f"Total protected routes: {info['total_routes']}")
     for route in info['routes']:

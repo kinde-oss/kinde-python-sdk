@@ -305,16 +305,7 @@ class RouteProtectionEngine:
             # Ensure we're matching a path segment boundary
             return request_path == pattern_prefix or request_path.startswith(pattern_prefix + '/')
         
-        # Handle regex patterns if route_pattern starts and ends with /
-        if route_pattern.startswith('/') and route_pattern.count('/') > 1:
-            try:
-                # Convert route pattern to regex
-                # Replace * with [^/]* (match any character except /)
-                regex_pattern = route_pattern.replace('*', '[^/]*')
-                return bool(re.match(f"^{regex_pattern}$", request_path))
-            except re.error:
-                self._logger.warning(f"Invalid regex pattern in route: {route_pattern}")
-                return False
+        # No additional pattern types supported: only exact and trailing '/*' wildcards
         
         return False
     

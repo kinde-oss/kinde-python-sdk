@@ -24,7 +24,7 @@ from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.core.framework.null_framework import NullFramework
 
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 
 __all__ = [
     "OAuth",

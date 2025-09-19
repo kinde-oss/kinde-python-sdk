@@ -80,9 +80,8 @@ class OAuth:
         if framework:
             self._initialize_framework()
         else:
-            # Use configuration-based storage if no framework specified
-            self._storage = StorageFactory.create_storage(storage_config)
-            self._storage_manager.initialize(config=storage_config, storage=self._storage)
+            # Use null framework for standalone usage
+            self._initialize_null_framework(storage_config)
 
         self._session_manager = UserSession()
 
@@ -123,6 +122,28 @@ class OAuth:
         
         # Initialize storage manager with the framework-specific storage
         self._storage_manager.initialize(config={"type": self.framework, "device_id": self._framework.get_name()}, storage=self._storage)
+
+    def _initialize_null_framework(self, storage_config: Dict[str, Any]) -> None:
+        """
+        Initialize the null framework for standalone usage.
+        This sets up the null framework and its associated storage.
+        """
+        from kinde_sdk.core.framework.null_framework import NullFramework
+        
+        # Create null framework instance (singleton)
+        self._framework = NullFramework()
+        
+        # Set the OAuth instance in the framework
+        self._framework.set_oauth(self)
+        
+        # Start the framework (no-op for null framework)
+        self._framework.start()
+        
+        # Create storage using memory storage for standalone usage
+        self._storage = StorageFactory.create_storage(storage_config)
+        
+        # Initialize storage manager with the null framework storage
+        self._storage_manager.initialize(config={"type": "null", "device_id": self._framework.get_name()}, storage=self._storage)
 
     def is_authenticated(self) -> bool:
         """
@@ -365,8 +386,7 @@ class OAuth:
         Returns:
             Login URL
         """
-        if not self.framework:
-            raise KindeConfigurationException("Framework must be selected")
+        # Framework check removed - null framework is now supported
         
         if login_options is None:
             login_options = {}
@@ -407,8 +427,7 @@ class OAuth:
         Returns:
             Registration URL
         """
-        if not self.framework:
-            raise KindeConfigurationException("Framework must be selected")
+        # Framework check removed - null framework is now supported
 
         if login_options is None:
             login_options = {}
@@ -440,8 +459,7 @@ class OAuth:
         Returns:
             Logout URL
         """
-        if not self.framework:
-            raise KindeConfigurationException("Framework must be selected")
+        # Framework check removed - null framework is now supported
 
         if logout_options is None:
             logout_options = {}

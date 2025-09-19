@@ -386,8 +386,6 @@ class OAuth:
         Returns:
             Login URL
         """
-        # Framework check removed - null framework is now supported
-        
         if login_options is None:
             login_options = {}
 
@@ -427,8 +425,6 @@ class OAuth:
         Returns:
             Registration URL
         """
-        # Framework check removed - null framework is now supported
-
         if login_options is None:
             login_options = {}
 
@@ -459,8 +455,6 @@ class OAuth:
         Returns:
             Logout URL
         """
-        # Framework check removed - null framework is now supported
-
         if logout_options is None:
             logout_options = {}
         

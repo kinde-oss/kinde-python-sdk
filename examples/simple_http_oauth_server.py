@@ -328,7 +328,8 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             
             # Show success page
             user_info = result['user']
-            html = f"""
+            safe_user_info_json = html.escape(json.dumps(user_info, indent=2))
+            page_html = f"""
             <!DOCTYPE html>
             <html>
             <head>
@@ -348,7 +349,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
                 
                 <div class="user-info">
                     <h3>User Information:</h3>
-                    <pre>{json.dumps(user_info, indent=2)}</pre>
+                    <pre>{safe_user_info_json}</pre>
                 </div>
                 
                 <p>
@@ -359,7 +360,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             </body>
             </html>
             """
-            self._send_html_response(html)
+            self._send_html_response(page_html)
             
         except Exception as e:
             self._send_error_response(400, f"Authentication failed: {str(e)}")
@@ -381,8 +382,9 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             if not user_info:
                 self._send_error_response(404, "User info not found")
                 return
-            
-            html = f"""
+
+            safe_user_info_json = html.escape(json.dumps(user_info, indent=2))
+            page_html = f"""
             <!DOCTYPE html>
             <html>
             <head>
@@ -397,7 +399,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
                 <h1>👤 User Information</h1>
                 
                 <div class="user-info">
-                    <pre>{json.dumps(user_info, indent=2)}</pre>
+                    <pre>{safe_user_info_json}</pre>
                 </div>
                 
                 <p>
@@ -407,7 +409,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             </body>
             </html>
             """
-            self._send_html_response(html)
+            self._send_html_response(page_html)
             
         except Exception as e:
             self._send_error_response(500, f"Failed to get user info: {str(e)}")

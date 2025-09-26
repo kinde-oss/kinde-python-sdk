@@ -456,7 +456,8 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
     
     def _send_error_response(self, status_code: int, message: str):
         """Send error response."""
-        html = f"""
+        escaped_message = html.escape(message)
+        page_html = f"""
         <!DOCTYPE html>
         <html>
         <head>
@@ -470,13 +471,13 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
         <body>
             <h1>❌ Error {status_code}</h1>
             <div class="error">
-                <p>{html.escape(message)}</p>
+                <p>{escaped_message}</p>
             </div>
             <p><a href="/" class="button">Home</a></p>
         </body>
         </html>
         """
-        self._send_html_response(html, status_code)
+        self._send_html_response(page_html, status_code)
     
     def log_message(self, format, *args):
         """Override to use our logger."""

@@ -40,6 +40,7 @@ import asyncio
 import uuid
 import urllib.parse
 import logging
+import html
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Dict, Any, Optional
 from pathlib import Path
@@ -461,7 +462,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
         <body>
             <h1>❌ Error {status_code}</h1>
             <div class="error">
-                <p>{message}</p>
+                <p>{html.escape(message)}</p>
             </div>
             <p><a href="/" class="button">Home</a></p>
         </body>

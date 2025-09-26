@@ -9,7 +9,7 @@ and development.
 Features:
 - Simple HTTP server using Python's built-in http.server
 - OAuth login/logout flows
-- Session management using in-memory storage
+- Session management using KindeSessionManagement (clean API)
 - No external dependencies beyond the Kinde SDK
 - Easy to run and test locally
 - Automatically loads .env file if present
@@ -28,10 +28,10 @@ Environment Variables (can be in .env file or environment):
 - KINDE_AUDIENCE: Your API audience (optional)
 
 Note on OAuth Methods:
-This example now uses the proper login() and register() methods which have been
-updated to work without framework dependencies. The SDK now supports both:
+This example uses the proper login() and register() methods with KindeSessionManagement
+for clean session management. The SDK now supports both:
 - Framework-based usage (Flask, FastAPI) - automatic session management
-- Standalone usage (serverless, Lambda) - manual session management
+- Standalone usage (serverless, Lambda) - manual session management with KindeSessionManagement
 """
 
 import os
@@ -61,7 +61,7 @@ except ImportError:
     print("⚠️  python-dotenv not installed. Install with: pip install python-dotenv")
 
 # Import the Kinde SDK
-from kinde_sdk import AsyncOAuth
+from kinde_sdk import AsyncOAuth, KindeSessionManagement
 from kinde_sdk.core.exceptions import KindeConfigurationException
 
 # Set up logging
@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 class SimpleOAuthManager:
     """
     Simple OAuth manager for local testing.
-    Uses the null framework for session management.
+    Uses KindeSessionManagement for clean session management.
     """
     
     def __init__(self):
@@ -96,9 +96,9 @@ class SimpleOAuthManager:
             audience=self.audience
         )
         
-        # Get the null framework instance (singleton)
-        from kinde_sdk.core.framework.null_framework import NullFramework
-        self.null_framework = NullFramework()
+        # Initialize session management using the new KindeSessionManagement API
+        # This provides a clean, user-friendly interface for session management
+        self.session_mgmt = KindeSessionManagement()
         
         logger.info("Simple OAuth manager initialized successfully")
     
@@ -109,28 +109,28 @@ class SimpleOAuthManager:
     
     async def generate_login_url(self, session_id: str) -> str:
         """Generate a login URL."""
-        # Set the current user session in the null framework
-        self.null_framework.set_user_id(session_id)
+        # Set the current user session using KindeSessionManagement
+        self.session_mgmt.set_user_id(session_id)
         
-        # Use the standard login() method - it will get user_id from the null framework
+        # Use the standard login() method - it will get user_id from the session management
         login_url = await self.oauth.login()
         
         return login_url
     
     async def generate_register_url(self, session_id: str) -> str:
         """Generate a registration URL."""
-        # Set the current user session in the null framework
-        self.null_framework.set_user_id(session_id)
+        # Set the current user session using KindeSessionManagement
+        self.session_mgmt.set_user_id(session_id)
         
-        # Use the standard register() method - it will get user_id from the null framework
+        # Use the standard register() method - it will get user_id from the session management
         register_url = await self.oauth.register()
         
         return register_url
     
     async def handle_callback(self, session_id: str, code: str, state: Optional[str] = None) -> Dict[str, Any]:
         """Handle OAuth callback."""
-        # Set the current user session in the null framework
-        self.null_framework.set_user_id(session_id)
+        # Set the current user session using KindeSessionManagement
+        self.session_mgmt.set_user_id(session_id)
         
         # Handle the redirect using the standard method
         result = await self.oauth.handle_redirect(
@@ -143,8 +143,8 @@ class SimpleOAuthManager:
     
     def is_authenticated(self, session_id: str) -> bool:
         """Check if session is authenticated."""
-        # Set the current user session in the null framework
-        self.null_framework.set_user_id(session_id)
+        # Set the current user session using KindeSessionManagement
+        self.session_mgmt.set_user_id(session_id)
         
         # Use the standard is_authenticated method
         return self.oauth.is_authenticated()
@@ -154,8 +154,8 @@ class SimpleOAuthManager:
         if not self.is_authenticated(session_id):
             return None
         
-        # Set the current user session in the null framework
-        self.null_framework.set_user_id(session_id)
+        # Set the current user session using KindeSessionManagement
+        self.session_mgmt.set_user_id(session_id)
         
         # Use the standard get_user_info method
         try:
@@ -166,14 +166,14 @@ class SimpleOAuthManager:
     
     async def generate_logout_url(self, session_id: str) -> str:
         """Generate logout URL."""
-        # Set the current user session in the null framework
-        self.null_framework.set_user_id(session_id)
+        # Set the current user session using KindeSessionManagement
+        self.session_mgmt.set_user_id(session_id)
         
         # Use the standard logout method
         logout_url = await self.oauth.logout(user_id=session_id)
         
-        # Clear the session from the null framework
-        self.null_framework.clear_user_id()
+        # Clear the session using KindeSessionManagement
+        self.session_mgmt.clear_user_id()
         
         logger.info(f"Generated logout URL and cleared session {session_id}")
         return logout_url

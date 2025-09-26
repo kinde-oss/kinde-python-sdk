@@ -204,8 +204,14 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             
             # Flatten query parameters (parse_qs returns lists)
             params = {k: v[0] if v else None for k, v in query_params.items()}
-            
-            logger.info(f"GET {path} - Params: {params}")
+
+            # Mask sensitive values
+            masked_params = dict(params)
+            for k in ("code", "state"):
+                if k in masked_params and masked_params[k]:
+                    masked_params[k] = "[redacted]"
+
+            logger.info("GET %s - Params: %s", path, masked_params)
             
             if path == '/':
                 self._handle_home()

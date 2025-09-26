@@ -139,11 +139,16 @@ class OAuth:
         # Start the framework (no-op for null framework)
         self._framework.start()
         
-        # Create storage using memory storage for standalone usage
-        self._storage = StorageFactory.create_storage(storage_config)
-        
-        # Initialize storage manager with the null framework storage
-        self._storage_manager.initialize(config={"type": "null", "device_id": self._framework.get_name()}, storage=self._storage)
+        # Create storage using provided config (defaulting to memory)
+        storage_type = (storage_config or {}).get("type", "memory") if isinstance(storage_config, dict) else "memory"
+        self._storage = StorageFactory.create_storage({**({"type": storage_type}), **(storage_config or {})})
+
+        # Initialize storage manager with explicit device_id
+        self._storage_manager.initialize(
+            config={"type": storage_type},
+            device_id=self._framework.get_name(),
+            storage=self._storage,
+        )
 
     def is_authenticated(self) -> bool:
         """

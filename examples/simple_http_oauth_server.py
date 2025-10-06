@@ -531,7 +531,7 @@ def main():
         server_address = ('localhost', 5000)
         httpd = HTTPServer(server_address, OAuthHTTPRequestHandler)
         
-        print(f"🌐 Server running at http://localhost:5000")
+        print("🌐 Server running at http://localhost:5000")
         print("📋 Available endpoints:")
         print("   GET / - Home page with instructions")
         print("   GET /login - Start OAuth login flow")

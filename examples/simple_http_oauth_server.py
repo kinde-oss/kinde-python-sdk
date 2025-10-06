@@ -85,7 +85,7 @@ class SimpleOAuthManager:
         
         # Validate required configurations
         if not self.client_id:
-            raise KindeConfigurationException("KINDE_CLIENT_ID environment variable is required")
+            raise KindeConfigurationException("KINDE_CLIENT_ID is required")
         
         # Initialize OAuth client without framework (will use null framework)
         self.oauth = AsyncOAuth(

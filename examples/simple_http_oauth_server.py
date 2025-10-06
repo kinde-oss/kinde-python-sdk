@@ -275,7 +275,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
         """
         self._send_html_response(html)
     
-    def _handle_login(self, params):
+    def _handle_login(self, _params):
         """Handle login request."""
         try:
             oauth = get_oauth_manager()
@@ -285,13 +285,13 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             # Set session cookie and redirect
             self.send_response(302)
             self.send_header('Location', login_url)
-            self.send_header('Set-Cookie', f'session_id={session_id}; HttpOnly; Path=/')
+            self.send_header('Set-Cookie', f'session_id={session_id}; HttpOnly; Path=/; SameSite=Lax')
             self.end_headers()
             
         except Exception as e:
             self._send_error_response(500, f"Login failed: {str(e)}")
     
-    def _handle_register(self, params):
+    def _handle_register(self, _params):
         """Handle registration request."""
         try:
             oauth = get_oauth_manager()
@@ -301,7 +301,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             # Set session cookie and redirect
             self.send_response(302)
             self.send_header('Location', register_url)
-            self.send_header('Set-Cookie', f'session_id={session_id}; HttpOnly; Path=/')
+            self.send_header('Set-Cookie', f'session_id={session_id}; HttpOnly; Path=/; SameSite=Lax')
             self.end_headers()
             
         except Exception as e:
@@ -365,7 +365,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self._send_error_response(400, f"Authentication failed: {str(e)}")
     
-    def _handle_user(self, params):
+    def _handle_user(self, _params):
         """Handle user info request."""
         try:
             session_id = self._get_session_id_from_cookie()
@@ -414,7 +414,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self._send_error_response(500, f"Failed to get user info: {str(e)}")
     
-    def _handle_logout(self, params):
+    def _handle_logout(self, _params):
         """Handle logout request."""
         try:
             session_id = self._get_session_id_from_cookie()
@@ -428,7 +428,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             # Clear session cookie and redirect
             self.send_response(302)
             self.send_header('Location', logout_url)
-            self.send_header('Set-Cookie', 'session_id=; HttpOnly; Path=/; Max-Age=0')
+            self.send_header('Set-Cookie', 'session_id=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax')
             self.end_headers()
             
         except Exception as e:

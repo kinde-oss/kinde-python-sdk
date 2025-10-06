@@ -446,10 +446,16 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
     def _get_session_id_from_cookie(self) -> Optional[str]:
         """Extract session ID from cookie."""
         cookie_header = self.headers.get('Cookie', '')
-        for cookie in cookie_header.split(';'):
-            cookie = cookie.strip()
-            if cookie.startswith('session_id='):
-                return cookie.split('=', 1)[1]
+        if not cookie_header:
+            return None
+        try:
+            import http.cookies as cookies
+            jar = cookies.SimpleCookie()
+            jar.load(cookie_header)
+            if 'session_id' in jar:
+                return jar['session_id'].value
+        except Exception:
+            logger.debug("Failed to parse Cookie header", exc_info=True)
         return None
     
     def _send_html_response(self, html: str, status_code: int = 200):

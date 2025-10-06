@@ -234,7 +234,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
     
     def _handle_home(self):
         """Handle home page."""
-        html = """
+        page_html = """
         <!DOCTYPE html>
         <html>
         <head>
@@ -273,7 +273,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
         </body>
         </html>
         """
-        self._send_html_response(html)
+        self._send_html_response(page_html)
     
     def _handle_login(self, _params):
         """Handle login request."""

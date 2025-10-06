@@ -161,8 +161,8 @@ class SimpleOAuthManager:
         # Use the standard get_user_info method
         try:
             return self.oauth.get_user_info()
-        except Exception as e:
-            logger.error(f"Failed to get user info: {e}")
+        except Exception:
+            logger.exception("Failed to get user info")
             return None
     
     async def generate_logout_url(self, session_id: str) -> str:
@@ -228,9 +228,9 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 self._handle_not_found()
                 
-        except Exception as e:
-            logger.error(f"Error handling request: {e}")
-            self._send_error_response(500, f"Internal server error: {str(e)}")
+        except Exception:
+            logger.exception("Error handling request")
+            self._send_error_response(500, "Internal server error")
     
     def _handle_home(self):
         """Handle home page."""
@@ -288,8 +288,9 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_header('Set-Cookie', f'session_id={session_id}; HttpOnly; Path=/; SameSite=Lax')
             self.end_headers()
             
-        except Exception as e:
-            self._send_error_response(500, f"Login failed: {str(e)}")
+        except Exception:
+            logger.exception("Login failed")
+            self._send_error_response(500, "Login failed")
     
     def _handle_register(self, _params):
         """Handle registration request."""
@@ -304,8 +305,9 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_header('Set-Cookie', f'session_id={session_id}; HttpOnly; Path=/; SameSite=Lax')
             self.end_headers()
             
-        except Exception as e:
-            self._send_error_response(500, f"Registration failed: {str(e)}")
+        except Exception:
+            logger.exception("Registration failed")
+            self._send_error_response(500, "Registration failed")
     
     def _handle_callback(self, params):
         """Handle OAuth callback."""
@@ -362,8 +364,9 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             """
             self._send_html_response(page_html)
             
-        except Exception as e:
-            self._send_error_response(400, f"Authentication failed: {str(e)}")
+        except Exception:
+            logger.exception("Authentication failed")
+            self._send_error_response(400, "Authentication failed")
     
     def _handle_user(self, _params):
         """Handle user info request."""
@@ -411,8 +414,9 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             """
             self._send_html_response(page_html)
             
-        except Exception as e:
-            self._send_error_response(500, f"Failed to get user info: {str(e)}")
+        except Exception:
+            logger.exception("Failed to get user info")
+            self._send_error_response(500, "Failed to get user info")
     
     def _handle_logout(self, _params):
         """Handle logout request."""
@@ -431,8 +435,9 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_header('Set-Cookie', 'session_id=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax')
             self.end_headers()
             
-        except Exception as e:
-            self._send_error_response(500, f"Logout failed: {str(e)}")
+        except Exception:
+            logger.exception("Logout failed")
+            self._send_error_response(500, "Logout failed")
     
     def _handle_not_found(self):
         """Handle 404 errors."""
@@ -540,8 +545,9 @@ def main():
         
     except KeyboardInterrupt:
         print("\n⏹️  Server stopped by user")
-    except Exception as e:
-        print(f"❌ Server error: {e}")
+    except Exception:
+        logger.exception("Server error")
+        print("❌ Server error")
 
 
 if __name__ == "__main__":

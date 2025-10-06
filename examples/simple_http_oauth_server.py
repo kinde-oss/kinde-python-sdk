@@ -524,7 +524,7 @@ def main():
     
     try:
         # Test OAuth manager initialization
-        oauth = get_oauth_manager()
+        get_oauth_manager()
         print("✅ OAuth manager initialized successfully")
         
         # Start HTTP server

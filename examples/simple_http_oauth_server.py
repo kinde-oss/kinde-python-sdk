@@ -208,7 +208,7 @@ class OAuthHTTPRequestHandler(BaseHTTPRequestHandler):
             # Mask sensitive values
             masked_params = dict(params)
             for k in ("code", "state"):
-                if k in masked_params and masked_params[k]:
+                if masked_params.get(k):
                     masked_params[k] = "[redacted]"
 
             logger.info("GET %s - Params: %s", path, masked_params)

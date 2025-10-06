@@ -23,6 +23,7 @@ from kinde_sdk.core.storage.storage_factory import StorageFactory
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.core.framework.null_framework import NullFramework
+from kinde_sdk.core.session_management import KindeSessionManagement
 
 __version__ = "2.1.1"
 
@@ -42,4 +43,5 @@ __all__ = [
     "FrameworkFactory",
     "FrameworkInterface",
     "NullFramework",
+    "KindeSessionManagement",
 ]

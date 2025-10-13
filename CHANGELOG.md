@@ -5,7 +5,7 @@ All notable changes to the Kinde Python SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.2] - 2025-10
+## [2.2.0] - 2025-10
 
 ### Fixed
 - **Security Improvements**: Fixed XSS vulnerabilities by properly escaping JSON user data and HTML error messages

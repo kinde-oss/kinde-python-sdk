@@ -7,7 +7,7 @@ The Management API module uses a dynamic method generation approach to create a 
 ```
 kinde_sdk/management/
 ├── __init__.py                  # Exports ManagementClient and ManagementTokenManager
-├── client.py                    # Dynamic API client 
+├── management_client.py         # Dynamic API client 
 └── management_token_manager.py  # Handles auth token management
 ```
 
@@ -63,6 +63,11 @@ for resource, endpoints in self.API_ENDPOINTS.items():
 | Create     | POST        | `/resource`  | `create_resource(**data)` |
 | Update     | PATCH       | `/resource/{id}` | `update_resource(id, **data)` |
 | Delete     | DELETE      | `/resource/{id}` | `delete_resource(id)` |
+
+**Note on Users endpoints:** Single-user operations use a query parameter (`id`) with `/api/v1/user`, e.g.:
+- `get_user(id)`
+- `update_user(id, **data)`  → `PATCH /api/v1/user?id=...`
+- `delete_user(id)`          → `DELETE /api/v1/user?id=...`
 
 ### Request Processing
 
@@ -137,7 +142,7 @@ Errors from the API are passed through to the caller:
 
 ```python
 try:
-    user = management.get_user(user_id)
+    user = management.get_user(id=user_id)
 except Exception as e:
     # Handle API-specific errors here
     logger.error(f"API error: {e}")

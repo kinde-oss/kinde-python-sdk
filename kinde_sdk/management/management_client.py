@@ -37,10 +37,10 @@ class ManagementClient:
         # Organizations API
         'organizations': {
             'list': ('GET', '/api/v1/organizations'),
-            'get': ('GET', '/api/v1/organizations/{org_code}'),
+            'get': ('GET', '/api/v1/organization/{org_code}'),
             'create': ('POST', '/api/v1/organization'),
-            'update': ('PATCH', '/api/v1/organizations/{org_code}'),
-            'delete': ('DELETE', '/api/v1/organizations/{org_code}'),
+            'update': ('PATCH', '/api/v1/organization/{org_code}'),
+            'delete': ('DELETE', '/api/v1/organization/{org_code}'),
         },
         
         # Organization Users API
@@ -69,7 +69,7 @@ class ManagementClient:
         'roles': {
             'list': ('GET', '/api/v1/roles'),
             'get': ('GET', '/api/v1/roles/{role_id}'),
-            'create': ('POST', '/api/v1/role'),
+            'create': ('POST', '/api/v1/roles'),
             'update': ('PATCH', '/api/v1/roles/{role_id}'),
             'delete': ('DELETE', '/api/v1/roles/{role_id}'),
         },
@@ -77,18 +77,15 @@ class ManagementClient:
         # Permissions API
         'permissions': {
             'list': ('GET', '/api/v1/permissions'),
-            'get': ('GET', '/api/v1/permissions/{permission_id}'),
-            'create': ('POST', '/api/v1/permission'),
+            'create': ('POST', '/api/v1/permissions'),
             'update': ('PATCH', '/api/v1/permissions/{permission_id}'),
             'delete': ('DELETE', '/api/v1/permissions/{permission_id}'),
         },
         
         # Feature Flags API
         'feature_flags': {
-            'list': ('GET', '/api/v1/feature_flags'),
-            'get': ('GET', '/api/v1/feature_flags/{feature_flag_key}'),
-            'create': ('POST', '/api/v1/feature_flag'),
-            'update': ('PATCH', '/api/v1/feature_flags/{feature_flag_key}'),
+            'create': ('POST', '/api/v1/feature_flags'),
+            'update': ('PUT', '/api/v1/feature_flags/{feature_flag_key}'),
             'delete': ('DELETE', '/api/v1/feature_flags/{feature_flag_key}'),
         },
 
@@ -96,7 +93,7 @@ class ManagementClient:
         'connected_apps': {
             'list': ('GET', '/api/v1/applications'),
             'get': ('GET', '/api/v1/applications/{application_id}'),
-            'create': ('POST', '/api/v1/application'),
+            'create': ('POST', '/api/v1/applications'),
             'update': ('PATCH', '/api/v1/applications/{application_id}'),
             'delete': ('DELETE', '/api/v1/applications/{application_id}'),
         },
@@ -105,8 +102,7 @@ class ManagementClient:
         'api_applications': {
             'list': ('GET', '/api/v1/apis'),
             'get': ('GET', '/api/v1/apis/{api_id}'),
-            'create': ('POST', '/api/v1/api'),
-            'update': ('PATCH', '/api/v1/apis/{api_id}'),
+            'create': ('POST', '/api/v1/apis'),
             'delete': ('DELETE', '/api/v1/apis/{api_id}'),
         },
 
@@ -114,6 +110,7 @@ class ManagementClient:
         'subscribers': {
             'list': ('GET', '/api/v1/subscribers'),
             'get': ('GET', '/api/v1/subscribers/{subscriber_id}'),
+            'create': ('POST', '/api/v1/subscribers'),
         },
 
         # Timezones API
@@ -129,30 +126,26 @@ class ManagementClient:
         # Properties API
         'properties': {
             'list': ('GET', '/api/v1/properties'),
-            'get': ('GET', '/api/v1/properties/{property_id}'),
             'create': ('POST', '/api/v1/properties'),
-            'update': ('PATCH', '/api/v1/properties/{property_id}'),
+            'update': ('PUT', '/api/v1/properties/{property_id}'),
             'delete': ('DELETE', '/api/v1/properties/{property_id}'),
         },
         
         # User Properties API
         'user_properties': {
             'list': ('GET', '/api/v1/users/{user_id}/properties'),
-            'get': ('GET', '/api/v1/users/{user_id}/properties/{property_key}'),
             'update': ('PUT', '/api/v1/users/{user_id}/properties/{property_key}'),
         },
         
         # Organization Properties API
         'organization_properties': {
             'list': ('GET', '/api/v1/organizations/{org_code}/properties'),
-            'get': ('GET', '/api/v1/organizations/{org_code}/properties/{property_key}'),
             'update': ('PUT', '/api/v1/organizations/{org_code}/properties/{property_key}'),
         },
         
         # Webhooks API
         'webhooks': {
             'list': ('GET', '/api/v1/webhooks'),
-            'get': ('GET', '/api/v1/webhooks/{webhook_id}'),
             'create': ('POST', '/api/v1/webhooks'),
             'update': ('PATCH', '/api/v1/webhooks/{webhook_id}'),
             'delete': ('DELETE', '/api/v1/webhooks/{webhook_id}'),
@@ -180,12 +173,12 @@ class ManagementClient:
         # Business API
         'business': {
             'get': ('GET', '/api/v1/business'),
+            'update': ('PATCH', '/api/v1/business'),
         },
         
         # Environment Feature Flags API
         'environment_feature_flags': {
             'list': ('GET', '/api/v1/environment/feature_flags'),
-            'get': ('GET', '/api/v1/environment/feature_flags/{feature_flag_key}'),
             'update': ('PATCH', '/api/v1/environment/feature_flags/{feature_flag_key}'),
             'delete': ('DELETE', '/api/v1/environment/feature_flags/{feature_flag_key}'),
         },
@@ -193,14 +186,12 @@ class ManagementClient:
         # Organization Feature Flags API
         'organization_feature_flags': {
             'list': ('GET', '/api/v1/organizations/{org_code}/feature_flags'),
-            'get': ('GET', '/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}'),
             'update': ('PATCH', '/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}'),
             'delete': ('DELETE', '/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}'),
         },
         
         # User Feature Flags API
         'user_feature_flags': {
-            'get': ('GET', '/api/v1/users/{user_id}/feature_flags/{feature_flag_key}'),
             'update': ('PATCH', '/api/v1/users/{user_id}/feature_flags/{feature_flag_key}'),
         },
         
@@ -213,6 +204,15 @@ class ManagementClient:
         'user_refresh_claims': {
             'refresh': ('POST', '/api/v1/users/{user_id}/refresh_claims'),
         },
+        'user_identities': {
+            'list': ('GET', '/api/v1/users/{user_id}/identities'),
+            'create': ('POST', '/api/v1/users/{user_id}/identities'),
+        },
+        'identities': {
+            'get': ('GET', '/api/v1/identities/{identity_id}'),
+            'update': ('PATCH', '/api/v1/identities/{identity_id}'),
+            'delete': ('DELETE', '/api/v1/identities/{identity_id}'),
+        },
     }
     
     # Define response types for each endpoint
@@ -220,50 +220,47 @@ class ManagementClient:
         'users': {
             'list': {'200': 'UsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'User', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'200': 'CreateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'UpdateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'organizations': {
             'list': {'200': 'GetOrganizationsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'GetOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'200': 'CreateOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'organization_users': {
             'list': {'200': 'GetOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'add': {'201': 'AddOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'add': {'200': 'AddOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'UpdateOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'remove': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'organization_user_roles': {
             'list': {'200': 'GetOrganizationsUserRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'add': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'add': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'remove': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'organization_user_permissions': {
             'list': {'200': 'GetOrganizationsUserPermissionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'add': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'add': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'remove': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'roles': {
             'list': {'200': 'GetRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'GetRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'UpdateRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'permissions': {
             'list': {'200': 'GetPermissionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'Permissions', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'create': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'feature_flags': {
-            'list': {'200': 'GetFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetFeatureFlagsResponseDataFeatureFlagsInner', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'create': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
@@ -271,19 +268,19 @@ class ManagementClient:
         'subscribers': {
             'list': {'200': 'GetSubscribersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'GetSubscriberResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateSubscriberSuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'api_applications': {
             'list': {'200': 'GetApisResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'GetApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'UpdateApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'200': 'CreateApisResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'connected_apps': {
             'list': {'200': 'GetApplicationsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'GetApplicationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'create': {'201': 'CreateApplicationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'UpdateApplicationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'timezones': {
@@ -294,26 +291,22 @@ class ManagementClient:
         },
         'properties': {
             'list': {'200': 'GetPropertiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetPropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'create': {'201': 'CreatePropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'user_properties': {
-            'list': {'200': 'GetUserPropertiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetUserPropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'list': {'200': 'GetPropertyValuesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'organization_properties': {
-            'list': {'200': 'GetOrganizationPropertiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetOrganizationPropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'list': {'200': 'GetPropertyValuesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'webhooks': {
             'list': {'200': 'GetWebhooksResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetWebhookResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateWebhookResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'200': 'CreateWebhookResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'UpdateWebhookResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'events': {
@@ -324,28 +317,26 @@ class ManagementClient:
         },
         'connections': {
             'list': {'200': 'GetConnectionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetConnectionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'Connection', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'create': {'201': 'CreateConnectionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'business': {
             'get': {'200': 'GetBusinessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'environment_feature_flags': {
             'list': {'200': 'GetEnvironmentFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetEnvironmentFeatureFlagsResponseDataFeatureFlagsInner', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'organization_feature_flags': {
             'list': {'200': 'GetOrganizationFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetOrganizationFeatureFlagsResponseDataFeatureFlagsInner', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'user_feature_flags': {
-            'get': {'200': 'GetUserFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'user_password': {
@@ -353,6 +344,15 @@ class ManagementClient:
         },
         'user_refresh_claims': {
             'refresh': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'user_identities': {
+            'list': {'200': 'GetIdentitiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateIdentityResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+        },
+        'identities': {
+            'get': {'200': 'Identity', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
         },
     }
     

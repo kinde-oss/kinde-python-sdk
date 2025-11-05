@@ -102,7 +102,12 @@ class RouteProtectionEngine:
                 config = {}
             
             # Load global settings
-            self.global_settings = config.get("settings", {})
+            settings_config = config.get("settings", {})
+            if settings_config is None:
+                settings_config = {}
+            if not isinstance(settings_config, dict):
+                raise ValueError("'settings' must be a mapping of setting_name -> value")
+            self.global_settings = settings_config
             
             # Load route rules
             routes_config = config.get("routes", {})

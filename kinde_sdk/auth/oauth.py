@@ -737,18 +737,20 @@ class OAuth:
         try:
             try:
                 loop = asyncio.get_running_loop()
-                # If we're already in an event loop (e.g., FastAPI), instruct callers to use the async API.
-                if loop.is_running():
-                    raise RuntimeError(
-                        "check_route_access() cannot be used inside a running event loop. "
-                        "Use `await validate_route_access(...)` instead."
-                    )
             except RuntimeError:
-                # No running loop; safe to use asyncio.run (e.g., Flask/Werkzeug)
-                pass
+                loop = None
+
+            if loop and loop.is_running():
+                raise RuntimeError(
+                    "check_route_access() cannot be used inside a running event loop. "
+                    "Use `await validate_route_access(...)` instead."
+                )
 
             result = asyncio.run(self.validate_route_access(path, method, request))
             return result.get("allowed", False)
+        except RuntimeError:
+            # Propagate the guidance to the caller untouched
+            raise
         except Exception:
             self._logger.exception("Error checking route access")
             return False

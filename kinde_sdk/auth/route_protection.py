@@ -106,20 +106,36 @@ class RouteProtectionEngine:
             
             # Load route rules
             routes_config = config.get("routes", {})
+            if routes_config is None:
+                routes_config = {}
+            if not isinstance(routes_config, dict):
+                raise ValueError("'routes' must be a mapping of rule_name -> rule_config")
             self.routes = {}
             
             for route_name, route_config in routes_config.items():
                 # Validate required fields
                 if "path" not in route_config:
                     raise ValueError(f"Route '{route_name}' missing required 'path' field")
+                if not isinstance(route_config["path"], str):
+                    raise ValueError(f"Route '{route_name}' path must be a string")
                 
                 # Set defaults
                 route_config.setdefault("methods", ["GET"])
+                if not isinstance(route_config["methods"], list) or not all(isinstance(m, str) for m in route_config["methods"]):
+                    raise ValueError(f"Route '{route_name}' methods must be a list of strings")
                 
                 # Validate that route has either roles, permissions, or is public
                 has_roles = route_config.get("roles")
                 has_permissions = route_config.get("permissions")
                 is_public = route_config.get("public", False)
+                
+                # Normalize singletons to lists for consistent handling
+                if isinstance(has_roles, str):
+                    route_config["roles"] = [has_roles]
+                    has_roles = route_config["roles"]
+                if isinstance(has_permissions, str):
+                    route_config["permissions"] = [has_permissions]
+                    has_permissions = route_config["permissions"]
                 
                 if not (has_roles or has_permissions or is_public):
                     self._logger.warning(
@@ -280,6 +296,7 @@ class RouteProtectionEngine:
         
         Supports wildcards:
         - "/admin/*" matches "/admin/users", "/admin/settings/view", etc.
+        - "/admin/*" does NOT match "/admin" itself (security: wildcard requires subpath)
         - "/api/users" matches exactly "/api/users"
         
         Args:
@@ -302,8 +319,8 @@ class RouteProtectionEngine:
         # Handle wildcard patterns
         if route_pattern.endswith('/*'):
             pattern_prefix = route_pattern[:-2]  # Remove /*
-            # Ensure we're matching a path segment boundary
-            return request_path == pattern_prefix or request_path.startswith(pattern_prefix + '/')
+            # Match only subpaths with a segment boundary, not the base path
+            return request_path.startswith(pattern_prefix + '/')
         
         # No additional pattern types supported: only exact and trailing '/*' wildcards
         

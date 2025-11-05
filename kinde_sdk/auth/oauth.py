@@ -109,8 +109,8 @@ class OAuth:
             try:
                 self._route_protection = RouteProtectionEngine(route_protection_file)
                 self._logger.info(f"Route protection enabled with config: {route_protection_file}")
-            except Exception as e:
-                self._logger.error(f"Failed to initialize route protection: {e}")
+            except Exception:
+                self._logger.exception("Failed to initialize route protection")
                 # Note: We don't raise here to maintain backward compatibility
                 # Users can check is_route_protection_enabled() to verify if it worked
         elif route_protection_file and not ROUTE_PROTECTION_AVAILABLE:

@@ -237,7 +237,7 @@ class FlaskFramework(FrameworkInterface):
         def get_user():
             """Get the current user's information."""
             try:
-                if not self._oauth.is_authenticated(request):
+                if not self._oauth.is_authenticated():
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                     try:
@@ -246,7 +246,7 @@ class FlaskFramework(FrameworkInterface):
                     finally:
                         loop.close()
                 
-                return self._oauth.get_user_info(request)
+                return self._oauth.get_user_info()
             except Exception as e:
                 return f"Failed to get user info: {str(e)}", 400
     

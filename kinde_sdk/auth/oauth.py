@@ -126,9 +126,6 @@ class OAuth:
         """
         Check if the user is authenticated using the session manager.
         
-        Args:
-            request (Optional[Any]): The current request object
-            
         Returns:
             bool: True if the user is authenticated, False otherwise
         """
@@ -148,9 +145,6 @@ class OAuth:
         """
         Get the user information from the session.
         
-        Args:
-            request (Optional[Any]): The current request object
-            
         Returns:
             Dict[str, Any]: The user information
             

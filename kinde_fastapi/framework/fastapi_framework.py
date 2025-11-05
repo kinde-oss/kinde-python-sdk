@@ -120,10 +120,10 @@ class FastAPIFramework(FrameworkInterface):
         """
         # Helper function to get current user
         async def get_current_user(request: Request):
-            if not self._oauth.is_authenticated(request):
+            if not self._oauth.is_authenticated():
                 return None
             try:
-                return self._oauth.get_user_info(request)
+                return self._oauth.get_user_info()
             except ValueError:
                 return None
         
@@ -229,9 +229,9 @@ class FastAPIFramework(FrameworkInterface):
         @self.app.get("/user")
         async def get_user(request: Request):
             """Get the current user's information."""
-            if not self._oauth.is_authenticated(request):
+            if not self._oauth.is_authenticated():
                 return RedirectResponse(url=await self._oauth.login())
-            return self._oauth.get_user_info(request)
+            return self._oauth.get_user_info()
     
     def can_auto_detect(self) -> bool:
         """

@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from flask import Flask, request, redirect, session
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
@@ -6,10 +6,7 @@ from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
 import asyncio
-import threading
-import logging
 import nest_asyncio
-from flask_session import Session
 
 if TYPE_CHECKING:
     from flask import Request

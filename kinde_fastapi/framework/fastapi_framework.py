@@ -242,6 +242,7 @@ class FastAPIFramework(FrameworkInterface):
         """
         try:
             import fastapi
+            _ = fastapi  # Import check only
             return True
         except ImportError:
             return False 

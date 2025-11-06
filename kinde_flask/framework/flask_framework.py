@@ -256,6 +256,7 @@ class FlaskFramework(FrameworkInterface):
         """
         try:
             import flask
+            _ = flask  # Import check only
             return True
         except ImportError:
             return False

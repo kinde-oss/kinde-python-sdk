@@ -130,6 +130,10 @@ class TestOAuthExtended(unittest.TestCase):
         # Set the framework in OAuth
         self.oauth._framework = self.mock_framework
 
+
+class TestOAuthMethodSignatures(unittest.TestCase):
+    """Test OAuth method signatures to verify the fix for incorrect request parameter passing."""
+
     @patch.dict('os.environ', {
         'KINDE_CLIENT_ID': 'test_client_id',
         'KINDE_CLIENT_SECRET': 'test_client_secret',
@@ -156,6 +160,10 @@ class TestOAuthExtended(unittest.TestCase):
             'userinfo_endpoint': 'https://test.kinde.com/oauth2/userinfo'
         })
         mock_get.return_value = mock_response
+        
+        # Configure factory mocks to prevent blocking during OAuth initialization
+        mock_storage_factory.create_storage.return_value = MagicMock()
+        mock_framework_factory.create_framework.return_value = None
         
         oauth = OAuth(framework=None)
         sig = inspect.signature(oauth.is_authenticated)
@@ -192,6 +200,10 @@ class TestOAuthExtended(unittest.TestCase):
         })
         mock_get.return_value = mock_response
         
+        # Configure factory mocks to prevent blocking during OAuth initialization
+        mock_storage_factory.create_storage.return_value = MagicMock()
+        mock_framework_factory.create_framework.return_value = None
+        
         oauth = OAuth(framework=None)
         sig = inspect.signature(oauth.get_user_info)
         params = list(sig.parameters.keys())
@@ -226,6 +238,10 @@ class TestOAuthExtended(unittest.TestCase):
             'userinfo_endpoint': 'https://test.kinde.com/oauth2/userinfo'
         })
         mock_get.return_value = mock_response
+        
+        # Configure factory mocks to prevent blocking during OAuth initialization
+        mock_storage_factory.create_storage.return_value = MagicMock()
+        mock_framework_factory.create_framework.return_value = None
         
         oauth = OAuth(framework=None)
         
@@ -262,6 +278,10 @@ class TestOAuthExtended(unittest.TestCase):
             'userinfo_endpoint': 'https://test.kinde.com/oauth2/userinfo'
         })
         mock_get.return_value = mock_response
+        
+        # Configure factory mocks to prevent blocking during OAuth initialization
+        mock_storage_factory.create_storage.return_value = MagicMock()
+        mock_framework_factory.create_framework.return_value = None
         
         oauth = OAuth(framework=None)
         

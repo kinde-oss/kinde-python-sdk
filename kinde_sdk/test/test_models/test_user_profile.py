@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.user_profile import UserProfile
-from kinde_sdk import schemas
+from kinde_sdk.management import schemas
 
 
 class TestUserProfile(unittest.TestCase):

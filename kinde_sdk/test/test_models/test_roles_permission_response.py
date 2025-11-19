@@ -14,7 +14,7 @@ import unittest
 
 import kinde_sdk
 from kinde_sdk.model.roles_permission_response import RolesPermissionResponse
-from kinde_sdk import configuration
+from kinde_sdk.management import configuration
 
 
 class TestRolesPermissionResponse(unittest.TestCase):

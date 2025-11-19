@@ -5,7 +5,7 @@ on:
     branches: [ "main", "staging" ]
 
   push:
-    branches: [ "main", "staging" ]
+    branches: [ "main", "staging", "main_V2", "fix/management-api-endpoints" ]
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
@@ -19,15 +19,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - python-version: "3.8"
           - python-version: "3.9"
           - python-version: "3.10"
           - python-version: "3.11"
+          - python-version: "3.12"
+          - python-version: "3.13"
 
     steps:
 
       - name: Checkout Code Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -42,5 +43,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Test with unittest
-        run:  python -m unittest
+      - name: Run tests
+        run:  pytest --cov=kinde_sdk --cov-branch --cov-report=xml
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

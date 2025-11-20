@@ -75,7 +75,7 @@ pylint = "^2.0"
 pycodestyle = "^2.0"
 pytest-asyncio = "^0.21.1"
 pytest-timeout = "^2.2.0"
-black = "^23.7.0"
+black = "^24.3.0"
 flake8 = "^6.1.0"
 isort = "^5.12.0"
 

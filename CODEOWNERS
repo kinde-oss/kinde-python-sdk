@@ -1,1 +1,9 @@
 * @kinde-oss/giants-kinde
+pyproject.toml @kinde-oss/sdk-engineers
+**/pyproject.toml @kinde-oss/sdk-engineers
+pyproject.toml @kinde-oss/sdk-engineers
+**/pyproject.toml @kinde-oss/sdk-engineers
+pyproject.toml @kinde-oss/sdk-engineers
+**/pyproject.toml @kinde-oss/sdk-engineers
+requirements.txt @kinde-oss/sdk-engineers
+**/requirements.txt @kinde-oss/sdk-engineers

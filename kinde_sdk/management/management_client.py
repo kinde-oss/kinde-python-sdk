@@ -384,14 +384,33 @@ class ManagementClient:
         # Token will be added directly in the API method since we're calling REST client directly
         pass
     
+    def _singularize_resource(self, resource: str) -> str:
+        """
+        Convert a plural resource name to its singular form.
+        
+        Args:
+            resource: Plural resource name (e.g., 'users', 'user_identities', 'identities')
+            
+        Returns:
+            Singular form of the resource name (e.g., 'user', 'user_identity', 'identity')
+        """
+        # Handle special cases
+        if resource == 'business':
+            return 'business'  # Don't remove 's' from 'business'
+        elif resource == 'user_identities':
+            return 'user_identity'  # Replace 'identities' with 'identity'
+        elif resource == 'identities':
+            return 'identity'  # Replace 'identities' with 'identity'
+        # Default: remove trailing 's' if present
+        elif resource.endswith('s'):
+            return resource[:-1]
+        else:
+            return resource
+    
     def _generate_methods(self):
         """Generate dynamic methods for each API endpoint."""
         for resource, endpoints in self.API_ENDPOINTS.items():
-            # Handle special cases for singularization
-            if resource == 'business':
-                resource_singular = 'business'  # Don't remove 's' from 'business'
-            else:
-                resource_singular = resource[:-1] if resource.endswith('s') else resource
+            resource_singular = self._singularize_resource(resource)
             
             for action, endpoint in endpoints.items():
                 if len(endpoint) == 3:
@@ -427,11 +446,7 @@ class ManagementClient:
         Returns:
             A callable method that makes the API request
         """
-        # Handle special cases for singularization
-        if resource == 'business':
-            resource_singular = 'business'  # Don't remove 's' from 'business'
-        else:
-            resource_singular = resource[:-1] if resource.endswith('s') else resource
+        resource_singular = self._singularize_resource(resource)
 
         def api_method(*args, **kwargs) -> Dict[str, Any]:
             # Format path with any path parameters from args

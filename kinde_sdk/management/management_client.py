@@ -84,6 +84,7 @@ class ManagementClient:
         
         # Feature Flags API
         'feature_flags': {
+            'list': ('GET', '/api/v1/feature_flags'),
             'create': ('POST', '/api/v1/feature_flags'),
             'update': ('PUT', '/api/v1/feature_flags/{feature_flag_key}'),
             'delete': ('DELETE', '/api/v1/feature_flags/{feature_flag_key}'),
@@ -261,6 +262,7 @@ class ManagementClient:
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'feature_flags': {
+            'list': {'200': 'GetFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'create': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},

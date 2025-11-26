@@ -103,7 +103,8 @@ class TestManagementClient(unittest.TestCase):
         assert hasattr(client, 'delete_permission')
         
         # Test feature flag methods
-        # Note: get_feature_flags and get_feature_flag were removed in PR #128
+        assert hasattr(client, 'get_feature_flags')
+        # Note: get_feature_flag was removed in PR #128
         assert hasattr(client, 'create_feature_flag')
         assert hasattr(client, 'update_feature_flag')
         assert hasattr(client, 'delete_feature_flag')

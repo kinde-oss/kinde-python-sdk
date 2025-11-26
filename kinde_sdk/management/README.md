@@ -64,11 +64,12 @@ for resource, endpoints in self.API_ENDPOINTS.items():
 | Update     | PATCH       | `/resource/{id}` | `update_resource(id, **data)` |
 | Delete     | DELETE      | `/resource/{id}` | `delete_resource(id)` |
 
-**Note on Users endpoints:** Single-user operations use a query parameter (`id`) with `/api/v1/user`, e.g.:
-- `get_user(id)`
-- `update_user(id, **data)`  → `PATCH /api/v1/user?id=...`
-- `delete_user(id)`          → `DELETE /api/v1/user?id=...`
-
+    'users': {
+        'list': ('GET', '/users'),
+        # single-user operations use query param `id` with /user
+        'get': ('GET', '/user'),
+        # ...
+    },
 ### Request Processing
 
 1. Path parameters: Filled from positional arguments

@@ -46,6 +46,21 @@ fastapi = [
 flask = [
     "flask >=3.0.0, <4.0.0",
 ]
+dev = [
+    "pytest >=7.4.0",
+    "pytest-cov >=4.1.0",
+    "pytest-django >=4.5.2",
+    "mypy >=1.5.0",
+    "bandit >=1.7",
+    "pylint >=2.0",
+    "pycodestyle >=2.0",
+    "pytest-asyncio >=0.21.1",
+    "pytest-timeout >=2.2.0",
+    "black >=23.7.0",
+    "flake8 >=6.1.0",
+    "isort >=7.0.0; python_version >= '3.10'",
+    "isort >=5.12.0, <7.0; python_version < '3.10'",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/kinde-oss/kinde-python-sdk"
@@ -77,5 +92,8 @@ pytest-asyncio = "^0.21.1"
 pytest-timeout = "^2.2.0"
 black = "^23.7.0"
 flake8 = "^6.1.0"
-isort = "^7.0.0"
+# isort is now conditionally installed based on Python version
+# Python 3.10+: isort >=7.0.0
+# Python 3.9: isort >=5.12.0, <7.0
+# Install via: pip install -e ".[dev]"
 

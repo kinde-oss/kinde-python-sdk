@@ -46,6 +46,24 @@ fastapi = [
 flask = [
     "flask >=3.0.0, <4.0.0",
 ]
+dev = [
+    # pytest: conditional based on Python version
+    # Python 3.9: pytest 7.4.0 to <9.0.0
+    # Python 3.10+: pytest 9.0.0+
+    "pytest>=7.4.0,<9.0.0; python_version < '3.10'",
+    "pytest>=9.0.0; python_version >= '3.10'",
+    "pytest-cov>=4.1.0",
+    "pytest-django>=4.5.2",
+    "pytest-asyncio>=0.26.0",
+    "pytest-timeout>=2.2.0",
+    "mypy>=1.5.0",
+    "bandit>=1.7",
+    "pylint>=2.0",
+    "pycodestyle>=2.0",
+    "black>=24.3.0",
+    "flake8>=6.1.0",
+    "isort>=5.12.0",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/kinde-oss/kinde-python-sdk"
@@ -66,16 +84,22 @@ zip-safe = false
 "kinde_flask" = ["**/*.py", "**/*.json", "**/*.yaml", "**/*.yml"]
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.4.0"
+# pytest: v9 requires Python 3.10+, so we use conditional dependencies
+# Python 3.9: pytest ^7.4.0,<9.0.0
+# Python 3.10+: pytest ^9.0.0
+# Note: Poetry doesn't support environment markers in dev-dependencies directly.
+# The actual conditional logic is in requirements.txt and [project.optional-dependencies.dev]
+# For Poetry users, we default to Python 3.9 compatible version
+pytest = "^7.4.0,<9.0.0"
 pytest-cov = "^4.1.0"
 pytest-django = "^4.5.2"
 mypy = "^1.5.0"
 bandit = "^1.7"
 pylint = "^2.0"
 pycodestyle = "^2.0"
-pytest-asyncio = "^0.21.1"
+pytest-asyncio = "^0.26.0"
 pytest-timeout = "^2.2.0"
-black = "^23.7.0"
+black = "^24.3.0"
 flake8 = "^6.1.0"
 isort = "^5.12.0"
 

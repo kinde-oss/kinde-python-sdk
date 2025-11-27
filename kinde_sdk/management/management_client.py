@@ -37,10 +37,10 @@ class ManagementClient:
         # Organizations API
         'organizations': {
             'list': ('GET', '/api/v1/organizations'),
-            'get': ('GET', '/api/v1/organization/{org_code}'),
-            'create': ('POST', '/api/v1/organization'),
-            'update': ('PATCH', '/api/v1/organization/{org_code}'),
-            'delete': ('DELETE', '/api/v1/organization/{org_code}'),
+            'get': ('GET', '/api/v1/organizations/{org_code}'),
+            'create': ('POST', '/api/v1/organizations'),
+            'update': ('PATCH', '/api/v1/organizations/{org_code}'),
+            'delete': ('DELETE', '/api/v1/organizations/{org_code}'),
         },
         
         # Organization Users API
@@ -228,7 +228,7 @@ class ManagementClient:
         'organizations': {
             'list': {'200': 'GetOrganizationsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'GetOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'200': 'CreateOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
@@ -275,7 +275,7 @@ class ManagementClient:
         'api_applications': {
             'list': {'200': 'GetApisResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'GetApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'200': 'CreateApisResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateApisResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'connected_apps': {
@@ -319,7 +319,7 @@ class ManagementClient:
         },
         'connections': {
             'list': {'200': 'GetConnectionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'Connection', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'get': {'200': 'GetConnectionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'create': {'201': 'CreateConnectionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},

@@ -97,14 +97,12 @@ class TestManagementClient(unittest.TestCase):
         
         # Test permission methods
         assert hasattr(client, 'get_permissions')
-        # Note: get_permission was removed in PR #128 - permissions no longer has a get endpoint
         assert hasattr(client, 'create_permission')
         assert hasattr(client, 'update_permission')
         assert hasattr(client, 'delete_permission')
         
         # Test feature flag methods
         assert hasattr(client, 'get_feature_flags')
-        # Note: get_feature_flag was removed in PR #128
         assert hasattr(client, 'create_feature_flag')
         assert hasattr(client, 'update_feature_flag')
         assert hasattr(client, 'delete_feature_flag')
@@ -117,7 +115,6 @@ class TestManagementClient(unittest.TestCase):
         assert hasattr(client, 'get_api_applications')
         assert hasattr(client, 'get_api_application')
         assert hasattr(client, 'create_api_application')
-        # Note: update_api_application was removed in PR #128
         assert hasattr(client, 'delete_api_application')
         
         # Test subscriber methods
@@ -524,7 +521,7 @@ class TestManagementClient(unittest.TestCase):
         # Create client
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Test feature flag create API call (get_feature_flags was removed in PR #128)
+        # Test feature flag create API call
         result = client.create_feature_flag(key="test_flag", type="str", value="test_value")
         
         # Verify param_serialize was called

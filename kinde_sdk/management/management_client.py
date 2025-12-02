@@ -221,7 +221,7 @@ class ManagementClient:
         'users': {
             'list': {'200': 'UsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'User', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'200': 'CreateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
+            'create': {'201': 'CreateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'update': {'200': 'UpdateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
@@ -252,7 +252,7 @@ class ManagementClient:
             'list': {'200': 'GetRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
             'get': {'200': 'GetRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'create': {'201': 'CreateRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
+            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
             'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
         },
         'permissions': {
@@ -403,6 +403,9 @@ class ManagementClient:
             return 'user_identity'  # Replace 'identities' with 'identity'
         elif resource == 'identities':
             return 'identity'  # Replace 'identities' with 'identity'
+        # Handle words ending in 'ies' (e.g., 'properties' -> 'property')
+        elif resource.endswith('ies'):
+            return resource[:-3] + 'y'
         # Default: remove trailing 's' if present
         elif resource.endswith('s'):
             return resource[:-1]

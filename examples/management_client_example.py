@@ -180,7 +180,7 @@ def test_management_client():
         if users_response and 'users' in users_response and users_response['users']:
             user_id = users_response['users'][0].get('id')
             if user_id:
-                user = client.get_user(user_id)
+                user = client.get_user(id=user_id)
                 print_response(f"User {user_id} Response", user)
                 print("✅ Get specific user API call successful")
             else:

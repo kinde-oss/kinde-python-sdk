@@ -86,10 +86,13 @@ pytest-cov = "^4.1.0"
 pytest-django = "^4.5.2"
 mypy = "^1.5.0"
 bandit = "^1.7"
-# pylint is now conditionally installed based on Python version
-# Python 3.10+: pylint >=4.0.0
+# pylint is conditionally installed based on Python version to maintain Python 3.9 compatibility
+# Python 3.10+: pylint >=4.0.0 (use pip install -e ".[dev]" for conditional installation)
 # Python 3.9: pylint >=2.0, <4.0
-# Install via: pip install -e ".[dev]"
+# Note: Poetry doesn't support multiple conditional version constraints for the same package.
+# This entry uses the Python 3.9-compatible version. Python 3.10+ users can upgrade manually
+# or use: pip install -e ".[dev]" which respects the conditional markers in [project.optional-dependencies]
+pylint = ">=2.0,<4.0"
 pycodestyle = "^2.0"
 pytest-asyncio = "^0.26.0"
 pytest-timeout = "^2.2.0"

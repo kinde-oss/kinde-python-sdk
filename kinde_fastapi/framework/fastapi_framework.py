@@ -1,5 +1,5 @@
-from typing import Optional, Dict, Any
-from fastapi import FastAPI, Request, Depends
+from typing import Optional
+from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
@@ -119,11 +119,11 @@ class FastAPIFramework(FrameworkInterface):
         Register all Kinde-specific routes with the FastAPI application.
         """
         # Helper function to get current user
-        async def get_current_user(request: Request):
-            if not self._oauth.is_authenticated(request):
+        async def get_current_user():
+            if not self._oauth.is_authenticated():
                 return None
             try:
-                return self._oauth.get_user_info(request)
+                return self._oauth.get_user_info()
             except ValueError:
                 return None
         
@@ -219,17 +219,17 @@ class FastAPIFramework(FrameworkInterface):
         
         # Register route
         @self.app.get("/register")
-        async def register(request: Request):
+        async def register():
             """Redirect to Kinde registration page."""
             return RedirectResponse(url=await self._oauth.register())
         
         # User info route
         @self.app.get("/user")
-        async def get_user(request: Request):
+        async def get_user():
             """Get the current user's information."""
-            if not self._oauth.is_authenticated(request):
+            if not self._oauth.is_authenticated():
                 return RedirectResponse(url=await self._oauth.login())
-            return self._oauth.get_user_info(request)
+            return self._oauth.get_user_info()
     
     def can_auto_detect(self) -> bool:
         """
@@ -240,6 +240,7 @@ class FastAPIFramework(FrameworkInterface):
         """
         try:
             import fastapi
+            _ = fastapi  # Import check only
             return True
         except ImportError:
             return False 

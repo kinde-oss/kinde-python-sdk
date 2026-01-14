@@ -53,7 +53,7 @@ client = ManagementClient(
 users = client.get_users()
 
 # Get a specific user
-user = client.get_user("user_id")
+user = client.get_user(id="user_id")
 
 # Get organizations
 organizations = client.get_organizations()
@@ -86,10 +86,10 @@ The Management Client automatically generates methods for all available API endp
 
 ### Users
 - `get_users()` - Get all users
-- `get_user(user_id)` - Get a specific user
+- `get_user(id=user_id)` - Get a specific user
 - `create_user(**data)` - Create a new user
-- `update_user(user_id, **data)` - Update a user
-- `delete_user(user_id)` - Delete a user
+- `update_user(id=user_id, **data)` - Update a user
+- `delete_user(id=user_id)` - Delete a user
 
 ### Organizations
 - `get_organizations()` - Get all organizations
@@ -144,9 +144,10 @@ if next_token:
 
 ```python
 user_data = {
-    "first_name": "John",
-    "last_name": "Doe",
-    "email": "john.doe@example.com",
+    "profile": {
+        "given_name": "John",
+        "family_name": "Doe"
+    },
     "identities": [
         {
             "type": "email",

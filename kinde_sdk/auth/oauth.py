@@ -2,18 +2,17 @@ import os
 import requests
 import logging
 import time
-import asyncio
-from typing import Any, Dict, List, Optional, Tuple, Union
-from urllib.parse import urlencode, urlparse, quote
+from typing import Any, Dict, Optional
+from urllib.parse import urlencode
 
 from .user_session import UserSession
 from kinde_sdk.core.storage.storage_manager import StorageManager
 from kinde_sdk.core.storage.storage_factory import StorageFactory
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from .config_loader import load_config
-from .enums import GrantType, IssuerRouteTypes, PromptTypes
+from .enums import IssuerRouteTypes, PromptTypes
 from .login_options import LoginOptions
-from kinde_sdk.core.helpers import generate_random_string, base64_url_encode, generate_pkce_pair, get_user_details as helper_get_user_details, get_user_details_sync
+from kinde_sdk.core.helpers import generate_random_string, generate_pkce_pair, get_user_details as helper_get_user_details, get_user_details_sync
 from kinde_sdk.core.exceptions import (
     KindeConfigurationException,
     KindeLoginException,
@@ -154,9 +153,6 @@ class OAuth:
         """
         Check if the user is authenticated using the session manager.
         
-        Args:
-            request (Optional[Any]): The current request object
-            
         Returns:
             bool: True if the user is authenticated, False otherwise
         """
@@ -176,9 +172,6 @@ class OAuth:
         """
         Get the user information from the session.
         
-        Args:
-            request (Optional[Any]): The current request object
-            
         Returns:
             Dict[str, Any]: The user information
             

@@ -27,9 +27,9 @@ dependencies = [
     "requests >=2.32.2, <3.0",
     "typing-extensions >=4.11.0, <5.0",
     "frozendict >=2.4.3, <3.0",
-    "certifi >=2024.2.2, <2025.0.0",
+    "certifi >=2025.10.5, <2025.11.0",
     "PyYAML >=6.0.1, <7.0.0",
-    "cryptography >=41.0.0, <42.0.0",
+    "cryptography >=43.0.1, <43.0.2",
     "python-dotenv >=1.0.0, <2.0.0",
     "itsdangerous >=2.2.0, <3.0.0",
     "nest-asyncio >=1.5.8, <2.0.0",
@@ -41,7 +41,7 @@ dependencies = [
 fastapi = [
     "fastapi >=0.110.0, <1.0.0",
     "python-multipart >=0.0.6, <1.0.0",
-    "uvicorn >=0.25.0, <0.26.0",
+    "uvicorn >=0.37.0, <0.38.0",
 ]
 flask = [
     "flask >=3.0.0, <4.0.0",
@@ -101,11 +101,9 @@ mypy = "^1.5.0"
 bandit = "^1.7"
 pylint = "^2.0"
 pycodestyle = "^2.0"
-# pytest-asyncio: Default to 0.26.0 for Python 3.9 compatibility
-# Python 3.10+ users should use requirements.txt or pip with environment markers
 pytest-asyncio = "^0.26.0"
 pytest-timeout = "^2.2.0"
-black = "^24.3.0"
+black = "^25.0.0"
 flake8 = "^6.1.0"
 isort = "^5.12.0"
 

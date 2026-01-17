@@ -86,7 +86,7 @@ class ManagementClient:
         'feature_flags': {
             'list': ('GET', '/api/v1/feature_flags'),
             'create': ('POST', '/api/v1/feature_flags'),
-            'update': ('PUT', '/api/v1/feature_flags/{feature_flag_key}'),
+            'update': ('PATCH', '/api/v1/feature_flags/{feature_flag_key}'),
             'delete': ('DELETE', '/api/v1/feature_flags/{feature_flag_key}'),
         },
 
@@ -403,6 +403,14 @@ class ManagementClient:
             return 'user_identity'  # Replace 'identities' with 'identity'
         elif resource == 'identities':
             return 'identity'  # Replace 'identities' with 'identity'
+        # Handle words ending in '-ies' (e.g., properties -> property, user_properties -> user_property)
+        elif resource.endswith('ies'):
+            # For compound names, only replace the last part
+            if '_' in resource:
+                parts = resource.rsplit('_', 1)
+                return f"{parts[0]}_{parts[1][:-3]}y"
+            else:
+                return resource[:-3] + 'y'
         # Default: remove trailing 's' if present
         elif resource.endswith('s'):
             return resource[:-1]

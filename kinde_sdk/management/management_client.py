@@ -135,13 +135,13 @@ class ManagementClient:
         # User Properties API
         'user_properties': {
             'list': ('GET', '/api/v1/users/{user_id}/properties'),
-            'update': ('PUT', '/api/v1/users/{user_id}/properties/{property_key}'),
+            'update': ('PATCH', '/api/v1/users/{user_id}/properties/{property_key}'),
         },
         
         # Organization Properties API
         'organization_properties': {
             'list': ('GET', '/api/v1/organizations/{org_code}/properties'),
-            'update': ('PUT', '/api/v1/organizations/{org_code}/properties/{property_key}'),
+            'update': ('PATCH', '/api/v1/organizations/{org_code}/properties/{property_key}'),
         },
         
         # Webhooks API

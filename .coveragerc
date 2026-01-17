@@ -1,5 +1,10 @@
 [run]
 source = kinde_sdk
+# Enable subprocess measurement for pytest-cov v7 compatibility
+# pytest-cov v7 removed built-in subprocess measurement via .pth files
+# This option requires coverage>=7.10.6 (specified in requirements.txt)
+# If you see a warning about unrecognized option, upgrade coverage first
+patch = subprocess
 omit =
     # Generated OpenAPI files
     kinde_sdk/management/api/*

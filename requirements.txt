@@ -27,11 +27,11 @@ pytest-cov>=4.1.0
 pytest-timeout>=2.2.0
 black>=23.7.0
 flake8>=6.1.0
-# Note: isort version is conditional based on Python version in pyproject.toml [project.optional-dependencies]
+# Note: isort version is conditional based on Python version
 # Python 3.10+: isort >=7.0.0, Python 3.9: isort >=5.12.0, <7.0
-# For conditional installation, use: pip install -e ".[dev]"
-# This line maintains Python 3.9 compatibility for CI/CD
-isort>=5.12.0
+# Conditional markers mirror pyproject.toml [project.optional-dependencies.dev]
+isort>=7.0.0; python_version >= '3.10'
+isort>=5.12.0,<7.0; python_version < '3.10'
 mypy>=1.5.0
 PyYAML>=6.0.1
 twine>=4.0.2

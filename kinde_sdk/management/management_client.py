@@ -128,7 +128,7 @@ class ManagementClient:
         'properties': {
             'list': ('GET', '/api/v1/properties'),
             'create': ('POST', '/api/v1/properties'),
-            'update': ('PUT', '/api/v1/properties/{property_id}'),
+            'update': ('PATCH', '/api/v1/properties/{property_id}'),
             'delete': ('DELETE', '/api/v1/properties/{property_id}'),
         },
         

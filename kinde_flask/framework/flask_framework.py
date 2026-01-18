@@ -127,7 +127,16 @@ class FlaskFramework(FrameworkInterface):
         def login():
             """Redirect to Kinde login page."""
             loop = asyncio.get_event_loop()
-            login_url = loop.run_until_complete(self._oauth.login())
+            
+            # Build login options from query parameters
+            login_options = {}
+            
+            # Check for invitation_code in query parameters
+            invitation_code = request.args.get('invitation_code')
+            if invitation_code:
+                login_options['invitation_code'] = invitation_code
+            
+            login_url = loop.run_until_complete(self._oauth.login(login_options))
             return redirect(login_url)
 
         # Callback route

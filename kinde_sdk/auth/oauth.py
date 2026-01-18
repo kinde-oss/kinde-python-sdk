@@ -280,6 +280,9 @@ class OAuth:
             # Registration params
             LoginOptions.PLAN_INTEREST: "plan_interest",
             LoginOptions.PRICING_TABLE_KEY: "pricing_table_key",
+            # Invitation params
+            LoginOptions.INVITATION_CODE: "invitation_code",
+            LoginOptions.IS_INVITATION: "is_invitation",
             # Re-authentication support
             LoginOptions.SUPPORT_RE_AUTH: "supports_reauth",
         }
@@ -307,9 +310,18 @@ class OAuth:
                 # Handle boolean parameters
                 if option_key == LoginOptions.IS_CREATE_ORG or option_key == LoginOptions.HAS_SUCCESS_PAGE:
                     search_params[param_key] = "true" if login_options[option_key] else "false"
+                elif option_key == LoginOptions.IS_INVITATION:
+                    # Only add is_invitation if it's truthy
+                    if login_options[option_key]:
+                        search_params[param_key] = "true"
                 else:
                     # Use string representation for query params
                     search_params[param_key] = str(login_options[option_key])
+        
+        # Handle invitation code: automatically set is_invitation to "true" when invitation_code is present
+        if LoginOptions.INVITATION_CODE in login_options and login_options[LoginOptions.INVITATION_CODE]:
+            if LoginOptions.IS_INVITATION not in login_options or not login_options[LoginOptions.IS_INVITATION]:
+                search_params["is_invitation"] = "true"
         
         # Add additional auth parameters
         if LoginOptions.AUTH_PARAMS in login_options and isinstance(login_options[LoginOptions.AUTH_PARAMS], dict):

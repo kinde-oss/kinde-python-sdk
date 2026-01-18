@@ -131,7 +131,15 @@ class FastAPIFramework(FrameworkInterface):
         @self.app.get("/login")
         async def login(request: Request):
             """Redirect to Kinde login page."""
-            url=await self._oauth.login()
+            # Build login options from query parameters
+            login_options = {}
+            
+            # Check for invitation_code in query parameters
+            invitation_code = request.query_params.get('invitation_code')
+            if invitation_code:
+                login_options['invitation_code'] = invitation_code
+            
+            url = await self._oauth.login(login_options)
             self._logger.warning(f"[Login] Session is: {request.session}")
             return RedirectResponse(url=url)
         

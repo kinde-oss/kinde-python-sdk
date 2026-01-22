@@ -18,27 +18,27 @@ import pprint
 import re  # noqa: F401
 import json
 
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class UserProfileV2(BaseModel):
+class VerifyApiKeyResponse(BaseModel):
     """
-    UserProfileV2
+    VerifyApiKeyResponse
     """ # noqa: E501
-    sub: Optional[StrictStr] = Field(default=None, description="Unique ID of the user in Kinde.")
-    provided_id: Optional[StrictStr] = Field(default=None, description="Value of the user's ID in a third-party system when the user is imported into Kinde.")
-    name: Optional[StrictStr] = Field(default=None, description="User's first and last name separated by a space.")
-    given_name: Optional[StrictStr] = Field(default=None, description="User's first name.")
-    family_name: Optional[StrictStr] = Field(default=None, description="User's last name.")
-    updated_at: Optional[StrictInt] = Field(default=None, description="Date the user was last updated at (In Unix time).")
-    email: Optional[StrictStr] = Field(default=None, description="User's email address if available.")
-    email_verified: Optional[StrictBool] = Field(default=None, description="Whether the user's email address has been verified.")
-    picture: Optional[StrictStr] = Field(default=None, description="URL that point's to the user's picture or avatar")
-    preferred_username: Optional[StrictStr] = Field(default=None, description="User's preferred username.")
-    id: Optional[StrictStr] = Field(default=None, description="Unique ID of the user in Kinde")
-    __properties: ClassVar[List[str]] = ["sub", "provided_id", "name", "given_name", "family_name", "updated_at", "email", "email_verified", "picture", "preferred_username", "id"]
+    code: Optional[StrictStr] = Field(default=None, description="Response code.")
+    message: Optional[StrictStr] = Field(default=None, description="Response message.")
+    is_valid: Optional[StrictBool] = Field(default=None, description="Whether the API key is valid.")
+    key_id: Optional[StrictStr] = Field(default=None, description="The unique ID for the API key.")
+    status: Optional[StrictStr] = Field(default=None, description="The status of the API key.")
+    scopes: Optional[List[StrictStr]] = Field(default=None, description="Array of scopes associated with this key.")
+    org_code: Optional[StrictStr] = Field(default=None, description="The organization code associated with this key.")
+    user_id: Optional[StrictStr] = Field(default=None, description="The user ID associated with this key.")
+    last_verified_on: Optional[datetime] = Field(default=None, description="When the API key was last verified.")
+    verification_count: Optional[StrictInt] = Field(default=None, description="Number of times this API key has been verified.")
+    __properties: ClassVar[List[str]] = ["code", "message", "is_valid", "key_id", "status", "scopes", "org_code", "user_id", "last_verified_on", "verification_count"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -58,7 +58,7 @@ class UserProfileV2(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of UserProfileV2 from a JSON string"""
+        """Create an instance of VerifyApiKeyResponse from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -79,26 +79,26 @@ class UserProfileV2(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if provided_id (nullable) is None
+        # set to None if org_code (nullable) is None
         # and model_fields_set contains the field
-        if self.provided_id is None and "provided_id" in self.model_fields_set:
-            _dict['provided_id'] = None
+        if self.org_code is None and "org_code" in self.model_fields_set:
+            _dict['org_code'] = None
 
-        # set to None if picture (nullable) is None
+        # set to None if user_id (nullable) is None
         # and model_fields_set contains the field
-        if self.picture is None and "picture" in self.model_fields_set:
-            _dict['picture'] = None
+        if self.user_id is None and "user_id" in self.model_fields_set:
+            _dict['user_id'] = None
 
-        # set to None if preferred_username (nullable) is None
+        # set to None if last_verified_on (nullable) is None
         # and model_fields_set contains the field
-        if self.preferred_username is None and "preferred_username" in self.model_fields_set:
-            _dict['preferred_username'] = None
+        if self.last_verified_on is None and "last_verified_on" in self.model_fields_set:
+            _dict['last_verified_on'] = None
 
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of UserProfileV2 from a dict"""
+        """Create an instance of VerifyApiKeyResponse from a dict"""
         if obj is None:
             return None
 
@@ -106,17 +106,16 @@ class UserProfileV2(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "sub": obj.get("sub"),
-            "provided_id": obj.get("provided_id"),
-            "name": obj.get("name"),
-            "given_name": obj.get("given_name"),
-            "family_name": obj.get("family_name"),
-            "updated_at": obj.get("updated_at"),
-            "email": obj.get("email"),
-            "email_verified": obj.get("email_verified"),
-            "picture": obj.get("picture"),
-            "preferred_username": obj.get("preferred_username"),
-            "id": obj.get("id")
+            "code": obj.get("code"),
+            "message": obj.get("message"),
+            "is_valid": obj.get("is_valid"),
+            "key_id": obj.get("key_id"),
+            "status": obj.get("status"),
+            "scopes": obj.get("scopes"),
+            "org_code": obj.get("org_code"),
+            "user_id": obj.get("user_id"),
+            "last_verified_on": obj.get("last_verified_on"),
+            "verification_count": obj.get("verification_count")
         })
         return _obj
 

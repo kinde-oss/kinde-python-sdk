@@ -6,18 +6,16 @@ with the existing Kinde SDK infrastructure and adds automatic token management
 to the generated API classes.
 """
 
-import logging
 import inspect
+import logging
 import re
 import warnings
-from typing import Dict, Any, Optional
-
-from kinde_sdk.management.configuration import Configuration
-from kinde_sdk.management.api_client import ApiClient
-from .management_token_manager import ManagementTokenManager
 
 # Import the api module to dynamically load all API classes
 from kinde_sdk.management import api
+from kinde_sdk.management.api_client import ApiClient
+from kinde_sdk.management.configuration import Configuration
+from .management_token_manager import ManagementTokenManager
 
 logger = logging.getLogger("kinde_sdk.management")
 
@@ -31,27 +29,27 @@ class ManagementClient:
     
     All API classes are dynamically loaded from the 'api' module and made available
     as snake_case properties. For example:
-    - UsersApi -> client.users.*
-    - OrganizationsApi -> client.organizations.*
-    - FeatureFlagsApi -> client.feature_flags.*
+    - UsersApi -> client.users_api.*
+    - OrganizationsApi -> client.organizations_api.*
+    - FeatureFlagsApi -> client.feature_flags_api.*
     - etc.
     
     When new API classes are generated from the OpenAPI spec, they will automatically
     be available on this client without any code changes.
     
     Common API properties include:
-    - client.users.*           - User management
-    - client.organizations.*   - Organization management
-    - client.roles.*           - Role management
-    - client.permissions.*     - Permission management
-    - client.feature_flags.*   - Feature flag management
-    - client.apis.*            - API application management
-    - client.applications.*    - Connected app management
-    - client.subscribers.*     - Subscriber management
-    - client.properties.*      - Property management
-    - client.webhooks.*        - Webhook management
-    - client.connections.*     - Connection management
-    - client.business.*        - Business information
+    - client.users_api.*           - User management
+    - client.organizations_api.*   - Organization management
+    - client.roles_api.*           - Role management
+    - client.permissions_api.*     - Permission management
+    - client.feature_flags_api.*   - Feature flag management
+    - client.apis_api.*            - API application management
+    - client.applications_api.*    - Connected app management
+    - client.subscribers_api.*     - Subscriber management
+    - client.properties_api.*      - Property management
+    - client.webhooks_api.*        - Webhook management
+    - client.connections_api.*     - Connection management
+    - client.business_api.*        - Business information
     - And more...
     
     Example:
@@ -59,18 +57,18 @@ class ManagementClient:
         client = ManagementClient(domain, client_id, client_secret)
         
         # Get all users
-        users = client.users.get_users(page_size=50)
+        users = client.users_api.get_users(page_size=50)
         
         # Create a user
-        new_user = client.users.create_user(
+        new_user = client.users_api.create_user(
             create_user_request={'email': 'user@example.com'}
         )
         
         # Get organizations
-        orgs = client.organizations.get_organizations()
+        orgs = client.organizations_api.get_organizations()
         
         # Access any dynamically loaded API
-        billing = client.billing.get_billing_info()
+        billing = client.billing_api.get_billing_info()
         ```
     """
     
@@ -131,9 +129,9 @@ class ManagementClient:
         snake_case attributes on this client.
         
         For example:
-        - UsersApi -> self.users
-        - OrganizationsApi -> self.organizations
-        - FeatureFlagsApi -> self.feature_flags
+        - UsersApi -> self.users_api
+        - OrganizationsApi -> self.organizations_api
+        - FeatureFlagsApi -> self.feature_flags_api
         """
         # Get all members of the api module
         for name, obj in inspect.getmembers(api):
@@ -155,27 +153,46 @@ class ManagementClient:
     def _class_name_to_snake_case(class_name: str) -> str:
         """
         Convert a class name to snake_case attribute name.
+        Handles acronyms intelligently by keeping consecutive uppercase letters together.
+        
+        Special cases are handled for oddly-named classes generated from the OpenAPI spec
+        where the tag naming creates unusual capitalization patterns.
         
         Examples:
-        - UsersApi -> users
-        - FeatureFlagsApi -> feature_flags
-        - APIsApi -> apis
-        - MFAApi -> mfa
+        - UsersApi -> users_api
+        - FeatureFlagsApi -> feature_flags_api
+        - APIsApi -> apis_api (special case - tag "APIs" in spec)
+        - MFAApi -> mfa_api (not m_f_a_api or mfaapi)
+        - OAuthApi -> oauth_api (not o_auth_api)
+        - HTTPSConnectionApi -> https_connection_api
         
         Args:
             class_name: The class name (e.g., 'UsersApi')
             
         Returns:
-            Snake case attribute name (e.g., 'users')
+            Snake case attribute name (e.g., 'users_api')
         """
-        # Remove the 'Api' suffix
-        name = class_name[:-3] if class_name.endswith('Api') else class_name
+        # Special cases for oddly-named classes from OpenAPI spec tag naming
+        # These arise when spec tags have unusual capitalization (e.g., "APIs" tag)
+        special_cases = {
+            'APIsApi': 'apis_api',  # From tag "APIs" - would otherwise be "ap_is_api"
+        }
         
-        # Insert underscores before uppercase letters (except at the start)
-        # and convert to lowercase
-        snake_case = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+        if class_name in special_cases:
+            return special_cases[class_name]
         
-        return snake_case
+        # Step 1: Insert underscore between sequences of 2+ uppercase letters and 
+        # a final uppercase letter followed by lowercase (handles acronym boundaries)
+        # e.g., "MFAApi" -> "MFA_Api", "HTTPSConnection" -> "HTTPS_Connection"
+        # Note: Requires at least 2 consecutive uppercase to avoid splitting single letters
+        s1 = re.sub('([A-Z]{2,})([A-Z][a-z])', r'\1_\2', class_name)
+        
+        # Step 2: Insert underscore between lowercase (or digit) and uppercase letters
+        # e.g., "feature_Flags" -> "feature_Flags" (already has _), "featureFlags" -> "feature_Flags"
+        s2 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1)
+        
+        # Convert to lowercase
+        return s2.lower()
     
     # Backwards compatibility: Provide direct method access for common operations
     # These delegate to the appropriate API class methods
@@ -187,128 +204,144 @@ class ManagementClient:
         Get users.
         
         .. deprecated::
-            Use :meth:`client.users.get_users()` instead.
+            Use :meth:`client.users_api.get_users()` instead.
         
         For full documentation and parameters, see UsersApi.get_users()
         """
         warnings.warn(
-            "get_users() is deprecated. Use client.users.get_users() instead.",
+            "get_users() is deprecated. Use client.users_api.get_users() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.users.get_users(**kwargs)
+        return self.users_api.get_users(**kwargs)
+    
+    def get_api_applications(self, **kwargs):
+        """
+        Get API applications.
+        
+        .. deprecated::
+            Use :meth:`client.applications_api.get_applications()` instead.
+        
+        For full documentation and parameters, see ApplicationsApi.get_applications()
+        """
+        warnings.warn(
+            "get_api_applications() is deprecated. Use client.applications_api.get_applications() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.applications_api.get_applications(**kwargs)
     
     def get_user_data(self, user_id: str):
         """
         Get user data by ID.
         
         .. deprecated::
-            Use :meth:`client.users.get_user_data()` instead.
+            Use :meth:`client.users_api.get_user_data()` instead.
         
         For full documentation and parameters, see UsersApi.get_user_data()
         """
         warnings.warn(
-            "get_user_data() is deprecated. Use client.users.get_user_data() instead.",
+            "get_user_data() is deprecated. Use client.users_api.get_user_data() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.users.get_user_data(user_id=user_id)
+        return self.users_api.get_user_data(id=user_id)
     
     def create_user(self, create_user_request=None, **kwargs):
         """
         Create a user.
         
         .. deprecated::
-            Use :meth:`client.users.create_user()` instead.
+            Use :meth:`client.users_api.create_user()` instead.
         
         For full documentation and parameters, see UsersApi.create_user()
         """
         warnings.warn(
-            "create_user() is deprecated. Use client.users.create_user() instead.",
+            "create_user() is deprecated. Use client.users_api.create_user() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.users.create_user(create_user_request=create_user_request, **kwargs)
+        return self.users_api.create_user(create_user_request=create_user_request, **kwargs)
     
     def update_user(self, id: str, update_user_request, **kwargs):
         """
         Update a user.
         
         .. deprecated::
-            Use :meth:`client.users.update_user()` instead.
+            Use :meth:`client.users_api.update_user()` instead.
         
         For full documentation and parameters, see UsersApi.update_user()
         """
         warnings.warn(
-            "update_user() is deprecated. Use client.users.update_user() instead.",
+            "update_user() is deprecated. Use client.users_api.update_user() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.users.update_user(id=id, update_user_request=update_user_request, **kwargs)
+        return self.users_api.update_user(id=id, update_user_request=update_user_request, **kwargs)
     
     def delete_user(self, id: str, **kwargs):
         """
         Delete a user.
         
         .. deprecated::
-            Use :meth:`client.users.delete_user()` instead.
+            Use :meth:`client.users_api.delete_user()` instead.
         
         For full documentation and parameters, see UsersApi.delete_user()
         """
         warnings.warn(
-            "delete_user() is deprecated. Use client.users.delete_user() instead.",
+            "delete_user() is deprecated. Use client.users_api.delete_user() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.users.delete_user(id=id, **kwargs)
+        return self.users_api.delete_user(id=id, **kwargs)
     
     def get_organizations(self, **kwargs):
         """
         Get organizations.
         
         .. deprecated::
-            Use :meth:`client.organizations.get_organizations()` instead.
+            Use :meth:`client.organizations_api.get_organizations()` instead.
         
         For full documentation and parameters, see OrganizationsApi.get_organizations()
         """
         warnings.warn(
-            "get_organizations() is deprecated. Use client.organizations.get_organizations() instead.",
+            "get_organizations() is deprecated. Use client.organizations_api.get_organizations() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.organizations.get_organizations(**kwargs)
+        return self.organizations_api.get_organizations(**kwargs)
     
     def get_organization(self, code: str = None, **kwargs):
         """
         Get an organization.
         
         .. deprecated::
-            Use :meth:`client.organizations.get_organization()` instead.
+            Use :meth:`client.organizations_api.get_organization()` instead.
         
         For full documentation and parameters, see OrganizationsApi.get_organization()
         """
         warnings.warn(
-            "get_organization() is deprecated. Use client.organizations.get_organization() instead.",
+            "get_organization() is deprecated. Use client.organizations_api.get_organization() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.organizations.get_organization(code=code, **kwargs)
+        return self.organizations_api.get_organization(code=code, **kwargs)
     
     def create_organization(self, create_organization_request, **kwargs):
         """
         Create an organization.
         
         .. deprecated::
-            Use :meth:`client.organizations.create_organization()` instead.
+            Use :meth:`client.organizations_api.create_organization()` instead.
         
         For full documentation and parameters, see OrganizationsApi.create_organization()
         """
         warnings.warn(
-            "create_organization() is deprecated. Use client.organizations.create_organization() instead.",
+            "create_organization() is deprecated. Use client.organizations_api.create_organization() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.organizations.create_organization(
+        return self.organizations_api.create_organization(
             create_organization_request=create_organization_request, **kwargs
         )
     
@@ -317,144 +350,144 @@ class ManagementClient:
         Update an organization.
         
         .. deprecated::
-            Use :meth:`client.organizations.update_organization()` instead.
+            Use :meth:`client.organizations_api.update_organization()` instead.
         
         For full documentation and parameters, see OrganizationsApi.update_organization()
         """
         warnings.warn(
-            "update_organization() is deprecated. Use client.organizations.update_organization() instead.",
+            "update_organization() is deprecated. Use client.organizations_api.update_organization() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.organizations.update_organization(org_code=org_code, **kwargs)
+        return self.organizations_api.update_organization(org_code=org_code, **kwargs)
     
     def delete_organization(self, org_code: str, **kwargs):
         """
         Delete an organization.
         
         .. deprecated::
-            Use :meth:`client.organizations.delete_organization()` instead.
+            Use :meth:`client.organizations_api.delete_organization()` instead.
         
         For full documentation and parameters, see OrganizationsApi.delete_organization()
         """
         warnings.warn(
-            "delete_organization() is deprecated. Use client.organizations.delete_organization() instead.",
+            "delete_organization() is deprecated. Use client.organizations_api.delete_organization() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.organizations.delete_organization(org_code=org_code, **kwargs)
+        return self.organizations_api.delete_organization(org_code=org_code, **kwargs)
     
     def get_roles(self, **kwargs):
         """
         Get roles.
         
         .. deprecated::
-            Use :meth:`client.roles.get_roles()` instead.
+            Use :meth:`client.roles_api.get_roles()` instead.
         
         For full documentation and parameters, see RolesApi.get_roles()
         """
         warnings.warn(
-            "get_roles() is deprecated. Use client.roles.get_roles() instead.",
+            "get_roles() is deprecated. Use client.roles_api.get_roles() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.roles.get_roles(**kwargs)
+        return self.roles_api.get_roles(**kwargs)
     
     def get_role(self, role_id: str):
         """
         Get a role.
         
         .. deprecated::
-            Use :meth:`client.roles.get_role()` instead.
+            Use :meth:`client.roles_api.get_role()` instead.
         
         For full documentation and parameters, see RolesApi.get_role()
         """
         warnings.warn(
-            "get_role() is deprecated. Use client.roles.get_role() instead.",
+            "get_role() is deprecated. Use client.roles_api.get_role() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.roles.get_role(role_id=role_id)
+        return self.roles_api.get_role(role_id=role_id)
     
     def create_role(self, create_role_request=None, **kwargs):
         """
         Create a role.
         
         .. deprecated::
-            Use :meth:`client.roles.create_role()` instead.
+            Use :meth:`client.roles_api.create_role()` instead.
         
         For full documentation and parameters, see RolesApi.create_role()
         """
         warnings.warn(
-            "create_role() is deprecated. Use client.roles.create_role() instead.",
+            "create_role() is deprecated. Use client.roles_api.create_role() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.roles.create_role(create_role_request=create_role_request, **kwargs)
+        return self.roles_api.create_role(create_role_request=create_role_request, **kwargs)
     
     def update_role(self, role_id: str, update_role_request=None, **kwargs):
         """
         Update a role.
         
         .. deprecated::
-            Use :meth:`client.roles.update_role()` instead.
+            Use :meth:`client.roles_api.update_role()` instead.
         
         For full documentation and parameters, see RolesApi.update_role()
         """
         warnings.warn(
-            "update_role() is deprecated. Use client.roles.update_role() instead.",
+            "update_role() is deprecated. Use client.roles_api.update_role() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.roles.update_role(role_id=role_id, update_role_request=update_role_request, **kwargs)
+        return self.roles_api.update_role(role_id=role_id, update_role_request=update_role_request, **kwargs)
     
     def delete_role(self, role_id: str):
         """
         Delete a role.
         
         .. deprecated::
-            Use :meth:`client.roles.delete_role()` instead.
+            Use :meth:`client.roles_api.delete_role()` instead.
         
         For full documentation and parameters, see RolesApi.delete_role()
         """
         warnings.warn(
-            "delete_role() is deprecated. Use client.roles.delete_role() instead.",
+            "delete_role() is deprecated. Use client.roles_api.delete_role() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.roles.delete_role(role_id=role_id)
+        return self.roles_api.delete_role(role_id=role_id)
     
     def get_feature_flags(self, **kwargs):
         """
         Get feature flags.
         
         .. deprecated::
-            Use :meth:`client.feature_flags.get_feature_flags()` instead.
+            Use :meth:`client.feature_flags_api.get_feature_flags()` instead.
         
         For full documentation and parameters, see FeatureFlagsApi.get_feature_flags()
         """
         warnings.warn(
-            "get_feature_flags() is deprecated. Use client.feature_flags.get_feature_flags() instead.",
+            "get_feature_flags() is deprecated. Use client.feature_flags_api.get_feature_flags() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.feature_flags.get_feature_flags(**kwargs)
+        return self.feature_flags_api.get_feature_flags(**kwargs)
     
     def create_feature_flag(self, create_feature_flag_request=None, **kwargs):
         """
         Create a feature flag.
         
         .. deprecated::
-            Use :meth:`client.feature_flags.create_feature_flag()` instead.
+            Use :meth:`client.feature_flags_api.create_feature_flag()` instead.
         
         For full documentation and parameters, see FeatureFlagsApi.create_feature_flag()
         """
         warnings.warn(
-            "create_feature_flag() is deprecated. Use client.feature_flags.create_feature_flag() instead.",
+            "create_feature_flag() is deprecated. Use client.feature_flags_api.create_feature_flag() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.feature_flags.create_feature_flag(
+        return self.feature_flags_api.create_feature_flag(
             create_feature_flag_request=create_feature_flag_request, **kwargs
         )
     
@@ -463,16 +496,16 @@ class ManagementClient:
         Update a feature flag.
         
         .. deprecated::
-            Use :meth:`client.feature_flags.update_feature_flag()` instead.
+            Use :meth:`client.feature_flags_api.update_feature_flag()` instead.
         
         For full documentation and parameters, see FeatureFlagsApi.update_feature_flag()
         """
         warnings.warn(
-            "update_feature_flag() is deprecated. Use client.feature_flags.update_feature_flag() instead.",
+            "update_feature_flag() is deprecated. Use client.feature_flags_api.update_feature_flag() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.feature_flags.update_feature_flag(
+        return self.feature_flags_api.update_feature_flag(
             feature_flag_key=feature_flag_key,
             update_feature_flag_request=update_feature_flag_request,
             **kwargs
@@ -483,13 +516,13 @@ class ManagementClient:
         Delete a feature flag.
         
         .. deprecated::
-            Use :meth:`client.feature_flags.delete_feature_flag()` instead.
+            Use :meth:`client.feature_flags_api.delete_feature_flag()` instead.
         
         For full documentation and parameters, see FeatureFlagsApi.delete_feature_flag()
         """
         warnings.warn(
-            "delete_feature_flag() is deprecated. Use client.feature_flags.delete_feature_flag() instead.",
+            "delete_feature_flag() is deprecated. Use client.feature_flags_api.delete_feature_flag() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.feature_flags.delete_feature_flag(feature_flag_key=feature_flag_key)
+        return self.feature_flags_api.delete_feature_flag(feature_flag_key=feature_flag_key)

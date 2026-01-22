@@ -2345,7 +2345,7 @@ class UsersApi:
         email: Annotated[Optional[StrictStr], Field(description="Filter the results by email address. The query string should be comma separated and url encoded.")] = None,
         username: Annotated[Optional[StrictStr], Field(description="Filter the results by username. The query string should be comma separated and url encoded.")] = None,
         phone: Annotated[Optional[StrictStr], Field(description="Filter the results by phone. The query string should be comma separated and url encoded.")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\", \"identities\" and/or \"billing\".")] = None,
         has_organization: Annotated[Optional[StrictBool], Field(description="Filter the results by if the user has at least one organization assigned.")] = None,
         _request_timeout: Union[
             None,
@@ -2376,7 +2376,7 @@ class UsersApi:
         :type username: str
         :param phone: Filter the results by phone. The query string should be comma separated and url encoded.
         :type phone: str
-        :param expand: Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".
+        :param expand: Specify additional data to retrieve. Use \"organizations\", \"identities\" and/or \"billing\".
         :type expand: str
         :param has_organization: Filter the results by if the user has at least one organization assigned.
         :type has_organization: bool
@@ -2443,7 +2443,7 @@ class UsersApi:
         email: Annotated[Optional[StrictStr], Field(description="Filter the results by email address. The query string should be comma separated and url encoded.")] = None,
         username: Annotated[Optional[StrictStr], Field(description="Filter the results by username. The query string should be comma separated and url encoded.")] = None,
         phone: Annotated[Optional[StrictStr], Field(description="Filter the results by phone. The query string should be comma separated and url encoded.")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\", \"identities\" and/or \"billing\".")] = None,
         has_organization: Annotated[Optional[StrictBool], Field(description="Filter the results by if the user has at least one organization assigned.")] = None,
         _request_timeout: Union[
             None,
@@ -2474,7 +2474,7 @@ class UsersApi:
         :type username: str
         :param phone: Filter the results by phone. The query string should be comma separated and url encoded.
         :type phone: str
-        :param expand: Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".
+        :param expand: Specify additional data to retrieve. Use \"organizations\", \"identities\" and/or \"billing\".
         :type expand: str
         :param has_organization: Filter the results by if the user has at least one organization assigned.
         :type has_organization: bool
@@ -2541,7 +2541,7 @@ class UsersApi:
         email: Annotated[Optional[StrictStr], Field(description="Filter the results by email address. The query string should be comma separated and url encoded.")] = None,
         username: Annotated[Optional[StrictStr], Field(description="Filter the results by username. The query string should be comma separated and url encoded.")] = None,
         phone: Annotated[Optional[StrictStr], Field(description="Filter the results by phone. The query string should be comma separated and url encoded.")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\", \"identities\" and/or \"billing\".")] = None,
         has_organization: Annotated[Optional[StrictBool], Field(description="Filter the results by if the user has at least one organization assigned.")] = None,
         _request_timeout: Union[
             None,
@@ -2572,7 +2572,7 @@ class UsersApi:
         :type username: str
         :param phone: Filter the results by phone. The query string should be comma separated and url encoded.
         :type phone: str
-        :param expand: Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".
+        :param expand: Specify additional data to retrieve. Use \"organizations\", \"identities\" and/or \"billing\".
         :type expand: str
         :param has_organization: Filter the results by if the user has at least one organization assigned.
         :type has_organization: bool

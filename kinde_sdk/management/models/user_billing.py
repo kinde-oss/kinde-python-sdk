@@ -18,19 +18,17 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from kinde_sdk.management.models.get_user_roles_response_data_roles_inner import GetUserRolesResponseDataRolesInner
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetUserRolesResponseData(BaseModel):
+class UserBilling(BaseModel):
     """
-    GetUserRolesResponseData
+    UserBilling
     """ # noqa: E501
-    org_code: Optional[StrictStr] = Field(default=None, description="The organization code the roles are associated with.")
-    roles: Optional[List[GetUserRolesResponseDataRolesInner]] = Field(default=None, description="A list of roles")
-    __properties: ClassVar[List[str]] = ["org_code", "roles"]
+    customer_id: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["customer_id"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -50,7 +48,7 @@ class GetUserRolesResponseData(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetUserRolesResponseData from a JSON string"""
+        """Create an instance of UserBilling from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -71,18 +69,11 @@ class GetUserRolesResponseData(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of each item in roles (list)
-        _items = []
-        if self.roles:
-            for _item_roles in self.roles:
-                if _item_roles:
-                    _items.append(_item_roles.to_dict())
-            _dict['roles'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetUserRolesResponseData from a dict"""
+        """Create an instance of UserBilling from a dict"""
         if obj is None:
             return None
 
@@ -90,8 +81,7 @@ class GetUserRolesResponseData(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "org_code": obj.get("org_code"),
-            "roles": [GetUserRolesResponseDataRolesInner.from_dict(_item) for _item in obj["roles"]] if obj.get("roles") is not None else None
+            "customer_id": obj.get("customer_id")
         })
         return _obj
 

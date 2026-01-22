@@ -18,18 +18,20 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from kinde_sdk.management.models.get_feature_flags_response_data import GetFeatureFlagsResponseData
+from kinde_sdk.management.models.rotate_api_key_response_api_key import RotateApiKeyResponseApiKey
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetFeatureFlagsResponse(BaseModel):
+class RotateApiKeyResponse(BaseModel):
     """
-    GetFeatureFlagsResponse
+    RotateApiKeyResponse
     """ # noqa: E501
-    data: Optional[GetFeatureFlagsResponseData] = None
-    __properties: ClassVar[List[str]] = ["data"]
+    code: Optional[StrictStr] = Field(default=None, description="Response code.")
+    message: Optional[StrictStr] = Field(default=None, description="Response message.")
+    api_key: Optional[RotateApiKeyResponseApiKey] = None
+    __properties: ClassVar[List[str]] = ["code", "message", "api_key"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -49,7 +51,7 @@ class GetFeatureFlagsResponse(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetFeatureFlagsResponse from a JSON string"""
+        """Create an instance of RotateApiKeyResponse from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -70,14 +72,14 @@ class GetFeatureFlagsResponse(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of data
-        if self.data:
-            _dict['data'] = self.data.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of api_key
+        if self.api_key:
+            _dict['api_key'] = self.api_key.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetFeatureFlagsResponse from a dict"""
+        """Create an instance of RotateApiKeyResponse from a dict"""
         if obj is None:
             return None
 
@@ -85,7 +87,9 @@ class GetFeatureFlagsResponse(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "data": GetFeatureFlagsResponseData.from_dict(obj["data"]) if obj.get("data") is not None else None
+            "code": obj.get("code"),
+            "message": obj.get("message"),
+            "api_key": RotateApiKeyResponseApiKey.from_dict(obj["api_key"]) if obj.get("api_key") is not None else None
         })
         return _obj
 

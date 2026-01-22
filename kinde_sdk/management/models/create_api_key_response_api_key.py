@@ -18,18 +18,18 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetUserRolesResponseMetadata(BaseModel):
+class CreateApiKeyResponseApiKey(BaseModel):
     """
-    GetUserRolesResponseMetadata
+    CreateApiKeyResponseApiKey
     """ # noqa: E501
-    has_more: Optional[StrictBool] = Field(default=None, description="Whether more records exist.")
-    next_page_starting_after: Optional[StrictStr] = Field(default=None, description="The ID of the last record on the current page.")
-    __properties: ClassVar[List[str]] = ["has_more", "next_page_starting_after"]
+    id: Optional[StrictStr] = Field(default=None, description="The unique ID for the API key.")
+    key: Optional[StrictStr] = Field(default=None, description="The API key value (only shown once on creation).")
+    __properties: ClassVar[List[str]] = ["id", "key"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -49,7 +49,7 @@ class GetUserRolesResponseMetadata(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetUserRolesResponseMetadata from a JSON string"""
+        """Create an instance of CreateApiKeyResponseApiKey from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -74,7 +74,7 @@ class GetUserRolesResponseMetadata(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetUserRolesResponseMetadata from a dict"""
+        """Create an instance of CreateApiKeyResponseApiKey from a dict"""
         if obj is None:
             return None
 
@@ -82,8 +82,8 @@ class GetUserRolesResponseMetadata(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "has_more": obj.get("has_more"),
-            "next_page_starting_after": obj.get("next_page_starting_after")
+            "id": obj.get("id"),
+            "key": obj.get("key")
         })
         return _obj
 

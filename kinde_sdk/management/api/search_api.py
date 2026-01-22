@@ -45,6 +45,7 @@ class SearchApi:
         self,
         page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
         query: Annotated[Optional[StrictStr], Field(description="Search the users by email or name. Use '*' to search all.")] = None,
+        api_scopes: Annotated[Optional[StrictStr], Field(description="Search the users by api scopes.")] = None,
         properties: Optional[Dict[str, Dict[str, List[StrictStr]]]] = None,
         starting_after: Annotated[Optional[StrictStr], Field(description="The ID of the user to start after.")] = None,
         ending_before: Annotated[Optional[StrictStr], Field(description="The ID of the user to end before.")] = None,
@@ -70,6 +71,8 @@ class SearchApi:
         :type page_size: int
         :param query: Search the users by email or name. Use '*' to search all.
         :type query: str
+        :param api_scopes: Search the users by api scopes.
+        :type api_scopes: str
         :param properties:
         :type properties: Dict[str, List[str]]
         :param starting_after: The ID of the user to start after.
@@ -103,6 +106,7 @@ class SearchApi:
         _param = self._search_users_serialize(
             page_size=page_size,
             query=query,
+            api_scopes=api_scopes,
             properties=properties,
             starting_after=starting_after,
             ending_before=ending_before,
@@ -135,6 +139,7 @@ class SearchApi:
         self,
         page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
         query: Annotated[Optional[StrictStr], Field(description="Search the users by email or name. Use '*' to search all.")] = None,
+        api_scopes: Annotated[Optional[StrictStr], Field(description="Search the users by api scopes.")] = None,
         properties: Optional[Dict[str, Dict[str, List[StrictStr]]]] = None,
         starting_after: Annotated[Optional[StrictStr], Field(description="The ID of the user to start after.")] = None,
         ending_before: Annotated[Optional[StrictStr], Field(description="The ID of the user to end before.")] = None,
@@ -160,6 +165,8 @@ class SearchApi:
         :type page_size: int
         :param query: Search the users by email or name. Use '*' to search all.
         :type query: str
+        :param api_scopes: Search the users by api scopes.
+        :type api_scopes: str
         :param properties:
         :type properties: Dict[str, List[str]]
         :param starting_after: The ID of the user to start after.
@@ -193,6 +200,7 @@ class SearchApi:
         _param = self._search_users_serialize(
             page_size=page_size,
             query=query,
+            api_scopes=api_scopes,
             properties=properties,
             starting_after=starting_after,
             ending_before=ending_before,
@@ -225,6 +233,7 @@ class SearchApi:
         self,
         page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
         query: Annotated[Optional[StrictStr], Field(description="Search the users by email or name. Use '*' to search all.")] = None,
+        api_scopes: Annotated[Optional[StrictStr], Field(description="Search the users by api scopes.")] = None,
         properties: Optional[Dict[str, Dict[str, List[StrictStr]]]] = None,
         starting_after: Annotated[Optional[StrictStr], Field(description="The ID of the user to start after.")] = None,
         ending_before: Annotated[Optional[StrictStr], Field(description="The ID of the user to end before.")] = None,
@@ -250,6 +259,8 @@ class SearchApi:
         :type page_size: int
         :param query: Search the users by email or name. Use '*' to search all.
         :type query: str
+        :param api_scopes: Search the users by api scopes.
+        :type api_scopes: str
         :param properties:
         :type properties: Dict[str, List[str]]
         :param starting_after: The ID of the user to start after.
@@ -283,6 +294,7 @@ class SearchApi:
         _param = self._search_users_serialize(
             page_size=page_size,
             query=query,
+            api_scopes=api_scopes,
             properties=properties,
             starting_after=starting_after,
             ending_before=ending_before,
@@ -310,6 +322,7 @@ class SearchApi:
         self,
         page_size,
         query,
+        api_scopes,
         properties,
         starting_after,
         ending_before,
@@ -343,6 +356,10 @@ class SearchApi:
         if query is not None:
             
             _query_params.append(('query', query))
+            
+        if api_scopes is not None:
+            
+            _query_params.append(('api_scopes', api_scopes))
             
         if properties is not None:
             

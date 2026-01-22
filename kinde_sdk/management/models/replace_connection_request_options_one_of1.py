@@ -29,15 +29,16 @@ class ReplaceConnectionRequestOptionsOneOf1(BaseModel):
     """ # noqa: E501
     home_realm_domains: Optional[List[StrictStr]] = Field(default=None, description="List of domains to restrict authentication.")
     saml_entity_id: Optional[StrictStr] = Field(default=None, description="SAML Entity ID.")
-    saml_acs_url: Optional[StrictStr] = Field(default=None, description="Assertion Consumer Service URL.")
     saml_idp_metadata_url: Optional[StrictStr] = Field(default=None, description="URL for the IdP metadata.")
     saml_email_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user’s email.")
     saml_first_name_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user’s first name.")
     saml_last_name_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user’s last name.")
     is_create_missing_user: Optional[StrictBool] = Field(default=None, description="Create user if they don’t exist.")
+    is_force_show_sso_button: Optional[StrictBool] = Field(default=None, description="Force showing the SSO button for this connection.")
+    upstream_params: Optional[Dict[str, Any]] = Field(default=None, description="Additional upstream parameters to pass to the identity provider.")
     saml_signing_certificate: Optional[StrictStr] = Field(default=None, description="Certificate for signing SAML requests.")
     saml_signing_private_key: Optional[StrictStr] = Field(default=None, description="Private key associated with the signing certificate.")
-    __properties: ClassVar[List[str]] = ["home_realm_domains", "saml_entity_id", "saml_acs_url", "saml_idp_metadata_url", "saml_email_key_attr", "saml_first_name_key_attr", "saml_last_name_key_attr", "is_create_missing_user", "saml_signing_certificate", "saml_signing_private_key"]
+    __properties: ClassVar[List[str]] = ["home_realm_domains", "saml_entity_id", "saml_idp_metadata_url", "saml_email_key_attr", "saml_first_name_key_attr", "saml_last_name_key_attr", "is_create_missing_user", "is_force_show_sso_button", "upstream_params", "saml_signing_certificate", "saml_signing_private_key"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -92,12 +93,13 @@ class ReplaceConnectionRequestOptionsOneOf1(BaseModel):
         _obj = cls.model_validate({
             "home_realm_domains": obj.get("home_realm_domains"),
             "saml_entity_id": obj.get("saml_entity_id"),
-            "saml_acs_url": obj.get("saml_acs_url"),
             "saml_idp_metadata_url": obj.get("saml_idp_metadata_url"),
             "saml_email_key_attr": obj.get("saml_email_key_attr"),
             "saml_first_name_key_attr": obj.get("saml_first_name_key_attr"),
             "saml_last_name_key_attr": obj.get("saml_last_name_key_attr"),
             "is_create_missing_user": obj.get("is_create_missing_user"),
+            "is_force_show_sso_button": obj.get("is_force_show_sso_button"),
+            "upstream_params": obj.get("upstream_params"),
             "saml_signing_certificate": obj.get("saml_signing_certificate"),
             "saml_signing_private_key": obj.get("saml_signing_private_key")
         })

@@ -900,6 +900,104 @@ class TestManagementClient(unittest.TestCase):
         
         # Test that the snake_case conversion works correctly, including acronyms
         assert hasattr(client, 'users_api')            # UsersApi -> users_api
+    
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    @patch('kinde_sdk.management.management_client.inspect.getmembers')
+    def test_api_initialization_fails_with_no_apis_found(self, mock_getmembers, mock_token_manager_class, 
+                                                         mock_api_client_class, mock_config_class):
+        """Test that initialization fails with clear error if no API classes are found."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_class.return_value = self.mock_api_client
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Mock inspect.getmembers to return empty list (no APIs found)
+        mock_getmembers.return_value = []
+        
+        # Creating client should raise RuntimeError with descriptive message
+        with pytest.raises(RuntimeError) as exc_info:
+            client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Verify the error message is descriptive
+        assert "No API classes found" in str(exc_info.value)
+        assert "not properly installed or generated" in str(exc_info.value)
+    
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    @patch('kinde_sdk.management.management_client.inspect.getmembers')
+    def test_api_initialization_handles_instantiation_failure(self, mock_getmembers, mock_token_manager_class,
+                                                              mock_api_client_class, mock_config_class):
+        """Test that API instantiation failures are caught and re-raised with clear error."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_class.return_value = self.mock_api_client
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Create a mock API class that raises an exception when instantiated
+        class BrokenApi:
+            def __init__(self, **kwargs):
+                raise ValueError("Missing required parameter")
+        
+        # Mock inspect.getmembers to return our broken API class
+        mock_getmembers.return_value = [('BrokenApi', BrokenApi)]
+        
+        # Creating client should raise RuntimeError with descriptive message
+        with pytest.raises(RuntimeError) as exc_info:
+            client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Verify the error message is descriptive
+        assert "Failed to initialize API class BrokenApi" in str(exc_info.value)
+        assert "compatibility issue" in str(exc_info.value)
+        assert "Missing required parameter" in str(exc_info.value)
+    
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    @patch('kinde_sdk.management.management_client.logger')
+    def test_api_initialization_detects_attribute_collisions(self, mock_logger, mock_token_manager_class,
+                                                             mock_api_client_class, mock_config_class):
+        """Test that attribute name collisions are detected and logged."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_class.return_value = self.mock_api_client
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Create client
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Manually set an attribute that would collide
+        client.test_collision_api = "existing_value"
+        
+        # Now try to initialize an API with the same name
+        class TestCollisionApi:
+            def __init__(self, **kwargs):
+                self.api_client = kwargs.get('api_client')
+        
+        # Call _initialize_api_classes with our test API
+        with patch('kinde_sdk.management.management_client.inspect.getmembers') as mock_getmembers:
+            # Include at least one valid API so we don't fail the "no APIs" check
+            class ValidApi:
+                def __init__(self, **kwargs):
+                    self.api_client = kwargs.get('api_client')
+            
+            mock_getmembers.return_value = [
+                ('TestCollisionApi', TestCollisionApi),
+                ('ValidApi', ValidApi)
+            ]
+            
+            # Re-initialize (this would normally be called in __init__)
+            client._initialize_api_classes()
+        
+        # Verify warning was logged about the collision
+        warning_calls = [call for call in mock_logger.warning.call_args_list 
+                        if 'test_collision_api' in str(call)]
+        assert len(warning_calls) > 0, "Should log warning about attribute collision"
+        
+        # Verify the original value wasn't overwritten
+        assert client.test_collision_api == "existing_value"
         assert hasattr(client, 'feature_flags_api')    # FeatureFlagsApi -> feature_flags_api
         assert hasattr(client, 'apis_api')             # APIsApi -> apis_api (special case workaround)
         assert hasattr(client, 'api_keys_api')         # APIKeysApi -> api_keys_api (new in updated spec)

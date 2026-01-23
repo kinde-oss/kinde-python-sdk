@@ -163,22 +163,55 @@ class ManagementClient:
         - UsersApi -> self.users_api
         - OrganizationsApi -> self.organizations_api
         - FeatureFlagsApi -> self.feature_flags_api
+        
+        Raises:
+            RuntimeError: If API initialization fails or no APIs are found.
         """
+        # Track loaded APIs for verification
+        loaded_apis = []
+        
         # Get all members of the api module
         for name, obj in inspect.getmembers(api):
             # Check if it's a class and ends with 'Api'
             if inspect.isclass(obj) and name.endswith('Api'):
                 # Convert class name to snake_case attribute name
-                # e.g., UsersApi -> users, FeatureFlagsApi -> feature_flags
+                # e.g., UsersApi -> users_api, FeatureFlagsApi -> feature_flags_api
                 attr_name = self._class_name_to_snake_case(name)
                 
-                # Initialize the API class with our configured api_client
-                api_instance = obj(api_client=self.api_client)
+                # Check for attribute collisions with existing ManagementClient attributes
+                if hasattr(self, attr_name):
+                    logger.warning(
+                        f"Attribute '{attr_name}' already exists on ManagementClient, "
+                        f"skipping {name}. This may indicate a naming conflict."
+                    )
+                    continue
+                
+                # Initialize the API class with error handling
+                try:
+                    api_instance = obj(api_client=self.api_client)
+                except Exception as e:
+                    logger.error(f"Failed to initialize {name}: {e}")
+                    raise RuntimeError(
+                        f"Failed to initialize API class {name}. "
+                        f"This may indicate a compatibility issue with the generated API. "
+                        f"Error: {e}"
+                    ) from e
                 
                 # Set it as an attribute on this client
                 setattr(self, attr_name, api_instance)
+                loaded_apis.append(attr_name)
                 
                 logger.debug(f"Initialized {name} as client.{attr_name}")
+        
+        # Verify at least some APIs were loaded
+        if not loaded_apis:
+            raise RuntimeError(
+                "No API classes found in kinde_sdk.management.api module. "
+                "This may indicate the SDK was not properly installed or generated. "
+                "Please verify the installation or regenerate the SDK."
+            )
+        
+        logger.info(f"Loaded {len(loaded_apis)} API classes: {', '.join(sorted(loaded_apis))}")
     
     @staticmethod
     def _class_name_to_snake_case(class_name: str) -> str:

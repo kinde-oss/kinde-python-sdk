@@ -16,6 +16,7 @@ from kinde_sdk.management import api
 from kinde_sdk.management.api_client import ApiClient
 from kinde_sdk.management.configuration import Configuration
 from .management_token_manager import ManagementTokenManager
+from .custom_exceptions import KindeTokenException
 
 logger = logging.getLogger("kinde_sdk.management")
 
@@ -100,24 +101,54 @@ class ManagementClient:
         Set up automatic token injection for all API calls.
         
         This modifies the API client to automatically add the Bearer token
-        to all outgoing requests.
+        to all outgoing requests. The wrapper handles token acquisition failures
+        and ensures existing Authorization headers are not silently overwritten.
         """
         original_call_api = self.api_client.call_api
         
         def call_api_with_token(*args, **kwargs):
-            """Wrapper that adds authentication token to all API calls."""
-            # Get the access token
-            token = self.token_manager.get_access_token()
+            """
+            Wrapper that adds authentication token to all API calls.
             
-            # Inject the token into headers
+            Raises:
+                KindeTokenException: If token acquisition fails or returns a falsy value.
+            """
+            # Attempt to get the access token with proper error handling
+            try:
+                token = self.token_manager.get_access_token()
+            except Exception as e:
+                logger.error(f"Failed to acquire access token: {e}")
+                raise KindeTokenException(
+                    f"Failed to acquire access token for Management API: {e}"
+                ) from e
+            
+            # Verify the token is valid (not None, empty string, etc.)
+            if not token:
+                logger.error("Token manager returned a falsy token value")
+                raise KindeTokenException(
+                    "Failed to acquire access token: token manager returned an invalid token"
+                )
+            
+            # Initialize header_params if not present
             if 'header_params' not in kwargs:
                 kwargs['header_params'] = {}
+            
+            # Check for existing Authorization header and handle appropriately
+            if 'Authorization' in kwargs['header_params']:
+                existing_auth = kwargs['header_params']['Authorization']
+                logger.warning(
+                    f"Overwriting existing Authorization header. "
+                    f"Existing value: {existing_auth[:20]}... "
+                    f"New value: Bearer {token[:20]}..."
+                )
+            
+            # Inject the token into headers
             kwargs['header_params']['Authorization'] = f"Bearer {token}"
             
             # Call the original method
             return original_call_api(*args, **kwargs)
         
-        # Replace the call_api method
+        # Replace the call_api method with the robust wrapper
         self.api_client.call_api = call_api_with_token
     
     def _initialize_api_classes(self):

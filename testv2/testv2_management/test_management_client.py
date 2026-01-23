@@ -13,6 +13,7 @@ from typing import Dict, Any
 # Import the modules to test
 from kinde_sdk.management.management_client import ManagementClient
 from kinde_sdk.management.management_token_manager import ManagementTokenManager
+from kinde_sdk.management.custom_exceptions import KindeTokenException
 
 
 class TestManagementClient(unittest.TestCase):
@@ -157,6 +158,117 @@ class TestManagementClient(unittest.TestCase):
         # Check that Authorization header was added
         assert 'header_params' in call_kwargs
         assert 'Authorization' in call_kwargs['header_params']
+        assert call_kwargs['header_params']['Authorization'] == f"Bearer {test_token}"
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_handles_acquisition_failure(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that token acquisition failures are properly handled."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Make token acquisition raise an exception
+        self.mock_token_manager.get_access_token.side_effect = Exception("Token service unavailable")
+        
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Calling the wrapped call_api should raise KindeTokenException
+        with pytest.raises(KindeTokenException) as exc_info:
+            client.api_client.call_api(
+                method='GET',
+                resource_path='/api/v1/users',
+                header_params={}
+            )
+        
+        # Verify the exception message is descriptive
+        assert "Failed to acquire access token" in str(exc_info.value)
+        assert "Token service unavailable" in str(exc_info.value)
+        
+        # Verify original call_api was never called
+        original_call_api.assert_not_called()
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_handles_falsy_token(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that falsy token values are properly rejected."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Make token acquisition return None
+        self.mock_token_manager.get_access_token.return_value = None
+        
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Calling the wrapped call_api should raise KindeTokenException
+        with pytest.raises(KindeTokenException) as exc_info:
+            client.api_client.call_api(
+                method='GET',
+                resource_path='/api/v1/users',
+                header_params={}
+            )
+        
+        # Verify the exception message is descriptive
+        assert "Failed to acquire access token" in str(exc_info.value)
+        assert "invalid token" in str(exc_info.value)
+        
+        # Verify original call_api was never called
+        original_call_api.assert_not_called()
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_warns_on_existing_auth_header(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that existing Authorization headers trigger a warning."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Mock token
+        test_token = "test_access_token"
+        self.mock_token_manager.get_access_token.return_value = test_token
+        
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Call with an existing Authorization header and capture the warning
+        with patch('kinde_sdk.management.management_client.logger') as mock_logger:
+            client.api_client.call_api(
+                method='GET',
+                resource_path='/api/v1/users',
+                header_params={'Authorization': 'Bearer existing_token'}
+            )
+            
+            # Verify warning was logged
+            mock_logger.warning.assert_called_once()
+            warning_message = mock_logger.warning.call_args[0][0]
+            assert "Overwriting existing Authorization header" in warning_message
+        
+        # Verify the new token was still injected
+        call_kwargs = original_call_api.call_args[1]
         assert call_kwargs['header_params']['Authorization'] == f"Bearer {test_token}"
 
     @patch('kinde_sdk.management.management_client.Configuration')

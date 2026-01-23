@@ -9,6 +9,7 @@ to the generated API classes.
 import inspect
 import logging
 import re
+from typing import Optional
 import warnings
 
 # Import the api module to dynamically load all API classes
@@ -69,7 +70,7 @@ class ManagementClient:
         orgs = client.organizations_api.get_organizations()
         
         # Access any dynamically loaded API
-        billing = client.billing_api.get_billing_info()
+        timezones = client.timezones_api.get_timezones()
         ```
     """
     
@@ -261,7 +262,7 @@ class ManagementClient:
     # Backwards compatibility: Provide direct method access for common operations
     # These delegate to the appropriate API class methods
     # Note: These methods are deprecated. For full functionality and proper type hints,
-    # use the API class methods directly (e.g., client.users.get_users())
+    # use the API class methods directly (e.g., client.users_api.get_users())
     
     def get_users(self, **kwargs):
         """
@@ -375,7 +376,7 @@ class ManagementClient:
         )
         return self.organizations_api.get_organizations(**kwargs)
     
-    def get_organization(self, code: str = None, **kwargs):
+    def get_organization(self, code: Optional[str] = None, **kwargs):
         """
         Get an organization.
         

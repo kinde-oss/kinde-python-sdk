@@ -356,7 +356,7 @@ class TestManagementClient(unittest.TestCase):
         
         # Test API call with path parameter
         user_id = "user123"
-        result = client.get_users(user_id=user_id)
+        result = client.get_user_data(user_id)
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()

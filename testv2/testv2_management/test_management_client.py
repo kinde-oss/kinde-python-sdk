@@ -274,6 +274,97 @@ class TestManagementClient(unittest.TestCase):
     @patch('kinde_sdk.management.management_client.Configuration')
     @patch('kinde_sdk.management.management_client.ApiClient')
     @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_with_positional_header_params(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that token injection works when header_params is passed positionally."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Mock token
+        test_token = "test_access_token"
+        self.mock_token_manager.get_access_token.return_value = test_token
+        
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Call with header_params passed positionally (3rd argument after method, url)
+        # Signature: call_api(self, method, url, header_params=None, ...)
+        existing_headers = {'X-Custom': 'value'}
+        client.api_client.call_api(
+            'GET',
+            'https://test.kinde.com/api/v1/users',
+            existing_headers  # Passed positionally as 3rd argument
+        )
+        
+        # Verify token was requested from token manager
+        self.mock_token_manager.get_access_token.assert_called()
+        
+        # Verify the wrapped call_api was called
+        original_call_api.assert_called_once()
+        
+        # Get the actual call arguments
+        call_args = original_call_api.call_args[0]
+        
+        # Verify Authorization header was added to the positional header_params
+        assert len(call_args) >= 3
+        header_params_arg = call_args[2]
+        assert header_params_arg is not None
+        assert 'Authorization' in header_params_arg
+        assert header_params_arg['Authorization'] == f"Bearer {test_token}"
+        # Verify original header is preserved
+        assert header_params_arg['X-Custom'] == 'value'
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_with_no_header_params(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that token injection works when header_params is not provided at all."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Mock token
+        test_token = "test_access_token"
+        self.mock_token_manager.get_access_token.return_value = test_token
+        
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Call without any header_params (neither positional nor keyword)
+        client.api_client.call_api(
+            'GET',
+            'https://test.kinde.com/api/v1/users'
+        )
+        
+        # Verify token was requested from token manager
+        self.mock_token_manager.get_access_token.assert_called()
+        
+        # Verify the wrapped call_api was called
+        original_call_api.assert_called_once()
+        
+        # Get the call kwargs
+        call_kwargs = original_call_api.call_args[1]
+        
+        # Verify Authorization header was added as keyword argument
+        assert 'header_params' in call_kwargs
+        assert 'Authorization' in call_kwargs['header_params']
+        assert call_kwargs['header_params']['Authorization'] == f"Bearer {test_token}"
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
     def test_get_users_api_call(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
         """Test get_users API call with query parameters."""
         # Setup mocks
@@ -918,7 +1009,7 @@ class TestManagementClient(unittest.TestCase):
         
         # Creating client should raise RuntimeError with descriptive message
         with pytest.raises(RuntimeError) as exc_info:
-            client = ManagementClient(self.domain, self.client_id, self.client_secret)
+            ManagementClient(self.domain, self.client_id, self.client_secret)
         
         # Verify the error message is descriptive
         assert "No API classes found" in str(exc_info.value)
@@ -938,7 +1029,7 @@ class TestManagementClient(unittest.TestCase):
         
         # Create a mock API class that raises an exception when instantiated
         class BrokenApi:
-            def __init__(self, **kwargs):
+            def __init__(self, **_):
                 raise ValueError("Missing required parameter")
         
         # Mock inspect.getmembers to return our broken API class
@@ -946,7 +1037,7 @@ class TestManagementClient(unittest.TestCase):
         
         # Creating client should raise RuntimeError with descriptive message
         with pytest.raises(RuntimeError) as exc_info:
-            client = ManagementClient(self.domain, self.client_id, self.client_secret)
+            ManagementClient(self.domain, self.client_id, self.client_secret)
         
         # Verify the error message is descriptive
         assert "Failed to initialize API class BrokenApi" in str(exc_info.value)
@@ -992,8 +1083,8 @@ class TestManagementClient(unittest.TestCase):
             client._initialize_api_classes()
         
         # Verify warning was logged about the collision
-        warning_calls = [call for call in mock_logger.warning.call_args_list 
-                        if 'test_collision_api' in str(call)]
+        warning_calls = [warning_call for warning_call in mock_logger.warning.call_args_list 
+                        if 'test_collision_api' in str(warning_call)]
         assert len(warning_calls) > 0, "Should log warning about attribute collision"
         
         # Verify the original value wasn't overwritten

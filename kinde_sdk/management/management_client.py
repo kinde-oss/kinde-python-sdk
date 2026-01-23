@@ -130,21 +130,39 @@ class ManagementClient:
                     "Failed to acquire access token: token manager returned an invalid token"
                 )
             
+            args_list = list(args)
+            header_params = None
+            header_params_in_args = False
+            
+            # Check if header_params was passed positionally (index 2)
+            if len(args_list) > 2:
+                header_params = args_list[2]
+                header_params_in_args = True
+            # Check if header_params was passed as keyword argument
+            elif 'header_params' in kwargs:
+                header_params = kwargs['header_params']
+            
             # Initialize header_params if not present
-            if 'header_params' not in kwargs:
-                kwargs['header_params'] = {}
+            if header_params is None:
+                header_params = {}
             
             # Check for existing Authorization header and handle appropriately
-            if 'Authorization' in kwargs['header_params']:
-                existing_auth = kwargs['header_params']['Authorization']
+            if 'Authorization' in header_params:
                 logger.warning(
-                    f"Overwriting existing Authorization header. "
-                    f"Existing value: {existing_auth[:20]}... "
-                    f"New value: Bearer {token[:20]}..."
+                    "Overwriting existing Authorization header for ManagementClient request."
                 )
             
             # Inject the token into headers
-            kwargs['header_params']['Authorization'] = f"Bearer {token}"
+            header_params['Authorization'] = f"Bearer {token}"
+            
+            # Put header_params back in the correct location
+            if header_params_in_args:
+                # Replace the positional argument
+                args_list[2] = header_params
+                args = tuple(args_list)
+            else:
+                # Set as keyword argument
+                kwargs['header_params'] = header_params
             
             # Call the original method
             return original_call_api(*args, **kwargs)

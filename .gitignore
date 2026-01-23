@@ -68,3 +68,6 @@ target/
 # IDE
 .idea/
 .vscode/
+
+# OpenAPI Generator artifacts
+.openapi-generator/

@@ -13,6 +13,7 @@ from typing import Dict, Any
 # Import the modules to test
 from kinde_sdk.management.management_client import ManagementClient
 from kinde_sdk.management.management_token_manager import ManagementTokenManager
+from kinde_sdk.management.custom_exceptions import KindeTokenException
 
 
 class TestManagementClient(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestManagementClient(unittest.TestCase):
         self.domain = "test.kinde.com"
         self.client_id = "test_client_id"
         self.client_secret = "test_client_secret"
-        self.base_url = f"https://{self.domain}/api/v1"
+        self.base_url = f"https://{self.domain}"
         
         # Reset token manager instances before each test
         ManagementTokenManager.reset_instances()
@@ -76,7 +77,7 @@ class TestManagementClient(unittest.TestCase):
         
         # Test user methods
         assert hasattr(client, 'get_users')
-        assert hasattr(client, 'get_user')
+        assert hasattr(client, 'get_user_data')
         assert hasattr(client, 'create_user')
         assert hasattr(client, 'update_user')
         assert hasattr(client, 'delete_user')
@@ -95,38 +96,11 @@ class TestManagementClient(unittest.TestCase):
         assert hasattr(client, 'update_role')
         assert hasattr(client, 'delete_role')
         
-        # Test permission methods
-        assert hasattr(client, 'get_permissions')
-        assert hasattr(client, 'get_permission')
-        assert hasattr(client, 'create_permission')
-        assert hasattr(client, 'update_permission')
-        assert hasattr(client, 'delete_permission')
-        
         # Test feature flag methods
         assert hasattr(client, 'get_feature_flags')
-        assert hasattr(client, 'get_feature_flag')
         assert hasattr(client, 'create_feature_flag')
         assert hasattr(client, 'update_feature_flag')
         assert hasattr(client, 'delete_feature_flag')
-        
-        # Test connected apps methods
-        assert hasattr(client, 'get_connected_apps')
-        assert hasattr(client, 'get_connected_app')
-        
-        # Test API applications methods
-        assert hasattr(client, 'get_api_applications')
-        assert hasattr(client, 'get_api_application')
-        assert hasattr(client, 'create_api_application')
-        assert hasattr(client, 'update_api_application')
-        assert hasattr(client, 'delete_api_application')
-        
-        # Test subscriber methods
-        assert hasattr(client, 'get_subscribers')
-        assert hasattr(client, 'get_subscriber')
-        
-        # Test timezone and industry methods
-        assert hasattr(client, 'get_timezones')
-        assert hasattr(client, 'get_industries')
 
     @patch('kinde_sdk.management.management_client.Configuration')
     @patch('kinde_sdk.management.management_client.ApiClient')
@@ -156,48 +130,237 @@ class TestManagementClient(unittest.TestCase):
         mock_api_client_class.return_value = mock_api_client_instance
         mock_config_class.return_value = self.mock_configuration
         
-        # Mock param_serialize to return expected values
-        mock_api_client_instance.param_serialize.return_value = (
-            'GET', 'https://test.kinde.com/api/v1/users', {}, None, None
+        # Mock token
+        test_token = "test_access_token"
+        self.mock_token_manager.get_access_token.return_value = test_token
+        
+        # Mock the original call_api method to verify the wrapper works
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Now call_api should be wrapped - call it directly to test the wrapper
+        client.api_client.call_api(
+            method='GET',
+            resource_path='/api/v1/users',
+            header_params={}
         )
         
-        # Mock REST client response
-        mock_rest_response = Mock()
-        mock_rest_response.read.return_value = None
-        mock_rest_response.status = 200
-        mock_rest_response.data = b'{"users": []}'
-        mock_rest_response.getheader.return_value = 'application/json'
+        # Verify token was requested from token manager
+        self.mock_token_manager.get_access_token.assert_called_once()
         
-        mock_api_client_instance.rest_client.request.return_value = mock_rest_response
+        # Verify the wrapped call_api was called with Authorization header injected
+        original_call_api.assert_called_once()
+        call_kwargs = original_call_api.call_args[1]
         
-        # Mock response_deserialize
-        expected_response = {"users": []}
-        mock_api_response = Mock()
-        mock_api_response.data = expected_response
-        mock_api_client_instance.response_deserialize.return_value = mock_api_response
+        # Check that Authorization header was added
+        assert 'header_params' in call_kwargs
+        assert 'Authorization' in call_kwargs['header_params']
+        assert call_kwargs['header_params']['Authorization'] == f"Bearer {test_token}"
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_handles_acquisition_failure(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that token acquisition failures are properly handled."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Make token acquisition raise an exception
+        self.mock_token_manager.get_access_token.side_effect = Exception("Token service unavailable")
+        
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Calling the wrapped call_api should raise KindeTokenException
+        with pytest.raises(KindeTokenException) as exc_info:
+            client.api_client.call_api(
+                method='GET',
+                resource_path='/api/v1/users',
+                header_params={}
+            )
+        
+        # Verify the exception message is descriptive
+        assert "Failed to acquire access token" in str(exc_info.value)
+        assert "Token service unavailable" in str(exc_info.value)
+        
+        # Verify original call_api was never called
+        original_call_api.assert_not_called()
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_handles_falsy_token(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that falsy token values are properly rejected."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Make token acquisition return None
+        self.mock_token_manager.get_access_token.return_value = None
+        
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Calling the wrapped call_api should raise KindeTokenException
+        with pytest.raises(KindeTokenException) as exc_info:
+            client.api_client.call_api(
+                method='GET',
+                resource_path='/api/v1/users',
+                header_params={}
+            )
+        
+        # Verify the exception message is descriptive
+        assert "Failed to acquire access token" in str(exc_info.value)
+        assert "invalid token" in str(exc_info.value)
+        
+        # Verify original call_api was never called
+        original_call_api.assert_not_called()
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_warns_on_existing_auth_header(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that existing Authorization headers trigger a warning."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
         
         # Mock token
         test_token = "test_access_token"
         self.mock_token_manager.get_access_token.return_value = test_token
         
-        # Create client
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Make API call
-        result = client.get_users()
+        # Call with an existing Authorization header and capture the warning
+        with patch('kinde_sdk.management.management_client.logger') as mock_logger:
+            client.api_client.call_api(
+                method='GET',
+                resource_path='/api/v1/users',
+                header_params={'Authorization': 'Bearer existing_token'}
+            )
+            
+            # Verify warning was logged
+            mock_logger.warning.assert_called_once()
+            warning_message = mock_logger.warning.call_args[0][0]
+            assert "Overwriting existing Authorization header" in warning_message
         
-        # Verify token was requested
-        self.mock_token_manager.get_access_token.assert_called_once()
+        # Verify the new token was still injected
+        call_kwargs = original_call_api.call_args[1]
+        assert call_kwargs['header_params']['Authorization'] == f"Bearer {test_token}"
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_with_positional_header_params(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that token injection works when header_params is passed positionally."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
         
-        # Verify param_serialize was called
-        mock_api_client_instance.param_serialize.assert_called_once()
+        # Mock token
+        test_token = "test_access_token"
+        self.mock_token_manager.get_access_token.return_value = test_token
         
-        # Verify REST client was called with proper headers
-        call_args = mock_api_client_instance.rest_client.request.call_args
-        assert call_args[1]['headers']['Authorization'] == f"Bearer {test_token}"
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
         
-        # Verify response
-        assert result == expected_response
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Call with header_params passed positionally (3rd argument after method, url)
+        # Signature: call_api(self, method, url, header_params=None, ...)
+        existing_headers = {'X-Custom': 'value'}
+        client.api_client.call_api(
+            'GET',
+            'https://test.kinde.com/api/v1/users',
+            existing_headers  # Passed positionally as 3rd argument
+        )
+        
+        # Verify token was requested from token manager
+        self.mock_token_manager.get_access_token.assert_called()
+        
+        # Verify the wrapped call_api was called
+        original_call_api.assert_called_once()
+        
+        # Get the actual call arguments
+        call_args = original_call_api.call_args[0]
+        
+        # Verify Authorization header was added to the positional header_params
+        assert len(call_args) >= 3
+        header_params_arg = call_args[2]
+        assert header_params_arg is not None
+        assert 'Authorization' in header_params_arg
+        assert header_params_arg['Authorization'] == f"Bearer {test_token}"
+        # Verify original header is preserved
+        assert header_params_arg['X-Custom'] == 'value'
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_token_injection_with_no_header_params(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that token injection works when header_params is not provided at all."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_instance = Mock()
+        mock_api_client_class.return_value = mock_api_client_instance
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Mock token
+        test_token = "test_access_token"
+        self.mock_token_manager.get_access_token.return_value = test_token
+        
+        # Mock the original call_api method
+        original_call_api = Mock(return_value="api_response")
+        mock_api_client_instance.call_api = original_call_api
+        
+        # Create client - this wraps call_api with token injection
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Call without any header_params (neither positional nor keyword)
+        client.api_client.call_api(
+            'GET',
+            'https://test.kinde.com/api/v1/users'
+        )
+        
+        # Verify token was requested from token manager
+        self.mock_token_manager.get_access_token.assert_called()
+        
+        # Verify the wrapped call_api was called
+        original_call_api.assert_called_once()
+        
+        # Get the call kwargs
+        call_kwargs = original_call_api.call_args[1]
+        
+        # Verify Authorization header was added as keyword argument
+        assert 'header_params' in call_kwargs
+        assert 'Authorization' in call_kwargs['header_params']
+        assert call_kwargs['header_params']['Authorization'] == f"Bearer {test_token}"
 
     @patch('kinde_sdk.management.management_client.Configuration')
     @patch('kinde_sdk.management.management_client.ApiClient')
@@ -212,7 +375,7 @@ class TestManagementClient(unittest.TestCase):
         
         # Mock param_serialize to return expected values
         mock_api_client_instance.param_serialize.return_value = (
-            'GET', 'https://test.kinde.com/api/v1/users?page_size=10&sort=email', {}, None, None
+            'GET', 'https://test.kinde.com/api/v1/users?page_size=10&email=test@example.com', {}, None, None
         )
         
         # Mock REST client response
@@ -236,8 +399,8 @@ class TestManagementClient(unittest.TestCase):
         # Create client
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Test API call with query parameters
-        result = client.get_users(page_size=10, sort="email")
+        # Test API call with valid query parameters
+        result = client.get_users(page_size=10, email="test@example.com")
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()
@@ -284,7 +447,7 @@ class TestManagementClient(unittest.TestCase):
         
         # Test API call with path parameter
         user_id = "user123"
-        result = client.get_user(user_id)
+        result = client.get_user_data(user_id)
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()
@@ -336,7 +499,7 @@ class TestManagementClient(unittest.TestCase):
             "given_name": "New",
             "family_name": "User"
         }
-        result = client.create_user(**user_data)
+        result = client.create_user(create_user_request=user_data)
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()
@@ -385,7 +548,7 @@ class TestManagementClient(unittest.TestCase):
         # Test API call with path parameter and body data
         user_id = "user123"
         update_data = {"email": "updated@example.com"}
-        result = client.update_user(user_id, **update_data)
+        result = client.update_user(user_id, update_user_request=update_data)
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()
@@ -489,8 +652,8 @@ class TestManagementClient(unittest.TestCase):
     @patch('kinde_sdk.management.management_client.Configuration')
     @patch('kinde_sdk.management.management_client.ApiClient')
     @patch('kinde_sdk.management.management_client.ManagementTokenManager')
-    def test_feature_flags_api_calls(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
-        """Test feature flag-related API calls."""
+    def test_create_feature_flag_with_required_fields(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test creating a feature flag with all required fields."""
         # Setup mocks
         mock_token_manager_class.return_value = self.mock_token_manager
         mock_api_client_instance = Mock()
@@ -499,20 +662,21 @@ class TestManagementClient(unittest.TestCase):
         
         # Mock param_serialize to return expected values
         mock_api_client_instance.param_serialize.return_value = (
-            'GET', 'https://test.kinde.com/api/v1/feature-flags', {}, None, None
+            'POST', 'https://test.kinde.com/api/v1/feature_flags', {}, 
+            {"name": "new_flag", "description": "Test flag", "key": "test_flag", "type": "bool"}, None
         )
         
         # Mock REST client response
         mock_rest_response = Mock()
         mock_rest_response.read.return_value = None
         mock_rest_response.status = 200
-        mock_rest_response.data = b'{"feature_flags": [{"key": "test_flag"}]}'
+        mock_rest_response.data = b'{"message": "Feature flag created", "code": "FEATURE_FLAG_CREATED"}'
         mock_rest_response.getheader.return_value = 'application/json'
         
         mock_api_client_instance.rest_client.request.return_value = mock_rest_response
         
         # Mock response_deserialize
-        expected_response = {"feature_flags": [{"key": "test_flag"}]}
+        expected_response = {"message": "Feature flag created", "code": "FEATURE_FLAG_CREATED"}
         mock_api_response = Mock()
         mock_api_response.data = expected_response
         mock_api_client_instance.response_deserialize.return_value = mock_api_response
@@ -523,8 +687,15 @@ class TestManagementClient(unittest.TestCase):
         # Create client
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Test feature flag API call
-        result = client.get_feature_flags()
+        # Test feature flag API call - use create_feature_flag since get_feature_flags doesn't exist
+        feature_flag_data = {
+            "name": "new_flag", 
+            "description": "Test flag", 
+            "key": "test_flag", 
+            "type": "bool",
+            "default_value": "false"
+        }
+        result = client.create_feature_flag(create_feature_flag_request=feature_flag_data)
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()
@@ -535,38 +706,8 @@ class TestManagementClient(unittest.TestCase):
     @patch('kinde_sdk.management.management_client.Configuration')
     @patch('kinde_sdk.management.management_client.ApiClient')
     @patch('kinde_sdk.management.management_client.ManagementTokenManager')
-    def test_method_docstrings(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
-        """Test that generated methods have proper docstrings."""
-        # Setup mocks
-        mock_token_manager_class.return_value = self.mock_token_manager
-        mock_api_client_class.return_value = self.mock_api_client
-        mock_config_class.return_value = self.mock_configuration
-        self.mock_api_client.rest_client = self.mock_rest_client
-        
-        # Create client
-        client = ManagementClient(self.domain, self.client_id, self.client_secret)
-        
-        # Test that methods have docstrings
-        assert client.get_users.__doc__ is not None
-        assert "Get a list of users" in client.get_users.__doc__
-        
-        assert client.get_user.__doc__ is not None
-        assert "Get a user by ID" in client.get_user.__doc__
-        
-        assert client.create_user.__doc__ is not None
-        assert "Create a new user" in client.create_user.__doc__
-        
-        assert client.update_user.__doc__ is not None
-        assert "Update a user" in client.update_user.__doc__
-        
-        assert client.delete_user.__doc__ is not None
-        assert "Delete a user" in client.delete_user.__doc__
-
-    @patch('kinde_sdk.management.management_client.Configuration')
-    @patch('kinde_sdk.management.management_client.ApiClient')
-    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
-    def test_path_parameter_substitution_multiple_params(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
-        """Test path parameter substitution with multiple parameters."""
+    def test_get_user_data_by_id(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test retrieving user data by user ID."""
         # Setup mocks
         mock_token_manager_class.return_value = self.mock_token_manager
         mock_api_client_instance = Mock()
@@ -575,20 +716,20 @@ class TestManagementClient(unittest.TestCase):
         
         # Mock param_serialize to return expected values
         mock_api_client_instance.param_serialize.return_value = (
-            'GET', 'https://test.kinde.com/api/v1/users/user123/roles/role456', {}, None, None
+            'GET', 'https://test.kinde.com/api/v1/user?id=user123', {}, None, None
         )
         
         # Mock REST client response
         mock_rest_response = Mock()
         mock_rest_response.read.return_value = None
         mock_rest_response.status = 200
-        mock_rest_response.data = b'{"user_id": "user123", "role_id": "role456"}'
+        mock_rest_response.data = b'{"id": "user123", "email": "test@example.com"}'
         mock_rest_response.getheader.return_value = 'application/json'
         
         mock_api_client_instance.rest_client.request.return_value = mock_rest_response
         
         # Mock response_deserialize
-        expected_response = {"user_id": "user123", "role_id": "role456"}
+        expected_response = {"id": "user123", "email": "test@example.com"}
         mock_api_response = Mock()
         mock_api_response.data = expected_response
         mock_api_client_instance.response_deserialize.return_value = mock_api_response
@@ -599,10 +740,8 @@ class TestManagementClient(unittest.TestCase):
         # Create client
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Test API call with multiple path parameters
-        # Note: This would require a method that takes multiple path parameters
-        # For now, we'll test with a single parameter
-        result = client.get_user("user123")
+        # Test API call with path parameter using get_user_data
+        result = client.get_user_data("user123")
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()
@@ -647,8 +786,8 @@ class TestManagementClient(unittest.TestCase):
         # Create client
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Test API call with None values
-        result = client.get_users(page_size=10, sort=None, filter=None)
+        # Test API call with None values (should be filtered out)
+        result = client.get_users(page_size=10, username=None, email=None)
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()
@@ -755,8 +894,8 @@ class TestManagementClient(unittest.TestCase):
     @patch('kinde_sdk.management.management_client.Configuration')
     @patch('kinde_sdk.management.management_client.ApiClient')
     @patch('kinde_sdk.management.management_client.ManagementTokenManager')
-    def test_readonly_endpoints(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
-        """Test readonly endpoints (GET requests only)."""
+    def test_get_timezones_via_dynamic_api(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test accessing dynamically generated API classes (timezones_api) without convenience methods."""
         # Setup mocks
         mock_token_manager_class.return_value = self.mock_token_manager
         mock_api_client_instance = Mock()
@@ -789,8 +928,8 @@ class TestManagementClient(unittest.TestCase):
         # Create client
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Test readonly endpoints
-        result = client.get_timezones()
+        # Test readonly endpoints - use dynamic API class (no convenience method exists for timezones)
+        result = client.timezones_api.get_timezones()
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()
@@ -798,18 +937,171 @@ class TestManagementClient(unittest.TestCase):
         # Verify response
         assert result == expected_response
 
-    def test_api_endpoints_constant(self):
-        """Test that API_ENDPOINTS constant is properly defined."""
-        from kinde_sdk.management.management_client import ManagementClient
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_dynamic_api_generation(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Test that API classes are dynamically generated and accessible."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_class.return_value = self.mock_api_client
+        mock_config_class.return_value = self.mock_configuration
+        self.mock_api_client.rest_client = self.mock_rest_client
         
-        # Verify that API_ENDPOINTS is defined
-        assert hasattr(ManagementClient, 'API_ENDPOINTS')
-        assert isinstance(ManagementClient.API_ENDPOINTS, dict)
+        # Create client
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Verify that it contains expected resources
-        expected_resources = ['users', 'organizations', 'roles', 'permissions', 'feature_flags', 'connected_apps', 'api_applications', 'subscribers']
-        for resource in expected_resources:
-            assert resource in ManagementClient.API_ENDPOINTS
+        # Test that common API properties are dynamically created
+        # These should be auto-generated from the API classes in kinde_sdk.management.api
+        expected_apis = [
+            'api_keys_api',             # from APIKeysApi (new in updated spec)
+            'apis_api',                 # from APIsApi (special case for "APIs" tag in spec)
+            'applications_api',         # from ApplicationsApi
+            'billing_agreements_api',   # from BillingAgreementsApi
+            'billing_entitlements_api', # from BillingEntitlementsApi
+            'billing_meter_usage_api',  # from BillingMeterUsageApi
+            'business_api',             # from BusinessApi
+            'callbacks_api',            # from CallbacksApi
+            'connected_apps_api',       # from ConnectedAppsApi
+            'connections_api',          # from ConnectionsApi
+            'environment_variables_api',# from EnvironmentVariablesApi
+            'environments_api',         # from EnvironmentsApi
+            'feature_flags_api',        # from FeatureFlagsApi
+            'identities_api',           # from IdentitiesApi
+            'industries_api',           # from IndustriesApi
+            'mfa_api',                  # from MFAApi
+            'organizations_api',        # from OrganizationsApi
+            'permissions_api',          # from PermissionsApi
+            'properties_api',           # from PropertiesApi
+            'property_categories_api',  # from PropertyCategoriesApi
+            'roles_api',                # from RolesApi
+            'search_api',               # from SearchApi
+            'subscribers_api',          # from SubscribersApi
+            'timezones_api',            # from TimezonesApi
+            'users_api',                # from UsersApi
+            'webhooks_api',             # from WebhooksApi
+        ]
+        
+        for api_name in expected_apis:
+            assert hasattr(client, api_name), f"client.{api_name} should exist"
+            api_instance = getattr(client, api_name)
+            assert api_instance is not None, f"client.{api_name} should not be None"
+            # Verify it's an API instance (all auto-generated APIs have api_client attribute)
+            assert hasattr(api_instance, 'api_client'), f"client.{api_name} should be an API instance"
+        
+        # Test that the snake_case conversion works correctly, including acronyms
+        assert hasattr(client, 'users_api')            # UsersApi -> users_api
+    
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    @patch('kinde_sdk.management.management_client.inspect.getmembers')
+    def test_api_initialization_fails_with_no_apis_found(self, mock_getmembers, mock_token_manager_class, 
+                                                         mock_api_client_class, mock_config_class):
+        """Test that initialization fails with clear error if no API classes are found."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_class.return_value = self.mock_api_client
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Mock inspect.getmembers to return empty list (no APIs found)
+        mock_getmembers.return_value = []
+        
+        # Creating client should raise RuntimeError with descriptive message
+        with pytest.raises(RuntimeError) as exc_info:
+            ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Verify the error message is descriptive
+        assert "No API classes found" in str(exc_info.value)
+        assert "not properly installed or generated" in str(exc_info.value)
+    
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    @patch('kinde_sdk.management.management_client.inspect.getmembers')
+    def test_api_initialization_handles_instantiation_failure(self, mock_getmembers, mock_token_manager_class,
+                                                              mock_api_client_class, mock_config_class):
+        """Test that API instantiation failures are caught and re-raised with clear error."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_class.return_value = self.mock_api_client
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Create a mock API class that raises an exception when instantiated
+        class BrokenApi:
+            def __init__(self, **_):
+                raise ValueError("Missing required parameter")
+        
+        # Mock inspect.getmembers to return our broken API class
+        mock_getmembers.return_value = [('BrokenApi', BrokenApi)]
+        
+        # Creating client should raise RuntimeError with descriptive message
+        with pytest.raises(RuntimeError) as exc_info:
+            ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Verify the error message is descriptive
+        assert "Failed to initialize API class BrokenApi" in str(exc_info.value)
+        assert "compatibility issue" in str(exc_info.value)
+        assert "Missing required parameter" in str(exc_info.value)
+    
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    @patch('kinde_sdk.management.management_client.logger')
+    def test_api_initialization_detects_attribute_collisions(self, mock_logger, mock_token_manager_class,
+                                                             mock_api_client_class, mock_config_class):
+        """Test that attribute name collisions are detected and logged."""
+        # Setup mocks
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_class.return_value = self.mock_api_client
+        mock_config_class.return_value = self.mock_configuration
+        
+        # Create client
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+        
+        # Manually set an attribute that would collide
+        client.test_collision_api = "existing_value"
+        
+        # Now try to initialize an API with the same name
+        class TestCollisionApi:
+            def __init__(self, **kwargs):
+                self.api_client = kwargs.get('api_client')
+        
+        # Call _initialize_api_classes with our test API
+        with patch('kinde_sdk.management.management_client.inspect.getmembers') as mock_getmembers:
+            # Include at least one valid API so we don't fail the "no APIs" check
+            class ValidApi:
+                def __init__(self, **kwargs):
+                    self.api_client = kwargs.get('api_client')
+            
+            mock_getmembers.return_value = [
+                ('TestCollisionApi', TestCollisionApi),
+                ('ValidApi', ValidApi)
+            ]
+            
+            # Re-initialize (this would normally be called in __init__)
+            client._initialize_api_classes()
+        
+        # Verify warning was logged about the collision
+        warning_calls = [warning_call for warning_call in mock_logger.warning.call_args_list 
+                        if 'test_collision_api' in str(warning_call)]
+        assert len(warning_calls) > 0, "Should log warning about attribute collision"
+        
+        # Verify the original value wasn't overwritten
+        assert client.test_collision_api == "existing_value"
+        assert hasattr(client, 'feature_flags_api')    # FeatureFlagsApi -> feature_flags_api
+        assert hasattr(client, 'apis_api')             # APIsApi -> apis_api (special case workaround)
+        assert hasattr(client, 'api_keys_api')         # APIKeysApi -> api_keys_api (new in updated spec)
+        assert hasattr(client, 'mfa_api')              # MFAApi -> mfa_api (not m_f_a_api)
+        
+        # Should NOT have PascalCase versions or names without _api suffix
+        assert not hasattr(client, 'UsersApi')
+        assert not hasattr(client, 'APIsApi')
+        assert not hasattr(client, 'APIKeysApi')
+        assert not hasattr(client, 'MFAApi')
+        assert not hasattr(client, 'users')      # Should be users_api, not users
+        assert not hasattr(client, 'apis')       # Should be apis_api, not apis
+        assert not hasattr(client, 'api_keys')   # Should be api_keys_api, not api_keys
 
 
 if __name__ == '__main__':

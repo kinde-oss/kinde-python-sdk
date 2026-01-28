@@ -1,68 +1,57 @@
-import os
+#!/usr/bin/env python3
+"""
+Kinde Management SDK Generator from OpenAPI specification.
+
+This script automates the generation of the Management API SDK
+using OpenAPI Generator. It provides:
+- Prerequisites checking
+- SDK generation with proper configuration
+- Import path fixing
+- Custom file preservation
+- Code validation
+- Test execution
+- Git diff review
+
+Usage:
+    python3 generate_management_sdk.py [--skip-tests] [--no-diff]
+"""
+
+import argparse
+import logging
+import re
 import subprocess
 import sys
-import shutil
-import tempfile
+from pathlib import Path
+from typing import Dict, Any
 
-# OpenAPI spec URL from Kinde
-OPENAPI_SPEC_URL = "https://kinde.com/api/kinde-mgmt-api-specs.yaml"
-OUTPUT_DIR = "kinde_sdk/management"
-GENERATOR_DIR = "generator"
-CONFIG_FILE = f"{GENERATOR_DIR}/config.yaml"
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(message)s'
+)
+logger = logging.getLogger(__name__)
 
-def fix_imports(directory):
-    """Fix import paths in generated Python files."""
-    print(f"Fixing imports in {directory}")
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.endswith('.py'):
-                filepath = os.path.join(root, file)
-                try:
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    
-                    # Fix imports for the management package structure
-                    original_content = content
-                    
-                    # Fix all kinde_sdk imports to use management module
-                    content = content.replace('from kinde_sdk import schemas', 'from kinde_sdk.management import schemas')
-                    content = content.replace('from kinde_sdk import api_client', 'from kinde_sdk.management import api_client')
-                    content = content.replace('from kinde_sdk import exceptions', 'from kinde_sdk.management import exceptions')
-                    content = content.replace('from kinde_sdk import configuration', 'from kinde_sdk.management import configuration')
-                    content = content.replace('from kinde_sdk import rest', 'from kinde_sdk.management import rest')
-                    
-                    # Fix combined imports
-                    content = content.replace('from kinde_sdk import api_client, exceptions', 'from kinde_sdk.management import api_client, exceptions')
-                    content = content.replace('from kinde_sdk import exceptions, api_client', 'from kinde_sdk.management import exceptions, api_client')
-                    
-                    # Fix import statements
-                    content = content.replace('from kinde_sdk import', 'from kinde_sdk.management import')
-                    content = content.replace('import kinde_sdk.schemas', 'import kinde_sdk.management.schemas')
-                    content = content.replace('kinde_sdk.schemas', 'kinde_sdk.management.schemas')
-                    
-                    # Fix any remaining references to root kinde_sdk modules
-                    content = content.replace('kinde_sdk.api_client', 'kinde_sdk.management.api_client')
-                    content = content.replace('kinde_sdk.exceptions', 'kinde_sdk.management.exceptions')
-                    content = content.replace('kinde_sdk.configuration', 'kinde_sdk.management.configuration')
-                    content = content.replace('kinde_sdk.rest', 'kinde_sdk.management.rest')
-                    
-                    # Only write if content changed
-                    if content != original_content:
-                        with open(filepath, 'w', encoding='utf-8') as f:
-                            f.write(content)
-                        print(f"Fixed imports in: {filepath}")
-                except Exception as e:
-                    print(f"Warning: Could not fix imports in {filepath}: {e}")
 
-def preserve_custom_imports():
-    """Preserve custom imports in the __init__.py file after generation."""
-    init_file = os.path.join(OUTPUT_DIR, "__init__.py")
-    if not os.path.exists(init_file):
-        print("Warning: __init__.py file not found, cannot preserve custom imports")
-        return
-    
-    # Custom imports to preserve
-    custom_imports = [
+# =============================================================================
+# SDK CONFIGURATION
+# =============================================================================
+
+SDK_CONFIG = {
+    "name": "Management API",
+    "spec_url": "https://api-spec.kinde.com/kinde-management-api-spec.yaml",
+    "output_dir": "kinde_sdk/management",
+    "package_name": "kinde_sdk.management",
+    "openapi_tools_config": "openapitools.json",
+    "openapi_tools_generator_name": "management",
+    "custom_files": [
+        "management_client.py",
+        "management_token_manager.py",
+        "custom_exceptions.py",
+        "kinde_api_client.py",
+        "README.md"
+    ],
+    "custom_imports": [
+        "",
         "# Custom imports for Kinde Management Client",
         "from .management_client import ManagementClient",
         "from .management_token_manager import ManagementTokenManager",
@@ -70,219 +59,729 @@ def preserve_custom_imports():
         "# Re-export for convenience",
         "__all__ = ['ManagementClient', 'ManagementTokenManager']",
         ""
+    ],
+    "test_path": "testv2/testv2_management/test_management_client.py"
+}
+
+
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
+
+def print_section(title: str):
+    """Print a formatted section header."""
+    print(f"\n{'='*60}")
+    print(f"  {title}")
+    print('='*60)
+
+
+def print_subsection(title: str):
+    """Print a formatted subsection header."""
+    print(f"\n{'-'*60}")
+    print(f"  {title}")
+    print('-'*60)
+
+
+# =============================================================================
+# PREREQUISITES
+# =============================================================================
+
+def check_prerequisites() -> bool:
+    """
+    Verify required tools are installed.
+    
+    Returns:
+        True if all prerequisites are met, False otherwise
+    """
+    print_section("Checking Prerequisites")
+    
+    all_ok = True
+    
+    # Check for npx (comes with Node.js)
+    try:
+        result = subprocess.run(
+            ["npx", "--version"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode != 0:
+            print("❌ npx not found. Please install Node.js and npm.")
+            all_ok = False
+        else:
+            print(f"✓ npx: {result.stdout.strip()}")
+    except FileNotFoundError:
+        print("❌ npx not found. Please install Node.js and npm.")
+        all_ok = False
+    
+    # Check for openapi-generator-cli
+    try:
+        result = subprocess.run(
+            ["npx", "@openapitools/openapi-generator-cli", "version"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode != 0:
+            print("❌ openapi-generator-cli not found")
+            print("Install with: npm install @openapitools/openapi-generator-cli -g")
+            all_ok = False
+        else:
+            print(f"✓ openapi-generator-cli: {result.stdout.strip()}")
+    except FileNotFoundError:
+        print("❌ openapi-generator-cli not accessible via npx")
+        all_ok = False
+    
+    # Check for Python
+    print(f"✓ Python: {sys.version.split()[0]}")
+    
+    # Check for pytest (optional but recommended)
+    try:
+        result = subprocess.run(
+            ["pytest", "--version"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode == 0:
+            print(f"✓ pytest: {result.stdout.strip().split()[1]}")
+        else:
+            print("⚠️  pytest not found (tests will be skipped)")
+    except FileNotFoundError:
+        print("⚠️  pytest not found (tests will be skipped)")
+    
+    # Check for git (optional but useful)
+    try:
+        result = subprocess.run(
+            ["git", "--version"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode == 0:
+            print(f"✓ git: {result.stdout.strip().split()[2]}")
+        else:
+            print("⚠️  git not found (diff review will be skipped)")
+    except FileNotFoundError:
+        print("⚠️  git not found (diff review will be skipped)")
+    
+    return all_ok
+
+
+# =============================================================================
+# CONFIGURATION MANAGEMENT
+# =============================================================================
+
+def ensure_root_openapi_generator_ignore():
+    """
+    Ensure root-level .openapi-generator-ignore exists to protect project files.
+    
+    This is critical to prevent OpenAPI Generator from overwriting packaging
+    configuration files when generating SDKs.
+    """
+    root_ignore_file = Path(".openapi-generator-ignore")
+    
+    # Critical project files that must never be overwritten
+    critical_files = [
+        "# CRITICAL: Project packaging files - never overwrite these!",
+        "pyproject.toml",
+        "setup.py",
+        "setup.cfg",
+        "MANIFEST.in",
+        "requirements.txt",
+        "README.md",
+        "",
+        "# Prevent root-level generation artifacts",
+        "*.yml",
+        "*.yaml",
+        "tox.ini",
+        "",
     ]
     
-    try:
-        with open(init_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Check if custom imports are already present
-        if "from .management_client import ManagementClient" in content:
-            print("Custom imports already present in __init__.py")
+    if root_ignore_file.exists():
+        # Check if critical files are protected
+        content = root_ignore_file.read_text(encoding='utf-8')
+        if "pyproject.toml" in content:
+            logger.debug("✓ Root .openapi-generator-ignore already protects critical files")
             return
         
-        # Add custom imports at the end of the file
-        custom_imports_text = "\n".join(custom_imports)
-        updated_content = content + "\n" + custom_imports_text
+        # Append critical files to existing file
+        with open(root_ignore_file, 'a', encoding='utf-8') as f:
+            f.write("\n" + "\n".join(critical_files))
+        print("✓ Updated root .openapi-generator-ignore to protect packaging files")
+    else:
+        # Create new file with critical protections
+        ignore_content = [
+            "# OpenAPI Generator Ignore",
+            "# This file tells the generator which files to NOT overwrite.",
+            "# Works like .gitignore - list files/patterns to preserve.",
+            "",
+        ] + critical_files + [
+            "# Python cache",
+            "__pycache__/",
+            "*.pyc",
+            "*.pyo",
+            "*.pyd",
+            ".Python",
+            "",
+            "# IDE files",
+            ".vscode/",
+            ".idea/",
+            "*.swp",
+            "*.swo",
+            "*~",
+            "",
+            "# Test files",
+            "test/",
+            ""
+        ]
+        root_ignore_file.write_text("\n".join(ignore_content), encoding='utf-8')
+        print("✓ Created root .openapi-generator-ignore to protect project files")
+
+
+def ensure_openapi_generator_ignore(config: Dict[str, Any]):
+    """
+    Ensure .openapi-generator-ignore file exists in the output directory.
+    
+    Args:
+        config: SDK configuration dictionary
+    """
+    output_dir = Path(config["output_dir"])
+    ignore_file = output_dir / ".openapi-generator-ignore"
+    
+    if ignore_file.exists():
+        logger.debug(f"✓ .openapi-generator-ignore already exists at {ignore_file}")
+        return
+    
+    # Create the ignore file
+    ignore_content = [
+        "# OpenAPI Generator Ignore",
+        "# This file tells the generator which files to NOT overwrite.",
+        "# Works like .gitignore - list files/patterns to preserve.",
+        "",
+        "# Custom Kinde SDK files - never overwrite these"
+    ]
+    
+    # Add custom files from config
+    for custom_file in config["custom_files"]:
+        ignore_content.append(custom_file)
+    
+    ignore_content.extend([
+        "",
+        "# Python cache",
+        "__pycache__/",
+        "*.pyc",
+        "*.pyo",
+        "*.pyd",
+        ".Python",
+        "",
+        "# IDE files",
+        ".vscode/",
+        ".idea/",
+        "*.swp",
+        "*.swo",
+        "*~",
+        "",
+        "# Test files",
+        "test/",
+        ""
+    ])
+    
+    # Ensure output directory exists
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Write the ignore file
+    ignore_file.write_text("\n".join(ignore_content), encoding='utf-8')
+    print(f"✓ Created .openapi-generator-ignore at {ignore_file}")
+
+
+def ensure_openapitools_config(config: Dict[str, Any]):
+    """
+    Ensure openapitools.json has the correct configuration for this SDK.
+    
+    Args:
+        config: SDK configuration dictionary
+    """
+    import json
+    
+    config_file = Path(config["openapi_tools_config"])
+    generator_name = config["openapi_tools_generator_name"]
+    
+    # Define the expected configuration
+    expected_generator_config = {
+        "generatorName": "python",
+        "inputSpec": config["spec_url"],
+        "output": ".",
+        "glob": "**/*",
+        "additionalProperties": {
+            "packageName": config["package_name"],
+            "projectName": "kinde-python-sdk",
+            "packageVersion": "2.0.0",
+            "library": "urllib3",
+            "generateSourceCodeOnly": True  # CRITICAL: Only generate source code, not project templates
+        },
+        "skipValidateSpec": True,
+        "files": {}
+    }
+    
+    # Read existing config or create new one
+    if config_file.exists():
+        with open(config_file, 'r', encoding='utf-8') as f:
+            openapitools_config = json.load(f)
+    else:
+        openapitools_config = {
+            "$schema": "https://raw.githubusercontent.com/OpenAPITools/openapi-generator-cli/master/apps/generator-cli/src/config.schema.json",
+            "spaces": 2,
+            "generator-cli": {
+                "version": "7.9.0",
+                "storageDir": "~/.openapi-generator",
+                "generators": {}
+            }
+        }
+    
+    # Ensure generators section exists
+    if "generator-cli" not in openapitools_config:
+        openapitools_config["generator-cli"] = {
+            "version": "7.9.0",
+            "storageDir": "~/.openapi-generator",
+            "generators": {}
+        }
+    
+    if "generators" not in openapitools_config["generator-cli"]:
+        openapitools_config["generator-cli"]["generators"] = {}
+    
+    # Update or add the generator configuration
+    openapitools_config["generator-cli"]["generators"][generator_name] = expected_generator_config
+    
+    # Write back to file
+    with open(config_file, 'w', encoding='utf-8') as f:
+        json.dump(openapitools_config, f, indent=2)
+    
+    print(f"✓ Updated {config_file} for {generator_name}")
+
+
+# =============================================================================
+# SDK GENERATION
+# =============================================================================
+
+def generate_sdk(config: Dict[str, Any]) -> bool:
+    """
+    Generate SDK using OpenAPI Generator.
+    
+    Args:
+        config: SDK configuration dictionary
         
-        with open(init_file, 'w', encoding='utf-8') as f:
-            f.write(updated_content)
-        
-        print("Added custom imports to __init__.py")
-        
-    except Exception as e:
-        print(f"Warning: Could not preserve custom imports in {init_file}: {e}")
-
-def cleanup_old_generated_files():
-    """Clean up old generated files that might conflict with our new structure."""
-    print("Cleaning up old generated files...")
+    Returns:
+        True if generation succeeded, False otherwise
+    """
+    print_section(f"Generating {config['name']} SDK")
     
-    # Remove old generated files from root kinde_sdk directory
-    old_files_to_remove = [
-        "kinde_sdk/api_client.py",
-        "kinde_sdk/configuration.py", 
-        "kinde_sdk/exceptions.py",
-        "kinde_sdk/rest.py",
-        "kinde_sdk/schemas.py"
-    ]
+    # Ensure root-level protections exist first
+    ensure_root_openapi_generator_ignore()
     
-    for file_path in old_files_to_remove:
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-                print(f"Removed old file: {file_path}")
-            except Exception as e:
-                print(f"Warning: Could not remove {file_path}: {e}")
-    
-    # Remove old generated directories that might conflict
-    old_dirs_to_remove = [
-        "kinde_sdk/paths",
-        "kinde_sdk/model",
-        "kinde_sdk/apis"
-    ]
-    
-    for dir_path in old_dirs_to_remove:
-        if os.path.exists(dir_path):
-            try:
-                shutil.rmtree(dir_path)
-                print(f"Removed old directory: {dir_path}")
-            except Exception as e:
-                print(f"Warning: Could not remove {dir_path}: {e}")
-
-def preserve_custom_files():
-    """Preserve custom files that should not be overwritten during generation."""
-    print("Preserving custom files...")
-    
-    # Files to preserve (backup and restore after generation)
-    custom_files = [
-        "management_client.py",
-        "management_token_manager.py", 
-        "README.md",
-        "kinde_api_client.py",
-        "custom_exceptions.py"
-    ]
-    
-    # Create backup directory
-    backup_dir = os.path.join(OUTPUT_DIR, "backup")
-    if not os.path.exists(backup_dir):
-        os.makedirs(backup_dir)
-    
-    # Backup custom files
-    for file_name in custom_files:
-        source = os.path.join(OUTPUT_DIR, file_name)
-        backup = os.path.join(backup_dir, file_name)
-        if os.path.exists(source):
-            shutil.copy2(source, backup)
-            print(f"Backed up: {file_name}")
-    
-    # Note: Kinde-specific exceptions are now in custom_exceptions.py
-    # which is preserved as a custom file, so no need to extract from exceptions.py
-    
-    return backup_dir
-
-def restore_custom_files(backup_dir):
-    """Restore custom files after generation."""
-    print("Restoring custom files...")
-    
-    custom_files = [
-        "management_client.py",
-        "management_token_manager.py",
-        "README.md",
-        "kinde_api_client.py",
-        "custom_exceptions.py"
-    ]
-    
-    # Restore custom files
-    for file_name in custom_files:
-        backup = os.path.join(backup_dir, file_name)
-        destination = os.path.join(OUTPUT_DIR, file_name)
-        if os.path.exists(backup):
-            shutil.copy2(backup, destination)
-            print(f"Restored: {file_name}")
-    
-    # Note: Kinde-specific exceptions are now handled by custom_exceptions.py
-    # which is preserved as a custom file, so no need to restore to exceptions.py
-    
-    # Clean up backup directory
-    if os.path.exists(backup_dir):
-        shutil.rmtree(backup_dir)
-        print("Cleaned up backup directory")
-
-# Check if openapi-generator-cli is available
-if not any(
-    os.access(os.path.join(path, 'openapi-generator-cli'), os.X_OK)
-    or os.access(os.path.join(path, 'openapi-generator-cli.bat'), os.X_OK)
-    for path in os.environ["PATH"].split(os.pathsep)
-):
-    print("Error: openapi-generator-cli is not installed or not in your PATH.")
-    print("Install it from https://openapi-generator.tech/docs/installation or with 'npm install @openapitools/openapi-generator-cli -g'")
-    sys.exit(1)
-
-# Create generator directory if it doesn't exist
-if not os.path.exists(GENERATOR_DIR):
-    os.makedirs(GENERATOR_DIR)
-    print(f"Created directory: {GENERATOR_DIR}")
-
-# Create config.yaml if it doesn't exist
-if not os.path.isfile(CONFIG_FILE):
-    config_content = """# openapi-generator-cli config for python
-
-packageName: kinde_sdk.management
-projectName: kinde-python-sdk
-packageVersion: 2.0.0
-# It is recommended to use a released version of the generator.
-# For example:
-# generatorVersion: "7.13.0"
-"""
-    with open(CONFIG_FILE, 'w') as f:
-        f.write(config_content)
-    print(f"Created config file: {CONFIG_FILE}")
-
-# Create temporary directory for generation
-with tempfile.TemporaryDirectory() as temp_dir:
-    print(f"Generating to temporary directory: {temp_dir}")
+    # Ensure configuration files are up to date
+    ensure_openapi_generator_ignore(config)
+    ensure_openapitools_config(config)
     
     cmd = [
-        "openapi-generator-cli", "generate",
-        "-i", OPENAPI_SPEC_URL,
+        "npx", "@openapitools/openapi-generator-cli", "generate",
+        "-i", config["spec_url"],
         "-g", "python",
-        "-o", temp_dir,
-        "-c", CONFIG_FILE,
+        "-o", ".",
+        "-c", config["openapi_tools_config"],
         "--skip-validate-spec"
     ]
-
-    print(f"Using config file: {CONFIG_FILE}")
+    
+    print(f"Spec: {config['spec_url']}")
+    print(f"Output: {config['output_dir']}")
+    print(f"Config: {config['openapi_tools_config']}")
     print(f"Running: {' '.join(cmd)}")
-    subprocess.run(cmd, check=True)
     
-    # Clean up old generated files first
-    cleanup_old_generated_files()
-    
-    # Preserve custom files before generation
-    backup_dir = preserve_custom_files()
-    
-    # Ensure management directory exists
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
-        print(f"Created directory: {OUTPUT_DIR}")
-    
-    # Look for the generated management directory structure
-    # The generator creates: temp_dir/kinde_sdk/management/
-    generated_kinde_sdk = os.path.join(temp_dir, "kinde_sdk")
-    generated_management = os.path.join(generated_kinde_sdk, "management")
-    
-    if os.path.exists(generated_management):
-        print(f"Copying files from {generated_management} to {OUTPUT_DIR}")
+    try:
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        print("✓ Generation completed successfully")
         
-        # Copy all files and directories from generated management to our management directory
-        for item in os.listdir(generated_management):
-            source = os.path.join(generated_management, item)
-            destination = os.path.join(OUTPUT_DIR, item)
-            
-            if os.path.isfile(source):
-                shutil.copy2(source, destination)
-                print(f"Copied file: {item}")
-            elif os.path.isdir(source):
-                if os.path.exists(destination):
-                    shutil.rmtree(destination)
-                shutil.copytree(source, destination)
-                print(f"Copied directory: {item}")
+        # Clean up unwanted template files that OpenAPI Generator creates at root level
+        cleanup_generated_templates()
         
-        # Restore custom files after generation
-        restore_custom_files(backup_dir)
-        
-        # Fix imports in the management directory
-        fix_imports(OUTPUT_DIR)
-        
-        # Preserve custom imports
-        preserve_custom_imports()
-        
-        print("Generation completed successfully!")
-    else:
-        print(f"Warning: Generated management directory not found at {generated_management}")
-        print(f"Available directories in {temp_dir}: {os.listdir(temp_dir)}")
-        if os.path.exists(generated_kinde_sdk):
-            print(f"Available directories in {generated_kinde_sdk}: {os.listdir(generated_kinde_sdk)}")
-        sys.exit(1)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Generation failed: {e}")
+        if e.stdout:
+            print("STDOUT:", e.stdout)
+        if e.stderr:
+            print("STDERR:", e.stderr)
+        return False
 
-print(f"OpenAPI Python SDK files copied to {OUTPUT_DIR}") 
+
+def cleanup_generated_templates():
+    """
+    Remove template files that OpenAPI Generator creates at the root level.
+    
+    These files are meant for standalone packages but are not needed in this
+    multi-package repository that has its own packaging setup.
+    """
+    import shutil
+    
+    template_files = [
+        ".travis.yml",
+        ".gitlab-ci.yml",
+        "tox.ini",
+        "git_push.sh",
+        "test-requirements.txt",
+        "setup.py",
+        "setup.cfg",
+        ".github/workflows/python.yml",
+    ]
+    
+    template_dirs = [
+        "docs",  # Root-level docs generated by OpenAPI (we keep SDK-specific docs in kinde_sdk/docs)
+        "test",  # Root-level test stubs (we use testv2/)
+    ]
+    
+    removed_count = 0
+    
+    # Remove template files
+    for template_file in template_files:
+        file_path = Path(template_file)
+        if file_path.exists():
+            file_path.unlink()
+            removed_count += 1
+    
+    # Remove template directories
+    for template_dir in template_dirs:
+        dir_path = Path(template_dir)
+        if dir_path.exists() and dir_path.is_dir():
+            shutil.rmtree(dir_path)
+            removed_count += 1
+    
+    if removed_count > 0:
+        print(f"✓ Cleaned up {removed_count} template file(s) and directory(ies)")
+    else:
+        logger.debug("✓ No template files to clean up")
+
+
+# =============================================================================
+# IMPORT FIXING
+# =============================================================================
+
+def fix_imports(config: Dict[str, Any]):
+    """
+    Fix import paths in generated files to use correct package namespace.
+    
+    Uses regex-based approach to handle various import patterns.
+    
+    Args:
+        config: SDK configuration dictionary
+    """
+    print_section("Fixing Imports")
+    
+    output_dir = Path(config["output_dir"])
+    package_name = config["package_name"]
+    fixed_count = 0
+    
+    for py_file in output_dir.rglob("*.py"):
+        # Skip custom files (they're already correct)
+        if py_file.name in config["custom_files"]:
+            continue
+        
+        try:
+            content = py_file.read_text(encoding='utf-8')
+            original_content = content
+            
+            # Extract the base package name (e.g., "kinde_sdk")
+            base_package = package_name.split('.')[0]
+            subpackage = package_name.split('.')[-1]  # e.g., "management" or "frontend"
+            
+            # Pattern 1: Fix "from kinde_sdk import X" to include the subpackage
+            # But ONLY if kinde_sdk is NOT followed by a dot (which would indicate a submodule)
+            # This ensures we don't change "from kinde_sdk.core" or "from kinde_sdk.management"
+            # We only change bare "from kinde_sdk import X"
+            pattern = f'\\bfrom {base_package}(?!\\.)\\b'
+            content = re.sub(pattern, f'from {package_name}', content)
+            
+            # Pattern 2: Fix "import kinde_sdk.X" statements
+            # Only fix if subpackage is not already in the path
+            lines = content.split('\n')
+            fixed_lines = []
+            for line in lines:
+                if line.strip().startswith(f'import {base_package}.'):
+                    # Only fix if our subpackage is not already in the import path
+                    subpackage = package_name.split('.')[-1]
+                    if f'.{subpackage}' not in line:
+                        line = line.replace(f'import {base_package}.', f'import {package_name}.')
+                fixed_lines.append(line)
+            content = '\n'.join(fixed_lines)
+            
+            # Only write if changed
+            if content != original_content:
+                py_file.write_text(content, encoding='utf-8')
+                fixed_count += 1
+                print(f"  Fixed: {py_file.relative_to('.')}")
+        
+        except Exception as e:
+            print(f"  ⚠️  Warning: Could not fix {py_file}: {e}")
+    
+    if fixed_count > 0:
+        print(f"✓ Fixed imports in {fixed_count} files")
+    else:
+        print("✓ No import fixes needed")
+
+
+# =============================================================================
+# CUSTOM IMPORTS
+# =============================================================================
+
+def add_custom_imports(config: Dict[str, Any]):
+    """
+    Add custom imports to __init__.py if not already present.
+    
+    Args:
+        config: SDK configuration dictionary
+    """
+    print_section("Adding Custom Imports")
+    
+    output_dir = Path(config["output_dir"])
+    init_file = output_dir / "__init__.py"
+    
+    if not init_file.exists():
+        print("⚠️  Warning: __init__.py not found")
+        return
+    
+    content = init_file.read_text(encoding='utf-8')
+    
+    # Check if custom imports are already present (check first import line)
+    first_custom_import = config["custom_imports"][1]  # Skip empty line
+    if first_custom_import.lstrip('# ') in content:
+        print("✓ Custom imports already present")
+        return
+    
+    # Add custom imports at the end
+    custom_imports_text = "\n".join(config["custom_imports"])
+    updated_content = content + "\n" + custom_imports_text
+    init_file.write_text(updated_content, encoding='utf-8')
+    print("✓ Added custom imports to __init__.py")
+
+
+# =============================================================================
+# VALIDATION
+# =============================================================================
+
+def validate_generation(config: Dict[str, Any]) -> bool:
+    """
+    Validate that generated code is syntactically correct.
+    
+    Args:
+        config: SDK configuration dictionary
+        
+    Returns:
+        True if validation passed, False otherwise
+    """
+    print_section("Validating Generated Code")
+    
+    output_dir = Path(config["output_dir"])
+    init_file = output_dir / "__init__.py"
+    
+    # Basic Python syntax check
+    try:
+        subprocess.run(
+            ["python3", "-m", "py_compile", str(init_file)],
+            check=True,
+            capture_output=True
+        )
+        print("✓ Python syntax validation passed")
+        return True
+    except subprocess.CalledProcessError:
+        print("❌ Python syntax validation failed")
+        return False
+
+
+# =============================================================================
+# TESTING
+# =============================================================================
+
+def run_tests(config: Dict[str, Any]) -> bool:
+    """
+    Run tests to ensure generation didn't break anything.
+    
+    Args:
+        config: SDK configuration dictionary
+        
+    Returns:
+        True if tests passed or were skipped, False if tests failed
+    """
+    print_section("Running Tests")
+    
+    test_path = config.get("test_path")
+    if not test_path:
+        print("⚠️  No tests configured for this SDK")
+        return True
+    
+    if not Path(test_path).exists():
+        print(f"⚠️  Test file not found: {test_path}")
+        return True
+    
+    # Check if pytest is available
+    try:
+        subprocess.run(["pytest", "--version"], capture_output=True, check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        print("⚠️  pytest not available, skipping tests")
+        return True
+    
+    # Run tests
+    print(f"Running tests from {test_path}...")
+    result = subprocess.run(
+        ["pytest", test_path, "-v", "--no-cov"],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode == 0:
+        print("✓ All tests passed")
+        return True
+    else:
+        print("❌ Some tests failed:")
+        print(result.stdout)
+        print("\n⚠️  Warning: Generated code may have broken existing functionality")
+        print("Review the test failures before committing changes.")
+        return False
+
+
+# =============================================================================
+# GIT DIFF
+# =============================================================================
+
+def show_diff(config: Dict[str, Any]):
+    """
+    Show git diff of generated files for review.
+    
+    Args:
+        config: SDK configuration dictionary
+    """
+    print_section("Changes Review")
+    
+    output_dir = config["output_dir"]
+    
+    # Check if git is available
+    try:
+        subprocess.run(["git", "--version"], capture_output=True, check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        print("⚠️  git not available, skipping diff")
+        return
+    
+    # Show summary of changes
+    result = subprocess.run(
+        ["git", "diff", "--stat", output_dir],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.stdout.strip():
+        print("Modified files:")
+        print(result.stdout)
+        print("\nTo see detailed changes, run:")
+        print(f"  git diff {output_dir}")
+    else:
+        print("✓ No changes detected")
+
+
+# =============================================================================
+# MAIN EXECUTION
+# =============================================================================
+
+def generate_single_sdk(skip_tests: bool, no_diff: bool) -> bool:
+    """
+    Generate the Management SDK.
+    
+    Args:
+        skip_tests: Whether to skip running tests
+        no_diff: Whether to skip showing git diff
+        
+    Returns:
+        True if generation succeeded, False otherwise
+    """
+    config = SDK_CONFIG
+    
+    print_subsection(f"Processing {config['name']}")
+    
+    # Step 1: Generate SDK
+    if not generate_sdk(config):
+        return False
+    
+    # Step 2: Fix imports
+    fix_imports(config)
+    
+    # Step 3: Add custom imports
+    add_custom_imports(config)
+    
+    # Step 4: Validate
+    if not validate_generation(config):
+        return False
+    
+    # Step 5: Run tests (unless skipped)
+    tests_passed = True
+    if not skip_tests:
+        tests_passed = run_tests(config)
+    
+    # Step 6: Show diff (unless skipped)
+    if not no_diff:
+        show_diff(config)
+    
+    return tests_passed
+
+
+def main():
+    """Main execution flow."""
+    parser = argparse.ArgumentParser(
+        description="Generate Kinde Management SDK from OpenAPI specification",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python3 generate_management_sdk.py
+  python3 generate_management_sdk.py --skip-tests
+  python3 generate_management_sdk.py --no-diff
+        """
+    )
+    parser.add_argument(
+        "--skip-tests",
+        action="store_true",
+        help="Skip running tests"
+    )
+    parser.add_argument(
+        "--no-diff",
+        action="store_true",
+        help="Skip showing git diff"
+    )
+    args = parser.parse_args()
+    
+    print("🔧 Kinde Management SDK Generator")
+    
+    # Step 1: Check prerequisites
+    if not check_prerequisites():
+        print("\n❌ Prerequisites check failed")
+        print("Please install required tools and try again")
+        return 1
+    
+    # Step 2: Generate SDK
+    all_passed = generate_single_sdk(args.skip_tests, args.no_diff)
+    
+    # Final summary
+    print_section("Summary")
+    
+    if all_passed:
+        print("✓ SDK generation completed successfully")
+    else:
+        print("⚠️  SDK generation completed with warnings/failures")
+        print("Review the output above for details")
+    
+    print("\nNext steps:")
+    sdk_dir = SDK_CONFIG["output_dir"]
+    print(f"  1. Review changes: git diff {sdk_dir}")
+    print("  2. Test manually if needed")
+    print("  3. Commit changes when satisfied")
+    
+    return 0 if all_passed else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

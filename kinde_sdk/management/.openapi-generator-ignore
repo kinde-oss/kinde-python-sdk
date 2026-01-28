@@ -2,18 +2,11 @@
 # This file tells the generator which files to NOT overwrite.
 # Works like .gitignore - list files/patterns to preserve.
 
-# CRITICAL: Project packaging files - never overwrite these!
-pyproject.toml
-setup.py
-setup.cfg
-MANIFEST.in
-requirements.txt
-README.md
-
 # Custom Kinde SDK files - never overwrite these
 management_client.py
 management_token_manager.py
 custom_exceptions.py
+README.md
 kinde_api_client.py
 
 # Backup directory (if it exists from old script)

@@ -42,8 +42,8 @@ class CreateConnectionRequest(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['oauth2:apple', 'oauth2:azure_ad', 'oauth2:bitbucket', 'oauth2:discord', 'oauth2:facebook', 'oauth2:github', 'oauth2:gitlab', 'oauth2:google', 'oauth2:linkedin', 'oauth2:microsoft', 'oauth2:patreon', 'oauth2:slack', 'oauth2:stripe', 'oauth2:twitch', 'oauth2:twitter', 'oauth2:xero', 'saml:custom', 'wsfed:azure_ad']):
-            raise ValueError("must be one of enum values ('oauth2:apple', 'oauth2:azure_ad', 'oauth2:bitbucket', 'oauth2:discord', 'oauth2:facebook', 'oauth2:github', 'oauth2:gitlab', 'oauth2:google', 'oauth2:linkedin', 'oauth2:microsoft', 'oauth2:patreon', 'oauth2:slack', 'oauth2:stripe', 'oauth2:twitch', 'oauth2:twitter', 'oauth2:xero', 'saml:custom', 'wsfed:azure_ad')")
+        if value not in set(['oauth2:apple', 'oauth2:azure_ad', 'oauth2:bitbucket', 'oauth2:discord', 'oauth2:facebook', 'oauth2:github', 'oauth2:gitlab', 'oauth2:google', 'oauth2:linkedin', 'oauth2:microsoft', 'oauth2:patreon', 'oauth2:slack', 'oauth2:stripe', 'oauth2:twitch', 'oauth2:twitter', 'oauth2:xero', 'saml:custom', 'saml:cloudflare', 'saml:okta', 'saml:microsoft', 'saml:google', 'wsfed:azure_ad']):
+            raise ValueError("must be one of enum values ('oauth2:apple', 'oauth2:azure_ad', 'oauth2:bitbucket', 'oauth2:discord', 'oauth2:facebook', 'oauth2:github', 'oauth2:gitlab', 'oauth2:google', 'oauth2:linkedin', 'oauth2:microsoft', 'oauth2:patreon', 'oauth2:slack', 'oauth2:stripe', 'oauth2:twitch', 'oauth2:twitter', 'oauth2:xero', 'saml:custom', 'saml:cloudflare', 'saml:okta', 'saml:microsoft', 'saml:google', 'wsfed:azure_ad')")
         return value
 
     model_config = ConfigDict(

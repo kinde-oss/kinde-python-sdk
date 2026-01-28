@@ -18,7 +18,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -35,8 +35,9 @@ class OrganizationUser(BaseModel):
     picture: Optional[StrictStr] = Field(default=None, description="The user's profile picture URL.")
     joined_on: Optional[StrictStr] = Field(default=None, description="The date the user joined the organization.")
     last_accessed_on: Optional[StrictStr] = Field(default=None, description="The date the user last accessed the organization.")
+    is_suspended: Optional[StrictBool] = Field(default=None, description="Whether the user is currently suspended or not.")
     roles: Optional[List[StrictStr]] = Field(default=None, description="The roles the user has in the organization.")
-    __properties: ClassVar[List[str]] = ["id", "email", "full_name", "last_name", "first_name", "picture", "joined_on", "last_accessed_on", "roles"]
+    __properties: ClassVar[List[str]] = ["id", "email", "full_name", "last_name", "first_name", "picture", "joined_on", "last_accessed_on", "is_suspended", "roles"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -127,6 +128,7 @@ class OrganizationUser(BaseModel):
             "picture": obj.get("picture"),
             "joined_on": obj.get("joined_on"),
             "last_accessed_on": obj.get("last_accessed_on"),
+            "is_suspended": obj.get("is_suspended"),
             "roles": obj.get("roles")
         })
         return _obj

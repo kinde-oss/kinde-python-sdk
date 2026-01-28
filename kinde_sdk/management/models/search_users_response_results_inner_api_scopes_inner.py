@@ -18,30 +18,19 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class UpdateOrganizationSessionsRequest(BaseModel):
+class SearchUsersResponseResultsInnerApiScopesInner(BaseModel):
     """
-    UpdateOrganizationSessionsRequest
+    SearchUsersResponseResultsInnerApiScopesInner
     """ # noqa: E501
-    is_use_org_sso_session_policy: Optional[StrictBool] = Field(default=None, description="Whether to use the organization's SSO session policy override.")
-    sso_session_persistence_mode: Optional[StrictStr] = Field(default=None, description="Determines if the session should be persistent or not.")
-    is_use_org_authenticated_session_lifetime: Optional[StrictBool] = Field(default=None, description="Whether to apply the organization's authenticated session lifetime override.")
-    authenticated_session_lifetime: Optional[StrictInt] = Field(default=None, description="Authenticated session lifetime in seconds.")
-    __properties: ClassVar[List[str]] = ["is_use_org_sso_session_policy", "sso_session_persistence_mode", "is_use_org_authenticated_session_lifetime", "authenticated_session_lifetime"]
-
-    @field_validator('sso_session_persistence_mode')
-    def sso_session_persistence_mode_validate_enum(cls, value):
-        """Validates the enum"""
-        if value is None:
-            return value
-
-        if value not in set(['persistent', 'non_persistent']):
-            raise ValueError("must be one of enum values ('persistent', 'non_persistent')")
-        return value
+    org_code: Optional[StrictStr] = None
+    scope: Optional[StrictStr] = None
+    api_id: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["org_code", "scope", "api_id"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -61,7 +50,7 @@ class UpdateOrganizationSessionsRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of UpdateOrganizationSessionsRequest from a JSON string"""
+        """Create an instance of SearchUsersResponseResultsInnerApiScopesInner from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -86,7 +75,7 @@ class UpdateOrganizationSessionsRequest(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of UpdateOrganizationSessionsRequest from a dict"""
+        """Create an instance of SearchUsersResponseResultsInnerApiScopesInner from a dict"""
         if obj is None:
             return None
 
@@ -94,10 +83,9 @@ class UpdateOrganizationSessionsRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "is_use_org_sso_session_policy": obj.get("is_use_org_sso_session_policy"),
-            "sso_session_persistence_mode": obj.get("sso_session_persistence_mode"),
-            "is_use_org_authenticated_session_lifetime": obj.get("is_use_org_authenticated_session_lifetime"),
-            "authenticated_session_lifetime": obj.get("authenticated_session_lifetime")
+            "org_code": obj.get("org_code"),
+            "scope": obj.get("scope"),
+            "api_id": obj.get("api_id")
         })
         return _obj
 

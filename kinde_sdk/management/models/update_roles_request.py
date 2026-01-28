@@ -31,7 +31,8 @@ class UpdateRolesRequest(BaseModel):
     description: Optional[StrictStr] = Field(default=None, description="The role's description.")
     key: StrictStr = Field(description="The role identifier to use in code.")
     is_default_role: Optional[StrictBool] = Field(default=None, description="Set role as default for new users.")
-    __properties: ClassVar[List[str]] = ["name", "description", "key", "is_default_role"]
+    assignment_permission_id: Optional[StrictStr] = Field(default=None, description="The public ID of the permission required to assign this role to users. If null, no change to the assignment permission is made. If set to 'NO_PERMISSION_REQUIRED', no permission is required.")
+    __properties: ClassVar[List[str]] = ["name", "description", "key", "is_default_role", "assignment_permission_id"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -72,6 +73,11 @@ class UpdateRolesRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if assignment_permission_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.assignment_permission_id is None and "assignment_permission_id" in self.model_fields_set:
+            _dict['assignment_permission_id'] = None
+
         return _dict
 
     @classmethod
@@ -87,7 +93,8 @@ class UpdateRolesRequest(BaseModel):
             "name": obj.get("name"),
             "description": obj.get("description"),
             "key": obj.get("key"),
-            "is_default_role": obj.get("is_default_role")
+            "is_default_role": obj.get("is_default_role"),
+            "assignment_permission_id": obj.get("assignment_permission_id")
         })
         return _obj
 

@@ -18,30 +18,21 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from kinde_sdk.management.models.get_api_keys_response_api_keys_inner import GetApiKeysResponseApiKeysInner
 from typing import Optional, Set
 from typing_extensions import Self
 
-class UpdateOrganizationSessionsRequest(BaseModel):
+class GetApiKeysResponse(BaseModel):
     """
-    UpdateOrganizationSessionsRequest
+    GetApiKeysResponse
     """ # noqa: E501
-    is_use_org_sso_session_policy: Optional[StrictBool] = Field(default=None, description="Whether to use the organization's SSO session policy override.")
-    sso_session_persistence_mode: Optional[StrictStr] = Field(default=None, description="Determines if the session should be persistent or not.")
-    is_use_org_authenticated_session_lifetime: Optional[StrictBool] = Field(default=None, description="Whether to apply the organization's authenticated session lifetime override.")
-    authenticated_session_lifetime: Optional[StrictInt] = Field(default=None, description="Authenticated session lifetime in seconds.")
-    __properties: ClassVar[List[str]] = ["is_use_org_sso_session_policy", "sso_session_persistence_mode", "is_use_org_authenticated_session_lifetime", "authenticated_session_lifetime"]
-
-    @field_validator('sso_session_persistence_mode')
-    def sso_session_persistence_mode_validate_enum(cls, value):
-        """Validates the enum"""
-        if value is None:
-            return value
-
-        if value not in set(['persistent', 'non_persistent']):
-            raise ValueError("must be one of enum values ('persistent', 'non_persistent')")
-        return value
+    code: Optional[StrictStr] = Field(default=None, description="Response code.")
+    message: Optional[StrictStr] = Field(default=None, description="Response message.")
+    has_more: Optional[StrictBool] = Field(default=None, description="Whether more records exist.")
+    api_keys: Optional[List[GetApiKeysResponseApiKeysInner]] = None
+    __properties: ClassVar[List[str]] = ["code", "message", "has_more", "api_keys"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -61,7 +52,7 @@ class UpdateOrganizationSessionsRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of UpdateOrganizationSessionsRequest from a JSON string"""
+        """Create an instance of GetApiKeysResponse from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -82,11 +73,18 @@ class UpdateOrganizationSessionsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of each item in api_keys (list)
+        _items = []
+        if self.api_keys:
+            for _item_api_keys in self.api_keys:
+                if _item_api_keys:
+                    _items.append(_item_api_keys.to_dict())
+            _dict['api_keys'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of UpdateOrganizationSessionsRequest from a dict"""
+        """Create an instance of GetApiKeysResponse from a dict"""
         if obj is None:
             return None
 
@@ -94,10 +92,10 @@ class UpdateOrganizationSessionsRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "is_use_org_sso_session_policy": obj.get("is_use_org_sso_session_policy"),
-            "sso_session_persistence_mode": obj.get("sso_session_persistence_mode"),
-            "is_use_org_authenticated_session_lifetime": obj.get("is_use_org_authenticated_session_lifetime"),
-            "authenticated_session_lifetime": obj.get("authenticated_session_lifetime")
+            "code": obj.get("code"),
+            "message": obj.get("message"),
+            "has_more": obj.get("has_more"),
+            "api_keys": [GetApiKeysResponseApiKeysInner.from_dict(_item) for _item in obj["api_keys"]] if obj.get("api_keys") is not None else None
         })
         return _obj
 

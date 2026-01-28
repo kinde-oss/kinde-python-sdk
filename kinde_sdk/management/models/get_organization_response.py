@@ -39,7 +39,8 @@ class GetOrganizationResponse(BaseModel):
     logo: Optional[StrictStr] = Field(default=None, description="The organization's logo URL.")
     logo_dark: Optional[StrictStr] = Field(default=None, description="The organization's logo URL to be used for dark themes.")
     favicon_svg: Optional[StrictStr] = Field(default=None, description="The organization's SVG favicon URL. Optimal format for most browsers")
-    favicon_fallback: Optional[StrictStr] = Field(default=None, description="The favicon URL to be used as a fallback in browsers that don’t support SVG, add a PNG")
+    favicon_fallback: Optional[StrictStr] = Field(default=None, description="The favicon URL to be used as a fallback in browsers that don't support SVG, add a PNG")
+    allowed_domains: Optional[List[StrictStr]] = Field(default=None, description="Domains allowed for self-sign up to this environment.  Empty array means no restrictions.")
     link_color: Optional[GetEnvironmentResponseEnvironmentLinkColor] = None
     background_color: Optional[GetEnvironmentResponseEnvironmentBackgroundColor] = None
     button_color: Optional[GetEnvironmentResponseEnvironmentLinkColor] = None
@@ -58,7 +59,7 @@ class GetOrganizationResponse(BaseModel):
     sender_name: Optional[StrictStr] = Field(default=None, description="The name of the organization that will be used in emails")
     sender_email: Optional[StrictStr] = Field(default=None, description="The email address that will be used in emails. Requires custom SMTP to be set up.")
     billing: Optional[GetOrganizationResponseBilling] = None
-    __properties: ClassVar[List[str]] = ["code", "name", "handle", "is_default", "external_id", "is_auto_membership_enabled", "logo", "logo_dark", "favicon_svg", "favicon_fallback", "link_color", "background_color", "button_color", "button_text_color", "link_color_dark", "background_color_dark", "button_text_color_dark", "button_color_dark", "button_border_radius", "card_border_radius", "input_border_radius", "theme_code", "color_scheme", "created_on", "is_allow_registrations", "sender_name", "sender_email", "billing"]
+    __properties: ClassVar[List[str]] = ["code", "name", "handle", "is_default", "external_id", "is_auto_membership_enabled", "logo", "logo_dark", "favicon_svg", "favicon_fallback", "allowed_domains", "link_color", "background_color", "button_color", "button_text_color", "link_color_dark", "background_color_dark", "button_text_color_dark", "button_color_dark", "button_border_radius", "card_border_radius", "input_border_radius", "theme_code", "color_scheme", "created_on", "is_allow_registrations", "sender_name", "sender_email", "billing"]
 
     @field_validator('theme_code')
     def theme_code_validate_enum(cls, value):
@@ -268,6 +269,7 @@ class GetOrganizationResponse(BaseModel):
             "logo_dark": obj.get("logo_dark"),
             "favicon_svg": obj.get("favicon_svg"),
             "favicon_fallback": obj.get("favicon_fallback"),
+            "allowed_domains": obj.get("allowed_domains"),
             "link_color": GetEnvironmentResponseEnvironmentLinkColor.from_dict(obj["link_color"]) if obj.get("link_color") is not None else None,
             "background_color": GetEnvironmentResponseEnvironmentBackgroundColor.from_dict(obj["background_color"]) if obj.get("background_color") is not None else None,
             "button_color": GetEnvironmentResponseEnvironmentLinkColor.from_dict(obj["button_color"]) if obj.get("button_color") is not None else None,

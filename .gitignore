@@ -42,7 +42,6 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-*.cover
 .hypothesis/
 venv/
 .venv/
@@ -65,9 +64,25 @@ target/
 #Ipython Notebook
 .ipynb_checkpoints
 
-# IDE
-.idea/
+# IDE - VSCode
 .vscode/
+*.code-workspace
 
-# OpenAPI Generator artifacts
+# IDE - JetBrains (PyCharm, IntelliJ, etc.)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# IDE - Other
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OpenAPI Generator
 .openapi-generator/
+openapi_client/
+
+# Note: .openapi-generator-ignore should NOT be in gitignore
+# It needs to be version controlled as it defines which files to protect

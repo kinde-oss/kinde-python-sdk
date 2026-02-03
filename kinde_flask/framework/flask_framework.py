@@ -1,5 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 from flask import Flask, request, redirect, session
+from flask_session import Session
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
 from ..middleware.framework_middleware import FrameworkMiddleware
@@ -7,9 +8,12 @@ import os
 import uuid
 import asyncio
 import nest_asyncio
+import logging
 
 if TYPE_CHECKING:
     from flask import Request
+
+logger = logging.getLogger(__name__)
 
 class FlaskFramework(FrameworkInterface):
     """
@@ -29,10 +33,17 @@ class FlaskFramework(FrameworkInterface):
         self._initialized = False
         self._oauth = None
         
-        # Configure Flask session
+        # Configure Flask session for server-side storage
+        # This is required because OAuth tokens can exceed cookie size limits (~4KB)
         self.app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
-        self.app.config['SESSION_TYPE'] = 'filesystem'
+        self.app.config['SESSION_TYPE'] = os.getenv('SESSION_TYPE', 'filesystem')
         self.app.config['SESSION_PERMANENT'] = False
+        self.app.config['SESSION_FILE_DIR'] = os.getenv('SESSION_FILE_DIR', '/tmp/flask_sessions')
+        
+        # Initialize Flask-Session extension
+        # Without this, SESSION_TYPE is ignored and Flask uses client-side cookie sessions
+        Session(self.app)
+        logger.debug("Flask-Session initialized with server-side storage")
         
         # Enable nested event loops
         nest_asyncio.apply()

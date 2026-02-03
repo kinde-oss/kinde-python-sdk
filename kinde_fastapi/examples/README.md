@@ -6,7 +6,7 @@ This is an example FastAPI application that demonstrates how to use the Kinde Fa
 
 1. Install the required dependencies:
 ```bash
-pip install fastapi uvicorn jinja2 python-multipart
+pip install fastapi uvicorn python-multipart python-dotenv
 ```
 
 2. Configure your Kinde application:
@@ -14,17 +14,19 @@ pip install fastapi uvicorn jinja2 python-multipart
    - Set the redirect URI to `http://localhost:8000/callback`
    - Copy your client ID and client secret
 
-3. Update the configuration in `example_app.py`:
-   - Replace `your_client_id` with your actual client ID
-   - Replace `your_client_secret` with your actual client secret
-   - Update the URLs to match your Kinde domain
-   - Change the session secret key to a secure value
+3. Create a `.env` file in the examples directory with the following variables:
+```
+KINDE_CLIENT_ID=your_client_id
+KINDE_CLIENT_SECRET=your_client_secret
+KINDE_REDIRECT_URI=http://localhost:8000/callback
+KINDE_HOST=https://your-domain.kinde.com
+```
 
 ## Running the Example
 
-Run the example application:
+Run the example application from the SDK root directory:
 ```bash
-python example_app.py
+python -m uvicorn kinde_fastapi.examples.example_app:app --reload --port 8000
 ```
 
 The application will be available at `http://localhost:8000`.
@@ -37,20 +39,30 @@ The application will be available at `http://localhost:8000`.
    - Session management
    - Logout
 
-2. **Protected Routes**
+2. **Automatic Route Registration**
+   - The OAuth class automatically registers these routes:
+     - `/login` - Redirects to Kinde login
+     - `/callback` - Handles OAuth callback from Kinde
+     - `/logout` - Logs out the user
+     - `/register` - Redirects to Kinde registration
+     - `/user` - Returns user information (JSON)
+
+3. **Protected Routes**
    - Example of a protected route that requires authentication
    - Automatic redirection to login for unauthenticated users
 
-3. **User Information**
+4. **User Information**
    - Retrieving and displaying user information
    - Session-based user state management
 
 ## API Endpoints
 
 - `/` - Home page (shows different content based on authentication status)
-- `/login` - Redirects to Kinde login
-- `/callback` - Handles OAuth callback from Kinde
-- `/logout` - Logs out the user
+- `/login` - Redirects to Kinde login (auto-registered)
+- `/callback` - Handles OAuth callback from Kinde (auto-registered)
+- `/logout` - Logs out the user (auto-registered)
+- `/register` - Redirects to Kinde registration (auto-registered)
+- `/user` - Returns user information as JSON (auto-registered)
 - `/protected` - Example protected route
 
 ## Security Considerations
@@ -69,4 +81,4 @@ The application will be available at `http://localhost:8000`.
 3. Add more security features
 4. Use proper templates instead of inline HTML
 5. Add user profile management
-6. Implement role-based access control 
+6. Implement role-based access control

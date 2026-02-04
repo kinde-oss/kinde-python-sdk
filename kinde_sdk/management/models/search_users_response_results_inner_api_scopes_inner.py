@@ -18,22 +18,19 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from kinde_sdk.management.models.get_feature_flags_response_data_feature_flags_inner_value import GetFeatureFlagsResponseDataFeatureFlagsInnerValue
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetFeatureFlagsResponseDataFeatureFlagsInner(BaseModel):
+class SearchUsersResponseResultsInnerApiScopesInner(BaseModel):
     """
-    GetFeatureFlagsResponseDataFeatureFlagsInner
+    SearchUsersResponseResultsInnerApiScopesInner
     """ # noqa: E501
-    id: Optional[StrictStr] = Field(default=None, description="The friendly ID of an flag")
-    name: Optional[StrictStr] = Field(default=None, description="The name of the flag")
-    key: Optional[StrictStr] = Field(default=None, description="The key of the flag")
-    type: Optional[StrictStr] = Field(default=None, description="The type of the flag")
-    value: Optional[GetFeatureFlagsResponseDataFeatureFlagsInnerValue] = None
-    __properties: ClassVar[List[str]] = ["id", "name", "key", "type", "value"]
+    org_code: Optional[StrictStr] = None
+    scope: Optional[StrictStr] = None
+    api_id: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["org_code", "scope", "api_id"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -53,7 +50,7 @@ class GetFeatureFlagsResponseDataFeatureFlagsInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetFeatureFlagsResponseDataFeatureFlagsInner from a JSON string"""
+        """Create an instance of SearchUsersResponseResultsInnerApiScopesInner from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -74,14 +71,11 @@ class GetFeatureFlagsResponseDataFeatureFlagsInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of value
-        if self.value:
-            _dict['value'] = self.value.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetFeatureFlagsResponseDataFeatureFlagsInner from a dict"""
+        """Create an instance of SearchUsersResponseResultsInnerApiScopesInner from a dict"""
         if obj is None:
             return None
 
@@ -89,11 +83,9 @@ class GetFeatureFlagsResponseDataFeatureFlagsInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "id": obj.get("id"),
-            "name": obj.get("name"),
-            "key": obj.get("key"),
-            "type": obj.get("type"),
-            "value": GetFeatureFlagsResponseDataFeatureFlagsInnerValue.from_dict(obj["value"]) if obj.get("value") is not None else None
+            "org_code": obj.get("org_code"),
+            "scope": obj.get("scope"),
+            "api_id": obj.get("api_id")
         })
         return _obj
 

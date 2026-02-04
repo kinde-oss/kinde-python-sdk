@@ -20,19 +20,16 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from kinde_sdk.management.models.get_user_properties_response_data_properties_inner_value import GetUserPropertiesResponseDataPropertiesInnerValue
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetUserPropertiesResponseDataPropertiesInner(BaseModel):
+class RotateApiKeyResponseApiKey(BaseModel):
     """
-    GetUserPropertiesResponseDataPropertiesInner
+    RotateApiKeyResponseApiKey
     """ # noqa: E501
-    id: Optional[StrictStr] = Field(default=None, description="The friendly ID of a property")
-    name: Optional[StrictStr] = Field(default=None, description="The name of the property")
-    key: Optional[StrictStr] = Field(default=None, description="The key of the property")
-    value: Optional[GetUserPropertiesResponseDataPropertiesInnerValue] = None
-    __properties: ClassVar[List[str]] = ["id", "name", "key", "value"]
+    id: Optional[StrictStr] = Field(default=None, description="The unique ID for the API key.")
+    key: Optional[StrictStr] = Field(default=None, description="The new API key value (only shown once).")
+    __properties: ClassVar[List[str]] = ["id", "key"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -52,7 +49,7 @@ class GetUserPropertiesResponseDataPropertiesInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetUserPropertiesResponseDataPropertiesInner from a JSON string"""
+        """Create an instance of RotateApiKeyResponseApiKey from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -73,14 +70,11 @@ class GetUserPropertiesResponseDataPropertiesInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of value
-        if self.value:
-            _dict['value'] = self.value.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetUserPropertiesResponseDataPropertiesInner from a dict"""
+        """Create an instance of RotateApiKeyResponseApiKey from a dict"""
         if obj is None:
             return None
 
@@ -89,9 +83,7 @@ class GetUserPropertiesResponseDataPropertiesInner(BaseModel):
 
         _obj = cls.model_validate({
             "id": obj.get("id"),
-            "name": obj.get("name"),
-            "key": obj.get("key"),
-            "value": GetUserPropertiesResponseDataPropertiesInnerValue.from_dict(obj["value"]) if obj.get("value") is not None else None
+            "key": obj.get("key")
         })
         return _obj
 

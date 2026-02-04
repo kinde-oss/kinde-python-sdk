@@ -18,19 +18,19 @@ import pprint
 import re  # noqa: F401
 import json
 
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetUserPermissionsResponseDataPermissionsInner(BaseModel):
+class UsersResponseUsersInnerLastOrganizationSignInsInner(BaseModel):
     """
-    GetUserPermissionsResponseDataPermissionsInner
+    UsersResponseUsersInnerLastOrganizationSignInsInner
     """ # noqa: E501
-    id: Optional[StrictStr] = Field(default=None, description="The friendly ID of a permission")
-    name: Optional[StrictStr] = Field(default=None, description="The name of the permission")
-    key: Optional[StrictStr] = Field(default=None, description="The key of the permission")
-    __properties: ClassVar[List[str]] = ["id", "name", "key"]
+    org_code: Optional[StrictStr] = Field(default=None, description="The organization code.")
+    last_signed_in: Optional[datetime] = Field(default=None, description="The date and time the user last signed in to this organization in ISO 8601 format.")
+    __properties: ClassVar[List[str]] = ["org_code", "last_signed_in"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -50,7 +50,7 @@ class GetUserPermissionsResponseDataPermissionsInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetUserPermissionsResponseDataPermissionsInner from a JSON string"""
+        """Create an instance of UsersResponseUsersInnerLastOrganizationSignInsInner from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -75,7 +75,7 @@ class GetUserPermissionsResponseDataPermissionsInner(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetUserPermissionsResponseDataPermissionsInner from a dict"""
+        """Create an instance of UsersResponseUsersInnerLastOrganizationSignInsInner from a dict"""
         if obj is None:
             return None
 
@@ -83,9 +83,8 @@ class GetUserPermissionsResponseDataPermissionsInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "id": obj.get("id"),
-            "name": obj.get("name"),
-            "key": obj.get("key")
+            "org_code": obj.get("org_code"),
+            "last_signed_in": obj.get("last_signed_in")
         })
         return _obj
 

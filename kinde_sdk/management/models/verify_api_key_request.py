@@ -18,20 +18,17 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
-from typing import Any, ClassVar, Dict, List, Optional
-from kinde_sdk.management.models.get_entitlements_response_data import GetEntitlementsResponseData
-from kinde_sdk.management.models.get_entitlements_response_metadata import GetEntitlementsResponseMetadata
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetEntitlementsResponse(BaseModel):
+class VerifyApiKeyRequest(BaseModel):
     """
-    GetEntitlementsResponse
+    VerifyApiKeyRequest
     """ # noqa: E501
-    data: Optional[GetEntitlementsResponseData] = None
-    metadata: Optional[GetEntitlementsResponseMetadata] = None
-    __properties: ClassVar[List[str]] = ["data", "metadata"]
+    api_key: StrictStr = Field(description="The API key to verify.")
+    __properties: ClassVar[List[str]] = ["api_key"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -51,7 +48,7 @@ class GetEntitlementsResponse(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetEntitlementsResponse from a JSON string"""
+        """Create an instance of VerifyApiKeyRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -72,17 +69,11 @@ class GetEntitlementsResponse(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of data
-        if self.data:
-            _dict['data'] = self.data.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of metadata
-        if self.metadata:
-            _dict['metadata'] = self.metadata.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetEntitlementsResponse from a dict"""
+        """Create an instance of VerifyApiKeyRequest from a dict"""
         if obj is None:
             return None
 
@@ -90,8 +81,7 @@ class GetEntitlementsResponse(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "data": GetEntitlementsResponseData.from_dict(obj["data"]) if obj.get("data") is not None else None,
-            "metadata": GetEntitlementsResponseMetadata.from_dict(obj["metadata"]) if obj.get("metadata") is not None else None
+            "api_key": obj.get("api_key")
         })
         return _obj
 

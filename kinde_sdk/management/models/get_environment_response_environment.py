@@ -40,7 +40,7 @@ class GetEnvironmentResponseEnvironment(BaseModel):
     logo: Optional[StrictStr] = Field(default=None, description="The organization's logo URL.")
     logo_dark: Optional[StrictStr] = Field(default=None, description="The organization's logo URL to be used for dark themes.")
     favicon_svg: Optional[StrictStr] = Field(default=None, description="The organization's SVG favicon URL. Optimal format for most browsers")
-    favicon_fallback: Optional[StrictStr] = Field(default=None, description="The favicon URL to be used as a fallback in browsers that don’t support SVG, add a PNG")
+    favicon_fallback: Optional[StrictStr] = Field(default=None, description="The favicon URL to be used as a fallback in browsers that don't support SVG, add a PNG")
     link_color: Optional[GetEnvironmentResponseEnvironmentLinkColor] = None
     background_color: Optional[GetEnvironmentResponseEnvironmentBackgroundColor] = None
     button_color: Optional[GetEnvironmentResponseEnvironmentLinkColor] = None

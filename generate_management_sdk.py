@@ -5,7 +5,7 @@ import shutil
 import tempfile
 
 # OpenAPI spec URL from Kinde
-OPENAPI_SPEC_URL = "https://kinde.com/api/kinde-mgmt-api-specs.yaml"
+OPENAPI_SPEC_URL = "https://api-spec.kinde.com/kinde-management-api-spec.yaml"
 OUTPUT_DIR = "kinde_sdk/management"
 GENERATOR_DIR = "generator"
 CONFIG_FILE = f"{GENERATOR_DIR}/config.yaml"

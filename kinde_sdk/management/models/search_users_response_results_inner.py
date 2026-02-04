@@ -20,6 +20,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from kinde_sdk.management.models.search_users_response_results_inner_api_scopes_inner import SearchUsersResponseResultsInnerApiScopesInner
 from kinde_sdk.management.models.user_identities_inner import UserIdentitiesInner
 from typing import Optional, Set
 from typing_extensions import Self
@@ -43,7 +44,8 @@ class SearchUsersResponseResultsInner(BaseModel):
     organizations: Optional[List[StrictStr]] = Field(default=None, description="Array of organizations a user belongs to.")
     identities: Optional[List[UserIdentitiesInner]] = Field(default=None, description="Array of identities belonging to the user.")
     properties: Optional[Dict[str, StrictStr]] = Field(default=None, description="The user properties.")
-    __properties: ClassVar[List[str]] = ["id", "provided_id", "email", "username", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", "properties"]
+    api_scopes: Optional[List[SearchUsersResponseResultsInnerApiScopesInner]] = Field(default=None, description="Array of api scopes belonging to the user.")
+    __properties: ClassVar[List[str]] = ["id", "provided_id", "email", "username", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", "properties", "api_scopes"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -91,6 +93,13 @@ class SearchUsersResponseResultsInner(BaseModel):
                 if _item_identities:
                     _items.append(_item_identities.to_dict())
             _dict['identities'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in api_scopes (list)
+        _items = []
+        if self.api_scopes:
+            for _item_api_scopes in self.api_scopes:
+                if _item_api_scopes:
+                    _items.append(_item_api_scopes.to_dict())
+            _dict['api_scopes'] = _items
         # set to None if provided_id (nullable) is None
         # and model_fields_set contains the field
         if self.provided_id is None and "provided_id" in self.model_fields_set:
@@ -157,7 +166,8 @@ class SearchUsersResponseResultsInner(BaseModel):
             "created_on": obj.get("created_on"),
             "organizations": obj.get("organizations"),
             "identities": [UserIdentitiesInner.from_dict(_item) for _item in obj["identities"]] if obj.get("identities") is not None else None,
-            "properties": obj.get("properties")
+            "properties": obj.get("properties"),
+            "api_scopes": [SearchUsersResponseResultsInnerApiScopesInner.from_dict(_item) for _item in obj["api_scopes"]] if obj.get("api_scopes") is not None else None
         })
         return _obj
 

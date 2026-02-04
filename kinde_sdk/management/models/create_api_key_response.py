@@ -18,20 +18,20 @@ import pprint
 import re  # noqa: F401
 import json
 
-from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from kinde_sdk.management.models.create_api_key_response_api_key import CreateApiKeyResponseApiKey
 from typing import Optional, Set
 from typing_extensions import Self
 
-class GetEntitlementsResponseDataPlansInner(BaseModel):
+class CreateApiKeyResponse(BaseModel):
     """
-    GetEntitlementsResponseDataPlansInner
+    CreateApiKeyResponse
     """ # noqa: E501
-    key: Optional[StrictStr] = Field(default=None, description="A unique code for the plan")
-    name: Optional[StrictStr] = Field(default=None, description="Name of the plan")
-    subscribed_on: Optional[datetime] = Field(default=None, description="The date the user subscribed to the plan")
-    __properties: ClassVar[List[str]] = ["key", "name", "subscribed_on"]
+    message: Optional[StrictStr] = Field(default=None, description="A Kinde generated message.")
+    code: Optional[StrictStr] = Field(default=None, description="A Kinde generated status code.")
+    api_key: Optional[CreateApiKeyResponseApiKey] = None
+    __properties: ClassVar[List[str]] = ["message", "code", "api_key"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -51,7 +51,7 @@ class GetEntitlementsResponseDataPlansInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of GetEntitlementsResponseDataPlansInner from a JSON string"""
+        """Create an instance of CreateApiKeyResponse from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -72,11 +72,14 @@ class GetEntitlementsResponseDataPlansInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of api_key
+        if self.api_key:
+            _dict['api_key'] = self.api_key.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of GetEntitlementsResponseDataPlansInner from a dict"""
+        """Create an instance of CreateApiKeyResponse from a dict"""
         if obj is None:
             return None
 
@@ -84,9 +87,9 @@ class GetEntitlementsResponseDataPlansInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "key": obj.get("key"),
-            "name": obj.get("name"),
-            "subscribed_on": obj.get("subscribed_on")
+            "message": obj.get("message"),
+            "code": obj.get("code"),
+            "api_key": CreateApiKeyResponseApiKey.from_dict(obj["api_key"]) if obj.get("api_key") is not None else None
         })
         return _obj
 

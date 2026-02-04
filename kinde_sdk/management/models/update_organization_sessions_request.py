@@ -39,8 +39,8 @@ class UpdateOrganizationSessionsRequest(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['persistent', 'non-persistent']):
-            raise ValueError("must be one of enum values ('persistent', 'non-persistent')")
+        if value not in set(['persistent', 'non_persistent']):
+            raise ValueError("must be one of enum values ('persistent', 'non_persistent')")
         return value
 
     model_config = ConfigDict(

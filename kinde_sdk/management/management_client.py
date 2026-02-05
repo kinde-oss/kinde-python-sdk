@@ -109,15 +109,24 @@ class ManagementClient:
             # Get the access token
             token = self.token_manager.get_access_token()
             
-            # Inject the token into headers
-            if 'header_params' not in kwargs:
-                kwargs['header_params'] = {}
-            kwargs['header_params']['Authorization'] = f"Bearer {token}"
+            args_list = list(args)
             
-            # Call the original method
+            if len(args_list) > 2:
+                header_params = args_list[2]
+                if header_params is None:
+                    header_params = {}
+                header_params['Authorization'] = f"Bearer {token}"
+                args_list[2] = header_params
+                args = tuple(args_list)
+            elif 'header_params' in kwargs:
+                if kwargs['header_params'] is None:
+                    kwargs['header_params'] = {}
+                kwargs['header_params']['Authorization'] = f"Bearer {token}"
+            else:
+                kwargs['header_params'] = {'Authorization': f"Bearer {token}"}
+            
             return original_call_api(*args, **kwargs)
         
-        # Replace the call_api method
         self.api_client.call_api = call_api_with_token
     
     def _initialize_api_classes(self):
@@ -172,8 +181,7 @@ class ManagementClient:
         Returns:
             Snake case attribute name (e.g., 'users_api')
         """
-        # Special cases for oddly-named classes from OpenAPI spec tag naming
-        # These arise when spec tags have unusual capitalization (e.g., "APIs" tag)
+
         special_cases = {
             'APIsApi': 'apis_api',  # From tag "APIs" - would otherwise be "ap_is_api"
         }
@@ -181,14 +189,9 @@ class ManagementClient:
         if class_name in special_cases:
             return special_cases[class_name]
         
-        # Step 1: Insert underscore between sequences of 2+ uppercase letters and 
-        # a final uppercase letter followed by lowercase (handles acronym boundaries)
-        # e.g., "MFAApi" -> "MFA_Api", "HTTPSConnection" -> "HTTPS_Connection"
-        # Note: Requires at least 2 consecutive uppercase to avoid splitting single letters
+
         s1 = re.sub('([A-Z]{2,})([A-Z][a-z])', r'\1_\2', class_name)
         
-        # Step 2: Insert underscore between lowercase (or digit) and uppercase letters
-        # e.g., "feature_Flags" -> "feature_Flags" (already has _), "featureFlags" -> "feature_Flags"
         s2 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1)
         
         # Convert to lowercase

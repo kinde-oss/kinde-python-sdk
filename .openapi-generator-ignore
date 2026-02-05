@@ -10,6 +10,9 @@ MANIFEST.in
 requirements.txt
 README.md
 
+# CRITICAL: Parent package __init__.py - has auth SDK exports, NOT generated!
+kinde_sdk/__init__.py
+
 # Custom Kinde SDK files - never overwrite these
 management_client.py
 management_token_manager.py

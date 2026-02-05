@@ -6,11 +6,8 @@
 management_client.py
 management_token_manager.py
 custom_exceptions.py
-README.md
 kinde_api_client.py
-
-# Backup directory (if it exists from old script)
-backup/
+README.md
 
 # Python cache
 __pycache__/

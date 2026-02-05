@@ -17,6 +17,7 @@ from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
+from datetime import datetime
 from pydantic import Field, StrictBool, StrictInt, StrictStr
 from typing import Optional
 from typing_extensions import Annotated
@@ -2347,6 +2348,7 @@ class UsersApi:
         phone: Annotated[Optional[StrictStr], Field(description="Filter the results by phone. The query string should be comma separated and url encoded.")] = None,
         expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\", \"identities\" and/or \"billing\".")] = None,
         has_organization: Annotated[Optional[StrictBool], Field(description="Filter the results by if the user has at least one organization assigned.")] = None,
+        active_since: Annotated[Optional[datetime], Field(description="Filter the results to only include users who have been active since this date. Date should be in ISO 8601 format.")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2380,6 +2382,8 @@ class UsersApi:
         :type expand: str
         :param has_organization: Filter the results by if the user has at least one organization assigned.
         :type has_organization: bool
+        :param active_since: Filter the results to only include users who have been active since this date. Date should be in ISO 8601 format.
+        :type active_since: datetime
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2411,6 +2415,7 @@ class UsersApi:
             phone=phone,
             expand=expand,
             has_organization=has_organization,
+            active_since=active_since,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2445,6 +2450,7 @@ class UsersApi:
         phone: Annotated[Optional[StrictStr], Field(description="Filter the results by phone. The query string should be comma separated and url encoded.")] = None,
         expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\", \"identities\" and/or \"billing\".")] = None,
         has_organization: Annotated[Optional[StrictBool], Field(description="Filter the results by if the user has at least one organization assigned.")] = None,
+        active_since: Annotated[Optional[datetime], Field(description="Filter the results to only include users who have been active since this date. Date should be in ISO 8601 format.")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2478,6 +2484,8 @@ class UsersApi:
         :type expand: str
         :param has_organization: Filter the results by if the user has at least one organization assigned.
         :type has_organization: bool
+        :param active_since: Filter the results to only include users who have been active since this date. Date should be in ISO 8601 format.
+        :type active_since: datetime
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2509,6 +2517,7 @@ class UsersApi:
             phone=phone,
             expand=expand,
             has_organization=has_organization,
+            active_since=active_since,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2543,6 +2552,7 @@ class UsersApi:
         phone: Annotated[Optional[StrictStr], Field(description="Filter the results by phone. The query string should be comma separated and url encoded.")] = None,
         expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\", \"identities\" and/or \"billing\".")] = None,
         has_organization: Annotated[Optional[StrictBool], Field(description="Filter the results by if the user has at least one organization assigned.")] = None,
+        active_since: Annotated[Optional[datetime], Field(description="Filter the results to only include users who have been active since this date. Date should be in ISO 8601 format.")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2576,6 +2586,8 @@ class UsersApi:
         :type expand: str
         :param has_organization: Filter the results by if the user has at least one organization assigned.
         :type has_organization: bool
+        :param active_since: Filter the results to only include users who have been active since this date. Date should be in ISO 8601 format.
+        :type active_since: datetime
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2607,6 +2619,7 @@ class UsersApi:
             phone=phone,
             expand=expand,
             has_organization=has_organization,
+            active_since=active_since,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2636,6 +2649,7 @@ class UsersApi:
         phone,
         expand,
         has_organization,
+        active_since,
         _request_auth,
         _content_type,
         _headers,
@@ -2689,6 +2703,19 @@ class UsersApi:
         if has_organization is not None:
             
             _query_params.append(('has_organization', has_organization))
+            
+        if active_since is not None:
+            if isinstance(active_since, datetime):
+                _query_params.append(
+                    (
+                        'active_since',
+                        active_since.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('active_since', active_since))
             
         # process the header parameters
         # process the form parameters

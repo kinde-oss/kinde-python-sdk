@@ -9,6 +9,7 @@ to the generated API classes.
 import inspect
 import logging
 import re
+from typing import Optional
 import warnings
 
 # Import the api module to dynamically load all API classes
@@ -67,8 +68,10 @@ class ManagementClient:
         # Get organizations
         orgs = client.organizations_api.get_organizations()
         
-        # Access any dynamically loaded API
-        billing = client.billing_api.get_billing_info()
+        # Access billing entitlements API
+        billing = client.billing_entitlements_api.get_billing_entitlements(
+            customer_id='cust_123'
+        )
         ```
     """
     
@@ -314,7 +317,7 @@ class ManagementClient:
         )
         return self.organizations_api.get_organizations(**kwargs)
     
-    def get_organization(self, code: str = None, **kwargs):
+    def get_organization(self, code: Optional[str] = None, **kwargs):
         """
         Get an organization.
         

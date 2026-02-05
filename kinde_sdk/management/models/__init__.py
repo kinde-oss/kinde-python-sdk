@@ -13,7 +13,6 @@
     Do not edit the class manually.
 """  # noqa: E501
 
-
 # import models into model package
 from kinde_sdk.management.models.add_api_scope_request import AddAPIScopeRequest
 from kinde_sdk.management.models.add_apis_request import AddAPIsRequest
@@ -240,3 +239,4 @@ from kinde_sdk.management.models.users_response_users_inner_last_organization_si
 from kinde_sdk.management.models.verify_api_key_request import VerifyApiKeyRequest
 from kinde_sdk.management.models.verify_api_key_response import VerifyApiKeyResponse
 from kinde_sdk.management.models.webhook import Webhook
+

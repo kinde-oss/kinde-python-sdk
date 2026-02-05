@@ -1,4 +1,3 @@
-kinde_sdk/__init__.py
 kinde_sdk/management/__init__.py
 kinde_sdk/management/api/__init__.py
 kinde_sdk/management/api/api_keys_api.py

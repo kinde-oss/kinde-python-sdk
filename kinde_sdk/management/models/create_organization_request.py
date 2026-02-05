@@ -54,8 +54,9 @@ class CreateOrganizationRequest(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['str', 'int', 'bool']):
-            raise ValueError("must be one of enum values ('str', 'int', 'bool')")
+        for i in value.values():
+            if i not in set(['str', 'int', 'bool']):
+                raise ValueError("dict values must be one of enum values ('str', 'int', 'bool')")
         return value
 
     model_config = ConfigDict(

@@ -465,19 +465,19 @@ class ManagementClient:
     
     def get_feature_flags(self, **kwargs):
         """
-        Get feature flags.
+        Get feature flags for the current environment.
         
         .. deprecated::
-            Use :meth:`client.feature_flags_api.get_feature_flags()` instead.
+            Use :meth:`client.environments_api.get_environement_feature_flags()` instead.
         
-        For full documentation and parameters, see FeatureFlagsApi.get_feature_flags()
+        For full documentation and parameters, see EnvironmentsApi.get_environement_feature_flags()
         """
         warnings.warn(
-            "get_feature_flags() is deprecated. Use client.feature_flags_api.get_feature_flags() instead.",
+            "get_feature_flags() is deprecated. Use client.environments_api.get_environement_feature_flags() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.feature_flags_api.get_feature_flags(**kwargs)
+        return self.environments_api.get_environement_feature_flags(**kwargs)
     
     def create_feature_flag(self, create_feature_flag_request=None, **kwargs):
         """

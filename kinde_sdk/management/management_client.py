@@ -436,16 +436,16 @@ class ManagementClient:
         Update a role.
         
         .. deprecated::
-            Use :meth:`client.roles_api.update_role()` instead.
+            Use :meth:`client.roles_api.update_roles()` instead.
         
-        For full documentation and parameters, see RolesApi.update_role()
+        For full documentation and parameters, see RolesApi.update_roles()
         """
         warnings.warn(
-            "update_role() is deprecated. Use client.roles_api.update_role() instead.",
+            "update_role() is deprecated. Use client.roles_api.update_roles() instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.roles_api.update_role(role_id=role_id, update_role_request=update_role_request, **kwargs)
+        return self.roles_api.update_roles(role_id=role_id, update_roles_request=update_role_request, **kwargs)
     
     def delete_role(self, role_id: str):
         """
@@ -497,7 +497,8 @@ class ManagementClient:
             create_feature_flag_request=create_feature_flag_request, **kwargs
         )
     
-    def update_feature_flag(self, feature_flag_key: str, update_feature_flag_request=None, **kwargs):
+    def update_feature_flag(self, feature_flag_key: str, name: str, description: str, 
+                             type: str, allow_override_level: str, default_value: str, **kwargs):
         """
         Update a feature flag.
         
@@ -513,7 +514,11 @@ class ManagementClient:
         )
         return self.feature_flags_api.update_feature_flag(
             feature_flag_key=feature_flag_key,
-            update_feature_flag_request=update_feature_flag_request,
+            name=name,
+            description=description,
+            type=type,
+            allow_override_level=allow_override_level,
+            default_value=default_value,
             **kwargs
         )
     

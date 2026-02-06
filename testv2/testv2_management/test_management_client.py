@@ -1159,26 +1159,28 @@ class TestManagementClient(unittest.TestCase):
     def test_deprecated_update_role_wrapper(self, mock_tm_init, mock_get_token):
         """Test the deprecated update_role wrapper method.
         
-        Note: The deprecated wrapper calls roles_api.update_role() but the actual
-        API method is update_roles(). This test verifies the wrapper emits the
-        deprecation warning before the call fails.
+        This method now correctly delegates to roles_api.update_roles().
         """
+        from kinde_sdk.management.models.update_roles_request import UpdateRolesRequest
+        
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Since the deprecated wrapper calls a non-existent method (update_role vs update_roles),
-        # we just verify the deprecation warning is emitted
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            try:
-                client.update_role("role_123", None)
-            except AttributeError:
-                # Expected - the API method doesn't exist with this name
-                pass
+        response_body = {"code": "OK", "message": "Success"}
+        mock_http_response = self._make_mock_http_response(201, response_body)  # 201 for update
+        
+        with patch.object(client.api_client.rest_client, 'request', return_value=mock_http_response):
+            update_request = UpdateRolesRequest(name="Updated Role", key="updated_role")
             
-            # Verify deprecation warning was emitted before the error
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "update_role()" in str(w[0].message)
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                result = client.update_role("role_123", update_request)
+                
+                assert len(w) == 1
+                assert issubclass(w[0].category, DeprecationWarning)
+                assert "update_role()" in str(w[0].message)
+                assert "roles_api.update_roles()" in str(w[0].message)
+                
+            assert result is not None
 
     @patch.object(ManagementTokenManager, 'get_access_token', return_value="fake_token")
     @patch.object(ManagementTokenManager, '__init__', return_value=None)
@@ -1258,26 +1260,30 @@ class TestManagementClient(unittest.TestCase):
     def test_deprecated_update_feature_flag_wrapper(self, mock_tm_init, mock_get_token):
         """Test the deprecated update_feature_flag wrapper method.
         
-        Note: The deprecated wrapper expects an update_feature_flag_request param
-        but the API expects individual params. This test verifies the wrapper
-        emits the deprecation warning.
+        This method now correctly passes individual parameters to the API.
         """
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # The deprecated wrapper has a signature mismatch with the actual API,
-        # so we just verify the deprecation warning is emitted
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            try:
-                client.update_feature_flag("test_flag", None)
-            except Exception:
-                # Expected - signature mismatch (ValidationError from pydantic)
-                pass
-            
-            # Verify deprecation warning was emitted before the error
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "update_feature_flag()" in str(w[0].message)
+        response_body = {"code": "OK", "message": "Success"}
+        mock_http_response = self._make_mock_http_response(200, response_body)
+        
+        with patch.object(client.api_client.rest_client, 'request', return_value=mock_http_response):
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                result = client.update_feature_flag(
+                    feature_flag_key="test_flag",
+                    name="Updated Flag",
+                    description="Updated description",
+                    type="bool",
+                    allow_override_level="env",
+                    default_value="true"
+                )
+                
+                assert len(w) == 1
+                assert issubclass(w[0].category, DeprecationWarning)
+                assert "update_feature_flag()" in str(w[0].message)
+                
+            assert result is not None
 
     @patch.object(ManagementTokenManager, 'get_access_token', return_value="fake_token")
     @patch.object(ManagementTokenManager, '__init__', return_value=None)

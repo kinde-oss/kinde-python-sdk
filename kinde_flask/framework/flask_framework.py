@@ -7,7 +7,6 @@ from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
 import asyncio
-import nest_asyncio
 import logging
 
 if TYPE_CHECKING:
@@ -45,8 +44,6 @@ class FlaskFramework(FrameworkInterface):
         Session(self.app)
         logger.debug("Flask-Session initialized with server-side storage")
         
-        # Enable nested event loops
-        nest_asyncio.apply()
     
     def get_name(self) -> str:
         """
@@ -137,9 +134,12 @@ class FlaskFramework(FrameworkInterface):
         @self.app.route('/login')
         def login():
             """Redirect to Kinde login page."""
-            loop = asyncio.get_event_loop()
-            login_url = loop.run_until_complete(self._oauth.login())
-            return redirect(login_url)
+            loop = asyncio.new_event_loop()
+            try:
+                login_url = loop.run_until_complete(self._oauth.login())
+                return redirect(login_url)
+            finally:
+                loop.close()
 
         # Callback route
         @self.app.route("/callback")
@@ -226,17 +226,23 @@ class FlaskFramework(FrameworkInterface):
             """Logout the user and redirect to Kinde logout page."""
             user_id = session.get('user_id')
             session.clear()
-            loop = asyncio.get_event_loop()
-            logout_url = loop.run_until_complete(self._oauth.logout(user_id))
-            return redirect(logout_url)
+            loop = asyncio.new_event_loop()
+            try:
+                logout_url = loop.run_until_complete(self._oauth.logout(user_id))
+                return redirect(logout_url)
+            finally:
+                loop.close()
         
         # Register route
         @self.app.route('/register')
         def register():
             """Redirect to Kinde registration page."""
-            loop = asyncio.get_event_loop()
-            register_url = loop.run_until_complete(self._oauth.register())
-            return redirect(register_url)
+            loop = asyncio.new_event_loop()
+            try:
+                register_url = loop.run_until_complete(self._oauth.register())
+                return redirect(register_url)
+            finally:
+                loop.close()
         
         # User info route
         @self.app.route('/user')

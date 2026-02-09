@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 
 from kinde_sdk.auth.oauth import OAuth
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file located alongside this script
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 # Initialize Flask app
 app = Flask(__name__)

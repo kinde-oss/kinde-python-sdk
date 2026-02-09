@@ -31,9 +31,10 @@ Available Routes (automatically registered):
 """
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from .session import InMemorySessionMiddleware
 import os
+import html
 from dotenv import load_dotenv
 import logging
 from kinde_sdk.auth.oauth import OAuth
@@ -70,16 +71,21 @@ async def home(request: Request):
     if kinde_oauth.is_authenticated():
         try:
             user = kinde_oauth.get_user_info()
+            email = html.escape(user.get('email', 'User'))
+            email_display = html.escape(user.get('email', 'N/A'))
+            given_name = html.escape(user.get('given_name', ''))
+            family_name = html.escape(user.get('family_name', ''))
+            user_id = html.escape(user.get('sub', 'N/A'))
             return f"""
             <html>
                 <body>
-                    <h1>Welcome, {user.get('email', 'User')}!</h1>
+                    <h1>Welcome, {email}!</h1>
                     <p>You are logged in.</p>
                     <h3>User Information:</h3>
                     <ul>
-                        <li><strong>Email:</strong> {user.get('email', 'N/A')}</li>
-                        <li><strong>Name:</strong> {user.get('given_name', '')} {user.get('family_name', '')}</li>
-                        <li><strong>ID:</strong> {user.get('sub', 'N/A')}</li>
+                        <li><strong>Email:</strong> {email_display}</li>
+                        <li><strong>Name:</strong> {given_name} {family_name}</li>
+                        <li><strong>ID:</strong> {user_id}</li>
                     </ul>
                     <hr>
                     <p><a href="/user">View Full User Info (JSON)</a></p>
@@ -88,12 +94,13 @@ async def home(request: Request):
             </html>
             """
         except Exception as e:
+            error_msg = html.escape(str(e))
             logger.error(f"Error getting user info: {e}")
             return f"""
             <html>
                 <body>
                     <h1>Error</h1>
-                    <p>Failed to get user information: {str(e)}</p>
+                    <p>Failed to get user information: {error_msg}</p>
                     <a href="/logout">Logout</a>
                 </body>
             </html>
@@ -115,9 +122,10 @@ async def home(request: Request):
 async def protected_route():
     """
     Example of a protected route that requires authentication.
+    Redirects to login if not authenticated.
     """
     if not kinde_oauth.is_authenticated():
-        return {"error": "Not authenticated", "redirect": "/login"}
+        return RedirectResponse("/login")
     
     user = kinde_oauth.get_user_info()
     return {

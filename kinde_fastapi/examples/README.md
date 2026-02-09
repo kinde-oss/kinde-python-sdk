@@ -15,7 +15,7 @@ pip install fastapi uvicorn python-multipart python-dotenv
    - Copy your client ID and client secret
 
 3. Create a `.env` file in the examples directory with the following variables:
-```
+```env
 KINDE_CLIENT_ID=your_client_id
 KINDE_CLIENT_SECRET=your_client_secret
 KINDE_REDIRECT_URI=http://localhost:8000/callback

@@ -8,6 +8,8 @@ import os
 import uuid
 import asyncio
 import logging
+import secrets
+import tempfile
 
 if TYPE_CHECKING:
     from flask import Request
@@ -34,10 +36,27 @@ class FlaskFramework(FrameworkInterface):
         
         # Configure Flask session for server-side storage
         # This is required because OAuth tokens can exceed cookie size limits (~4KB)
-        self.app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
+        secret_key = os.getenv('SECRET_KEY')
+        if not secret_key:
+            secret_key = secrets.token_urlsafe(32)
+            logger.warning(
+                "SECRET_KEY not set. Generated a random key for this session. "
+                "Set SECRET_KEY environment variable for production use."
+            )
+        self.app.config['SECRET_KEY'] = secret_key
         self.app.config['SESSION_TYPE'] = os.getenv('SESSION_TYPE', 'filesystem')
         self.app.config['SESSION_PERMANENT'] = False
-        self.app.config['SESSION_FILE_DIR'] = os.getenv('SESSION_FILE_DIR', '/tmp/flask_sessions')
+        
+        session_file_dir = os.getenv('SESSION_FILE_DIR')
+        if not session_file_dir:
+            # Create a secure temporary directory with restrictive permissions (0700)
+            session_file_dir = tempfile.mkdtemp(prefix='kinde_flask_sessions_')
+            os.chmod(session_file_dir, 0o700)
+            logger.warning(
+                f"SESSION_FILE_DIR not set. Using temporary directory: {session_file_dir}. "
+                "Set SESSION_FILE_DIR environment variable for production use."
+            )
+        self.app.config['SESSION_FILE_DIR'] = session_file_dir
         
         # Initialize Flask-Session extension
         # Without this, SESSION_TYPE is ignored and Flask uses client-side cookie sessions

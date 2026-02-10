@@ -131,6 +131,110 @@ class TestOAuthExtended(unittest.TestCase):
         self.oauth._framework = self.mock_framework
 
 
+    # -- Invitation code tests --
+
+    def test_generate_auth_url_with_invitation_code(self):
+        """invitation_code is included as a query parameter in the auth URL."""
+        result = run_async(self.oauth.generate_auth_url(
+            login_options={LoginOptions.INVITATION_CODE: "abc123"}
+        ))
+        params = parse_qs(urlparse(result["url"]).query)
+        self.assertEqual(params["invitation_code"], ["abc123"])
+
+    def test_generate_auth_url_invitation_code_auto_sets_is_invitation(self):
+        """is_invitation is automatically set to 'true' when invitation_code is present."""
+        result = run_async(self.oauth.generate_auth_url(
+            login_options={LoginOptions.INVITATION_CODE: "abc123"}
+        ))
+        params = parse_qs(urlparse(result["url"]).query)
+        self.assertEqual(params["is_invitation"], ["true"])
+
+    def test_generate_auth_url_invitation_code_with_explicit_is_invitation(self):
+        """Explicit is_invitation=True is honoured alongside invitation_code."""
+        result = run_async(self.oauth.generate_auth_url(
+            login_options={
+                LoginOptions.INVITATION_CODE: "abc123",
+                LoginOptions.IS_INVITATION: True,
+            }
+        ))
+        params = parse_qs(urlparse(result["url"]).query)
+        self.assertEqual(params["invitation_code"], ["abc123"])
+        self.assertEqual(params["is_invitation"], ["true"])
+
+    def test_generate_auth_url_invitation_code_overrides_false_is_invitation(self):
+        """invitation_code forces is_invitation='true' even when explicitly set to False."""
+        result = run_async(self.oauth.generate_auth_url(
+            login_options={
+                LoginOptions.INVITATION_CODE: "abc123",
+                LoginOptions.IS_INVITATION: False,
+            }
+        ))
+        params = parse_qs(urlparse(result["url"]).query)
+        self.assertEqual(params["is_invitation"], ["true"])
+
+    def test_generate_auth_url_is_invitation_alone(self):
+        """is_invitation=True works independently of invitation_code."""
+        result = run_async(self.oauth.generate_auth_url(
+            login_options={LoginOptions.IS_INVITATION: True}
+        ))
+        params = parse_qs(urlparse(result["url"]).query)
+        self.assertEqual(params["is_invitation"], ["true"])
+        self.assertNotIn("invitation_code", params)
+
+    def test_generate_auth_url_no_invitation_params_by_default(self):
+        """Neither invitation_code nor is_invitation appear when not specified."""
+        result = run_async(self.oauth.generate_auth_url(login_options={}))
+        params = parse_qs(urlparse(result["url"]).query)
+        self.assertNotIn("invitation_code", params)
+        self.assertNotIn("is_invitation", params)
+
+    def test_generate_auth_url_empty_invitation_code_ignored(self):
+        """An empty invitation_code does not add is_invitation."""
+        result = run_async(self.oauth.generate_auth_url(
+            login_options={LoginOptions.INVITATION_CODE: ""}
+        ))
+        params = parse_qs(urlparse(result["url"]).query)
+        self.assertNotIn("is_invitation", params)
+
+    def test_generate_auth_url_none_invitation_code_ignored(self):
+        """invitation_code=None is ignored entirely."""
+        result = run_async(self.oauth.generate_auth_url(
+            login_options={LoginOptions.INVITATION_CODE: None}
+        ))
+        params = parse_qs(urlparse(result["url"]).query)
+        self.assertNotIn("invitation_code", params)
+        self.assertNotIn("is_invitation", params)
+
+    def test_login_passes_invitation_code(self):
+        """login() forwards invitation_code to the generated auth URL."""
+        url = run_async(self.oauth.login(
+            login_options={LoginOptions.INVITATION_CODE: "inv_xyz"}
+        ))
+        params = parse_qs(urlparse(url).query)
+        self.assertEqual(params["invitation_code"], ["inv_xyz"])
+        self.assertEqual(params["is_invitation"], ["true"])
+
+    def test_login_without_invitation_code(self):
+        """login() without invitation options produces no invitation params."""
+        url = run_async(self.oauth.login())
+        params = parse_qs(urlparse(url).query)
+        self.assertNotIn("invitation_code", params)
+        self.assertNotIn("is_invitation", params)
+
+    def test_invitation_code_coexists_with_org_code(self):
+        """invitation_code and org_code can be used together."""
+        result = run_async(self.oauth.generate_auth_url(
+            login_options={
+                LoginOptions.INVITATION_CODE: "abc123",
+                LoginOptions.ORG_CODE: "org_456",
+            }
+        ))
+        params = parse_qs(urlparse(result["url"]).query)
+        self.assertEqual(params["invitation_code"], ["abc123"])
+        self.assertEqual(params["is_invitation"], ["true"])
+        self.assertEqual(params["org_code"], ["org_456"])
+
+
 class TestOAuthMethodSignatures(unittest.TestCase):
     """Test OAuth method signatures to verify the fix for incorrect request parameter passing."""
 

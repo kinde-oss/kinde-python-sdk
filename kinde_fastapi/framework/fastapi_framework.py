@@ -55,7 +55,6 @@ class FastAPIFramework(FrameworkInterface):
         """
         Start the framework.
         This method initializes any necessary FastAPI components and registers Kinde routes.
-        This method initializes any necessary FastAPI components and registers Kinde routes.
         """
         if not self._initialized:
             # Add framework middleware

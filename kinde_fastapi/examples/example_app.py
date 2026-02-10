@@ -127,11 +127,15 @@ async def protected_route():
     if not kinde_oauth.is_authenticated():
         return RedirectResponse("/login")
     
-    user = kinde_oauth.get_user_info()
-    return {
-        "message": "This is a protected route",
-        "user": user.get('email')
-    }
+    try:
+        user = kinde_oauth.get_user_info()
+        return {
+            "message": "This is a protected route",
+            "user": user.get('email')
+        }
+    except Exception as e:
+        logger.error(f"Error getting user info in protected route: {e}")
+        return RedirectResponse("/login")
 
 
 if __name__ == "__main__":

@@ -30,7 +30,7 @@ class GetApiResponseApi(BaseModel):
     GetApiResponseApi
     """ # noqa: E501
     id: Optional[StrictStr] = Field(default=None, description="Unique ID of the API.")
-    name: Optional[StrictStr] = Field(default=None, description="The API’s name.")
+    name: Optional[StrictStr] = Field(default=None, description="The API's name.")
     audience: Optional[StrictStr] = Field(default=None, description="A unique identifier for the API - commonly the URL. This value will be used as the `audience` parameter in authorization claims.")
     is_management_api: Optional[StrictBool] = Field(default=None, description="Whether or not it is the Kinde management API.")
     scopes: Optional[List[GetApiResponseApiScopesInner]] = None

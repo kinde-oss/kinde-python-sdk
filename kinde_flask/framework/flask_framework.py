@@ -156,10 +156,20 @@ class FlaskFramework(FrameworkInterface):
             loop = asyncio.new_event_loop()
             try:
                 login_url = loop.run_until_complete(self._oauth.login())
+        
+                # Build login options from query parameters
+                login_options = {}
+            
+                # Check for invitation_code in query parameters
+                invitation_code = request.args.get('invitation_code')
+                if invitation_code:
+                  login_options['invitation_code'] = invitation_code
+
+                login_url = loop.run_until_complete(self._oauth.login(login_options))
                 return redirect(login_url)
             finally:
                 loop.close()
-
+                
         # Callback route
         @self.app.route("/callback")
         def callback():

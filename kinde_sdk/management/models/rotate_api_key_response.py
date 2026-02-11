@@ -18,30 +18,20 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from kinde_sdk.management.models.rotate_api_key_response_api_key import RotateApiKeyResponseApiKey
 from typing import Optional, Set
 from typing_extensions import Self
 
-class UpdateOrganizationSessionsRequest(BaseModel):
+class RotateApiKeyResponse(BaseModel):
     """
-    UpdateOrganizationSessionsRequest
+    RotateApiKeyResponse
     """ # noqa: E501
-    is_use_org_sso_session_policy: Optional[StrictBool] = Field(default=None, description="Whether to use the organization's SSO session policy override.")
-    sso_session_persistence_mode: Optional[StrictStr] = Field(default=None, description="Determines if the session should be persistent or not.")
-    is_use_org_authenticated_session_lifetime: Optional[StrictBool] = Field(default=None, description="Whether to apply the organization's authenticated session lifetime override.")
-    authenticated_session_lifetime: Optional[StrictInt] = Field(default=None, description="Authenticated session lifetime in seconds.")
-    __properties: ClassVar[List[str]] = ["is_use_org_sso_session_policy", "sso_session_persistence_mode", "is_use_org_authenticated_session_lifetime", "authenticated_session_lifetime"]
-
-    @field_validator('sso_session_persistence_mode')
-    def sso_session_persistence_mode_validate_enum(cls, value):
-        """Validates the enum"""
-        if value is None:
-            return value
-
-        if value not in set(['persistent', 'non_persistent']):
-            raise ValueError("must be one of enum values ('persistent', 'non_persistent')")
-        return value
+    code: Optional[StrictStr] = Field(default=None, description="Response code.")
+    message: Optional[StrictStr] = Field(default=None, description="Response message.")
+    api_key: Optional[RotateApiKeyResponseApiKey] = None
+    __properties: ClassVar[List[str]] = ["code", "message", "api_key"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -61,7 +51,7 @@ class UpdateOrganizationSessionsRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of UpdateOrganizationSessionsRequest from a JSON string"""
+        """Create an instance of RotateApiKeyResponse from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -82,11 +72,14 @@ class UpdateOrganizationSessionsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of api_key
+        if self.api_key:
+            _dict['api_key'] = self.api_key.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of UpdateOrganizationSessionsRequest from a dict"""
+        """Create an instance of RotateApiKeyResponse from a dict"""
         if obj is None:
             return None
 
@@ -94,10 +87,9 @@ class UpdateOrganizationSessionsRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "is_use_org_sso_session_policy": obj.get("is_use_org_sso_session_policy"),
-            "sso_session_persistence_mode": obj.get("sso_session_persistence_mode"),
-            "is_use_org_authenticated_session_lifetime": obj.get("is_use_org_authenticated_session_lifetime"),
-            "authenticated_session_lifetime": obj.get("authenticated_session_lifetime")
+            "code": obj.get("code"),
+            "message": obj.get("message"),
+            "api_key": RotateApiKeyResponseApiKey.from_dict(obj["api_key"]) if obj.get("api_key") is not None else None
         })
         return _obj
 

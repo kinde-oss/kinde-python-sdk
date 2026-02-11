@@ -18,29 +18,28 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class UpdateOrganizationSessionsRequest(BaseModel):
+class CreateApiKeyRequest(BaseModel):
     """
-    UpdateOrganizationSessionsRequest
+    CreateApiKeyRequest
     """ # noqa: E501
-    is_use_org_sso_session_policy: Optional[StrictBool] = Field(default=None, description="Whether to use the organization's SSO session policy override.")
-    sso_session_persistence_mode: Optional[StrictStr] = Field(default=None, description="Determines if the session should be persistent or not.")
-    is_use_org_authenticated_session_lifetime: Optional[StrictBool] = Field(default=None, description="Whether to apply the organization's authenticated session lifetime override.")
-    authenticated_session_lifetime: Optional[StrictInt] = Field(default=None, description="Authenticated session lifetime in seconds.")
-    __properties: ClassVar[List[str]] = ["is_use_org_sso_session_policy", "sso_session_persistence_mode", "is_use_org_authenticated_session_lifetime", "authenticated_session_lifetime"]
+    name: StrictStr = Field(description="The name of the API key.")
+    type: StrictStr = Field(description="The entity type that will use this API key.")
+    api_id: StrictStr = Field(description="The ID of the API this key is associated with.")
+    scope_ids: Optional[List[StrictStr]] = Field(default=None, description="Array of scope IDs to associate with this API key.")
+    user_id: Optional[StrictStr] = Field(default=None, description="The ID of the user to associate with this API key (for user-level keys).")
+    org_code: Optional[StrictStr] = Field(default=None, description="The organization code to associate with this API key (for organization-level keys).")
+    __properties: ClassVar[List[str]] = ["name", "type", "api_id", "scope_ids", "user_id", "org_code"]
 
-    @field_validator('sso_session_persistence_mode')
-    def sso_session_persistence_mode_validate_enum(cls, value):
+    @field_validator('type')
+    def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value is None:
-            return value
-
-        if value not in set(['persistent', 'non_persistent']):
-            raise ValueError("must be one of enum values ('persistent', 'non_persistent')")
+        if value not in set(['user', 'organization', 'environment']):
+            raise ValueError("must be one of enum values ('user', 'organization', 'environment')")
         return value
 
     model_config = ConfigDict(
@@ -61,7 +60,7 @@ class UpdateOrganizationSessionsRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of UpdateOrganizationSessionsRequest from a JSON string"""
+        """Create an instance of CreateApiKeyRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -82,11 +81,26 @@ class UpdateOrganizationSessionsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if scope_ids (nullable) is None
+        # and model_fields_set contains the field
+        if self.scope_ids is None and "scope_ids" in self.model_fields_set:
+            _dict['scope_ids'] = None
+
+        # set to None if user_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.user_id is None and "user_id" in self.model_fields_set:
+            _dict['user_id'] = None
+
+        # set to None if org_code (nullable) is None
+        # and model_fields_set contains the field
+        if self.org_code is None and "org_code" in self.model_fields_set:
+            _dict['org_code'] = None
+
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of UpdateOrganizationSessionsRequest from a dict"""
+        """Create an instance of CreateApiKeyRequest from a dict"""
         if obj is None:
             return None
 
@@ -94,10 +108,12 @@ class UpdateOrganizationSessionsRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "is_use_org_sso_session_policy": obj.get("is_use_org_sso_session_policy"),
-            "sso_session_persistence_mode": obj.get("sso_session_persistence_mode"),
-            "is_use_org_authenticated_session_lifetime": obj.get("is_use_org_authenticated_session_lifetime"),
-            "authenticated_session_lifetime": obj.get("authenticated_session_lifetime")
+            "name": obj.get("name"),
+            "type": obj.get("type"),
+            "api_id": obj.get("api_id"),
+            "scope_ids": obj.get("scope_ids"),
+            "user_id": obj.get("user_id"),
+            "org_code": obj.get("org_code")
         })
         return _obj
 

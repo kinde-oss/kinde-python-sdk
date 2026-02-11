@@ -2,8 +2,7 @@ import unittest
 import os
 import tempfile
 import shutil
-import logging
-from unittest.mock import Mock, patch, MagicMock, call
+from unittest.mock import Mock, patch, call
 from flask import Flask
 from kinde_flask.framework.flask_framework import FlaskFramework
 from kinde_sdk.auth.oauth import OAuth
@@ -82,12 +81,11 @@ class TestFlaskFramework(unittest.TestCase):
     @patch('kinde_flask.framework.flask_framework.Session')
     def test_session_type_from_environment(self, mock_session):
         """Test that SESSION_TYPE is read from environment variable."""
-        # Use 'filesystem' instead of 'redis' since redis module is not installed in test env
-        os.environ['SESSION_TYPE'] = 'filesystem'
+        os.environ['SESSION_TYPE'] = 'test-session-type'
         
         framework = FlaskFramework()
         
-        self.assertEqual(framework.app.config['SESSION_TYPE'], 'filesystem')
+        self.assertEqual(framework.app.config['SESSION_TYPE'], 'test-session-type')
     
     @patch('kinde_flask.framework.flask_framework.logger')
     @patch('kinde_flask.framework.flask_framework.tempfile.mkdtemp')
@@ -175,6 +173,7 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
     
     def tearDown(self):
         """Clean up after tests."""
+        session_dir = os.environ.get('SESSION_FILE_DIR')
         # Restore original env vars
         for key in ['SECRET_KEY', 'SESSION_TYPE', 'SESSION_FILE_DIR']:
             if key in os.environ:
@@ -183,7 +182,6 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
             os.environ[key] = value
         
         # Clean up test session directory
-        session_dir = os.environ.get('SESSION_FILE_DIR')
         if session_dir and os.path.exists(session_dir):
             shutil.rmtree(session_dir)
     
@@ -290,11 +288,9 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
         
         # Test login route with exception
         with framework.app.test_client() as client:
-            try:
-                response = client.get('/login')
-            except Exception:
-                pass  # Expected to raise
-            
+            response = client.get('/login')
+            self.assertEqual(response.status_code, 500)
+
             # Verify loop.close was still called despite exception
             mock_loop.close.assert_called()
 
@@ -389,10 +385,12 @@ class TestFlaskFrameworkSecurity(unittest.TestCase):
         for key in ['SECRET_KEY', 'SESSION_TYPE', 'SESSION_FILE_DIR']:
             if key in os.environ:
                 del os.environ[key]
-    
+
     def tearDown(self):
         """Clean up after tests."""
-        pass
+        for key in ['SECRET_KEY', 'SESSION_TYPE', 'SESSION_FILE_DIR']:
+            if key in os.environ:
+                del os.environ[key]
     
     @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.tempfile.mkdtemp')
@@ -422,6 +420,11 @@ class TestFlaskFrameworkSecurity(unittest.TestCase):
         # secrets.token_urlsafe(32) generates a 32-byte token
         # which is URL-safe base64 encoded, resulting in ~43 characters
         self.assertGreater(len(secret_key), 30)
+
+        # Clean up auto-generated session directory
+        session_dir = framework.app.config.get('SESSION_FILE_DIR')
+        if session_dir and os.path.exists(session_dir):
+            shutil.rmtree(session_dir)
 
 
 if __name__ == '__main__':

@@ -150,8 +150,8 @@ class FlaskFramework(FrameworkInterface):
         """
         Run an async coroutine in a new event loop, then close it.
         
-        This helper ensures consistent event loop handling across all routes,
-        preventing subtle async bugs when OAuth internals call asyncio.get_event_loop().
+        This helper ensures consistent event loop handling across all routes.
+        Clears the event loop reference before closing to prevent use-after-close issues.
         
         Args:
             coro: The coroutine to run
@@ -160,10 +160,10 @@ class FlaskFramework(FrameworkInterface):
             The result of the coroutine
         """
         loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
             return loop.run_until_complete(coro)
         finally:
+            asyncio.set_event_loop(None)
             loop.close()
     
     def _register_kinde_routes(self) -> None:

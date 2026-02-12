@@ -312,8 +312,7 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
     
     @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.asyncio.new_event_loop')
-    @patch('kinde_flask.framework.flask_framework.asyncio.set_event_loop')
-    def test_event_loop_closed_on_exception(self, mock_set_event_loop, mock_new_event_loop, mock_session):
+    def test_event_loop_closed_on_exception(self, mock_new_event_loop, mock_session):
         """Test that event loop is closed even when an exception occurs in _run_async."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)

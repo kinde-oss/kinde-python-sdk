@@ -133,7 +133,7 @@ async def protected_route():
             "message": "This is a protected route",
             "user": user.get('email')
         }
-    except Exception as e:
+    except Exception:
         logger.exception("Error getting user info in protected route")
         return RedirectResponse("/login")
 

@@ -8,21 +8,13 @@ from kinde_flask.framework.flask_framework import FlaskFramework
 from kinde_sdk.auth.oauth import OAuth
 
 
-class TestFlaskFramework(unittest.TestCase):
-    """Test cases for FlaskFramework configuration."""
+class BaseFlaskFrameworkTest(unittest.TestCase):
+    """Base test class with common setUp/tearDown logic for all Flask framework tests."""
     
     def setUp(self):
-        """Set up test fixtures."""
+        """Set up test fixtures. Subclasses can override to customize behavior."""
         # Store original env vars - snapshot ALL env vars
         self.original_env = dict(os.environ)
-        
-        # Clear specific keys for clean test environment
-        for key in ['SECRET_KEY', 'SESSION_TYPE', 'SESSION_FILE_DIR']:
-            if key in os.environ:
-                del os.environ[key]
-        
-        # Create a temporary directory for test sessions
-        self.test_session_dir = tempfile.mkdtemp(prefix='test_flask_sessions_')
         
         # Track created frameworks for cleanup
         self.created_frameworks = []
@@ -34,14 +26,17 @@ class TestFlaskFramework(unittest.TestCase):
             if hasattr(framework, 'app') and framework.app:
                 session_dir = framework.app.config.get('SESSION_FILE_DIR')
                 if session_dir and os.path.exists(session_dir):
-                    try:
-                        shutil.rmtree(session_dir)
-                    except Exception:
-                        pass  # Ignore cleanup errors
+                    shutil.rmtree(session_dir, ignore_errors=True)
         
-        # Clean up test session directory
+        # Clean up test session directory if it exists
         if hasattr(self, 'test_session_dir') and os.path.exists(self.test_session_dir):
-            shutil.rmtree(self.test_session_dir)
+            shutil.rmtree(self.test_session_dir, ignore_errors=True)
+        
+        # Clean up session directory from setUp if it exists
+        if hasattr(self, '_setup_session_dir'):
+            session_dir = os.environ.get('SESSION_FILE_DIR')
+            if session_dir and os.path.exists(session_dir):
+                shutil.rmtree(session_dir, ignore_errors=True)
         
         # Remove any env vars added during test and restore original state
         current_keys = set(os.environ.keys())
@@ -54,9 +49,26 @@ class TestFlaskFramework(unittest.TestCase):
         # Restore original values
         for key, value in self.original_env.items():
             os.environ[key] = value
+
+
+class TestFlaskFramework(BaseFlaskFrameworkTest):
+    """Test cases for FlaskFramework configuration."""
     
+    def setUp(self):
+        """Set up test fixtures."""
+        super().setUp()
+        
+        # Clear specific keys for clean test environment
+        for key in ['SECRET_KEY', 'SESSION_TYPE', 'SESSION_FILE_DIR']:
+            if key in os.environ:
+                del os.environ[key]
+        
+        # Create a temporary directory for test sessions
+        self.test_session_dir = tempfile.mkdtemp(prefix='test_flask_sessions_')
+    
+    @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.logger')
-    def test_secret_key_auto_generation_with_warning(self, mock_logger):
+    def test_secret_key_auto_generation_with_warning(self, mock_logger, _mock_session):
         """Test that SECRET_KEY is auto-generated with a warning when not set."""
         # Ensure SECRET_KEY is not set
         if 'SECRET_KEY' in os.environ:
@@ -75,8 +87,9 @@ class TestFlaskFramework(unittest.TestCase):
             "Set SECRET_KEY environment variable for production use."
         )
     
+    @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.logger')
-    def test_secret_key_from_environment(self, mock_logger):
+    def test_secret_key_from_environment(self, mock_logger, _mock_session):
         """Test that SECRET_KEY is read from environment variable."""
         test_secret = "my_test_secret_key_12345"
         os.environ['SECRET_KEY'] = test_secret
@@ -93,7 +106,7 @@ class TestFlaskFramework(unittest.TestCase):
         self.assertEqual(len(warning_calls), 0)
     
     @patch('kinde_flask.framework.flask_framework.Session')
-    def test_session_type_default(self, mock_session):
+    def test_session_type_default(self, _mock_session):
         """Test that SESSION_TYPE defaults to 'filesystem'."""
         if 'SESSION_TYPE' in os.environ:
             del os.environ['SESSION_TYPE']
@@ -104,7 +117,7 @@ class TestFlaskFramework(unittest.TestCase):
         self.assertEqual(framework.app.config['SESSION_TYPE'], 'filesystem')
     
     @patch('kinde_flask.framework.flask_framework.Session')
-    def test_session_type_from_environment(self, mock_session):
+    def test_session_type_from_environment(self, _mock_session):
         """Test that SESSION_TYPE is read from environment variable."""
         os.environ['SESSION_TYPE'] = 'test-session-type'
         
@@ -145,8 +158,9 @@ class TestFlaskFramework(unittest.TestCase):
             "Set SESSION_FILE_DIR environment variable for production use."
         )
 
+    @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.logger')
-    def test_session_file_dir_from_environment(self, mock_logger):
+    def test_session_file_dir_from_environment(self, mock_logger, _mock_session):
         """Test that SESSION_FILE_DIR is read from environment variable."""
         os.environ['SESSION_FILE_DIR'] = self.test_session_dir
         
@@ -175,7 +189,7 @@ class TestFlaskFramework(unittest.TestCase):
         mock_logger.debug.assert_called_with("Flask-Session initialized with server-side storage")
     
     @patch('kinde_flask.framework.flask_framework.Session')
-    def test_session_permanent_is_false(self, mock_session):
+    def test_session_permanent_is_false(self, _mock_session):
         """Test that SESSION_PERMANENT is set to False."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -183,61 +197,24 @@ class TestFlaskFramework(unittest.TestCase):
         self.assertFalse(framework.app.config['SESSION_PERMANENT'])
 
 
-class TestFlaskFrameworkRoutes(unittest.TestCase):
+class TestFlaskFrameworkRoutes(BaseFlaskFrameworkTest):
     """Test cases for Flask framework route handling."""
     
     def setUp(self):
         """Set up test fixtures."""
-        # Store original env vars - snapshot ALL env vars
-        self.original_env = dict(os.environ)
+        super().setUp()
         
         # Set env vars to avoid auto-generation during tests
         os.environ['SECRET_KEY'] = 'test_secret_key'
         os.environ['SESSION_FILE_DIR'] = tempfile.mkdtemp(prefix='test_sessions_')
+        self._setup_session_dir = True  # Flag for cleanup
         
         # Mock OAuth instance
         self.mock_oauth = Mock(spec=OAuth)
-        
-        # Track created frameworks for cleanup
-        self.created_frameworks = []
-    
-    def tearDown(self):
-        """Clean up after tests."""
-        # Get session dir before clearing env
-        session_dir = os.environ.get('SESSION_FILE_DIR')
-        
-        # Clean up any framework-created session directories
-        for framework in self.created_frameworks:
-            if hasattr(framework, 'app') and framework.app:
-                fw_session_dir = framework.app.config.get('SESSION_FILE_DIR')
-                if fw_session_dir and os.path.exists(fw_session_dir):
-                    try:
-                        shutil.rmtree(fw_session_dir)
-                    except Exception:
-                        pass  # Ignore cleanup errors
-        
-        # Clean up test session directory from setUp
-        if session_dir and os.path.exists(session_dir):
-            try:
-                shutil.rmtree(session_dir)
-            except Exception:
-                pass
-        
-        # Remove any env vars added during test and restore original state
-        current_keys = set(os.environ.keys())
-        original_keys = set(self.original_env.keys())
-        
-        # Remove keys that were added during the test
-        for key in current_keys - original_keys:
-            del os.environ[key]
-        
-        # Restore original values
-        for key, value in self.original_env.items():
-            os.environ[key] = value
     
     @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.FlaskFramework._run_async')
-    def test_login_route_event_loop_management(self, mock_run_async, mock_session):
+    def test_login_route_event_loop_management(self, mock_run_async, _mock_session):
         """Test that login route properly uses _run_async helper."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -261,7 +238,7 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
     
     @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.FlaskFramework._run_async')
-    def test_logout_route_event_loop_management(self, mock_run_async, mock_session):
+    def test_logout_route_event_loop_management(self, mock_run_async, _mock_session):
         """Test that logout route properly uses _run_async helper."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -288,7 +265,7 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
     
     @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.FlaskFramework._run_async')
-    def test_register_route_event_loop_management(self, mock_run_async, mock_session):
+    def test_register_route_event_loop_management(self, mock_run_async, _mock_session):
         """Test that register route properly uses _run_async helper."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -312,7 +289,7 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
     
     @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.asyncio.new_event_loop')
-    def test_event_loop_closed_on_exception(self, mock_new_event_loop, mock_session):
+    def test_event_loop_closed_on_exception(self, mock_new_event_loop, _mock_session):
         """Test that event loop is closed even when an exception occurs in _run_async."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -335,56 +312,20 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
             mock_loop.close.assert_called()
 
 
-class TestFlaskFrameworkInterface(unittest.TestCase):
+class TestFlaskFrameworkInterface(BaseFlaskFrameworkTest):
     """Test cases for FlaskFramework interface compliance."""
     
     def setUp(self):
         """Set up test fixtures."""
-        # Store original env vars - snapshot ALL env vars
-        self.original_env = dict(os.environ)
+        super().setUp()
         
         # Set env vars to avoid warnings during tests
         os.environ['SECRET_KEY'] = 'test_secret_key'
         os.environ['SESSION_FILE_DIR'] = tempfile.mkdtemp(prefix='test_sessions_')
-        
-        # Track created frameworks for cleanup
-        self.created_frameworks = []
+        self._setup_session_dir = True  # Flag for cleanup
     
-    def tearDown(self):
-        """Clean up after tests."""
-        # Get session dir before clearing env
-        session_dir = os.environ.get('SESSION_FILE_DIR')
-        
-        # Clean up any framework-created session directories
-        for framework in self.created_frameworks:
-            if hasattr(framework, 'app') and framework.app:
-                fw_session_dir = framework.app.config.get('SESSION_FILE_DIR')
-                if fw_session_dir and os.path.exists(fw_session_dir):
-                    try:
-                        shutil.rmtree(fw_session_dir)
-                    except Exception:
-                        pass  # Ignore cleanup errors
-        
-        # Clean up test session directory from setUp
-        if session_dir and os.path.exists(session_dir):
-            try:
-                shutil.rmtree(session_dir)
-            except Exception:
-                pass
-        
-        # Remove any env vars added during test and restore original state
-        current_keys = set(os.environ.keys())
-        original_keys = set(self.original_env.keys())
-        
-        # Remove keys that were added during the test
-        for key in current_keys - original_keys:
-            del os.environ[key]
-        
-        # Restore original values
-        for key, value in self.original_env.items():
-            os.environ[key] = value
-    
-    def test_framework_properties(self):
+    @patch('kinde_flask.framework.flask_framework.Session')
+    def test_framework_properties(self, _mock_session):
         """Test framework name and description."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -393,7 +334,8 @@ class TestFlaskFrameworkInterface(unittest.TestCase):
         self.assertIn("Flask", framework.get_description())
         self.assertIn("Kinde", framework.get_description())
     
-    def test_get_app_returns_flask_instance(self):
+    @patch('kinde_flask.framework.flask_framework.Session')
+    def test_get_app_returns_flask_instance(self, _mock_session):
         """Test that get_app returns Flask application instance."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -401,7 +343,8 @@ class TestFlaskFrameworkInterface(unittest.TestCase):
         app = framework.get_app()
         self.assertIsInstance(app, Flask)
     
-    def test_start_and_stop(self):
+    @patch('kinde_flask.framework.flask_framework.Session')
+    def test_start_and_stop(self, _mock_session):
         """Test framework start and stop methods."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -418,7 +361,7 @@ class TestFlaskFrameworkInterface(unittest.TestCase):
         self.assertFalse(framework._initialized)
     
     @patch('kinde_flask.framework.flask_framework.Session')
-    def test_can_auto_detect(self, mock_session):
+    def test_can_auto_detect(self, _mock_session):
         """Test that Flask can be auto-detected when installed."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -426,7 +369,8 @@ class TestFlaskFrameworkInterface(unittest.TestCase):
         # Flask is installed (we're using it in tests)
         self.assertTrue(framework.can_auto_detect())
     
-    def test_set_oauth(self):
+    @patch('kinde_flask.framework.flask_framework.Session')
+    def test_set_oauth(self, _mock_session):
         """Test setting OAuth instance."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -436,7 +380,8 @@ class TestFlaskFrameworkInterface(unittest.TestCase):
         framework.set_oauth(mock_oauth)
         self.assertEqual(framework._oauth, mock_oauth)
     
-    def test_user_id_management(self):
+    @patch('kinde_flask.framework.flask_framework.Session')
+    def test_user_id_management(self, _mock_session):
         """Test user ID get/set functionality."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
@@ -452,55 +397,28 @@ class TestFlaskFrameworkInterface(unittest.TestCase):
             self.assertEqual(framework.get_user_id(), 'test_user_123')
 
 
-class TestFlaskFrameworkSecurity(unittest.TestCase):
+class TestFlaskFrameworkSecurity(BaseFlaskFrameworkTest):
     """Test cases for Flask framework security features."""
     
     def setUp(self):
         """Set up test fixtures."""
-        # Store original env vars - snapshot ALL env vars
-        self.original_env = dict(os.environ)
+        super().setUp()
         
         # Clear specific env vars for clean test environment
         for key in ['SECRET_KEY', 'SESSION_TYPE', 'SESSION_FILE_DIR']:
             if key in os.environ:
                 del os.environ[key]
-        
-        # Track created frameworks for cleanup
-        self.created_frameworks = []
-
-    def tearDown(self):
-        """Clean up after tests."""
-        # Clean up any framework-created session directories
-        for framework in self.created_frameworks:
-            if hasattr(framework, 'app') and framework.app:
-                session_dir = framework.app.config.get('SESSION_FILE_DIR')
-                if session_dir and os.path.exists(session_dir):
-                    try:
-                        shutil.rmtree(session_dir)
-                    except Exception:
-                        pass  # Ignore cleanup errors
-        
-        # Remove any env vars added during test and restore original state
-        current_keys = set(os.environ.keys())
-        original_keys = set(self.original_env.keys())
-        
-        # Remove keys that were added during the test
-        for key in current_keys - original_keys:
-            del os.environ[key]
-        
-        # Restore original values
-        for key, value in self.original_env.items():
-            os.environ[key] = value
     
     @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.tempfile.mkdtemp')
     @patch('kinde_flask.framework.flask_framework.os.chmod')
-    def test_session_directory_permissions(self, mock_chmod, mock_mkdtemp, mock_session):
+    def test_session_directory_permissions(self, mock_chmod, mock_mkdtemp, _mock_session):
         """Test that session directory is created with secure permissions (0o700)."""
         test_temp_dir = '/tmp/test_kinde_sessions_xyz789'
         mock_mkdtemp.return_value = test_temp_dir
         
-        framework = FlaskFramework()
+        # Framework not tracked since mocks prevent real directory creation
+        _framework = FlaskFramework()
         
         # Verify chmod was called with restrictive permissions (at least once for the main directory)
         # Flask-Session may also call chmod on subdirectories, so we check the first call
@@ -508,7 +426,8 @@ class TestFlaskFrameworkSecurity(unittest.TestCase):
         first_call = mock_chmod.call_args_list[0]
         self.assertEqual(first_call, call(test_temp_dir, 0o700))
     
-    def test_secret_key_length(self):
+    @patch('kinde_flask.framework.flask_framework.Session')
+    def test_secret_key_length(self, _mock_session):
         """Test that auto-generated SECRET_KEY has sufficient length."""
         if 'SECRET_KEY' in os.environ:
             del os.environ['SECRET_KEY']

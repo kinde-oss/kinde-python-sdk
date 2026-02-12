@@ -30,7 +30,7 @@ Available Routes (automatically registered):
 - /user - Returns user information (redirects to login if not authenticated)
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, RedirectResponse
 from .session import InMemorySessionMiddleware
 import os
@@ -64,7 +64,7 @@ kinde_oauth = OAuth(
 
 # Example home route
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
+async def home():
     """
     Home page that shows different content based on authentication status.
     """
@@ -95,7 +95,7 @@ async def home(request: Request):
             """
         except Exception as e:
             error_msg = html.escape(str(e))
-            logger.error(f"Error getting user info: {e}")
+            logger.exception("Error getting user info")
             return f"""
             <html>
                 <body>
@@ -134,7 +134,7 @@ async def protected_route():
             "user": user.get('email')
         }
     except Exception as e:
-        logger.error(f"Error getting user info in protected route: {e}")
+        logger.exception("Error getting user info in protected route")
         return RedirectResponse("/login")
 
 

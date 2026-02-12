@@ -132,9 +132,9 @@ class TestFlaskFramework(unittest.TestCase):
         
         # Verify chmod was called with 0o700 for security (at least once for the main directory)
         # Flask-Session may also call chmod on subdirectories, so we check the first call
-        assert mock_chmod.call_count >= 1
+        self.assertGreaterEqual(mock_chmod.call_count, 1)
         first_call = mock_chmod.call_args_list[0]
-        assert first_call == call(test_temp_dir, 0o700)
+        self.assertEqual(first_call, call(test_temp_dir, 0o700))
         
         # Verify SESSION_FILE_DIR was set
         self.assertEqual(framework.app.config['SESSION_FILE_DIR'], test_temp_dir)

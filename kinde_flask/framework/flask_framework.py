@@ -145,6 +145,27 @@ class FlaskFramework(FrameworkInterface):
         """
         self._oauth = oauth
     
+    @staticmethod
+    def _run_async(coro):
+        """
+        Run an async coroutine in a new event loop, then close it.
+        
+        This helper ensures consistent event loop handling across all routes,
+        preventing subtle async bugs when OAuth internals call asyncio.get_event_loop().
+        
+        Args:
+            coro: The coroutine to run
+            
+        Returns:
+            The result of the coroutine
+        """
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+    
     def _register_kinde_routes(self) -> None:
         """
         Register all Kinde-specific routes with the Flask application.
@@ -161,12 +182,8 @@ class FlaskFramework(FrameworkInterface):
             if invitation_code:
                 login_options['invitation_code'] = invitation_code
             
-            loop = asyncio.new_event_loop()
-            try:
-                login_url = loop.run_until_complete(self._oauth.login(login_options))
-                return redirect(login_url)
-            finally:
-                loop.close()
+            login_url = self._run_async(self._oauth.login(login_options))
+            return redirect(login_url)
 
         # Callback route
         @self.app.route("/callback")
@@ -233,10 +250,7 @@ class FlaskFramework(FrameworkInterface):
             
             # Handle async call to handle_redirect
             try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(self._oauth.handle_redirect(code, user_id, state))
-                loop.close()
+                self._run_async(self._oauth.handle_redirect(code, user_id, state))
             except Exception as e:
                 return f"Authentication failed: {str(e)}", 400
 
@@ -253,23 +267,15 @@ class FlaskFramework(FrameworkInterface):
             """Logout the user and redirect to Kinde logout page."""
             user_id = session.get('user_id')
             session.clear()
-            loop = asyncio.new_event_loop()
-            try:
-                logout_url = loop.run_until_complete(self._oauth.logout(user_id))
-                return redirect(logout_url)
-            finally:
-                loop.close()
+            logout_url = self._run_async(self._oauth.logout(user_id))
+            return redirect(logout_url)
         
         # Register route
         @self.app.route('/register')
         def register():
             """Redirect to Kinde registration page."""
-            loop = asyncio.new_event_loop()
-            try:
-                register_url = loop.run_until_complete(self._oauth.register())
-                return redirect(register_url)
-            finally:
-                loop.close()
+            register_url = self._run_async(self._oauth.register())
+            return redirect(register_url)
         
         # User info route
         @self.app.route('/user')
@@ -277,13 +283,8 @@ class FlaskFramework(FrameworkInterface):
             """Get the current user's information."""
             try:
                 if not self._oauth.is_authenticated():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    try:
-                        login_url = loop.run_until_complete(self._oauth.login())
-                        return redirect(login_url)
-                    finally:
-                        loop.close()
+                    login_url = self._run_async(self._oauth.login())
+                    return redirect(login_url)
                 
                 return self._oauth.get_user_info()
             except Exception as e:

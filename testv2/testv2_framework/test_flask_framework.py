@@ -236,18 +236,16 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
             os.environ[key] = value
     
     @patch('kinde_flask.framework.flask_framework.Session')
-    @patch('kinde_flask.framework.flask_framework.asyncio.new_event_loop')
-    def test_login_route_event_loop_management(self, mock_new_event_loop, mock_session):
-        """Test that login route properly creates and closes event loop."""
+    @patch('kinde_flask.framework.flask_framework.FlaskFramework._run_async')
+    def test_login_route_event_loop_management(self, mock_run_async, mock_session):
+        """Test that login route properly uses _run_async helper."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
         framework.set_oauth(self.mock_oauth)
         
-        # Create mock event loop
-        mock_loop = Mock()
-        mock_new_event_loop.return_value = mock_loop
-        self.mock_oauth.login = Mock(return_value='https://example.com/login')
-        mock_loop.run_until_complete = Mock(return_value='https://example.com/login')
+        # Mock the OAuth login and _run_async
+        self.mock_oauth.login = Mock(return_value='async_login_coro')
+        mock_run_async.return_value = 'https://example.com/login'
         
         framework.start()
         
@@ -255,28 +253,23 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
         with framework.app.test_client() as client:
             response = client.get('/login')
             
-            # Verify event loop was created
-            mock_new_event_loop.assert_called()
+            # Verify _run_async was called
+            mock_run_async.assert_called_once()
             
-            # Verify loop.run_until_complete was called
-            mock_loop.run_until_complete.assert_called()
-            
-            # Verify loop.close was called
-            mock_loop.close.assert_called()
+            # Verify redirect occurred
+            self.assertEqual(response.status_code, 302)
     
     @patch('kinde_flask.framework.flask_framework.Session')
-    @patch('kinde_flask.framework.flask_framework.asyncio.new_event_loop')
-    def test_logout_route_event_loop_management(self, mock_new_event_loop, mock_session):
-        """Test that logout route properly creates and closes event loop."""
+    @patch('kinde_flask.framework.flask_framework.FlaskFramework._run_async')
+    def test_logout_route_event_loop_management(self, mock_run_async, mock_session):
+        """Test that logout route properly uses _run_async helper."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
         framework.set_oauth(self.mock_oauth)
         
-        # Create mock event loop
-        mock_loop = Mock()
-        mock_new_event_loop.return_value = mock_loop
-        self.mock_oauth.logout = Mock(return_value='https://example.com/logout')
-        mock_loop.run_until_complete = Mock(return_value='https://example.com/logout')
+        # Mock the OAuth logout and _run_async
+        self.mock_oauth.logout = Mock(return_value='async_logout_coro')
+        mock_run_async.return_value = 'https://example.com/logout'
         
         framework.start()
         
@@ -287,28 +280,23 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
             
             response = client.get('/logout')
             
-            # Verify event loop was created
-            mock_new_event_loop.assert_called()
+            # Verify _run_async was called
+            mock_run_async.assert_called_once()
             
-            # Verify loop.run_until_complete was called
-            mock_loop.run_until_complete.assert_called()
-            
-            # Verify loop.close was called
-            mock_loop.close.assert_called()
+            # Verify redirect occurred
+            self.assertEqual(response.status_code, 302)
     
     @patch('kinde_flask.framework.flask_framework.Session')
-    @patch('kinde_flask.framework.flask_framework.asyncio.new_event_loop')
-    def test_register_route_event_loop_management(self, mock_new_event_loop, mock_session):
-        """Test that register route properly creates and closes event loop."""
+    @patch('kinde_flask.framework.flask_framework.FlaskFramework._run_async')
+    def test_register_route_event_loop_management(self, mock_run_async, mock_session):
+        """Test that register route properly uses _run_async helper."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
         framework.set_oauth(self.mock_oauth)
         
-        # Create mock event loop
-        mock_loop = Mock()
-        mock_new_event_loop.return_value = mock_loop
-        self.mock_oauth.register = Mock(return_value='https://example.com/register')
-        mock_loop.run_until_complete = Mock(return_value='https://example.com/register')
+        # Mock the OAuth register and _run_async
+        self.mock_oauth.register = Mock(return_value='async_register_coro')
+        mock_run_async.return_value = 'https://example.com/register'
         
         framework.start()
         
@@ -316,19 +304,17 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
         with framework.app.test_client() as client:
             response = client.get('/register')
             
-            # Verify event loop was created
-            mock_new_event_loop.assert_called()
+            # Verify _run_async was called
+            mock_run_async.assert_called_once()
             
-            # Verify loop.run_until_complete was called
-            mock_loop.run_until_complete.assert_called()
-            
-            # Verify loop.close was called
-            mock_loop.close.assert_called()
+            # Verify redirect occurred
+            self.assertEqual(response.status_code, 302)
     
     @patch('kinde_flask.framework.flask_framework.Session')
     @patch('kinde_flask.framework.flask_framework.asyncio.new_event_loop')
-    def test_event_loop_closed_on_exception(self, mock_new_event_loop, mock_session):
-        """Test that event loop is closed even when an exception occurs."""
+    @patch('kinde_flask.framework.flask_framework.asyncio.set_event_loop')
+    def test_event_loop_closed_on_exception(self, mock_set_event_loop, mock_new_event_loop, mock_session):
+        """Test that event loop is closed even when an exception occurs in _run_async."""
         framework = FlaskFramework()
         self.created_frameworks.append(framework)
         framework.set_oauth(self.mock_oauth)
@@ -337,6 +323,7 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
         mock_loop = Mock()
         mock_new_event_loop.return_value = mock_loop
         mock_loop.run_until_complete = Mock(side_effect=Exception("Test exception"))
+        self.mock_oauth.login = Mock(return_value='async_login_coro')
         
         framework.start()
         
@@ -345,7 +332,7 @@ class TestFlaskFrameworkRoutes(unittest.TestCase):
             response = client.get('/login')
             self.assertEqual(response.status_code, 500)
 
-            # Verify loop.close was still called despite exception
+            # Verify loop.close was still called despite exception (in _run_async finally block)
             mock_loop.close.assert_called()
 
 

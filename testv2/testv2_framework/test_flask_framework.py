@@ -504,9 +504,9 @@ class TestFlaskFrameworkSecurity(unittest.TestCase):
         
         # Verify chmod was called with restrictive permissions (at least once for the main directory)
         # Flask-Session may also call chmod on subdirectories, so we check the first call
-        assert mock_chmod.call_count >= 1
+        self.assertGreaterEqual(mock_chmod.call_count, 1)
         first_call = mock_chmod.call_args_list[0]
-        assert first_call == call(test_temp_dir, 0o700)
+        self.assertEqual(first_call, call(test_temp_dir, 0o700))
     
     def test_secret_key_length(self):
         """Test that auto-generated SECRET_KEY has sufficient length."""

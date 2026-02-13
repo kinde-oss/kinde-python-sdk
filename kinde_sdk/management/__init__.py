@@ -553,5 +553,5 @@ from kinde_sdk.management.models.webhook import Webhook as Webhook
 from .management_client import ManagementClient
 from .management_token_manager import ManagementTokenManager
 
-# Re-export for convenience
+# Extend __all__ with custom exports (preserves generator-populated entries)
 __all__.extend(['ManagementClient', 'ManagementTokenManager'])

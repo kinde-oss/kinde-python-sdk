@@ -56,8 +56,8 @@ SDK_CONFIG = {
         "from .management_client import ManagementClient",
         "from .management_token_manager import ManagementTokenManager",
         "",
-        "# Re-export for convenience",
-        "__all__ = ['ManagementClient', 'ManagementTokenManager']",
+        "# Extend __all__ with custom exports (preserves generator-populated entries)",
+        "__all__.extend(['ManagementClient', 'ManagementTokenManager'])",
         ""
     ],
     "test_path": "testv2/testv2_management/test_management_client.py"

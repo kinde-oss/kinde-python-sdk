@@ -203,7 +203,7 @@ class ManagementClient:
     # Backwards compatibility: Provide direct method access for common operations
     # These delegate to the appropriate API class methods
     # Note: These methods are deprecated. For full functionality and proper type hints,
-    # use the API class methods directly (e.g., client.users.get_users())
+    # use the API class methods directly (e.g., client.users_api.get_users())
     
     def get_users(self, **kwargs):
         """

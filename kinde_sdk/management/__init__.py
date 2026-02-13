@@ -554,4 +554,4 @@ from .management_client import ManagementClient
 from .management_token_manager import ManagementTokenManager
 
 # Re-export for convenience
-__all__ = ['ManagementClient', 'ManagementTokenManager']
+__all__.extend(['ManagementClient', 'ManagementTokenManager'])

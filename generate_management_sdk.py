@@ -408,7 +408,7 @@ def generate_sdk(config: Dict[str, Any]) -> bool:
     print(f"Running: {' '.join(cmd)}")
     
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
         print("✓ Generation completed successfully")
         
         # Clean up unwanted template files that OpenAPI Generator creates at root level

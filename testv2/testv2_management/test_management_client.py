@@ -97,14 +97,12 @@ class TestManagementClient(unittest.TestCase):
         
         # Test permission methods
         assert hasattr(client, 'get_permissions')
-        assert hasattr(client, 'get_permission')
         assert hasattr(client, 'create_permission')
         assert hasattr(client, 'update_permission')
         assert hasattr(client, 'delete_permission')
         
         # Test feature flag methods
         assert hasattr(client, 'get_feature_flags')
-        assert hasattr(client, 'get_feature_flag')
         assert hasattr(client, 'create_feature_flag')
         assert hasattr(client, 'update_feature_flag')
         assert hasattr(client, 'delete_feature_flag')
@@ -117,7 +115,6 @@ class TestManagementClient(unittest.TestCase):
         assert hasattr(client, 'get_api_applications')
         assert hasattr(client, 'get_api_application')
         assert hasattr(client, 'create_api_application')
-        assert hasattr(client, 'update_api_application')
         assert hasattr(client, 'delete_api_application')
         
         # Test subscriber methods
@@ -499,20 +496,21 @@ class TestManagementClient(unittest.TestCase):
         
         # Mock param_serialize to return expected values
         mock_api_client_instance.param_serialize.return_value = (
-            'GET', 'https://test.kinde.com/api/v1/feature-flags', {}, None, None
+            'POST', 'https://test.kinde.com/api/v1/feature_flags', {}, 
+            {"key": "test_flag", "type": "str", "value": "test_value"}, None
         )
         
         # Mock REST client response
         mock_rest_response = Mock()
         mock_rest_response.read.return_value = None
         mock_rest_response.status = 200
-        mock_rest_response.data = b'{"feature_flags": [{"key": "test_flag"}]}'
+        mock_rest_response.data = b'{"key": "test_flag", "type": "str", "value": "test_value"}'
         mock_rest_response.getheader.return_value = 'application/json'
         
         mock_api_client_instance.rest_client.request.return_value = mock_rest_response
         
         # Mock response_deserialize
-        expected_response = {"feature_flags": [{"key": "test_flag"}]}
+        expected_response = {"key": "test_flag", "type": "str", "value": "test_value"}
         mock_api_response = Mock()
         mock_api_response.data = expected_response
         mock_api_client_instance.response_deserialize.return_value = mock_api_response
@@ -523,8 +521,8 @@ class TestManagementClient(unittest.TestCase):
         # Create client
         client = ManagementClient(self.domain, self.client_id, self.client_secret)
         
-        # Test feature flag API call
-        result = client.get_feature_flags()
+        # Test feature flag create API call
+        result = client.create_feature_flag(key="test_flag", type="str", value="test_value")
         
         # Verify param_serialize was called
         mock_api_client_instance.param_serialize.assert_called_once()

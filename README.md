@@ -721,6 +721,20 @@ If you're upgrading from v1 of the Kinde Python SDK, we've prepared comprehensiv
 
 Please refer to Kinde's [contributing guidelines](https://github.com/kinde-oss/.github/blob/489e2ca9c3307c2b2e098a885e22f2239116394a/CONTRIBUTING.md).
 
+### Development Setup
+
+To set up the development environment, install the package in editable mode with development dependencies:
+
+```bash
+pip install -e ".[dev]"
+```
+
+**Note:** The `dev` optional dependency group includes all development tools (pytest, mypy, pylint, etc.). Pylint is conditionally installed based on your Python version:
+- **Python 3.10+**: pylint >=4.0.0
+- **Python 3.9**: pylint >=2.0, <4.0
+
+This ensures compatibility with Python 3.9 while allowing newer Python versions to use the latest pylint features.
+
 ## License
 
 By contributing to Kinde, you agree that your contributions will be licensed under its MIT License.

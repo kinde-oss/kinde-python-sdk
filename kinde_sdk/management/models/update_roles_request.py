@@ -20,6 +20,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from uuid import UUID
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -31,7 +32,7 @@ class UpdateRolesRequest(BaseModel):
     description: Optional[StrictStr] = Field(default=None, description="The role's description.")
     key: StrictStr = Field(description="The role identifier to use in code.")
     is_default_role: Optional[StrictBool] = Field(default=None, description="Set role as default for new users.")
-    assignment_permission_id: Optional[StrictStr] = Field(default=None, description="The public ID of the permission required to assign this role to users. If null, no change to the assignment permission is made. If set to 'NO_PERMISSION_REQUIRED', no permission is required.")
+    assignment_permission_id: Optional[UUID] = Field(default=None, description="The public ID of the permission required to assign this role to users. If null, no change to the assignment permission is made. If set to 'NO_PERMISSION_REQUIRED', no permission is required.")
     __properties: ClassVar[List[str]] = ["name", "description", "key", "is_default_role", "assignment_permission_id"]
 
     model_config = ConfigDict(

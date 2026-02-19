@@ -99,5 +99,5 @@ pytest-asyncio = "^0.26.0"
 pytest-timeout = "^2.2.0"
 black = "^25.0.0"
 flake8 = "^7.0.0"
-isort = "^5.12.0"
+isort = "^8.0.0"
 

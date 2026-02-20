@@ -64,7 +64,7 @@ kinde_oauth = OAuth(
 
 # Example home route
 @app.get("/", response_class=HTMLResponse)
-async def home():
+def home():
     """
     Home page that shows different content based on authentication status.
     """
@@ -119,7 +119,7 @@ async def home():
 
 
 @app.get("/protected")
-async def protected_route():
+def protected_route():
     """
     Example of a protected route that requires authentication.
     Redirects to login if not authenticated.

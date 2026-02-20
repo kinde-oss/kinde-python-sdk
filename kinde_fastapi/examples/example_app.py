@@ -71,8 +71,20 @@ def home():
     if kinde_oauth.is_authenticated():
         try:
             user = kinde_oauth.get_user_info()
-            email = html.escape(user.get('email', 'User'))
-            email_display = html.escape(user.get('email', 'N/A'))
+        except Exception as e:
+            error_msg = html.escape(str(e))
+            logger.exception("Error getting user info")
+            return f"""
+            <html>
+                <body>
+                    <h1>Error</h1>
+                    <p>Failed to get user information: {error_msg}</p>
+                    <a href="/logout">Logout</a>
+                </body>
+            </html>
+            """
+        else:
+            email = html.escape(user.get('email', 'N/A'))
             given_name = html.escape(user.get('given_name', ''))
             family_name = html.escape(user.get('family_name', ''))
             user_id = html.escape(user.get('sub', 'N/A'))
@@ -83,25 +95,13 @@ def home():
                     <p>You are logged in.</p>
                     <h3>User Information:</h3>
                     <ul>
-                        <li><strong>Email:</strong> {email_display}</li>
+                        <li><strong>Email:</strong> {email}</li>
                         <li><strong>Name:</strong> {given_name} {family_name}</li>
                         <li><strong>ID:</strong> {user_id}</li>
                     </ul>
                     <hr>
                     <p><a href="/user">View Full User Info (JSON)</a></p>
                     <p><a href="/logout">Logout</a></p>
-                </body>
-            </html>
-            """
-        except Exception as e:
-            error_msg = html.escape(str(e))
-            logger.exception("Error getting user info")
-            return f"""
-            <html>
-                <body>
-                    <h1>Error</h1>
-                    <p>Failed to get user information: {error_msg}</p>
-                    <a href="/logout">Logout</a>
                 </body>
             </html>
             """

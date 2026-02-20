@@ -332,12 +332,12 @@ class OAuth:
         # Generate state if not provided
         state = login_options.get(LoginOptions.STATE, generate_random_string(32))
         search_params["state"] = state
-        self._session_manager.storage_manager.setItems("state", {"value": state})
+        self._session_manager.storage_manager.setItems("user:state", {"value": state})
         
         # Generate nonce if not provided
         nonce = login_options.get(LoginOptions.NONCE, generate_random_string(16))
         search_params["nonce"] = nonce
-        self._session_manager.storage_manager.setItems("nonce", {"value": nonce})
+        self._session_manager.storage_manager.setItems("user:nonce", {"value": nonce})
         
         # Handle PKCE
         code_verifier = ""
@@ -348,7 +348,7 @@ class OAuth:
             pkce_data = await generate_pkce_pair(52)  # Use 52 chars to match JS implementation
             code_verifier = pkce_data["code_verifier"]
             search_params["code_challenge"] = pkce_data["code_challenge"]
-            self._session_manager.storage_manager.setItems("code_verifier", {"value": code_verifier})
+            self._session_manager.storage_manager.setItems("user:code_verifier", {"value": code_verifier})
         
         # Set code challenge method
         code_challenge_method = login_options.get(LoginOptions.CODE_CHALLENGE_METHOD, "S256")
@@ -517,7 +517,7 @@ class OAuth:
         """
         # Verify state if provided
         if state:
-            stored_state = self._session_manager.storage_manager.get("state")
+            stored_state = self._session_manager.storage_manager.get("user:state")
             self._logger.warning(f"stored_state: {stored_state}, state: {state}")
             if not stored_state or state != stored_state.get("value"):
                 self._logger.error(f"State mismatch: received {state}, stored {stored_state}")
@@ -525,12 +525,12 @@ class OAuth:
         
         # Get code verifier for PKCE
         code_verifier = None
-        stored_code_verifier = self._session_manager.storage_manager.get("code_verifier")
+        stored_code_verifier = self._session_manager.storage_manager.get("user:code_verifier")
         if stored_code_verifier:
             code_verifier = stored_code_verifier.get("value")
             
             # Clean up the used code verifier
-            self._session_manager.storage_manager.delete("code_verifier")
+            self._session_manager.storage_manager.delete("user:code_verifier")
         
         # Exchange code for tokens
         try:
@@ -567,10 +567,10 @@ class OAuth:
         
         # Clean up state
         if state:
-            self._session_manager.storage_manager.delete("state")
+            self._session_manager.storage_manager.delete("user:state")
         
         # Clean up nonce
-        self._session_manager.storage_manager.delete("nonce")
+        self._session_manager.storage_manager.delete("user:nonce")
         
         return {
             "tokens": token_data,

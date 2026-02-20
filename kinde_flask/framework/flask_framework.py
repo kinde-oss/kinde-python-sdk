@@ -1,15 +1,20 @@
 from typing import Optional, TYPE_CHECKING
 from flask import Flask, request, redirect, session
+from flask_session import Session
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
 from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
 import asyncio
-import nest_asyncio
+import logging
+import secrets
+import tempfile
 
 if TYPE_CHECKING:
     from flask import Request
+
+logger = logging.getLogger(__name__)
 
 class FlaskFramework(FrameworkInterface):
     """
@@ -29,13 +34,35 @@ class FlaskFramework(FrameworkInterface):
         self._initialized = False
         self._oauth = None
         
-        # Configure Flask session
-        self.app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
-        self.app.config['SESSION_TYPE'] = 'filesystem'
+        # Configure Flask session for server-side storage
+        # This is required because OAuth tokens can exceed cookie size limits (~4KB)
+        secret_key = os.getenv('SECRET_KEY')
+        if not secret_key:
+            secret_key = secrets.token_urlsafe(32)
+            logger.warning(
+                "SECRET_KEY not set. Generated a random key for this session. "
+                "Set SECRET_KEY environment variable for production use."
+            )
+        self.app.config['SECRET_KEY'] = secret_key
+        self.app.config['SESSION_TYPE'] = os.getenv('SESSION_TYPE', 'filesystem')
         self.app.config['SESSION_PERMANENT'] = False
         
-        # Enable nested event loops
-        nest_asyncio.apply()
+        session_file_dir = os.getenv('SESSION_FILE_DIR')
+        if not session_file_dir:
+            # Create a secure temporary directory with restrictive permissions (0700)
+            session_file_dir = tempfile.mkdtemp(prefix='kinde_flask_sessions_')
+            os.chmod(session_file_dir, 0o700)
+            logger.warning(
+                f"SESSION_FILE_DIR not set. Using temporary directory: {session_file_dir}. "
+                "Set SESSION_FILE_DIR environment variable for production use."
+            )
+        self.app.config['SESSION_FILE_DIR'] = session_file_dir
+        
+        # Initialize Flask-Session extension
+        # Without this, SESSION_TYPE is ignored and Flask uses client-side cookie sessions
+        Session(self.app)
+        logger.debug("Flask-Session initialized with server-side storage")
+        
     
     def get_name(self) -> str:
         """
@@ -118,6 +145,27 @@ class FlaskFramework(FrameworkInterface):
         """
         self._oauth = oauth
     
+    @staticmethod
+    def _run_async(coro):
+        """
+        Run an async coroutine in a new event loop, then close it.
+        
+        This helper ensures consistent event loop handling across all routes.
+        Clears the event loop reference before closing to prevent use-after-close issues.
+        
+        Args:
+            coro: The coroutine to run
+            
+        Returns:
+            The result of the coroutine
+        """
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            asyncio.set_event_loop(None)
+            loop.close()
+    
     def _register_kinde_routes(self) -> None:
         """
         Register all Kinde-specific routes with the Flask application.
@@ -126,8 +174,6 @@ class FlaskFramework(FrameworkInterface):
         @self.app.route('/login')
         def login():
             """Redirect to Kinde login page."""
-            loop = asyncio.get_event_loop()
-            
             # Build login options from query parameters
             login_options = {}
             
@@ -136,7 +182,7 @@ class FlaskFramework(FrameworkInterface):
             if invitation_code:
                 login_options['invitation_code'] = invitation_code
             
-            login_url = loop.run_until_complete(self._oauth.login(login_options))
+            login_url = self._run_async(self._oauth.login(login_options))
             return redirect(login_url)
 
         # Callback route
@@ -204,10 +250,7 @@ class FlaskFramework(FrameworkInterface):
             
             # Handle async call to handle_redirect
             try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(self._oauth.handle_redirect(code, user_id, state))
-                loop.close()
+                self._run_async(self._oauth.handle_redirect(code, user_id, state))
             except Exception as e:
                 return f"Authentication failed: {str(e)}", 400
 
@@ -224,16 +267,14 @@ class FlaskFramework(FrameworkInterface):
             """Logout the user and redirect to Kinde logout page."""
             user_id = session.get('user_id')
             session.clear()
-            loop = asyncio.get_event_loop()
-            logout_url = loop.run_until_complete(self._oauth.logout(user_id))
+            logout_url = self._run_async(self._oauth.logout(user_id))
             return redirect(logout_url)
         
         # Register route
         @self.app.route('/register')
         def register():
             """Redirect to Kinde registration page."""
-            loop = asyncio.get_event_loop()
-            register_url = loop.run_until_complete(self._oauth.register())
+            register_url = self._run_async(self._oauth.register())
             return redirect(register_url)
         
         # User info route
@@ -242,13 +283,8 @@ class FlaskFramework(FrameworkInterface):
             """Get the current user's information."""
             try:
                 if not self._oauth.is_authenticated():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    try:
-                        login_url = loop.run_until_complete(self._oauth.login())
-                        return redirect(login_url)
-                    finally:
-                        loop.close()
+                    login_url = self._run_async(self._oauth.login())
+                    return redirect(login_url)
                 
                 return self._oauth.get_user_info()
             except Exception as e:

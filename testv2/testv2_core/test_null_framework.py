@@ -335,7 +335,7 @@ class TestNullFrameworkOAuthIntegration(unittest.TestCase):
         self.assertIn("http%3A%2F%2Flocalhost%3A8080%2Fcallback", login_url)
         
         # Verify state was stored
-        stored_state = oauth._session_manager.storage_manager.get("state")
+        stored_state = oauth._session_manager.storage_manager.get("user:state")
         self.assertIsNotNone(stored_state)
         self.assertEqual(stored_state["value"], "mocked-state-123")
     

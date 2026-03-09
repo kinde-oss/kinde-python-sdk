@@ -1203,7 +1203,7 @@ class APIsApi:
 
 
     @validate_call
-    def delete_api_appliation_scope(
+    def delete_api_application_scope(
         self,
         api_id: Annotated[StrictStr, Field(description="API ID")],
         application_id: Annotated[StrictStr, Field(description="Application ID")],
@@ -1253,7 +1253,7 @@ class APIsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._delete_api_appliation_scope_serialize(
+        _param = self._delete_api_application_scope_serialize(
             api_id=api_id,
             application_id=application_id,
             scope_id=scope_id,
@@ -1281,7 +1281,7 @@ class APIsApi:
 
 
     @validate_call
-    def delete_api_appliation_scope_with_http_info(
+    def delete_api_application_scope_with_http_info(
         self,
         api_id: Annotated[StrictStr, Field(description="API ID")],
         application_id: Annotated[StrictStr, Field(description="Application ID")],
@@ -1331,7 +1331,7 @@ class APIsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._delete_api_appliation_scope_serialize(
+        _param = self._delete_api_application_scope_serialize(
             api_id=api_id,
             application_id=application_id,
             scope_id=scope_id,
@@ -1359,7 +1359,7 @@ class APIsApi:
 
 
     @validate_call
-    def delete_api_appliation_scope_without_preload_content(
+    def delete_api_application_scope_without_preload_content(
         self,
         api_id: Annotated[StrictStr, Field(description="API ID")],
         application_id: Annotated[StrictStr, Field(description="Application ID")],
@@ -1409,7 +1409,7 @@ class APIsApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._delete_api_appliation_scope_serialize(
+        _param = self._delete_api_application_scope_serialize(
             api_id=api_id,
             application_id=application_id,
             scope_id=scope_id,
@@ -1432,7 +1432,7 @@ class APIsApi:
         return response_data.response
 
 
-    def _delete_api_appliation_scope_serialize(
+    def _delete_api_application_scope_serialize(
         self,
         api_id,
         application_id,

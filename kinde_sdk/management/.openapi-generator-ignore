@@ -1,0 +1,27 @@
+# OpenAPI Generator Ignore
+# This file tells the generator which files to NOT overwrite.
+# Works like .gitignore - list files/patterns to preserve.
+
+# Custom Kinde SDK files - never overwrite these
+management_client.py
+management_token_manager.py
+custom_exceptions.py
+kinde_api_client.py
+README.md
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test files
+test/

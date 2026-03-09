@@ -749,7 +749,6 @@ class OrganizationsApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "AddOrganizationUsersResponse",
-            '204': None,
             '400': "ErrorResponse",
             '403': "ErrorResponse",
             '429': "ErrorResponse",
@@ -824,7 +823,6 @@ class OrganizationsApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "AddOrganizationUsersResponse",
-            '204': None,
             '400': "ErrorResponse",
             '403': "ErrorResponse",
             '429': "ErrorResponse",
@@ -899,7 +897,6 @@ class OrganizationsApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "AddOrganizationUsersResponse",
-            '204': None,
             '400': "ErrorResponse",
             '403': "ErrorResponse",
             '429': "ErrorResponse",

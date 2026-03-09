@@ -2,359 +2,78 @@
 Client for the Kinde Management API.
 
 This module provides a client for the Kinde Management API that integrates
-with the existing Kinde SDK infrastructure.
+with the existing Kinde SDK infrastructure and adds automatic token management
+to the generated API classes.
 """
 
+import inspect
 import logging
-from typing import Dict, Any, Optional, List, Union, Callable
-from functools import partial
+import re
+from typing import Optional
+import warnings
 
-from kinde_sdk.management.configuration import Configuration
+# Import the api module to dynamically load all API classes
+from kinde_sdk.management import api
 from kinde_sdk.management.api_client import ApiClient
+from kinde_sdk.management.configuration import Configuration
 from .management_token_manager import ManagementTokenManager
 
 logger = logging.getLogger("kinde_sdk.management")
+
 
 class ManagementClient:
     """
     Client for the Kinde Management API.
     
-    This client provides methods to interact with the Kinde Management API
-    for managing users, organizations, roles, permissions, and feature flags.
+    This client provides access to all Kinde Management API endpoints through
+    the auto-generated API classes, with automatic token management.
+    
+    All API classes are dynamically loaded from the 'api' module and made available
+    as snake_case properties. For example:
+    - UsersApi -> client.users_api.*
+    - OrganizationsApi -> client.organizations_api.*
+    - FeatureFlagsApi -> client.feature_flags_api.*
+    - etc.
+    
+    When new API classes are generated from the OpenAPI spec, they will automatically
+    be available on this client without any code changes.
+    
+    Common API properties include:
+    - client.users_api.*           - User management
+    - client.organizations_api.*   - Organization management
+    - client.roles_api.*           - Role management
+    - client.permissions_api.*     - Permission management
+    - client.feature_flags_api.*   - Feature flag management
+    - client.apis_api.*            - API application management
+    - client.applications_api.*    - Connected app management
+    - client.subscribers_api.*     - Subscriber management
+    - client.properties_api.*      - Property management
+    - client.webhooks_api.*        - Webhook management
+    - client.connections_api.*     - Connection management
+    - client.business_api.*        - Business information
+    - And more...
+    
+    Example:
+        ```python
+        client = ManagementClient(domain, client_id, client_secret)
+        
+        # Get all users
+        users = client.users_api.get_users(page_size=50)
+        
+        # Create a user
+        new_user = client.users_api.create_user(
+            create_user_request={'email': 'user@example.com'}
+        )
+        
+        # Get organizations
+        orgs = client.organizations_api.get_organizations()
+        
+        # Access billing entitlements API
+        billing = client.billing_entitlements_api.get_billing_entitlements(
+            customer_id='cust_123'
+        )
+        ```
     """
-    
-    # Define API endpoints and their methods
-    API_ENDPOINTS = {
-        # Users API
-        'users': {
-            'list': ('GET', '/api/v1/users'),
-            'get': ('GET', '/api/v1/user'),
-            'create': ('POST', '/api/v1/user'),
-            'update': ('PATCH', '/api/v1/user', ['id']),
-            'delete': ('DELETE', '/api/v1/user'),
-        },
-        
-        # Organizations API
-        'organizations': {
-            'list': ('GET', '/api/v1/organizations'),
-            'get': ('GET', '/api/v1/organizations/{org_code}'),
-            'create': ('POST', '/api/v1/organization'),
-            'update': ('PATCH', '/api/v1/organizations/{org_code}'),
-            'delete': ('DELETE', '/api/v1/organizations/{org_code}'),
-        },
-        
-        # Organization Users API
-        'organization_users': {
-            'list': ('GET', '/api/v1/organizations/{org_code}/users'),
-            'add': ('POST', '/api/v1/organizations/{org_code}/users'),
-            'update': ('PATCH', '/api/v1/organizations/{org_code}/users'),
-            'remove': ('DELETE', '/api/v1/organizations/{org_code}/users/{user_id}'),
-        },
-        
-        # Organization User Roles API
-        'organization_user_roles': {
-            'list': ('GET', '/api/v1/organizations/{org_code}/users/{user_id}/roles'),
-            'add': ('POST', '/api/v1/organizations/{org_code}/users/{user_id}/roles'),
-            'remove': ('DELETE', '/api/v1/organizations/{org_code}/users/{user_id}/roles/{role_id}'),
-        },
-        
-        # Organization User Permissions API
-        'organization_user_permissions': {
-            'list': ('GET', '/api/v1/organizations/{org_code}/users/{user_id}/permissions'),
-            'add': ('POST', '/api/v1/organizations/{org_code}/users/{user_id}/permissions'),
-            'remove': ('DELETE', '/api/v1/organizations/{org_code}/users/{user_id}/permissions/{permission_id}'),
-        },
-        
-        # Roles API
-        'roles': {
-            'list': ('GET', '/api/v1/roles'),
-            'get': ('GET', '/api/v1/roles/{role_id}'),
-            'create': ('POST', '/api/v1/role'),
-            'update': ('PATCH', '/api/v1/roles/{role_id}'),
-            'delete': ('DELETE', '/api/v1/roles/{role_id}'),
-        },
-
-        # Permissions API
-        'permissions': {
-            'list': ('GET', '/api/v1/permissions'),
-            'get': ('GET', '/api/v1/permissions/{permission_id}'),
-            'create': ('POST', '/api/v1/permission'),
-            'update': ('PATCH', '/api/v1/permissions/{permission_id}'),
-            'delete': ('DELETE', '/api/v1/permissions/{permission_id}'),
-        },
-        
-        # Feature Flags API
-        'feature_flags': {
-            'list': ('GET', '/api/v1/feature_flags'),
-            'get': ('GET', '/api/v1/feature_flags/{feature_flag_key}'),
-            'create': ('POST', '/api/v1/feature_flag'),
-            'update': ('PATCH', '/api/v1/feature_flags/{feature_flag_key}'),
-            'delete': ('DELETE', '/api/v1/feature_flags/{feature_flag_key}'),
-        },
-
-        # Connected Apps API
-        'connected_apps': {
-            'list': ('GET', '/api/v1/applications'),
-            'get': ('GET', '/api/v1/applications/{application_id}'),
-            'create': ('POST', '/api/v1/application'),
-            'update': ('PATCH', '/api/v1/applications/{application_id}'),
-            'delete': ('DELETE', '/api/v1/applications/{application_id}'),
-        },
-
-        # API Applications API
-        'api_applications': {
-            'list': ('GET', '/api/v1/apis'),
-            'get': ('GET', '/api/v1/apis/{api_id}'),
-            'create': ('POST', '/api/v1/api'),
-            'update': ('PATCH', '/api/v1/apis/{api_id}'),
-            'delete': ('DELETE', '/api/v1/apis/{api_id}'),
-        },
-
-        # Subscribers API
-        'subscribers': {
-            'list': ('GET', '/api/v1/subscribers'),
-            'get': ('GET', '/api/v1/subscribers/{subscriber_id}'),
-        },
-
-        # Timezones API
-        'timezones': {
-            'list': ('GET', '/api/v1/timezones'),
-        },
-
-        # Industries API
-        'industries': {
-            'list': ('GET', '/api/v1/industries'),
-        },
-        
-        # Properties API
-        'properties': {
-            'list': ('GET', '/api/v1/properties'),
-            'get': ('GET', '/api/v1/properties/{property_id}'),
-            'create': ('POST', '/api/v1/properties'),
-            'update': ('PATCH', '/api/v1/properties/{property_id}'),
-            'delete': ('DELETE', '/api/v1/properties/{property_id}'),
-        },
-        
-        # User Properties API
-        'user_properties': {
-            'list': ('GET', '/api/v1/users/{user_id}/properties'),
-            'get': ('GET', '/api/v1/users/{user_id}/properties/{property_key}'),
-            'update': ('PUT', '/api/v1/users/{user_id}/properties/{property_key}'),
-        },
-        
-        # Organization Properties API
-        'organization_properties': {
-            'list': ('GET', '/api/v1/organizations/{org_code}/properties'),
-            'get': ('GET', '/api/v1/organizations/{org_code}/properties/{property_key}'),
-            'update': ('PUT', '/api/v1/organizations/{org_code}/properties/{property_key}'),
-        },
-        
-        # Webhooks API
-        'webhooks': {
-            'list': ('GET', '/api/v1/webhooks'),
-            'get': ('GET', '/api/v1/webhooks/{webhook_id}'),
-            'create': ('POST', '/api/v1/webhooks'),
-            'update': ('PATCH', '/api/v1/webhooks/{webhook_id}'),
-            'delete': ('DELETE', '/api/v1/webhooks/{webhook_id}'),
-        },
-        
-        # Events API
-        'events': {
-            'get': ('GET', '/api/v1/events/{event_id}'),
-        },
-        
-        # Event Types API
-        'event_types': {
-            'list': ('GET', '/api/v1/event_types'),
-        },
-        
-        # Connections API
-        'connections': {
-            'list': ('GET', '/api/v1/connections'),
-            'get': ('GET', '/api/v1/connections/{connection_id}'),
-            'create': ('POST', '/api/v1/connections'),
-            'update': ('PATCH', '/api/v1/connections/{connection_id}'),
-            'delete': ('DELETE', '/api/v1/connections/{connection_id}'),
-        },
-        
-        # Business API
-        'business': {
-            'get': ('GET', '/api/v1/business'),
-        },
-        
-        # Environment Feature Flags API
-        'environment_feature_flags': {
-            'list': ('GET', '/api/v1/environment/feature_flags'),
-            'get': ('GET', '/api/v1/environment/feature_flags/{feature_flag_key}'),
-            'update': ('PATCH', '/api/v1/environment/feature_flags/{feature_flag_key}'),
-            'delete': ('DELETE', '/api/v1/environment/feature_flags/{feature_flag_key}'),
-        },
-        
-        # Organization Feature Flags API
-        'organization_feature_flags': {
-            'list': ('GET', '/api/v1/organizations/{org_code}/feature_flags'),
-            'get': ('GET', '/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}'),
-            'update': ('PATCH', '/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}'),
-            'delete': ('DELETE', '/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}'),
-        },
-        
-        # User Feature Flags API
-        'user_feature_flags': {
-            'get': ('GET', '/api/v1/users/{user_id}/feature_flags/{feature_flag_key}'),
-            'update': ('PATCH', '/api/v1/users/{user_id}/feature_flags/{feature_flag_key}'),
-        },
-        
-        # User Password API
-        'user_password': {
-            'update': ('PUT', '/api/v1/users/{user_id}/password'),
-        },
-        
-        # User Refresh Claims API
-        'user_refresh_claims': {
-            'refresh': ('POST', '/api/v1/users/{user_id}/refresh_claims'),
-        },
-    }
-    
-    # Define response types for each endpoint
-    RESPONSE_TYPES = {
-        'users': {
-            'list': {'200': 'UsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'User', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'UpdateUserResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'organizations': {
-            'list': {'200': 'GetOrganizationsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateOrganizationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'organization_users': {
-            'list': {'200': 'GetOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'add': {'201': 'AddOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'UpdateOrganizationUsersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'remove': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'organization_user_roles': {
-            'list': {'200': 'GetOrganizationsUserRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'add': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'remove': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'organization_user_permissions': {
-            'list': {'200': 'GetOrganizationsUserPermissionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'add': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'remove': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'roles': {
-            'list': {'200': 'GetRolesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'UpdateRoleResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'permissions': {
-            'list': {'200': 'GetPermissionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'Permissions', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'feature_flags': {
-            'list': {'200': 'GetFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetFeatureFlagsResponseDataFeatureFlagsInner', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'subscribers': {
-            'list': {'200': 'GetSubscribersResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetSubscriberResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'api_applications': {
-            'list': {'200': 'GetApisResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'UpdateApiResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'connected_apps': {
-            'list': {'200': 'GetApplicationsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetApplicationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateApplicationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'UpdateApplicationResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'timezones': {
-            'list': {'200': 'GetTimezonesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'industries': {
-            'list': {'200': 'GetIndustriesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'properties': {
-            'list': {'200': 'GetPropertiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetPropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreatePropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'user_properties': {
-            'list': {'200': 'GetUserPropertiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetUserPropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'organization_properties': {
-            'list': {'200': 'GetOrganizationPropertiesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetOrganizationPropertyResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'webhooks': {
-            'list': {'200': 'GetWebhooksResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetWebhookResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateWebhookResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'events': {
-            'get': {'200': 'GetEventResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'event_types': {
-            'list': {'200': 'GetEventTypesResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'connections': {
-            'list': {'200': 'GetConnectionsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetConnectionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'create': {'201': 'CreateConnectionResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'business': {
-            'get': {'200': 'GetBusinessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'environment_feature_flags': {
-            'list': {'200': 'GetEnvironmentFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetEnvironmentFeatureFlagsResponseDataFeatureFlagsInner', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'organization_feature_flags': {
-            'list': {'200': 'GetOrganizationFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '429': 'ErrorResponse'},
-            'get': {'200': 'GetOrganizationFeatureFlagsResponseDataFeatureFlagsInner', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'delete': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'user_feature_flags': {
-            'get': {'200': 'GetUserFeatureFlagsResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'user_password': {
-            'update': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-        'user_refresh_claims': {
-            'refresh': {'200': 'SuccessResponse', '400': 'ErrorResponse', '403': 'ErrorResponse', '404': 'ErrorResponse', '429': 'ErrorResponse'},
-        },
-    }
     
     def __init__(self, domain: str, client_id: str, client_secret: str):
         """
@@ -366,238 +85,455 @@ class ManagementClient:
             client_secret: Client secret for the management API
         """
         self.domain = domain
-        self.base_url = f"https://{domain}/api/v1"
+        self.base_url = f"https://{domain}"
         self.token_manager = ManagementTokenManager(domain, client_id, client_secret)
         
         # Initialize API client with the correct configuration
         self.configuration = Configuration(host=self.base_url)
         self.api_client = ApiClient(configuration=self.configuration)
         
-        # Set up automatic token handling
+        # Set up automatic token injection
         self._setup_token_handling()
         
-        # Generate dynamic methods
-        self._generate_methods()
+        # Dynamically initialize all API classes from the api module
+        self._initialize_api_classes()
     
     def _setup_token_handling(self):
-        """Set up automatic token refresh for API calls."""
-        # Token will be added directly in the API method since we're calling REST client directly
-        pass
-    
-    def _generate_methods(self):
-        """Generate dynamic methods for each API endpoint."""
-        for resource, endpoints in self.API_ENDPOINTS.items():
-            # Handle special cases for singularization
-            if resource == 'business':
-                resource_singular = 'business'  # Don't remove 's' from 'business'
-            else:
-                resource_singular = resource[:-1] if resource.endswith('s') else resource
-            
-            for action, endpoint in endpoints.items():
-                if len(endpoint) == 3:
-                    method, path, query_keys = endpoint
-                else:
-                    method, path = endpoint
-                    query_keys = ()
-
-                # Create method name based on action and resource
-                if action == 'list':
-                    method_name = f"get_{resource}"
-                elif action == 'get':
-                    method_name = f"get_{resource_singular}"
-                else:
-                    method_name = f"{action}_{resource_singular}"
-                
-                # Create the method
-                api_method = self._create_api_method(method, path, resource, action, query_keys)
-                
-                # Set the method on the class
-                setattr(self, method_name, api_method)
-    
-    def _create_api_method(self, http_method: str, path: str, resource: str, action: str, query_keys=()) -> Callable:
         """
-        Create a dynamic method for an API endpoint.
+        Set up automatic token injection for all API calls.
+        
+        This modifies the API client to automatically add the Bearer token
+        to all outgoing requests.
+        """
+        original_call_api = self.api_client.call_api
+        
+        def call_api_with_token(*args, **kwargs):
+            """Wrapper that adds authentication token to all API calls."""
+            # Get the access token
+            token = self.token_manager.get_access_token()
+            
+            args_list = list(args)
+            
+            if len(args_list) > 2:
+                header_params = args_list[2]
+                if header_params is None:
+                    header_params = {}
+                header_params['Authorization'] = f"Bearer {token}"
+                args_list[2] = header_params
+                args = tuple(args_list)
+            elif 'header_params' in kwargs:
+                if kwargs['header_params'] is None:
+                    kwargs['header_params'] = {}
+                kwargs['header_params']['Authorization'] = f"Bearer {token}"
+            else:
+                kwargs['header_params'] = {'Authorization': f"Bearer {token}"}
+            
+            return original_call_api(*args, **kwargs)
+        
+        self.api_client.call_api = call_api_with_token
+    
+    def _initialize_api_classes(self):
+        """
+        Dynamically initialize all API classes from the api module.
+        
+        This method inspects the api module and creates an instance of each
+        API class (classes ending with 'Api'), making them available as
+        snake_case attributes on this client.
+        
+        For example:
+        - UsersApi -> self.users_api
+        - OrganizationsApi -> self.organizations_api
+        - FeatureFlagsApi -> self.feature_flags_api
+        """
+        # Get all members of the api module
+        for name, obj in inspect.getmembers(api):
+            # Check if it's a class and ends with 'Api'
+            if inspect.isclass(obj) and name.endswith('Api'):
+                # Convert class name to snake_case attribute name
+                # e.g., UsersApi -> users, FeatureFlagsApi -> feature_flags
+                attr_name = self._class_name_to_snake_case(name)
+                
+                # Initialize the API class with our configured api_client
+                api_instance = obj(api_client=self.api_client)
+                
+                # Set it as an attribute on this client
+                setattr(self, attr_name, api_instance)
+                
+                logger.debug(f"Initialized {name} as client.{attr_name}")
+    
+    @staticmethod
+    def _class_name_to_snake_case(class_name: str) -> str:
+        """
+        Convert a class name to snake_case attribute name.
+        Handles acronyms intelligently by keeping consecutive uppercase letters together.
+        
+        Special cases are handled for oddly-named classes generated from the OpenAPI spec
+        where the tag naming creates unusual capitalization patterns.
+        
+        Examples:
+        - UsersApi -> users_api
+        - FeatureFlagsApi -> feature_flags_api
+        - APIsApi -> apis_api (special case - tag "APIs" in spec)
+        - MFAApi -> mfa_api (not m_f_a_api or mfaapi)
+        - OAuthApi -> oauth_api (not o_auth_api)
+        - HTTPSConnectionApi -> https_connection_api
         
         Args:
-            http_method: HTTP method (GET, POST, etc.)
-            path: API endpoint path
-            resource: API resource name (users, organizations, etc.)
-            action: API action (list, get, create, etc.)
+            class_name: The class name (e.g., 'UsersApi')
             
         Returns:
-            A callable method that makes the API request
+            Snake case attribute name (e.g., 'users_api')
         """
-        # Handle special cases for singularization
-        if resource == 'business':
-            resource_singular = 'business'  # Don't remove 's' from 'business'
-        else:
-            resource_singular = resource[:-1] if resource.endswith('s') else resource
 
-        def api_method(*args, **kwargs) -> Dict[str, Any]:
-            # Format path with any path parameters from args
-            formatted_path = path
-            if '{' in path and args:
-                param_values = list(args)
-                while '{' in formatted_path and param_values:
-                    start_idx = formatted_path.find('{')
-                    end_idx = formatted_path.find('}')
-                    if start_idx >= 0 and end_idx >= 0:
-                        formatted_path = formatted_path[:start_idx] + str(param_values.pop(0)) + formatted_path[end_idx + 1:]
-            
-            # Handle query/body split
-            if http_method in ('GET', 'DELETE'):
-                query_params = {k: v for k, v in kwargs.items() if v is not None}
-                payload = None
-            else:
-                # Lift ONLY declared query_keys into the query string
-                qset = set(query_keys or ())
-                query_params = {k: kwargs.pop(k) for k in list(kwargs) if k in qset and kwargs[k] is not None}
-                # Remaining kwargs go to JSON body
-                payload = {k: v for k, v in kwargs.items() if v is not None}
-
-            # FIXED: Use param_serialize to properly construct the full URL with host
-            # Handle query parameters by appending them to the path
-            final_path = formatted_path
-            if query_params and http_method in ('GET', 'DELETE'):
-                query_string = '&'.join([f"{k}={v}" for k, v in query_params.items() if v is not None])
-                if query_string:
-                    separator = '&' if '?' in final_path else '?'
-                    final_path = f"{final_path}{separator}{query_string}"
-            
-            # Use param_serialize to get the proper URL with host
-            # Remove /api/v1 prefix from resource_path since host already includes it
-            resource_path_for_serialize = formatted_path.replace('/api/v1', '', 1)
-            
-            method, url, header_params, serialized_body, post_params = self.api_client.param_serialize(
-                method=http_method,
-                resource_path=resource_path_for_serialize,  # Use path without /api/v1 prefix
-                query_params=query_params or None,
-                header_params={},
-                body=payload if http_method not in ('GET', 'DELETE') else None
-            )
-
-            # Ensure required headers for PATCH/POST/PUT
-            if http_method not in ('GET', 'DELETE'):
-                header_params.setdefault('Content-Type', 'application/json')
-                header_params.setdefault('Accept', 'application/json')
-
-            # Add the authorization token to headers
-            token = self.token_manager.get_access_token()
-            header_params['Authorization'] = f"Bearer {token}"
-
-            # Call the REST client directly with the constructed URL
-            response = self.api_client.rest_client.request(
-                method=http_method,
-                url=url,
-                headers=header_params,
-                body=serialized_body if http_method not in ('GET', 'DELETE') else None,
-                post_params=post_params,
-                _request_timeout=None
-            )
-
-            # Use the API client's response_deserialize to properly handle the response
-            # First read the response data
-            response.read()
-            
-            # Then deserialize it
-            api_response = self.api_client.response_deserialize(response, self.RESPONSE_TYPES[resource][action])
-            
-            return api_response.data
+        special_cases = {
+            'APIsApi': 'apis_api',  # From tag "APIs" - would otherwise be "ap_is_api"
+        }
         
-        # Add docstring to the method based on the action and resource
-        if action == 'list':
-            docstring = f"""
-            Get a list of {resource}.
-            
-            Args:
-                **kwargs: Optional arguments to pass to the API.
-                    sort (str): Sort {resource} by field. (Optional)
-                    page_size (int): Number of results per page. (Optional)
-                    next_token (str): Token for the next page of results. (Optional)
-                    
-            Returns:
-                Dict containing {resource} data.
-            """
-        elif action == 'get':
-            param_name = path.split('{')[-1].split('}')[0] if '{' in path else f"{resource_singular}_id"
-            docstring = f"""
-            Get a {resource_singular} by ID.
-            
-            Args:
-                {param_name}: The ID of the {resource_singular} to get.
-                
-            Returns:
-                Dict containing {resource_singular} data.
-            """
-        elif action == 'create':
-            docstring = f"""
-            Create a new {resource_singular}.
-            
-            Args:
-                **kwargs: {resource_singular.capitalize()} data to create.
-                
-            Returns:
-                Dict containing the created {resource_singular}.
-            """
-        elif action == 'update':
-            param_name = path.split('{')[-1].split('}')[0] if '{' in path else f"{resource_singular}_id"
-            docstring = f"""
-            Update a {resource_singular}.
-            
-            Args:
-                {param_name}: The ID of the {resource_singular} to update.
-                **kwargs: {resource_singular.capitalize()} data to update.
-                
-            Returns:
-                Dict containing the updated {resource_singular}.
-            """
-        elif action == 'delete':
-            param_name = path.split('{')[-1].split('}')[0] if '{' in path else f"{resource_singular}_id"
-            docstring = f"""
-            Delete a {resource_singular}.
-            
-            Args:
-                {param_name}: The ID of the {resource_singular} to delete.
-                
-            Returns:
-                Dict containing the result.
-            """
-        else:
-            docstring = f"""
-            {action.capitalize()} {resource}.
-            
-            Args:
-                *args: Positional arguments for path parameters.
-                **kwargs: Additional arguments for the API.
-                
-            Returns:
-                Dict containing the API response.
-            """
+        if class_name in special_cases:
+            return special_cases[class_name]
         
-        api_method.__doc__ = docstring
-        return api_method
 
-# Add backwards compatibility methods for common operations
-# These will be deprecated in future versions
-for method_name, new_name in [
-    ('get_users', 'get_users'),
-    ('get_user', 'get_user'),
-    ('create_user', 'create_user'),
-    ('update_user', 'update_user'),
-    ('delete_user', 'delete_user'),
-    ('get_organizations', 'get_organizations'),
-    ('get_organization', 'get_organization'),
-    ('create_organization', 'create_organization'),
-    ('update_organization', 'update_organization'),
-    ('delete_organization', 'delete_organization'),
-    ('get_roles', 'get_roles'),
-    ('get_role', 'get_role'),
-    ('create_role', 'create_role'),
-    ('update_role', 'update_role'),
-    ('delete_role', 'delete_role'),
-    ('get_feature_flags', 'get_feature_flags'),
-    ('create_feature_flag', 'create_feature_flag'),
-    ('update_feature_flag', 'update_feature_flag'),
-    ('delete_feature_flag', 'delete_feature_flag'),
-]:
-    pass  # These methods will be created dynamically
+        s1 = re.sub('([A-Z]{2,})([A-Z][a-z])', r'\1_\2', class_name)
+        
+        s2 = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1)
+        
+        # Convert to lowercase
+        return s2.lower()
+    
+    # Backwards compatibility: Provide direct method access for common operations
+    # These delegate to the appropriate API class methods
+    # Note: These methods are deprecated. For full functionality and proper type hints,
+    # use the API class methods directly (e.g., client.users_api.get_users())
+    
+    def get_users(self, **kwargs):
+        """
+        Get users.
+        
+        .. deprecated::
+            Use :meth:`client.users_api.get_users()` instead.
+        
+        For full documentation and parameters, see UsersApi.get_users()
+        """
+        warnings.warn(
+            "get_users() is deprecated. Use client.users_api.get_users() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.users_api.get_users(**kwargs)
+    
+    def get_api_applications(self, **kwargs):
+        """
+        Get API applications.
+        
+        .. deprecated::
+            Use :meth:`client.applications_api.get_applications()` instead.
+        
+        For full documentation and parameters, see ApplicationsApi.get_applications()
+        """
+        warnings.warn(
+            "get_api_applications() is deprecated. Use client.applications_api.get_applications() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.applications_api.get_applications(**kwargs)
+    
+    def get_user_data(self, user_id: str):
+        """
+        Get user data by ID.
+        
+        .. deprecated::
+            Use :meth:`client.users_api.get_user_data()` instead.
+        
+        For full documentation and parameters, see UsersApi.get_user_data()
+        """
+        warnings.warn(
+            "get_user_data() is deprecated. Use client.users_api.get_user_data() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.users_api.get_user_data(id=user_id)
+    
+    def create_user(self, create_user_request=None, **kwargs):
+        """
+        Create a user.
+        
+        .. deprecated::
+            Use :meth:`client.users_api.create_user()` instead.
+        
+        For full documentation and parameters, see UsersApi.create_user()
+        """
+        warnings.warn(
+            "create_user() is deprecated. Use client.users_api.create_user() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.users_api.create_user(create_user_request=create_user_request, **kwargs)
+    
+    def update_user(self, id: str, update_user_request, **kwargs):
+        """
+        Update a user.
+        
+        .. deprecated::
+            Use :meth:`client.users_api.update_user()` instead.
+        
+        For full documentation and parameters, see UsersApi.update_user()
+        """
+        warnings.warn(
+            "update_user() is deprecated. Use client.users_api.update_user() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.users_api.update_user(id=id, update_user_request=update_user_request, **kwargs)
+    
+    def delete_user(self, id: str, **kwargs):
+        """
+        Delete a user.
+        
+        .. deprecated::
+            Use :meth:`client.users_api.delete_user()` instead.
+        
+        For full documentation and parameters, see UsersApi.delete_user()
+        """
+        warnings.warn(
+            "delete_user() is deprecated. Use client.users_api.delete_user() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.users_api.delete_user(id=id, **kwargs)
+    
+    def get_organizations(self, **kwargs):
+        """
+        Get organizations.
+        
+        .. deprecated::
+            Use :meth:`client.organizations_api.get_organizations()` instead.
+        
+        For full documentation and parameters, see OrganizationsApi.get_organizations()
+        """
+        warnings.warn(
+            "get_organizations() is deprecated. Use client.organizations_api.get_organizations() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.organizations_api.get_organizations(**kwargs)
+    
+    def get_organization(self, code: Optional[str] = None, **kwargs):
+        """
+        Get an organization.
+        
+        .. deprecated::
+            Use :meth:`client.organizations_api.get_organization()` instead.
+        
+        For full documentation and parameters, see OrganizationsApi.get_organization()
+        """
+        warnings.warn(
+            "get_organization() is deprecated. Use client.organizations_api.get_organization() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.organizations_api.get_organization(code=code, **kwargs)
+    
+    def create_organization(self, create_organization_request, **kwargs):
+        """
+        Create an organization.
+        
+        .. deprecated::
+            Use :meth:`client.organizations_api.create_organization()` instead.
+        
+        For full documentation and parameters, see OrganizationsApi.create_organization()
+        """
+        warnings.warn(
+            "create_organization() is deprecated. Use client.organizations_api.create_organization() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.organizations_api.create_organization(
+            create_organization_request=create_organization_request, **kwargs
+        )
+    
+    def update_organization(self, org_code: str, **kwargs):
+        """
+        Update an organization.
+        
+        .. deprecated::
+            Use :meth:`client.organizations_api.update_organization()` instead.
+        
+        For full documentation and parameters, see OrganizationsApi.update_organization()
+        """
+        warnings.warn(
+            "update_organization() is deprecated. Use client.organizations_api.update_organization() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.organizations_api.update_organization(org_code=org_code, **kwargs)
+    
+    def delete_organization(self, org_code: str, **kwargs):
+        """
+        Delete an organization.
+        
+        .. deprecated::
+            Use :meth:`client.organizations_api.delete_organization()` instead.
+        
+        For full documentation and parameters, see OrganizationsApi.delete_organization()
+        """
+        warnings.warn(
+            "delete_organization() is deprecated. Use client.organizations_api.delete_organization() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.organizations_api.delete_organization(org_code=org_code, **kwargs)
+    
+    def get_roles(self, **kwargs):
+        """
+        Get roles.
+        
+        .. deprecated::
+            Use :meth:`client.roles_api.get_roles()` instead.
+        
+        For full documentation and parameters, see RolesApi.get_roles()
+        """
+        warnings.warn(
+            "get_roles() is deprecated. Use client.roles_api.get_roles() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.roles_api.get_roles(**kwargs)
+    
+    def get_role(self, role_id: str):
+        """
+        Get a role.
+        
+        .. deprecated::
+            Use :meth:`client.roles_api.get_role()` instead.
+        
+        For full documentation and parameters, see RolesApi.get_role()
+        """
+        warnings.warn(
+            "get_role() is deprecated. Use client.roles_api.get_role() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.roles_api.get_role(role_id=role_id)
+    
+    def create_role(self, create_role_request=None, **kwargs):
+        """
+        Create a role.
+        
+        .. deprecated::
+            Use :meth:`client.roles_api.create_role()` instead.
+        
+        For full documentation and parameters, see RolesApi.create_role()
+        """
+        warnings.warn(
+            "create_role() is deprecated. Use client.roles_api.create_role() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.roles_api.create_role(create_role_request=create_role_request, **kwargs)
+    
+    def update_role(self, role_id: str, update_role_request=None, **kwargs):
+        """
+        Update a role.
+        
+        .. deprecated::
+            Use :meth:`client.roles_api.update_roles()` instead.
+        
+        For full documentation and parameters, see RolesApi.update_roles()
+        """
+        warnings.warn(
+            "update_role() is deprecated. Use client.roles_api.update_roles() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.roles_api.update_roles(role_id=role_id, update_roles_request=update_role_request, **kwargs)
+    
+    def delete_role(self, role_id: str):
+        """
+        Delete a role.
+        
+        .. deprecated::
+            Use :meth:`client.roles_api.delete_role()` instead.
+        
+        For full documentation and parameters, see RolesApi.delete_role()
+        """
+        warnings.warn(
+            "delete_role() is deprecated. Use client.roles_api.delete_role() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.roles_api.delete_role(role_id=role_id)
+    
+    def get_feature_flags(self, **kwargs):
+        """
+        Get feature flags for the current environment.
+        
+        .. deprecated::
+            Use :meth:`client.environments_api.get_environement_feature_flags()` instead.
+        
+        For full documentation and parameters, see EnvironmentsApi.get_environement_feature_flags()
+        """
+        warnings.warn(
+            "get_feature_flags() is deprecated. Use client.environments_api.get_environement_feature_flags() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.environments_api.get_environement_feature_flags(**kwargs)
+    
+    def create_feature_flag(self, create_feature_flag_request=None, **kwargs):
+        """
+        Create a feature flag.
+        
+        .. deprecated::
+            Use :meth:`client.feature_flags_api.create_feature_flag()` instead.
+        
+        For full documentation and parameters, see FeatureFlagsApi.create_feature_flag()
+        """
+        warnings.warn(
+            "create_feature_flag() is deprecated. Use client.feature_flags_api.create_feature_flag() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.feature_flags_api.create_feature_flag(
+            create_feature_flag_request=create_feature_flag_request, **kwargs
+        )
+    
+    def update_feature_flag(self, feature_flag_key: str, name: str, description: str, 
+                             type: str, allow_override_level: str, default_value: str, **kwargs):
+        """
+        Update a feature flag.
+        
+        .. deprecated::
+            Use :meth:`client.feature_flags_api.update_feature_flag()` instead.
+        
+        For full documentation and parameters, see FeatureFlagsApi.update_feature_flag()
+        """
+        warnings.warn(
+            "update_feature_flag() is deprecated. Use client.feature_flags_api.update_feature_flag() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.feature_flags_api.update_feature_flag(
+            feature_flag_key=feature_flag_key,
+            name=name,
+            description=description,
+            type=type,
+            allow_override_level=allow_override_level,
+            default_value=default_value,
+            **kwargs
+        )
+    
+    def delete_feature_flag(self, feature_flag_key: str):
+        """
+        Delete a feature flag.
+        
+        .. deprecated::
+            Use :meth:`client.feature_flags_api.delete_feature_flag()` instead.
+        
+        For full documentation and parameters, see FeatureFlagsApi.delete_feature_flag()
+        """
+        warnings.warn(
+            "delete_feature_flag() is deprecated. Use client.feature_flags_api.delete_feature_flag() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.feature_flags_api.delete_feature_flag(feature_flag_key=feature_flag_key)

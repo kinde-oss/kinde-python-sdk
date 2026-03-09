@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, Strict
 from typing import Any, ClassVar, Dict, List, Optional
 from kinde_sdk.management.models.user_identities_inner import UserIdentitiesInner
 from kinde_sdk.management.models.users_response_users_inner_billing import UsersResponseUsersInnerBilling
+from kinde_sdk.management.models.users_response_users_inner_last_organization_sign_ins_inner import UsersResponseUsersInnerLastOrganizationSignInsInner
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -42,10 +43,11 @@ class UsersResponseUsersInner(BaseModel):
     failed_sign_ins: Optional[StrictInt] = Field(default=None, description="Number of consecutive failed user sign ins.")
     last_signed_in: Optional[StrictStr] = Field(default=None, description="Last sign in date in ISO 8601 format.")
     created_on: Optional[StrictStr] = Field(default=None, description="Date of user creation in ISO 8601 format.")
+    last_organization_sign_ins: Optional[List[UsersResponseUsersInnerLastOrganizationSignInsInner]] = Field(default=None, description="Array of organization sign-in information for the user.")
     organizations: Optional[List[StrictStr]] = Field(default=None, description="Array of organizations a user belongs to.")
     identities: Optional[List[UserIdentitiesInner]] = Field(default=None, description="Array of identities belonging to the user.")
     billing: Optional[UsersResponseUsersInnerBilling] = None
-    __properties: ClassVar[List[str]] = ["id", "provided_id", "email", "phone", "username", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "organizations", "identities", "billing"]
+    __properties: ClassVar[List[str]] = ["id", "provided_id", "email", "phone", "username", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "last_organization_sign_ins", "organizations", "identities", "billing"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -86,6 +88,13 @@ class UsersResponseUsersInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of each item in last_organization_sign_ins (list)
+        _items = []
+        if self.last_organization_sign_ins:
+            for _item_last_organization_sign_ins in self.last_organization_sign_ins:
+                if _item_last_organization_sign_ins:
+                    _items.append(_item_last_organization_sign_ins.to_dict())
+            _dict['last_organization_sign_ins'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in identities (list)
         _items = []
         if self.identities:
@@ -116,6 +125,11 @@ class UsersResponseUsersInner(BaseModel):
         if self.created_on is None and "created_on" in self.model_fields_set:
             _dict['created_on'] = None
 
+        # set to None if last_organization_sign_ins (nullable) is None
+        # and model_fields_set contains the field
+        if self.last_organization_sign_ins is None and "last_organization_sign_ins" in self.model_fields_set:
+            _dict['last_organization_sign_ins'] = None
+
         return _dict
 
     @classmethod
@@ -141,6 +155,7 @@ class UsersResponseUsersInner(BaseModel):
             "failed_sign_ins": obj.get("failed_sign_ins"),
             "last_signed_in": obj.get("last_signed_in"),
             "created_on": obj.get("created_on"),
+            "last_organization_sign_ins": [UsersResponseUsersInnerLastOrganizationSignInsInner.from_dict(_item) for _item in obj["last_organization_sign_ins"]] if obj.get("last_organization_sign_ins") is not None else None,
             "organizations": obj.get("organizations"),
             "identities": [UserIdentitiesInner.from_dict(_item) for _item in obj["identities"]] if obj.get("identities") is not None else None,
             "billing": UsersResponseUsersInnerBilling.from_dict(obj["billing"]) if obj.get("billing") is not None else None

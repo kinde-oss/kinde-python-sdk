@@ -1,6 +1,9 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+pytest = __import__("pytest")
+pytest.importorskip("fastapi", reason="fastapi not installed")
+
 from fastapi import FastAPI
 from starlette.testclient import TestClient
 from starlette.middleware.sessions import SessionMiddleware

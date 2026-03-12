@@ -3,6 +3,11 @@ import os
 import tempfile
 import shutil
 from unittest.mock import Mock, patch, call
+
+pytest = __import__("pytest")
+pytest.importorskip("flask", reason="flask not installed")
+pytest.importorskip("flask_session", reason="flask-session not installed")
+
 from flask import Flask
 from kinde_flask.framework.flask_framework import FlaskFramework
 from kinde_sdk.auth.oauth import OAuth

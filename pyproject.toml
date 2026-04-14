@@ -82,7 +82,7 @@ zip-safe = false
 "kinde_flask" = ["**/*.py", "**/*.json", "**/*.yaml", "**/*.yml"]
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.4.0"
+pytest = "^9.0.3"
 pytest-cov = "^7.0.0"
 coverage = ">=7.10.6"
 pytest-django = "^4.5.2"

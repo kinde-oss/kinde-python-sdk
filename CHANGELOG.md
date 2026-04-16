@@ -5,6 +5,21 @@ All notable changes to the Kinde Python SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-04-16
+
+### Added
+- **OAuth & management**: Invitation codes in the OAuth login flow; management client regenerated from the latest spec (OpenAPI Generator 7.19) with improved dynamic OpenAPI class generation
+- **Documentation**: README development setup and refreshed management client examples
+
+### Fixed
+- **Auth & frameworks**: OAuth fixes for FastAPI and Flask (including call signatures and namespaced state keys), hardened example apps, and more reliable Flask async handling and tests
+- **Management client**: Wrapper and token handling corrections, plus fetching the OpenAPI spec from the canonical URL
+- **Build & tests**: Dependency and security alignment (`requirements.txt` / Snyk), pytest-cov v7–compatible coverage configuration
+
+### Improved
+- **Management client**: DRYer delegation over the generated management API
+- **Dependencies & CI**: Wider compatible ranges (including Python-specific `requests` pins), routine dependency bumps, updated GitHub Actions, Python 3.9–friendly pylint tooling, and removal of unused generated OpenAPI test stubs
+
 ## [2.2.0] - 2025-10-14
 
 ### Fixed

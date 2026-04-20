@@ -15,7 +15,7 @@
 """  # noqa: E501
 
 
-__version__ = "2.0.0"
+__version__ = "2.3.0"
 
 # import apis into sdk package
 from kinde_sdk.frontend.api.billing_api import BillingApi

@@ -15,7 +15,7 @@
 """  # noqa: E501
 
 
-__version__ = "2.0.0"
+from kinde_sdk._version import __version__  # single source of truth; see kinde_sdk/_version.py
 
 # Define package exports
 __all__ = [

@@ -32,6 +32,79 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def _read_sdk_version() -> str:
+    """
+    Read the canonical SDK version from ``kinde_sdk/_version.py``.
+
+    The OpenAPI generator's ``packageVersion`` is set from this value so that
+    artifacts which embed the version literally (e.g. user-agent headers in
+    the generated ``configuration.py``) stay in lockstep with the SDK.
+
+    The sub-package ``__init__.py`` files don't keep a literal copy of the
+    version - they re-export ``kinde_sdk._version.__version__``, and a
+    post-generation step in this script rewrites the OpenAPI-emitted
+    ``__version__ = "..."`` line back to that import on every regeneration.
+    """
+    version_path = Path(__file__).resolve().parent / "kinde_sdk" / "_version.py"
+    text = version_path.read_text(encoding="utf-8")
+    match = re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', text, re.MULTILINE)
+    if not match:
+        raise RuntimeError(
+            f"Could not parse __version__ from {version_path}; "
+            "the generator can't derive packageVersion."
+        )
+    return match.group(1)
+
+
+SDK_VERSION = _read_sdk_version()
+
+
+# Sentinel line written into the generated sub-package ``__init__.py`` in
+# place of ``__version__ = "..."``. Keeping it as a module-level constant so
+# both generator scripts (and any future ones) stay in lockstep.
+DYNAMIC_VERSION_IMPORT = (
+    "from kinde_sdk._version import __version__  "
+    "# single source of truth; see kinde_sdk/_version.py"
+)
+
+
+def make_version_dynamic(init_file: Path) -> None:
+    """
+    Replace the OpenAPI-emitted ``__version__ = "X"`` line in a generated
+    ``__init__.py`` with an import from ``kinde_sdk._version``, so the
+    sub-package never holds a literal version that can drift.
+
+    Idempotent: if the file already imports ``__version__`` from
+    ``kinde_sdk._version``, this is a no-op.
+    """
+    if not init_file.exists():
+        print(f"⚠️  Cannot rewrite __version__: {init_file} does not exist")
+        return
+
+    text = init_file.read_text(encoding="utf-8")
+
+    if "from kinde_sdk._version import __version__" in text:
+        print(f"✓ {init_file} already imports __version__ from kinde_sdk._version")
+        return
+
+    new_text, n = re.subn(
+        r'^__version__\s*=\s*["\'][^"\']+["\']\s*$',
+        DYNAMIC_VERSION_IMPORT,
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    if n == 0:
+        print(
+            f"⚠️  Could not find a literal __version__ in {init_file} to replace; "
+            "is the OpenAPI generator template still emitting one?"
+        )
+        return
+
+    init_file.write_text(new_text, encoding="utf-8")
+    print(f"✓ Rewrote __version__ in {init_file} to import from kinde_sdk._version")
+
+
 # =============================================================================
 # SDK CONFIGURATION
 # =============================================================================
@@ -316,7 +389,7 @@ def ensure_openapitools_config(config: Dict[str, Any]):
         "additionalProperties": {
             "packageName": config["package_name"],
             "projectName": "kinde-python-sdk",
-            "packageVersion": "2.0.0",
+            "packageVersion": SDK_VERSION,
             "library": "urllib3",
             "generateSourceCodeOnly": True  # CRITICAL: Only generate source code, not project templates
         },
@@ -388,7 +461,7 @@ def generate_sdk(config: Dict[str, Any]) -> bool:
     additional_props = ",".join([
         f"packageName={config['package_name']}",
         "projectName=kinde-python-sdk",
-        "packageVersion=2.0.0",
+        f"packageVersion={SDK_VERSION}",
         "library=urllib3",
         "generateSourceCodeOnly=true"
     ])
@@ -731,7 +804,11 @@ def generate_single_sdk(skip_tests: bool, no_diff: bool) -> bool:
     
     # Step 2: Fix imports
     fix_imports(config)
-    
+
+    # Step 2b: Replace the OpenAPI-emitted literal __version__ with an import
+    # from kinde_sdk._version, so this sub-package never drifts from the SDK.
+    make_version_dynamic(Path(config["output_dir"]) / "__init__.py")
+
     # Step 3: Add custom imports
     add_custom_imports(config)
     

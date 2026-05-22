@@ -13,4 +13,4 @@ this value to set the OpenAPI Generator's ``packageVersion``.
 Bump this string on every release; nothing else needs touching.
 """
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"

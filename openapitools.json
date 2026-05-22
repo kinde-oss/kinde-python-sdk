@@ -13,7 +13,7 @@
         "additionalProperties": {
           "packageName": "kinde_sdk.management",
           "projectName": "kinde-python-sdk",
-          "packageVersion": "2.2.0",
+          "packageVersion": "2.3.0",
           "library": "urllib3",
           "generateSourceCodeOnly": true
         },

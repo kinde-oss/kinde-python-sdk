@@ -59,6 +59,17 @@ def _read_sdk_version() -> str:
 SDK_VERSION = _read_sdk_version()
 
 
+# Literal placeholder written into ``openapitools.json``'s ``packageVersion``
+# field. The committed config file is deliberately *not* a version literal -
+# it stores this self-documenting placeholder so it cannot be mistaken for a
+# second source of truth. The wrapper script always supplies the resolved
+# version via ``--additional-properties=packageVersion=<SDK_VERSION>`` at
+# CLI invocation time, which overrides whatever the file contains. The
+# placeholder is asserted as an invariant by
+# ``testv2/testv2_core/test_version_sync.py``.
+OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER = "SDK_VERSION"
+
+
 # Sentinel line written into the generated sub-package ``__init__.py`` in
 # place of ``__version__ = "..."``. Keeping it as a module-level constant so
 # both generator scripts (and any future ones) stay in lockstep.
@@ -370,8 +381,33 @@ def ensure_openapi_generator_ignore(config: Dict[str, Any]):
 
 def ensure_openapitools_config(config: Dict[str, Any]):
     """
-    Ensure openapitools.json has the correct configuration for this SDK.
-    
+    Authoritatively (re)write ``openapitools.json`` so the committed file is
+    always self-evidently a *template*, never a second source of truth for
+    the SDK version.
+
+    Design: the ``packageVersion`` field in the file is set to the literal
+    placeholder ``"SDK_VERSION"`` (the same name as the Python constant in
+    this script that holds the resolved value). Anyone reading the file
+    sees immediately that this is a placeholder, not a version literal.
+
+    The resolved version is supplied at runtime via
+    ``--additional-properties=packageVersion=<SDK_VERSION>`` on the
+    ``openapi-generator-cli`` command line (see ``generate_sdk``), which
+    overrides the file's placeholder. As an additional safety net,
+    ``make_version_dynamic`` rewrites the generator-emitted
+    ``__version__ = "..."`` line in the produced ``__init__.py`` to import
+    from ``kinde_sdk._version``, so the placeholder never reaches a
+    wrapper-generated artifact.
+
+    Direct ``openapi-generator-cli`` invocations that bypass the wrapper
+    (and therefore don't pass ``--additional-properties``) will produce a
+    ``configuration.py`` whose user-agent reads ``"OpenAPI-Generator/SDK_VERSION/python"``.
+    That is intentionally obvious-broken: it loudly signals "use the
+    wrapper script" rather than silently shipping a stale version.
+
+    ``testv2/testv2_core/test_version_sync.py`` asserts this placeholder
+    invariant in CI so the file cannot regress to a literal version.
+
     Args:
         config: SDK configuration dictionary
     """
@@ -380,7 +416,6 @@ def ensure_openapitools_config(config: Dict[str, Any]):
     config_file = Path(config["openapi_tools_config"])
     generator_name = config["openapi_tools_generator_name"]
     
-    # Define the expected configuration
     expected_generator_config = {
         "generatorName": "python",
         "inputSpec": config["spec_url"],
@@ -389,7 +424,9 @@ def ensure_openapitools_config(config: Dict[str, Any]):
         "additionalProperties": {
             "packageName": config["package_name"],
             "projectName": "kinde-python-sdk",
-            "packageVersion": SDK_VERSION,
+            # Self-documenting placeholder; resolved version is supplied at
+            # runtime via --additional-properties (see generate_sdk).
+            "packageVersion": OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER,
             "library": "urllib3",
             "generateSourceCodeOnly": True  # CRITICAL: Only generate source code, not project templates
         },
@@ -397,10 +434,18 @@ def ensure_openapitools_config(config: Dict[str, Any]):
         "files": {}
     }
     
-    # Read existing config or create new one
+    previous_package_version = None
     if config_file.exists():
         with open(config_file, 'r', encoding='utf-8') as f:
             openapitools_config = json.load(f)
+        previous_package_version = (
+            openapitools_config
+            .get("generator-cli", {})
+            .get("generators", {})
+            .get(generator_name, {})
+            .get("additionalProperties", {})
+            .get("packageVersion")
+        )
     else:
         openapitools_config = {
             "$schema": "https://raw.githubusercontent.com/OpenAPITools/openapi-generator-cli/master/apps/generator-cli/src/config.schema.json",
@@ -412,7 +457,6 @@ def ensure_openapitools_config(config: Dict[str, Any]):
             }
         }
     
-    # Ensure generators section exists
     if "generator-cli" not in openapitools_config:
         openapitools_config["generator-cli"] = {
             "version": "7.9.0",
@@ -423,14 +467,27 @@ def ensure_openapitools_config(config: Dict[str, Any]):
     if "generators" not in openapitools_config["generator-cli"]:
         openapitools_config["generator-cli"]["generators"] = {}
     
-    # Update or add the generator configuration
     openapitools_config["generator-cli"]["generators"][generator_name] = expected_generator_config
     
-    # Write back to file
     with open(config_file, 'w', encoding='utf-8') as f:
         json.dump(openapitools_config, f, indent=2)
     
-    print(f"✓ Updated {config_file} for {generator_name}")
+    if (
+        previous_package_version
+        and previous_package_version != OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER
+    ):
+        print(
+            f"✓ Reset {config_file} packageVersion from {previous_package_version!r} "
+            f"back to the {OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER!r} placeholder. "
+            f"The resolved version ({SDK_VERSION}) is injected via "
+            f"--additional-properties at openapi-generator-cli invocation time."
+        )
+    else:
+        print(
+            f"✓ Confirmed {config_file} packageVersion is the "
+            f"{OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER!r} placeholder "
+            f"(resolved version {SDK_VERSION} supplied via CLI --additional-properties)"
+        )
 
 
 # =============================================================================

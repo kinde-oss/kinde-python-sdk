@@ -4,6 +4,15 @@ name = "kinde-python-sdk"
 # source of truth for the SDK version. Bump that file on every release;
 # pyproject.toml, kinde_sdk.__version__, kinde_sdk.frontend.__version__
 # and kinde_sdk.management.__version__ all follow automatically.
+#
+# The OpenAPI generator configs are deliberately *not* second sources of
+# truth: both openapitools.json (management) and
+# generator/frontend_config.yaml (frontend, transient) store the literal
+# placeholder "SDK_VERSION" in packageVersion. The resolved version is
+# injected at runtime via --additional-properties on the
+# openapi-generator-cli command line by the wrapper scripts.
+# testv2/testv2_core/test_version_sync.py enforces both placeholder
+# invariants in CI, so bumping _version.py here is genuinely sufficient.
 dynamic = ["version"]
 authors = [
     { name = "Kinde Engineering", email = "engineering@kinde.com" },

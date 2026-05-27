@@ -6,6 +6,12 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from _sdk_generator_utils import (
+    PACKAGE_VERSION_PLACEHOLDER,
+    SDK_VERSION,
+    make_version_dynamic as _make_version_dynamic,
+)
+
 # OpenAPI spec URL from Kinde Frontend API
 OPENAPI_SPEC_URL = "https://api-spec.kinde.com/kinde-frontend-api-spec.yaml"
 OUTPUT_DIR = "kinde_sdk/frontend"
@@ -13,94 +19,25 @@ GENERATOR_DIR = "generator"
 CONFIG_FILE = f"{GENERATOR_DIR}/frontend_config.yaml"
 
 
-def _read_sdk_version() -> str:
+# Re-export under the domain-specific name used in this script's log
+# messages, docstrings, and the comments embedded in
+# ``generator/frontend_config.yaml``. This is just an alias for
+# ``_sdk_generator_utils.PACKAGE_VERSION_PLACEHOLDER`` - the shared
+# constant remains the single source of truth, so the two generator
+# scripts cannot drift on the placeholder value.
+FRONTEND_CONFIG_PACKAGE_VERSION_PLACEHOLDER = PACKAGE_VERSION_PLACEHOLDER
+
+
+def make_version_dynamic(init_file) -> None:
+    """Thin wrapper that accepts ``str`` paths and forwards to the shared util.
+
+    The shared implementation in ``_sdk_generator_utils`` is typed
+    ``init_file: Path``, but this script historically passed
+    ``os.path.join(...)`` strings; converting at this single call-site
+    keeps the public signature stable while still routing all rewrite
+    logic through one canonical implementation.
     """
-    Read the canonical SDK version from ``kinde_sdk/_version.py``.
-
-    The resolved value is supplied to ``openapi-generator-cli`` at runtime
-    via ``--additional-properties=packageVersion=<SDK_VERSION>`` so that
-    artifacts which embed the version literally (e.g. user-agent headers
-    in the generated ``configuration.py``) stay in lockstep with the SDK.
-    The ``generator/frontend_config.yaml`` file itself holds the literal
-    placeholder ``"SDK_VERSION"`` (see
-    ``FRONTEND_CONFIG_PACKAGE_VERSION_PLACEHOLDER`` below) so the YAML
-    can never become a second source of truth.
-
-    The generated ``kinde_sdk/frontend/__init__.py`` doesn't keep a literal
-    copy of the version - it re-exports ``kinde_sdk._version.__version__``,
-    and ``make_version_dynamic`` (called below after generation) rewrites
-    the OpenAPI-emitted ``__version__ = "..."`` line back to that import
-    on every regeneration. This is a belt-and-braces guarantee on top of
-    the CLI override.
-    """
-    version_path = Path(__file__).resolve().parent / "kinde_sdk" / "_version.py"
-    text = version_path.read_text(encoding="utf-8")
-    match = re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', text, re.MULTILINE)
-    if not match:
-        raise RuntimeError(
-            f"Could not parse __version__ from {version_path}; "
-            "the generator can't derive packageVersion."
-        )
-    return match.group(1)
-
-
-SDK_VERSION = _read_sdk_version()
-
-
-# Literal placeholder written into ``generator/frontend_config.yaml``'s
-# ``packageVersion`` field. The config file is deliberately *not* a version
-# literal - it stores this self-documenting placeholder so it cannot be
-# mistaken for a second source of truth. The wrapper script always supplies
-# the resolved version via ``--additional-properties=packageVersion=<SDK_VERSION>``
-# at CLI invocation time, which overrides whatever the file contains. This
-# mirrors the management generator's ``openapitools.json`` design; see
-# ``generate_management_sdk.py::OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER``.
-# ``testv2/testv2_core/test_version_sync.py`` asserts the placeholder
-# invariant when the file exists in the checkout.
-FRONTEND_CONFIG_PACKAGE_VERSION_PLACEHOLDER = "SDK_VERSION"
-
-
-DYNAMIC_VERSION_IMPORT = (
-    "from kinde_sdk._version import __version__  "
-    "# single source of truth; see kinde_sdk/_version.py"
-)
-
-
-def make_version_dynamic(init_file):
-    """
-    Replace the OpenAPI-emitted ``__version__ = "X"`` line in the generated
-    ``__init__.py`` with an import from ``kinde_sdk._version``, so the
-    sub-package never holds a literal version that can drift.
-
-    Idempotent: a no-op if the file already imports from ``kinde_sdk._version``.
-    """
-    init_path = Path(init_file)
-    if not init_path.exists():
-        print(f"Warning: cannot rewrite __version__: {init_path} does not exist")
-        return
-
-    text = init_path.read_text(encoding="utf-8")
-
-    if "from kinde_sdk._version import __version__" in text:
-        print(f"{init_path} already imports __version__ from kinde_sdk._version")
-        return
-
-    new_text, n = re.subn(
-        r'^__version__\s*=\s*["\'][^"\']+["\']\s*$',
-        DYNAMIC_VERSION_IMPORT,
-        text,
-        count=1,
-        flags=re.MULTILINE,
-    )
-    if n == 0:
-        print(
-            f"Warning: could not find literal __version__ in {init_path} to replace; "
-            "is the OpenAPI generator template still emitting one?"
-        )
-        return
-
-    init_path.write_text(new_text, encoding="utf-8")
-    print(f"Rewrote __version__ in {init_path} to import from kinde_sdk._version")
+    _make_version_dynamic(Path(init_file))
 
 def fix_imports(directory):
     """Fix import paths in generated Python files."""

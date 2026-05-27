@@ -25,6 +25,7 @@ can't silently reintroduce the drift PR #182 was written to eliminate.
 """
 
 import json
+import re
 from importlib.metadata import PackageNotFoundError, version as dist_version
 from pathlib import Path
 
@@ -50,20 +51,101 @@ def test_management_subpackage_version_matches_source_of_truth():
     assert kinde_sdk.management.__version__ == sot_version
 
 
+#: The single attr path that the ``[project].version`` field is allowed to
+#: resolve from. Both branches of
+#: ``test_distribution_metadata_matches_source_of_truth`` enforce this
+#: contract: when installed, indirectly via the resolved dist metadata;
+#: when not installed, directly via the pyproject.toml wiring.
+_EXPECTED_DYNAMIC_VERSION_ATTR = "kinde_sdk._version.__version__"
+
+#: ``[tool.setuptools.dynamic]`` inline-table form:
+#: ``version = {attr = "kinde_sdk._version.__version__"}``.
+_DYNAMIC_VERSION_ATTR_RE = re.compile(
+    r'^\s*version\s*=\s*\{\s*attr\s*=\s*["\']([^"\']+)["\']\s*\}\s*$',
+    re.MULTILINE,
+)
+
+#: Bare literal form: ``version = "x.y.z"`` on its own line. Used to
+#: detect the failure mode of someone removing ``dynamic = ["version"]``
+#: and hard-coding a literal that would bypass ``_version.py`` entirely.
+_LITERAL_VERSION_RE = re.compile(
+    r'^\s*version\s*=\s*["\']([^"\']+)["\']\s*$',
+    re.MULTILINE,
+)
+
+
+def _assert_pyproject_dynamic_version_wired_to_ssot():
+    """Verify pyproject.toml is wired such that the dist version derives from the SSoT.
+
+    Used as the raw-checkout fallback path of
+    ``test_distribution_metadata_matches_source_of_truth``. There is no
+    literal version string to "extract" from pyproject.toml: the
+    ``[project]`` table declares ``dynamic = ["version"]`` and the
+    actual value is resolved at build time by setuptools from the attr
+    declared in ``[tool.setuptools.dynamic]``. The strongest assertion
+    we can make without a built/installed package is that this wiring
+    is intact and still points at ``kinde_sdk._version.__version__`` -
+    which is the contract that guarantees the dist version equals
+    ``sot_version`` on every install. Drift in the wiring (literal
+    version added, attr path changed, declaration removed) is detected
+    here before the next build silently ships a stale value.
+    """
+    pyproject_path = REPO_ROOT / "pyproject.toml"
+    assert pyproject_path.exists(), (
+        f"Expected {pyproject_path} to exist; it is the source of the dist "
+        "version wiring."
+    )
+    pyproject = pyproject_path.read_text(encoding="utf-8")
+
+    literal_m = _LITERAL_VERSION_RE.search(pyproject)
+    assert literal_m is None, (
+        f"pyproject.toml contains a literal `version = {literal_m.group(1)!r}` "
+        f"that would bypass kinde_sdk/_version.py (current SSoT: {sot_version!r}). "
+        "The dist version must be declared `dynamic = [\"version\"]` with "
+        "`[tool.setuptools.dynamic] version = {attr = "
+        f"\"{_EXPECTED_DYNAMIC_VERSION_ATTR}\"}}` so it derives from the SSoT."
+    )
+
+    attr_m = _DYNAMIC_VERSION_ATTR_RE.search(pyproject)
+    assert attr_m is not None, (
+        "pyproject.toml is missing the expected "
+        "`[tool.setuptools.dynamic] version = {attr = \"...\"}` declaration. "
+        "Without it the dist version cannot derive from kinde_sdk/_version.py "
+        "and would silently drift on the next install."
+    )
+    assert attr_m.group(1) == _EXPECTED_DYNAMIC_VERSION_ATTR, (
+        f"pyproject.toml's [tool.setuptools.dynamic] version.attr points at "
+        f"{attr_m.group(1)!r}, expected {_EXPECTED_DYNAMIC_VERSION_ATTR!r}. "
+        "The dist version no longer derives from the SSoT - any install would "
+        f"report whatever {attr_m.group(1)!r} resolves to, not "
+        f"kinde_sdk._version.__version__ ({sot_version!r})."
+    )
+
+
 def test_distribution_metadata_matches_source_of_truth():
     """pyproject.toml resolves its version dynamically from ``kinde_sdk._version``.
 
     When the package is installed (editable or otherwise) the installed
     dist metadata - which is what ``SDKTracker`` reads to build the
     User-Agent header sent to Kinde - must match the source-of-truth
-    string. We skip when the package isn't installed (e.g. raw checkout
-    without ``pip install -e .``), since there is no metadata to check
-    in that case.
+    string. In raw checkouts (no ``pip install -e .`` yet) there is no
+    dist metadata to compare against, so we fall back to asserting the
+    *wiring* in pyproject.toml: the ``[tool.setuptools.dynamic]``
+    declaration must still point at ``kinde_sdk._version.__version__``,
+    which is the contract that guarantees the dist version derives from
+    the SSoT on the next install. Either branch catches drift.
+
+    We intentionally do NOT try to "extract a version literal" from
+    pyproject.toml in the fallback: the ``[project]`` table declares
+    ``dynamic = ["version"]`` so there is no literal to extract. The
+    wiring check is the strongest assertion possible without building
+    the distribution.
     """
     try:
         installed = dist_version("kinde-python-sdk")
     except PackageNotFoundError:
-        pytest.skip("kinde-python-sdk is not installed; nothing to compare against")
+        _assert_pyproject_dynamic_version_wired_to_ssot()
+        return
 
     assert installed == sot_version
 

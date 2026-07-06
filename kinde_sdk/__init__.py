@@ -25,7 +25,7 @@ from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.core.framework.null_framework import NullFramework
 from kinde_sdk.core.session_management import KindeSessionManagement
 
-__version__ = "2.3.0"
+from kinde_sdk._version import __version__  # noqa: F401  (re-exported)
 
 __all__ = [
     "OAuth",

@@ -24,6 +24,15 @@ var/
 .installed.cfg
 *.egg
 
+# Poetry is not the supported install path for this project (build-backend
+# is setuptools; CI uses `pip install -r requirements.txt`). A committed
+# poetry.lock creates a two-tier dependency-resolution story - pip users
+# get version ranges from pyproject.toml/requirements.txt while Poetry
+# users get pinned versions from the lock file - which can drift. If
+# Poetry adoption is ever formalised, that migration belongs in a
+# dedicated PR (with [tool.poetry] sections and CI updates).
+poetry.lock
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -62,3 +71,9 @@ docs/_build/
 
 .idea/
 .vscode/
+
+# Local environment files (secrets, never commit)
+.env
+.env.*
+!.env.example
+!.env.sample

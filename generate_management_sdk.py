@@ -24,12 +24,27 @@ import sys
 from pathlib import Path
 from typing import Dict, Any
 
+from _sdk_generator_utils import (
+    DYNAMIC_VERSION_IMPORT,
+    PACKAGE_VERSION_PLACEHOLDER,
+    SDK_VERSION,
+    make_version_dynamic,
+)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+# Re-export under the domain-specific name used in this script's log
+# messages, docstrings, and the comments inside ``openapitools.json``.
+# This is just an alias for ``_sdk_generator_utils.PACKAGE_VERSION_PLACEHOLDER``
+# - the shared constant remains the single source of truth, so the two
+# generator scripts cannot drift on the placeholder value.
+OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER = PACKAGE_VERSION_PLACEHOLDER
 
 
 # =============================================================================
@@ -297,8 +312,33 @@ def ensure_openapi_generator_ignore(config: Dict[str, Any]):
 
 def ensure_openapitools_config(config: Dict[str, Any]):
     """
-    Ensure openapitools.json has the correct configuration for this SDK.
-    
+    Authoritatively (re)write ``openapitools.json`` so the committed file is
+    always self-evidently a *template*, never a second source of truth for
+    the SDK version.
+
+    Design: the ``packageVersion`` field in the file is set to the literal
+    placeholder ``"SDK_VERSION"`` (the same name as the Python constant in
+    this script that holds the resolved value). Anyone reading the file
+    sees immediately that this is a placeholder, not a version literal.
+
+    The resolved version is supplied at runtime via
+    ``--additional-properties=packageVersion=<SDK_VERSION>`` on the
+    ``openapi-generator-cli`` command line (see ``generate_sdk``), which
+    overrides the file's placeholder. As an additional safety net,
+    ``make_version_dynamic`` rewrites the generator-emitted
+    ``__version__ = "..."`` line in the produced ``__init__.py`` to import
+    from ``kinde_sdk._version``, so the placeholder never reaches a
+    wrapper-generated artifact.
+
+    Direct ``openapi-generator-cli`` invocations that bypass the wrapper
+    (and therefore don't pass ``--additional-properties``) will produce a
+    ``configuration.py`` whose user-agent reads ``"OpenAPI-Generator/SDK_VERSION/python"``.
+    That is intentionally obvious-broken: it loudly signals "use the
+    wrapper script" rather than silently shipping a stale version.
+
+    ``testv2/testv2_core/test_version_sync.py`` asserts this placeholder
+    invariant in CI so the file cannot regress to a literal version.
+
     Args:
         config: SDK configuration dictionary
     """
@@ -307,7 +347,6 @@ def ensure_openapitools_config(config: Dict[str, Any]):
     config_file = Path(config["openapi_tools_config"])
     generator_name = config["openapi_tools_generator_name"]
     
-    # Define the expected configuration
     expected_generator_config = {
         "generatorName": "python",
         "inputSpec": config["spec_url"],
@@ -316,7 +355,9 @@ def ensure_openapitools_config(config: Dict[str, Any]):
         "additionalProperties": {
             "packageName": config["package_name"],
             "projectName": "kinde-python-sdk",
-            "packageVersion": "2.0.0",
+            # Self-documenting placeholder; resolved version is supplied at
+            # runtime via --additional-properties (see generate_sdk).
+            "packageVersion": OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER,
             "library": "urllib3",
             "generateSourceCodeOnly": True  # CRITICAL: Only generate source code, not project templates
         },
@@ -324,10 +365,18 @@ def ensure_openapitools_config(config: Dict[str, Any]):
         "files": {}
     }
     
-    # Read existing config or create new one
+    previous_package_version = None
     if config_file.exists():
         with open(config_file, 'r', encoding='utf-8') as f:
             openapitools_config = json.load(f)
+        previous_package_version = (
+            openapitools_config
+            .get("generator-cli", {})
+            .get("generators", {})
+            .get(generator_name, {})
+            .get("additionalProperties", {})
+            .get("packageVersion")
+        )
     else:
         openapitools_config = {
             "$schema": "https://raw.githubusercontent.com/OpenAPITools/openapi-generator-cli/master/apps/generator-cli/src/config.schema.json",
@@ -339,7 +388,6 @@ def ensure_openapitools_config(config: Dict[str, Any]):
             }
         }
     
-    # Ensure generators section exists
     if "generator-cli" not in openapitools_config:
         openapitools_config["generator-cli"] = {
             "version": "7.9.0",
@@ -350,14 +398,27 @@ def ensure_openapitools_config(config: Dict[str, Any]):
     if "generators" not in openapitools_config["generator-cli"]:
         openapitools_config["generator-cli"]["generators"] = {}
     
-    # Update or add the generator configuration
     openapitools_config["generator-cli"]["generators"][generator_name] = expected_generator_config
     
-    # Write back to file
     with open(config_file, 'w', encoding='utf-8') as f:
         json.dump(openapitools_config, f, indent=2)
     
-    print(f"✓ Updated {config_file} for {generator_name}")
+    if (
+        previous_package_version
+        and previous_package_version != OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER
+    ):
+        print(
+            f"✓ Reset {config_file} packageVersion from {previous_package_version!r} "
+            f"back to the {OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER!r} placeholder. "
+            f"The resolved version ({SDK_VERSION}) is injected via "
+            f"--additional-properties at openapi-generator-cli invocation time."
+        )
+    else:
+        print(
+            f"✓ Confirmed {config_file} packageVersion is the "
+            f"{OPENAPITOOLS_PACKAGE_VERSION_PLACEHOLDER!r} placeholder "
+            f"(resolved version {SDK_VERSION} supplied via CLI --additional-properties)"
+        )
 
 
 # =============================================================================
@@ -388,7 +449,7 @@ def generate_sdk(config: Dict[str, Any]) -> bool:
     additional_props = ",".join([
         f"packageName={config['package_name']}",
         "projectName=kinde-python-sdk",
-        "packageVersion=2.0.0",
+        f"packageVersion={SDK_VERSION}",
         "library=urllib3",
         "generateSourceCodeOnly=true"
     ])
@@ -731,7 +792,11 @@ def generate_single_sdk(skip_tests: bool, no_diff: bool) -> bool:
     
     # Step 2: Fix imports
     fix_imports(config)
-    
+
+    # Step 2b: Replace the OpenAPI-emitted literal __version__ with an import
+    # from kinde_sdk._version, so this sub-package never drifts from the SDK.
+    make_version_dynamic(Path(config["output_dir"]) / "__init__.py")
+
     # Step 3: Add custom imports
     add_custom_imports(config)
     

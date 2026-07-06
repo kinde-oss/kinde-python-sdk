@@ -5,6 +5,17 @@ All notable changes to the Kinde Python SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-07-06
+
+### Fixed
+- **Dependencies (security)**: Updated `cryptography` (v48, then v49), `requests` (2.33.1, 2.34.0, then 2.34.2 with Python-version-specific pins), and `pytest` (^9.0.3, addressing CVE-2025-71176)
+- **CI**: Fixed the test suite for Django 6 on Python 3.9–3.11 and corrected the `requests` marker for Python 3.9
+
+### Improved
+- **Dependencies**: Upgraded `django` to v6 and `pylint` to v4 for the development toolchain; bumped `actions/checkout` and `codecov/codecov-action` to v7
+- **Versioning**: Consolidated the SDK version into a single source of truth in `kinde_sdk/_version.py`, extracted shared helpers into `_sdk_generator_utils.py`, and made the OpenAPI generator configs derived artifacts via an `SDK_VERSION` placeholder
+- **Housekeeping**: Removed an incidental `poetry.lock` (the project uses setuptools)
+
 ## [2.3.0] - 2026-04-16
 
 ### Added

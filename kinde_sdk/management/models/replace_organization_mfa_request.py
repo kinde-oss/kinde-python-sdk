@@ -18,8 +18,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,7 +28,8 @@ class ReplaceOrganizationMFARequest(BaseModel):
     ReplaceOrganizationMFARequest
     """ # noqa: E501
     enabled_factors: List[StrictStr] = Field(description="The MFA methods to enable.")
-    __properties: ClassVar[List[str]] = ["enabled_factors"]
+    is_recovery_codes_enabled: Optional[StrictBool] = Field(default=True, description="Determines whether recovery codes are shown to users during MFA setup for this specific organization. This overrides the environment-level setting.")
+    __properties: ClassVar[List[str]] = ["enabled_factors", "is_recovery_codes_enabled"]
 
     @field_validator('enabled_factors')
     def enabled_factors_validate_enum(cls, value):
@@ -89,7 +90,8 @@ class ReplaceOrganizationMFARequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "enabled_factors": obj.get("enabled_factors")
+            "enabled_factors": obj.get("enabled_factors"),
+            "is_recovery_codes_enabled": obj.get("is_recovery_codes_enabled") if obj.get("is_recovery_codes_enabled") is not None else True
         })
         return _obj
 

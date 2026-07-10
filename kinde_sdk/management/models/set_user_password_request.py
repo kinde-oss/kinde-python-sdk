@@ -18,7 +18,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,10 +29,12 @@ class SetUserPasswordRequest(BaseModel):
     """ # noqa: E501
     hashed_password: StrictStr = Field(description="The hashed password.")
     hashing_method: Optional[StrictStr] = Field(default=None, description="The hashing method or algorithm used to encrypt the user’s password. Default is bcrypt.")
-    salt: Optional[StrictStr] = Field(default=None, description="Extra characters added to passwords to make them stronger. Not required for bcrypt.")
+    salt: Optional[StrictStr] = Field(default=None, description="Extra characters added to passwords to make them stronger. Not required for bcrypt. Required for pbkdf2; provide the base64-encoded salt.")
     salt_position: Optional[StrictStr] = Field(default=None, description="Position of salt in password string. Not required for bcrypt.")
+    iterations: Optional[StrictInt] = Field(default=None, description="The iteration count (factor) used to derive the hash. Optional for pbkdf2; when omitted, verification defaults to 24000 (the FusionAuth default factor).")
+    variant: Optional[StrictStr] = Field(default=None, description="The hashing variant. Required for pbkdf2 (e.g. salted-pbkdf2-hmac-sha256, salted-pbkdf2-hmac-sha256-512, salted-pbkdf2-hmac-sha512-512).")
     is_temporary_password: Optional[StrictBool] = Field(default=None, description="The user will be prompted to set a new password after entering this one.")
-    __properties: ClassVar[List[str]] = ["hashed_password", "hashing_method", "salt", "salt_position", "is_temporary_password"]
+    __properties: ClassVar[List[str]] = ["hashed_password", "hashing_method", "salt", "salt_position", "iterations", "variant", "is_temporary_password"]
 
     @field_validator('hashing_method')
     def hashing_method_validate_enum(cls, value):
@@ -40,8 +42,8 @@ class SetUserPasswordRequest(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['bcrypt', 'crypt', 'md5', 'wordpress']):
-            raise ValueError("must be one of enum values ('bcrypt', 'crypt', 'md5', 'wordpress')")
+        if value not in set(['bcrypt', 'crypt', 'md5', 'sha256', 'wordpress', 'pbkdf2']):
+            raise ValueError("must be one of enum values ('bcrypt', 'crypt', 'md5', 'sha256', 'wordpress', 'pbkdf2')")
         return value
 
     @field_validator('salt_position')
@@ -109,6 +111,8 @@ class SetUserPasswordRequest(BaseModel):
             "hashing_method": obj.get("hashing_method"),
             "salt": obj.get("salt"),
             "salt_position": obj.get("salt_position"),
+            "iterations": obj.get("iterations"),
+            "variant": obj.get("variant"),
             "is_temporary_password": obj.get("is_temporary_password")
         })
         return _obj

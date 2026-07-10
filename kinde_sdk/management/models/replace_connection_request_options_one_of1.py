@@ -18,7 +18,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -30,15 +30,51 @@ class ReplaceConnectionRequestOptionsOneOf1(BaseModel):
     home_realm_domains: Optional[List[StrictStr]] = Field(default=None, description="List of domains to restrict authentication.")
     saml_entity_id: Optional[StrictStr] = Field(default=None, description="SAML Entity ID.")
     saml_idp_metadata_url: Optional[StrictStr] = Field(default=None, description="URL for the IdP metadata.")
-    saml_email_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user’s email.")
-    saml_first_name_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user’s first name.")
-    saml_last_name_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user’s last name.")
-    is_create_missing_user: Optional[StrictBool] = Field(default=None, description="Create user if they don’t exist.")
+    sign_request_algorithm: Optional[StrictStr] = Field(default=None, description="Algorithm used to sign SAML requests.")
+    protocol_binding: Optional[StrictStr] = Field(default=None, description="Protocol binding used to send SAML requests.")
+    name_id_format: Optional[StrictStr] = Field(default=None, description="Format for the Name ID used to identify users in SAML responses.")
+    saml_email_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user's email.")
+    saml_user_id_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user's ID.")
+    saml_first_name_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user's first name.")
+    saml_last_name_key_attr: Optional[StrictStr] = Field(default=None, description="Attribute key for the user's last name.")
+    is_create_missing_user: Optional[StrictBool] = Field(default=None, description="Create user if they don't exist.")
     is_force_show_sso_button: Optional[StrictBool] = Field(default=None, description="Force showing the SSO button for this connection.")
     upstream_params: Optional[Dict[str, Any]] = Field(default=None, description="Additional upstream parameters to pass to the identity provider.")
     saml_signing_certificate: Optional[StrictStr] = Field(default=None, description="Certificate for signing SAML requests.")
     saml_signing_private_key: Optional[StrictStr] = Field(default=None, description="Private key associated with the signing certificate.")
-    __properties: ClassVar[List[str]] = ["home_realm_domains", "saml_entity_id", "saml_idp_metadata_url", "saml_email_key_attr", "saml_first_name_key_attr", "saml_last_name_key_attr", "is_create_missing_user", "is_force_show_sso_button", "upstream_params", "saml_signing_certificate", "saml_signing_private_key"]
+    is_use_custom_domain: Optional[StrictBool] = Field(default=None, description="Use custom domain callback URL.")
+    is_trusted: Optional[StrictBool] = Field(default=None, description="Trust this connection for account merging.")
+    __properties: ClassVar[List[str]] = ["home_realm_domains", "saml_entity_id", "saml_idp_metadata_url", "sign_request_algorithm", "protocol_binding", "name_id_format", "saml_email_key_attr", "saml_user_id_key_attr", "saml_first_name_key_attr", "saml_last_name_key_attr", "is_create_missing_user", "is_force_show_sso_button", "upstream_params", "saml_signing_certificate", "saml_signing_private_key", "is_use_custom_domain", "is_trusted"]
+
+    @field_validator('sign_request_algorithm')
+    def sign_request_algorithm_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['RSA-SHA256', 'RSA-SHA1']):
+            raise ValueError("must be one of enum values ('RSA-SHA256', 'RSA-SHA1')")
+        return value
+
+    @field_validator('protocol_binding')
+    def protocol_binding_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['HTTP-REDIRECT', 'HTTP-POST']):
+            raise ValueError("must be one of enum values ('HTTP-REDIRECT', 'HTTP-POST')")
+        return value
+
+    @field_validator('name_id_format')
+    def name_id_format_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['Persistent', 'Transient', 'Email address', 'Unspecified']):
+            raise ValueError("must be one of enum values ('Persistent', 'Transient', 'Email address', 'Unspecified')")
+        return value
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -94,14 +130,20 @@ class ReplaceConnectionRequestOptionsOneOf1(BaseModel):
             "home_realm_domains": obj.get("home_realm_domains"),
             "saml_entity_id": obj.get("saml_entity_id"),
             "saml_idp_metadata_url": obj.get("saml_idp_metadata_url"),
+            "sign_request_algorithm": obj.get("sign_request_algorithm"),
+            "protocol_binding": obj.get("protocol_binding"),
+            "name_id_format": obj.get("name_id_format"),
             "saml_email_key_attr": obj.get("saml_email_key_attr"),
+            "saml_user_id_key_attr": obj.get("saml_user_id_key_attr"),
             "saml_first_name_key_attr": obj.get("saml_first_name_key_attr"),
             "saml_last_name_key_attr": obj.get("saml_last_name_key_attr"),
             "is_create_missing_user": obj.get("is_create_missing_user"),
             "is_force_show_sso_button": obj.get("is_force_show_sso_button"),
             "upstream_params": obj.get("upstream_params"),
             "saml_signing_certificate": obj.get("saml_signing_certificate"),
-            "saml_signing_private_key": obj.get("saml_signing_private_key")
+            "saml_signing_private_key": obj.get("saml_signing_private_key"),
+            "is_use_custom_domain": obj.get("is_use_custom_domain"),
+            "is_trusted": obj.get("is_trusted")
         })
         return _obj
 

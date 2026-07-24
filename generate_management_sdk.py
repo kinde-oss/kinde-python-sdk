@@ -75,7 +75,9 @@ SDK_CONFIG = {
         "__all__.extend(['ManagementClient', 'ManagementTokenManager'])",
         ""
     ],
-    "test_path": "testv2/testv2_management/test_management_client.py"
+    # Run the full management regression suite after regeneration (not only
+    # the original client smoke file). Directory path is intentional.
+    "test_path": "testv2/testv2_management"
 }
 
 
@@ -700,7 +702,7 @@ def run_tests(config: Dict[str, Any]) -> bool:
         return True
     
     if not Path(test_path).exists():
-        print(f"⚠️  Test file not found: {test_path}")
+        print(f"⚠️  Test path not found: {test_path}")
         return True
     
     # Check if pytest is available
@@ -710,7 +712,7 @@ def run_tests(config: Dict[str, Any]) -> bool:
         print("⚠️  pytest not available, skipping tests")
         return True
     
-    # Run tests
+    # Run tests (file or directory)
     print(f"Running tests from {test_path}...")
     result = subprocess.run(
         ["pytest", test_path, "-v", "--no-cov"],

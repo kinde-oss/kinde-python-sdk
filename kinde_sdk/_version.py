@@ -33,4 +33,4 @@ The generator-config files themselves are unaffected by the bump - they
 permanently hold the ``"SDK_VERSION"`` placeholder.
 """
 
-__version__ = "2.3.0"
+__version__ = "2.3.1"

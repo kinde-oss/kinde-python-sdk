@@ -16,7 +16,6 @@
 
 
 from kinde_sdk._version import __version__  # single source of truth; see kinde_sdk/_version.py
-
 # Define package exports
 __all__ = [
     "APIKeysApi",
@@ -29,6 +28,7 @@ __all__ = [
     "CallbacksApi",
     "ConnectedAppsApi",
     "ConnectionsApi",
+    "DirectoriesApi",
     "EnvironmentVariablesApi",
     "EnvironmentsApi",
     "FeatureFlagsApi",
@@ -90,6 +90,8 @@ __all__ = [
     "CreateConnectionRequestOptionsOneOf2",
     "CreateConnectionResponse",
     "CreateConnectionResponseConnection",
+    "CreateDirectoryRequest",
+    "CreateDirectoryResponse",
     "CreateEnvironmentVariableRequest",
     "CreateEnvironmentVariableResponse",
     "CreateEnvironmentVariableResponseEnvironmentVariable",
@@ -98,6 +100,9 @@ __all__ = [
     "CreateIdentityResponseIdentity",
     "CreateMeterUsageRecordRequest",
     "CreateMeterUsageRecordResponse",
+    "CreateOrganizationInviteRequest",
+    "CreateOrganizationInviteResponse",
+    "CreateOrganizationInviteResponseInvite",
     "CreateOrganizationRequest",
     "CreateOrganizationResponse",
     "CreateOrganizationResponseOrganization",
@@ -122,9 +127,11 @@ __all__ = [
     "CreateWebhookResponse",
     "CreateWebhookResponseWebhook",
     "DeleteApiResponse",
+    "DeleteDirectoryResponse",
     "DeleteEnvironmentVariableResponse",
     "DeleteRoleScopeResponse",
     "DeleteWebhookResponse",
+    "Directory",
     "EnvironmentVariable",
     "Error",
     "ErrorResponse",
@@ -156,6 +163,8 @@ __all__ = [
     "GetBusinessResponseBusiness",
     "GetCategoriesResponse",
     "GetConnectionsResponse",
+    "GetDirectoriesResponse",
+    "GetDirectoryResponse",
     "GetEnvironmentFeatureFlagsResponse",
     "GetEnvironmentResponse",
     "GetEnvironmentResponseEnvironment",
@@ -171,22 +180,32 @@ __all__ = [
     "GetIndustriesResponseIndustriesInner",
     "GetOrganizationFeatureFlagsResponse",
     "GetOrganizationFeatureFlagsResponseFeatureFlagsValue",
+    "GetOrganizationInviteResponse",
+    "GetOrganizationInviteResponseRolesInner",
+    "GetOrganizationInvitesResponse",
+    "GetOrganizationPasskey200Response",
     "GetOrganizationResponse",
     "GetOrganizationResponseBilling",
     "GetOrganizationResponseBillingAgreementsInner",
+    "GetOrganizationRoleUsersResponse",
+    "GetOrganizationRoleUsersResponseUsersInner",
     "GetOrganizationUsersResponse",
     "GetOrganizationsResponse",
     "GetOrganizationsUserPermissionsResponse",
     "GetOrganizationsUserRolesResponse",
+    "GetPasskey200Response",
     "GetPermissionsResponse",
     "GetPropertiesResponse",
     "GetPropertyValuesResponse",
     "GetRedirectCallbackUrlsResponse",
     "GetRoleResponse",
     "GetRoleResponseRole",
+    "GetRoleUsersResponse",
+    "GetRoleUsersResponseUsersInner",
     "GetRolesResponse",
     "GetSubscriberResponse",
     "GetSubscribersResponse",
+    "GetSystemPermissionsResponse",
     "GetTimezonesResponse",
     "GetTimezonesResponseTimezonesInner",
     "GetUserMfaResponse",
@@ -199,6 +218,7 @@ __all__ = [
     "ModelProperty",
     "NotFoundResponse",
     "NotFoundResponseErrors",
+    "OrganizationInvite",
     "OrganizationItemSchema",
     "OrganizationUser",
     "OrganizationUserPermission",
@@ -224,6 +244,7 @@ __all__ = [
     "Role",
     "RolePermissionsResponse",
     "RoleScopesResponse",
+    "RoleSystemPermissionsResponse",
     "Roles",
     "RotateApiKeyResponse",
     "RotateApiKeyResponseApiKey",
@@ -235,6 +256,7 @@ __all__ = [
     "Subscriber",
     "SubscribersSubscriber",
     "SuccessResponse",
+    "SystemPermissions",
     "UpdateAPIApplicationsRequest",
     "UpdateAPIApplicationsRequestApplicationsInner",
     "UpdateAPIScopeRequest",
@@ -247,20 +269,30 @@ __all__ = [
     "UpdateConnectionRequest",
     "UpdateConnectionRequestOptions",
     "UpdateConnectionRequestOptionsOneOf",
+    "UpdateConnectionRequestOptionsOneOf1",
+    "UpdateDirectoryRequest",
+    "UpdateDirectoryResponse",
     "UpdateEnvironementFeatureFlagOverrideRequest",
     "UpdateEnvironmentVariableRequest",
     "UpdateEnvironmentVariableResponse",
     "UpdateIdentityRequest",
+    "UpdateOrganizationPasskey200Response",
+    "UpdateOrganizationPasskeyRequest",
     "UpdateOrganizationPropertiesRequest",
     "UpdateOrganizationRequest",
     "UpdateOrganizationSessionsRequest",
     "UpdateOrganizationUsersRequest",
     "UpdateOrganizationUsersRequestUsersInner",
     "UpdateOrganizationUsersResponse",
+    "UpdatePasskey200Response",
+    "UpdatePasskeyRequest",
     "UpdatePropertyRequest",
     "UpdateRolePermissionsRequest",
     "UpdateRolePermissionsRequestPermissionsInner",
     "UpdateRolePermissionsResponse",
+    "UpdateRoleSystemPermissionsRequest",
+    "UpdateRoleSystemPermissionsRequestSystemPermissionsInner",
+    "UpdateRoleSystemPermissionsResponse",
     "UpdateRolesRequest",
     "UpdateUserRequest",
     "UpdateUserResponse",
@@ -275,6 +307,7 @@ __all__ = [
     "UsersResponse",
     "UsersResponseUsersInner",
     "UsersResponseUsersInnerBilling",
+    "UsersResponseUsersInnerIdentitiesInner",
     "UsersResponseUsersInnerLastOrganizationSignInsInner",
     "VerifyApiKeyRequest",
     "VerifyApiKeyResponse",
@@ -292,6 +325,7 @@ from kinde_sdk.management.api.business_api import BusinessApi as BusinessApi
 from kinde_sdk.management.api.callbacks_api import CallbacksApi as CallbacksApi
 from kinde_sdk.management.api.connected_apps_api import ConnectedAppsApi as ConnectedAppsApi
 from kinde_sdk.management.api.connections_api import ConnectionsApi as ConnectionsApi
+from kinde_sdk.management.api.directories_api import DirectoriesApi as DirectoriesApi
 from kinde_sdk.management.api.environment_variables_api import EnvironmentVariablesApi as EnvironmentVariablesApi
 from kinde_sdk.management.api.environments_api import EnvironmentsApi as EnvironmentsApi
 from kinde_sdk.management.api.feature_flags_api import FeatureFlagsApi as FeatureFlagsApi
@@ -357,6 +391,8 @@ from kinde_sdk.management.models.create_connection_request_options_one_of1 impor
 from kinde_sdk.management.models.create_connection_request_options_one_of2 import CreateConnectionRequestOptionsOneOf2 as CreateConnectionRequestOptionsOneOf2
 from kinde_sdk.management.models.create_connection_response import CreateConnectionResponse as CreateConnectionResponse
 from kinde_sdk.management.models.create_connection_response_connection import CreateConnectionResponseConnection as CreateConnectionResponseConnection
+from kinde_sdk.management.models.create_directory_request import CreateDirectoryRequest as CreateDirectoryRequest
+from kinde_sdk.management.models.create_directory_response import CreateDirectoryResponse as CreateDirectoryResponse
 from kinde_sdk.management.models.create_environment_variable_request import CreateEnvironmentVariableRequest as CreateEnvironmentVariableRequest
 from kinde_sdk.management.models.create_environment_variable_response import CreateEnvironmentVariableResponse as CreateEnvironmentVariableResponse
 from kinde_sdk.management.models.create_environment_variable_response_environment_variable import CreateEnvironmentVariableResponseEnvironmentVariable as CreateEnvironmentVariableResponseEnvironmentVariable
@@ -365,6 +401,9 @@ from kinde_sdk.management.models.create_identity_response import CreateIdentityR
 from kinde_sdk.management.models.create_identity_response_identity import CreateIdentityResponseIdentity as CreateIdentityResponseIdentity
 from kinde_sdk.management.models.create_meter_usage_record_request import CreateMeterUsageRecordRequest as CreateMeterUsageRecordRequest
 from kinde_sdk.management.models.create_meter_usage_record_response import CreateMeterUsageRecordResponse as CreateMeterUsageRecordResponse
+from kinde_sdk.management.models.create_organization_invite_request import CreateOrganizationInviteRequest as CreateOrganizationInviteRequest
+from kinde_sdk.management.models.create_organization_invite_response import CreateOrganizationInviteResponse as CreateOrganizationInviteResponse
+from kinde_sdk.management.models.create_organization_invite_response_invite import CreateOrganizationInviteResponseInvite as CreateOrganizationInviteResponseInvite
 from kinde_sdk.management.models.create_organization_request import CreateOrganizationRequest as CreateOrganizationRequest
 from kinde_sdk.management.models.create_organization_response import CreateOrganizationResponse as CreateOrganizationResponse
 from kinde_sdk.management.models.create_organization_response_organization import CreateOrganizationResponseOrganization as CreateOrganizationResponseOrganization
@@ -389,9 +428,11 @@ from kinde_sdk.management.models.create_web_hook_request import CreateWebHookReq
 from kinde_sdk.management.models.create_webhook_response import CreateWebhookResponse as CreateWebhookResponse
 from kinde_sdk.management.models.create_webhook_response_webhook import CreateWebhookResponseWebhook as CreateWebhookResponseWebhook
 from kinde_sdk.management.models.delete_api_response import DeleteApiResponse as DeleteApiResponse
+from kinde_sdk.management.models.delete_directory_response import DeleteDirectoryResponse as DeleteDirectoryResponse
 from kinde_sdk.management.models.delete_environment_variable_response import DeleteEnvironmentVariableResponse as DeleteEnvironmentVariableResponse
 from kinde_sdk.management.models.delete_role_scope_response import DeleteRoleScopeResponse as DeleteRoleScopeResponse
 from kinde_sdk.management.models.delete_webhook_response import DeleteWebhookResponse as DeleteWebhookResponse
+from kinde_sdk.management.models.directory import Directory as Directory
 from kinde_sdk.management.models.environment_variable import EnvironmentVariable as EnvironmentVariable
 from kinde_sdk.management.models.error import Error as Error
 from kinde_sdk.management.models.error_response import ErrorResponse as ErrorResponse
@@ -423,6 +464,8 @@ from kinde_sdk.management.models.get_business_response import GetBusinessRespons
 from kinde_sdk.management.models.get_business_response_business import GetBusinessResponseBusiness as GetBusinessResponseBusiness
 from kinde_sdk.management.models.get_categories_response import GetCategoriesResponse as GetCategoriesResponse
 from kinde_sdk.management.models.get_connections_response import GetConnectionsResponse as GetConnectionsResponse
+from kinde_sdk.management.models.get_directories_response import GetDirectoriesResponse as GetDirectoriesResponse
+from kinde_sdk.management.models.get_directory_response import GetDirectoryResponse as GetDirectoryResponse
 from kinde_sdk.management.models.get_environment_feature_flags_response import GetEnvironmentFeatureFlagsResponse as GetEnvironmentFeatureFlagsResponse
 from kinde_sdk.management.models.get_environment_response import GetEnvironmentResponse as GetEnvironmentResponse
 from kinde_sdk.management.models.get_environment_response_environment import GetEnvironmentResponseEnvironment as GetEnvironmentResponseEnvironment
@@ -438,22 +481,32 @@ from kinde_sdk.management.models.get_industries_response import GetIndustriesRes
 from kinde_sdk.management.models.get_industries_response_industries_inner import GetIndustriesResponseIndustriesInner as GetIndustriesResponseIndustriesInner
 from kinde_sdk.management.models.get_organization_feature_flags_response import GetOrganizationFeatureFlagsResponse as GetOrganizationFeatureFlagsResponse
 from kinde_sdk.management.models.get_organization_feature_flags_response_feature_flags_value import GetOrganizationFeatureFlagsResponseFeatureFlagsValue as GetOrganizationFeatureFlagsResponseFeatureFlagsValue
+from kinde_sdk.management.models.get_organization_invite_response import GetOrganizationInviteResponse as GetOrganizationInviteResponse
+from kinde_sdk.management.models.get_organization_invite_response_roles_inner import GetOrganizationInviteResponseRolesInner as GetOrganizationInviteResponseRolesInner
+from kinde_sdk.management.models.get_organization_invites_response import GetOrganizationInvitesResponse as GetOrganizationInvitesResponse
+from kinde_sdk.management.models.get_organization_passkey200_response import GetOrganizationPasskey200Response as GetOrganizationPasskey200Response
 from kinde_sdk.management.models.get_organization_response import GetOrganizationResponse as GetOrganizationResponse
 from kinde_sdk.management.models.get_organization_response_billing import GetOrganizationResponseBilling as GetOrganizationResponseBilling
 from kinde_sdk.management.models.get_organization_response_billing_agreements_inner import GetOrganizationResponseBillingAgreementsInner as GetOrganizationResponseBillingAgreementsInner
+from kinde_sdk.management.models.get_organization_role_users_response import GetOrganizationRoleUsersResponse as GetOrganizationRoleUsersResponse
+from kinde_sdk.management.models.get_organization_role_users_response_users_inner import GetOrganizationRoleUsersResponseUsersInner as GetOrganizationRoleUsersResponseUsersInner
 from kinde_sdk.management.models.get_organization_users_response import GetOrganizationUsersResponse as GetOrganizationUsersResponse
 from kinde_sdk.management.models.get_organizations_response import GetOrganizationsResponse as GetOrganizationsResponse
 from kinde_sdk.management.models.get_organizations_user_permissions_response import GetOrganizationsUserPermissionsResponse as GetOrganizationsUserPermissionsResponse
 from kinde_sdk.management.models.get_organizations_user_roles_response import GetOrganizationsUserRolesResponse as GetOrganizationsUserRolesResponse
+from kinde_sdk.management.models.get_passkey200_response import GetPasskey200Response as GetPasskey200Response
 from kinde_sdk.management.models.get_permissions_response import GetPermissionsResponse as GetPermissionsResponse
 from kinde_sdk.management.models.get_properties_response import GetPropertiesResponse as GetPropertiesResponse
 from kinde_sdk.management.models.get_property_values_response import GetPropertyValuesResponse as GetPropertyValuesResponse
 from kinde_sdk.management.models.get_redirect_callback_urls_response import GetRedirectCallbackUrlsResponse as GetRedirectCallbackUrlsResponse
 from kinde_sdk.management.models.get_role_response import GetRoleResponse as GetRoleResponse
 from kinde_sdk.management.models.get_role_response_role import GetRoleResponseRole as GetRoleResponseRole
+from kinde_sdk.management.models.get_role_users_response import GetRoleUsersResponse as GetRoleUsersResponse
+from kinde_sdk.management.models.get_role_users_response_users_inner import GetRoleUsersResponseUsersInner as GetRoleUsersResponseUsersInner
 from kinde_sdk.management.models.get_roles_response import GetRolesResponse as GetRolesResponse
 from kinde_sdk.management.models.get_subscriber_response import GetSubscriberResponse as GetSubscriberResponse
 from kinde_sdk.management.models.get_subscribers_response import GetSubscribersResponse as GetSubscribersResponse
+from kinde_sdk.management.models.get_system_permissions_response import GetSystemPermissionsResponse as GetSystemPermissionsResponse
 from kinde_sdk.management.models.get_timezones_response import GetTimezonesResponse as GetTimezonesResponse
 from kinde_sdk.management.models.get_timezones_response_timezones_inner import GetTimezonesResponseTimezonesInner as GetTimezonesResponseTimezonesInner
 from kinde_sdk.management.models.get_user_mfa_response import GetUserMfaResponse as GetUserMfaResponse
@@ -466,6 +519,7 @@ from kinde_sdk.management.models.logout_redirect_urls import LogoutRedirectUrls 
 from kinde_sdk.management.models.model_property import ModelProperty as ModelProperty
 from kinde_sdk.management.models.not_found_response import NotFoundResponse as NotFoundResponse
 from kinde_sdk.management.models.not_found_response_errors import NotFoundResponseErrors as NotFoundResponseErrors
+from kinde_sdk.management.models.organization_invite import OrganizationInvite as OrganizationInvite
 from kinde_sdk.management.models.organization_item_schema import OrganizationItemSchema as OrganizationItemSchema
 from kinde_sdk.management.models.organization_user import OrganizationUser as OrganizationUser
 from kinde_sdk.management.models.organization_user_permission import OrganizationUserPermission as OrganizationUserPermission
@@ -491,6 +545,7 @@ from kinde_sdk.management.models.replace_redirect_callback_urls_request import R
 from kinde_sdk.management.models.role import Role as Role
 from kinde_sdk.management.models.role_permissions_response import RolePermissionsResponse as RolePermissionsResponse
 from kinde_sdk.management.models.role_scopes_response import RoleScopesResponse as RoleScopesResponse
+from kinde_sdk.management.models.role_system_permissions_response import RoleSystemPermissionsResponse as RoleSystemPermissionsResponse
 from kinde_sdk.management.models.roles import Roles as Roles
 from kinde_sdk.management.models.rotate_api_key_response import RotateApiKeyResponse as RotateApiKeyResponse
 from kinde_sdk.management.models.rotate_api_key_response_api_key import RotateApiKeyResponseApiKey as RotateApiKeyResponseApiKey
@@ -502,6 +557,7 @@ from kinde_sdk.management.models.set_user_password_request import SetUserPasswor
 from kinde_sdk.management.models.subscriber import Subscriber as Subscriber
 from kinde_sdk.management.models.subscribers_subscriber import SubscribersSubscriber as SubscribersSubscriber
 from kinde_sdk.management.models.success_response import SuccessResponse as SuccessResponse
+from kinde_sdk.management.models.system_permissions import SystemPermissions as SystemPermissions
 from kinde_sdk.management.models.update_api_applications_request import UpdateAPIApplicationsRequest as UpdateAPIApplicationsRequest
 from kinde_sdk.management.models.update_api_applications_request_applications_inner import UpdateAPIApplicationsRequestApplicationsInner as UpdateAPIApplicationsRequestApplicationsInner
 from kinde_sdk.management.models.update_api_scope_request import UpdateAPIScopeRequest as UpdateAPIScopeRequest
@@ -514,20 +570,30 @@ from kinde_sdk.management.models.update_category_request import UpdateCategoryRe
 from kinde_sdk.management.models.update_connection_request import UpdateConnectionRequest as UpdateConnectionRequest
 from kinde_sdk.management.models.update_connection_request_options import UpdateConnectionRequestOptions as UpdateConnectionRequestOptions
 from kinde_sdk.management.models.update_connection_request_options_one_of import UpdateConnectionRequestOptionsOneOf as UpdateConnectionRequestOptionsOneOf
+from kinde_sdk.management.models.update_connection_request_options_one_of1 import UpdateConnectionRequestOptionsOneOf1 as UpdateConnectionRequestOptionsOneOf1
+from kinde_sdk.management.models.update_directory_request import UpdateDirectoryRequest as UpdateDirectoryRequest
+from kinde_sdk.management.models.update_directory_response import UpdateDirectoryResponse as UpdateDirectoryResponse
 from kinde_sdk.management.models.update_environement_feature_flag_override_request import UpdateEnvironementFeatureFlagOverrideRequest as UpdateEnvironementFeatureFlagOverrideRequest
 from kinde_sdk.management.models.update_environment_variable_request import UpdateEnvironmentVariableRequest as UpdateEnvironmentVariableRequest
 from kinde_sdk.management.models.update_environment_variable_response import UpdateEnvironmentVariableResponse as UpdateEnvironmentVariableResponse
 from kinde_sdk.management.models.update_identity_request import UpdateIdentityRequest as UpdateIdentityRequest
+from kinde_sdk.management.models.update_organization_passkey200_response import UpdateOrganizationPasskey200Response as UpdateOrganizationPasskey200Response
+from kinde_sdk.management.models.update_organization_passkey_request import UpdateOrganizationPasskeyRequest as UpdateOrganizationPasskeyRequest
 from kinde_sdk.management.models.update_organization_properties_request import UpdateOrganizationPropertiesRequest as UpdateOrganizationPropertiesRequest
 from kinde_sdk.management.models.update_organization_request import UpdateOrganizationRequest as UpdateOrganizationRequest
 from kinde_sdk.management.models.update_organization_sessions_request import UpdateOrganizationSessionsRequest as UpdateOrganizationSessionsRequest
 from kinde_sdk.management.models.update_organization_users_request import UpdateOrganizationUsersRequest as UpdateOrganizationUsersRequest
 from kinde_sdk.management.models.update_organization_users_request_users_inner import UpdateOrganizationUsersRequestUsersInner as UpdateOrganizationUsersRequestUsersInner
 from kinde_sdk.management.models.update_organization_users_response import UpdateOrganizationUsersResponse as UpdateOrganizationUsersResponse
+from kinde_sdk.management.models.update_passkey200_response import UpdatePasskey200Response as UpdatePasskey200Response
+from kinde_sdk.management.models.update_passkey_request import UpdatePasskeyRequest as UpdatePasskeyRequest
 from kinde_sdk.management.models.update_property_request import UpdatePropertyRequest as UpdatePropertyRequest
 from kinde_sdk.management.models.update_role_permissions_request import UpdateRolePermissionsRequest as UpdateRolePermissionsRequest
 from kinde_sdk.management.models.update_role_permissions_request_permissions_inner import UpdateRolePermissionsRequestPermissionsInner as UpdateRolePermissionsRequestPermissionsInner
 from kinde_sdk.management.models.update_role_permissions_response import UpdateRolePermissionsResponse as UpdateRolePermissionsResponse
+from kinde_sdk.management.models.update_role_system_permissions_request import UpdateRoleSystemPermissionsRequest as UpdateRoleSystemPermissionsRequest
+from kinde_sdk.management.models.update_role_system_permissions_request_system_permissions_inner import UpdateRoleSystemPermissionsRequestSystemPermissionsInner as UpdateRoleSystemPermissionsRequestSystemPermissionsInner
+from kinde_sdk.management.models.update_role_system_permissions_response import UpdateRoleSystemPermissionsResponse as UpdateRoleSystemPermissionsResponse
 from kinde_sdk.management.models.update_roles_request import UpdateRolesRequest as UpdateRolesRequest
 from kinde_sdk.management.models.update_user_request import UpdateUserRequest as UpdateUserRequest
 from kinde_sdk.management.models.update_user_response import UpdateUserResponse as UpdateUserResponse
@@ -542,6 +608,7 @@ from kinde_sdk.management.models.user_identity_result import UserIdentityResult 
 from kinde_sdk.management.models.users_response import UsersResponse as UsersResponse
 from kinde_sdk.management.models.users_response_users_inner import UsersResponseUsersInner as UsersResponseUsersInner
 from kinde_sdk.management.models.users_response_users_inner_billing import UsersResponseUsersInnerBilling as UsersResponseUsersInnerBilling
+from kinde_sdk.management.models.users_response_users_inner_identities_inner import UsersResponseUsersInnerIdentitiesInner as UsersResponseUsersInnerIdentitiesInner
 from kinde_sdk.management.models.users_response_users_inner_last_organization_sign_ins_inner import UsersResponseUsersInnerLastOrganizationSignInsInner as UsersResponseUsersInnerLastOrganizationSignInsInner
 from kinde_sdk.management.models.verify_api_key_request import VerifyApiKeyRequest as VerifyApiKeyRequest
 from kinde_sdk.management.models.verify_api_key_response import VerifyApiKeyResponse as VerifyApiKeyResponse

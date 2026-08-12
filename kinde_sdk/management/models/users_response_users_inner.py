@@ -20,8 +20,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from kinde_sdk.management.models.user_identities_inner import UserIdentitiesInner
 from kinde_sdk.management.models.users_response_users_inner_billing import UsersResponseUsersInnerBilling
+from kinde_sdk.management.models.users_response_users_inner_identities_inner import UsersResponseUsersInnerIdentitiesInner
 from kinde_sdk.management.models.users_response_users_inner_last_organization_sign_ins_inner import UsersResponseUsersInnerLastOrganizationSignInsInner
 from typing import Optional, Set
 from typing_extensions import Self
@@ -45,7 +45,7 @@ class UsersResponseUsersInner(BaseModel):
     created_on: Optional[StrictStr] = Field(default=None, description="Date of user creation in ISO 8601 format.")
     last_organization_sign_ins: Optional[List[UsersResponseUsersInnerLastOrganizationSignInsInner]] = Field(default=None, description="Array of organization sign-in information for the user.")
     organizations: Optional[List[StrictStr]] = Field(default=None, description="Array of organizations a user belongs to.")
-    identities: Optional[List[UserIdentitiesInner]] = Field(default=None, description="Array of identities belonging to the user.")
+    identities: Optional[List[UsersResponseUsersInnerIdentitiesInner]] = Field(default=None, description="Array of identities belonging to the user.")
     billing: Optional[UsersResponseUsersInnerBilling] = None
     __properties: ClassVar[List[str]] = ["id", "provided_id", "email", "phone", "username", "last_name", "first_name", "is_suspended", "picture", "total_sign_ins", "failed_sign_ins", "last_signed_in", "created_on", "last_organization_sign_ins", "organizations", "identities", "billing"]
 
@@ -157,7 +157,7 @@ class UsersResponseUsersInner(BaseModel):
             "created_on": obj.get("created_on"),
             "last_organization_sign_ins": [UsersResponseUsersInnerLastOrganizationSignInsInner.from_dict(_item) for _item in obj["last_organization_sign_ins"]] if obj.get("last_organization_sign_ins") is not None else None,
             "organizations": obj.get("organizations"),
-            "identities": [UserIdentitiesInner.from_dict(_item) for _item in obj["identities"]] if obj.get("identities") is not None else None,
+            "identities": [UsersResponseUsersInnerIdentitiesInner.from_dict(_item) for _item in obj["identities"]] if obj.get("identities") is not None else None,
             "billing": UsersResponseUsersInnerBilling.from_dict(obj["billing"]) if obj.get("billing") is not None else None
         })
         return _obj

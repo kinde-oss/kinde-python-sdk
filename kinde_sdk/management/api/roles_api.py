@@ -26,12 +26,17 @@ from kinde_sdk.management.models.create_role_request import CreateRoleRequest
 from kinde_sdk.management.models.create_roles_response import CreateRolesResponse
 from kinde_sdk.management.models.delete_role_scope_response import DeleteRoleScopeResponse
 from kinde_sdk.management.models.get_role_response import GetRoleResponse
+from kinde_sdk.management.models.get_role_users_response import GetRoleUsersResponse
 from kinde_sdk.management.models.get_roles_response import GetRolesResponse
+from kinde_sdk.management.models.get_system_permissions_response import GetSystemPermissionsResponse
 from kinde_sdk.management.models.role_permissions_response import RolePermissionsResponse
 from kinde_sdk.management.models.role_scopes_response import RoleScopesResponse
+from kinde_sdk.management.models.role_system_permissions_response import RoleSystemPermissionsResponse
 from kinde_sdk.management.models.success_response import SuccessResponse
 from kinde_sdk.management.models.update_role_permissions_request import UpdateRolePermissionsRequest
 from kinde_sdk.management.models.update_role_permissions_response import UpdateRolePermissionsResponse
+from kinde_sdk.management.models.update_role_system_permissions_request import UpdateRoleSystemPermissionsRequest
+from kinde_sdk.management.models.update_role_system_permissions_response import UpdateRoleSystemPermissionsResponse
 from kinde_sdk.management.models.update_roles_request import UpdateRolesRequest
 
 from kinde_sdk.management.api_client import ApiClient, RequestSerialized
@@ -2052,6 +2057,633 @@ class RolesApi:
 
 
     @validate_call
+    def get_role_system_permissions(
+        self,
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RoleSystemPermissionsResponse:
+        """Get role system permissions
+
+        Get system permissions for a role.  System permissions control what organization users can do in the self-serve portal.  <div>   <code>read:role_system_permissions</code> </div> 
+
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param sort: Field and order to sort the result by.
+        :type sort: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_role_system_permissions_serialize(
+            role_id=role_id,
+            sort=sort,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "RoleSystemPermissionsResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_role_system_permissions_with_http_info(
+        self,
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[RoleSystemPermissionsResponse]:
+        """Get role system permissions
+
+        Get system permissions for a role.  System permissions control what organization users can do in the self-serve portal.  <div>   <code>read:role_system_permissions</code> </div> 
+
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param sort: Field and order to sort the result by.
+        :type sort: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_role_system_permissions_serialize(
+            role_id=role_id,
+            sort=sort,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "RoleSystemPermissionsResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_role_system_permissions_without_preload_content(
+        self,
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get role system permissions
+
+        Get system permissions for a role.  System permissions control what organization users can do in the self-serve portal.  <div>   <code>read:role_system_permissions</code> </div> 
+
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param sort: Field and order to sort the result by.
+        :type sort: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_role_system_permissions_serialize(
+            role_id=role_id,
+            sort=sort,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "RoleSystemPermissionsResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_role_system_permissions_serialize(
+        self,
+        role_id,
+        sort,
+        page_size,
+        next_token,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if role_id is not None:
+            _path_params['role_id'] = role_id
+        # process the query parameters
+        if sort is not None:
+            
+            _query_params.append(('sort', sort))
+            
+        if page_size is not None:
+            
+            _query_params.append(('page_size', page_size))
+            
+        if next_token is not None:
+            
+            _query_params.append(('next_token', next_token))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json', 
+                    'application/json; charset=utf-8'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/v1/roles/{role_id}/system_permissions',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_role_users(
+        self,
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> GetRoleUsersResponse:
+        """List role users
+
+        Get users that have a given role, across all organizations. Each user entry includes the organization codes where they hold that role.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_role_users_serialize(
+            role_id=role_id,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetRoleUsersResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_role_users_with_http_info(
+        self,
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[GetRoleUsersResponse]:
+        """List role users
+
+        Get users that have a given role, across all organizations. Each user entry includes the organization codes where they hold that role.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_role_users_serialize(
+            role_id=role_id,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetRoleUsersResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_role_users_without_preload_content(
+        self,
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """List role users
+
+        Get users that have a given role, across all organizations. Each user entry includes the organization codes where they hold that role.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_role_users_serialize(
+            role_id=role_id,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetRoleUsersResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_role_users_serialize(
+        self,
+        role_id,
+        page_size,
+        next_token,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if role_id is not None:
+            _path_params['role_id'] = role_id
+        # process the query parameters
+        if page_size is not None:
+            
+            _query_params.append(('page_size', page_size))
+            
+        if next_token is not None:
+            
+            _query_params.append(('next_token', next_token))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json', 
+                    'application/json; charset=utf-8'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/v1/roles/{role_id}/users',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def get_roles(
         self,
         sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
@@ -2072,7 +2704,7 @@ class RolesApi:
     ) -> GetRolesResponse:
         """List roles
 
-        The returned list can be sorted by role name or role ID in ascending or descending order. The number of records to return at a time can also be controlled using the `page_size` query string parameter.  <div>   <code>read:roles</code> </div> 
+        The returned list can be sorted by role name or role key in ascending or descending order. The number of records to return at a time can also be controlled using the `page_size` query string parameter.  <div>   <code>read:roles</code> </div> 
 
         :param sort: Field and order to sort the result by.
         :type sort: str
@@ -2150,7 +2782,7 @@ class RolesApi:
     ) -> ApiResponse[GetRolesResponse]:
         """List roles
 
-        The returned list can be sorted by role name or role ID in ascending or descending order. The number of records to return at a time can also be controlled using the `page_size` query string parameter.  <div>   <code>read:roles</code> </div> 
+        The returned list can be sorted by role name or role key in ascending or descending order. The number of records to return at a time can also be controlled using the `page_size` query string parameter.  <div>   <code>read:roles</code> </div> 
 
         :param sort: Field and order to sort the result by.
         :type sort: str
@@ -2228,7 +2860,7 @@ class RolesApi:
     ) -> RESTResponseType:
         """List roles
 
-        The returned list can be sorted by role name or role ID in ascending or descending order. The number of records to return at a time can also be controlled using the `page_size` query string parameter.  <div>   <code>read:roles</code> </div> 
+        The returned list can be sorted by role name or role key in ascending or descending order. The number of records to return at a time can also be controlled using the `page_size` query string parameter.  <div>   <code>read:roles</code> </div> 
 
         :param sort: Field and order to sort the result by.
         :type sort: str
@@ -2342,6 +2974,310 @@ class RolesApi:
         return self.api_client.param_serialize(
             method='GET',
             resource_path='/api/v1/roles',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_system_permissions(
+        self,
+        sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> GetSystemPermissionsResponse:
+        """List system permissions
+
+        The returned list can be sorted by system permission name or ID in ascending or descending order. The number of records to return at a time can also be controlled using the `page_size` query string parameter.  System permissions control what organization users can do in the self-serve portal.  <div>   <code>read:system_permissions</code> </div> 
+
+        :param sort: Field and order to sort the result by.
+        :type sort: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_system_permissions_serialize(
+            sort=sort,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetSystemPermissionsResponse",
+            '403': "ErrorResponse",
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_system_permissions_with_http_info(
+        self,
+        sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[GetSystemPermissionsResponse]:
+        """List system permissions
+
+        The returned list can be sorted by system permission name or ID in ascending or descending order. The number of records to return at a time can also be controlled using the `page_size` query string parameter.  System permissions control what organization users can do in the self-serve portal.  <div>   <code>read:system_permissions</code> </div> 
+
+        :param sort: Field and order to sort the result by.
+        :type sort: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_system_permissions_serialize(
+            sort=sort,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetSystemPermissionsResponse",
+            '403': "ErrorResponse",
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_system_permissions_without_preload_content(
+        self,
+        sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """List system permissions
+
+        The returned list can be sorted by system permission name or ID in ascending or descending order. The number of records to return at a time can also be controlled using the `page_size` query string parameter.  System permissions control what organization users can do in the self-serve portal.  <div>   <code>read:system_permissions</code> </div> 
+
+        :param sort: Field and order to sort the result by.
+        :type sort: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_system_permissions_serialize(
+            sort=sort,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetSystemPermissionsResponse",
+            '403': "ErrorResponse",
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_system_permissions_serialize(
+        self,
+        sort,
+        page_size,
+        next_token,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        if sort is not None:
+            
+            _query_params.append(('sort', sort))
+            
+        if page_size is not None:
+            
+            _query_params.append(('page_size', page_size))
+            
+        if next_token is not None:
+            
+            _query_params.append(('next_token', next_token))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json', 
+                    'application/json; charset=utf-8'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/v1/system_permissions',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -2924,6 +3860,305 @@ class RolesApi:
         return self.api_client.param_serialize(
             method='PATCH',
             resource_path='/api/v1/roles/{role_id}/permissions',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def update_role_system_permissions(
+        self,
+        role_id: Annotated[StrictStr, Field(description="The identifier for the role.")],
+        update_role_system_permissions_request: UpdateRoleSystemPermissionsRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> UpdateRoleSystemPermissionsResponse:
+        """Update role system permissions
+
+        Update role system permissions.  System permissions control what organization users can do in the self-serve portal.  <div>   <code>update:role_system_permissions</code> </div> 
+
+        :param role_id: The identifier for the role. (required)
+        :type role_id: str
+        :param update_role_system_permissions_request: (required)
+        :type update_role_system_permissions_request: UpdateRoleSystemPermissionsRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._update_role_system_permissions_serialize(
+            role_id=role_id,
+            update_role_system_permissions_request=update_role_system_permissions_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "UpdateRoleSystemPermissionsResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def update_role_system_permissions_with_http_info(
+        self,
+        role_id: Annotated[StrictStr, Field(description="The identifier for the role.")],
+        update_role_system_permissions_request: UpdateRoleSystemPermissionsRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[UpdateRoleSystemPermissionsResponse]:
+        """Update role system permissions
+
+        Update role system permissions.  System permissions control what organization users can do in the self-serve portal.  <div>   <code>update:role_system_permissions</code> </div> 
+
+        :param role_id: The identifier for the role. (required)
+        :type role_id: str
+        :param update_role_system_permissions_request: (required)
+        :type update_role_system_permissions_request: UpdateRoleSystemPermissionsRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._update_role_system_permissions_serialize(
+            role_id=role_id,
+            update_role_system_permissions_request=update_role_system_permissions_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "UpdateRoleSystemPermissionsResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def update_role_system_permissions_without_preload_content(
+        self,
+        role_id: Annotated[StrictStr, Field(description="The identifier for the role.")],
+        update_role_system_permissions_request: UpdateRoleSystemPermissionsRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Update role system permissions
+
+        Update role system permissions.  System permissions control what organization users can do in the self-serve portal.  <div>   <code>update:role_system_permissions</code> </div> 
+
+        :param role_id: The identifier for the role. (required)
+        :type role_id: str
+        :param update_role_system_permissions_request: (required)
+        :type update_role_system_permissions_request: UpdateRoleSystemPermissionsRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._update_role_system_permissions_serialize(
+            role_id=role_id,
+            update_role_system_permissions_request=update_role_system_permissions_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "UpdateRoleSystemPermissionsResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _update_role_system_permissions_serialize(
+        self,
+        role_id,
+        update_role_system_permissions_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if role_id is not None:
+            _path_params['role_id'] = role_id
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if update_role_system_permissions_request is not None:
+            _body_params = update_role_system_permissions_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json', 
+                    'application/json; charset=utf-8'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='PATCH',
+            resource_path='/api/v1/roles/{role_id}/system_permissions',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,

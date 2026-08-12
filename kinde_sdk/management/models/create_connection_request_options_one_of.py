@@ -30,7 +30,8 @@ class CreateConnectionRequestOptionsOneOf(BaseModel):
     client_id: Optional[StrictStr] = Field(default=None, description="OAuth client ID.")
     client_secret: Optional[StrictStr] = Field(default=None, description="OAuth client secret.")
     is_use_custom_domain: Optional[StrictBool] = Field(default=None, description="Use custom domain callback URL.")
-    __properties: ClassVar[List[str]] = ["client_id", "client_secret", "is_use_custom_domain"]
+    is_trusted: Optional[StrictBool] = Field(default=None, description="Trust this connection for account merging.")
+    __properties: ClassVar[List[str]] = ["client_id", "client_secret", "is_use_custom_domain", "is_trusted"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -85,7 +86,8 @@ class CreateConnectionRequestOptionsOneOf(BaseModel):
         _obj = cls.model_validate({
             "client_id": obj.get("client_id"),
             "client_secret": obj.get("client_secret"),
-            "is_use_custom_domain": obj.get("is_use_custom_domain")
+            "is_use_custom_domain": obj.get("is_use_custom_domain"),
+            "is_trusted": obj.get("is_trusted")
         })
         return _obj
 

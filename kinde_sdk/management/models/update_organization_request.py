@@ -40,13 +40,15 @@ class UpdateOrganizationRequest(BaseModel):
     theme_code: Optional[StrictStr] = Field(default=None, description="The organization's brand settings - theme/mode.")
     handle: Optional[StrictStr] = Field(default=None, description="The organization's handle.")
     is_allow_registrations: Optional[StrictBool] = Field(default=None, description="Deprecated - Use 'is_auto_membership_enabled' instead.")
+    is_auto_membership_enabled: Optional[StrictBool] = Field(default=None, description="If users become members of this organization when the org code is supplied during authentication.")
     is_auto_join_domain_list: Optional[StrictBool] = Field(default=None, description="Users can sign up to this organization.")
     allowed_domains: Optional[List[StrictStr]] = Field(default=None, description="Domains allowed for self-sign up to this environment.")
     is_enable_advanced_orgs: Optional[StrictBool] = Field(default=None, description="Activate advanced organization features.")
     is_enforce_mfa: Optional[StrictBool] = Field(default=None, description="Enforce MFA for all users in this organization.")
     sender_name: Optional[StrictStr] = Field(default=None, description="The name of the organization that will be used in emails")
     sender_email: Optional[StrictStr] = Field(default=None, description="The email address that will be used in emails. Requires custom SMTP to be set up.")
-    __properties: ClassVar[List[str]] = ["name", "external_id", "background_color", "button_color", "button_text_color", "link_color", "background_color_dark", "button_color_dark", "button_text_color_dark", "link_color_dark", "theme_code", "handle", "is_allow_registrations", "is_auto_join_domain_list", "allowed_domains", "is_enable_advanced_orgs", "is_enforce_mfa", "sender_name", "sender_email"]
+    is_suspended: Optional[StrictBool] = Field(default=None, description="Whether to suspend or unsuspend the organization. Setting to true suspends the organization; setting to false unsuspends it. The default organization cannot be suspended.")
+    __properties: ClassVar[List[str]] = ["name", "external_id", "background_color", "button_color", "button_text_color", "link_color", "background_color_dark", "button_color_dark", "button_text_color_dark", "link_color_dark", "theme_code", "handle", "is_allow_registrations", "is_auto_membership_enabled", "is_auto_join_domain_list", "allowed_domains", "is_enable_advanced_orgs", "is_enforce_mfa", "sender_name", "sender_email", "is_suspended"]
 
     @field_validator('theme_code')
     def theme_code_validate_enum(cls, value):
@@ -132,12 +134,14 @@ class UpdateOrganizationRequest(BaseModel):
             "theme_code": obj.get("theme_code"),
             "handle": obj.get("handle"),
             "is_allow_registrations": obj.get("is_allow_registrations"),
+            "is_auto_membership_enabled": obj.get("is_auto_membership_enabled"),
             "is_auto_join_domain_list": obj.get("is_auto_join_domain_list"),
             "allowed_domains": obj.get("allowed_domains"),
             "is_enable_advanced_orgs": obj.get("is_enable_advanced_orgs"),
             "is_enforce_mfa": obj.get("is_enforce_mfa"),
             "sender_name": obj.get("sender_name"),
-            "sender_email": obj.get("sender_email")
+            "sender_email": obj.get("sender_email"),
+            "is_suspended": obj.get("is_suspended")
         })
         return _obj
 

@@ -48,7 +48,7 @@ class BillingEntitlementsApi:
         starting_after: Annotated[Optional[StrictStr], Field(description="The ID of the billing entitlement to start after.")] = None,
         ending_before: Annotated[Optional[StrictStr], Field(description="The ID of the billing entitlement to end before.")] = None,
         max_value: Annotated[Optional[StrictStr], Field(description="When the maximum limit of an entitlement is null, this value is returned as the maximum limit")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional plan data to retrieve. Use \"plans\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional plan data to include in the response. Allowed value: \"plans\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -76,7 +76,7 @@ class BillingEntitlementsApi:
         :type ending_before: str
         :param max_value: When the maximum limit of an entitlement is null, this value is returned as the maximum limit
         :type max_value: str
-        :param expand: Specify additional plan data to retrieve. Use \"plans\".
+        :param expand: Additional plan data to include in the response. Allowed value: \"plans\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -138,7 +138,7 @@ class BillingEntitlementsApi:
         starting_after: Annotated[Optional[StrictStr], Field(description="The ID of the billing entitlement to start after.")] = None,
         ending_before: Annotated[Optional[StrictStr], Field(description="The ID of the billing entitlement to end before.")] = None,
         max_value: Annotated[Optional[StrictStr], Field(description="When the maximum limit of an entitlement is null, this value is returned as the maximum limit")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional plan data to retrieve. Use \"plans\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional plan data to include in the response. Allowed value: \"plans\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -166,7 +166,7 @@ class BillingEntitlementsApi:
         :type ending_before: str
         :param max_value: When the maximum limit of an entitlement is null, this value is returned as the maximum limit
         :type max_value: str
-        :param expand: Specify additional plan data to retrieve. Use \"plans\".
+        :param expand: Additional plan data to include in the response. Allowed value: \"plans\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -228,7 +228,7 @@ class BillingEntitlementsApi:
         starting_after: Annotated[Optional[StrictStr], Field(description="The ID of the billing entitlement to start after.")] = None,
         ending_before: Annotated[Optional[StrictStr], Field(description="The ID of the billing entitlement to end before.")] = None,
         max_value: Annotated[Optional[StrictStr], Field(description="When the maximum limit of an entitlement is null, this value is returned as the maximum limit")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional plan data to retrieve. Use \"plans\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional plan data to include in the response. Allowed value: \"plans\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -256,7 +256,7 @@ class BillingEntitlementsApi:
         :type ending_before: str
         :param max_value: When the maximum limit of an entitlement is null, this value is returned as the maximum limit
         :type max_value: str
-        :param expand: Specify additional plan data to retrieve. Use \"plans\".
+        :param expand: Additional plan data to include in the response. Allowed value: \"plans\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request

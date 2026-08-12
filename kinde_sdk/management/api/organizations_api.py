@@ -17,18 +17,24 @@ from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
-from pydantic import Field, StrictBytes, StrictInt, StrictStr, field_validator
+from pydantic import Field, StrictBool, StrictBytes, StrictInt, StrictStr, field_validator
 from typing import Optional, Tuple, Union
 from typing_extensions import Annotated
 from kinde_sdk.management.models.add_organization_users_request import AddOrganizationUsersRequest
 from kinde_sdk.management.models.add_organization_users_response import AddOrganizationUsersResponse
+from kinde_sdk.management.models.create_organization_invite_request import CreateOrganizationInviteRequest
+from kinde_sdk.management.models.create_organization_invite_response import CreateOrganizationInviteResponse
 from kinde_sdk.management.models.create_organization_request import CreateOrganizationRequest
 from kinde_sdk.management.models.create_organization_response import CreateOrganizationResponse
 from kinde_sdk.management.models.create_organization_user_permission_request import CreateOrganizationUserPermissionRequest
 from kinde_sdk.management.models.create_organization_user_role_request import CreateOrganizationUserRoleRequest
 from kinde_sdk.management.models.get_connections_response import GetConnectionsResponse
 from kinde_sdk.management.models.get_organization_feature_flags_response import GetOrganizationFeatureFlagsResponse
+from kinde_sdk.management.models.get_organization_invite_response import GetOrganizationInviteResponse
+from kinde_sdk.management.models.get_organization_invites_response import GetOrganizationInvitesResponse
+from kinde_sdk.management.models.get_organization_passkey200_response import GetOrganizationPasskey200Response
 from kinde_sdk.management.models.get_organization_response import GetOrganizationResponse
+from kinde_sdk.management.models.get_organization_role_users_response import GetOrganizationRoleUsersResponse
 from kinde_sdk.management.models.get_organization_users_response import GetOrganizationUsersResponse
 from kinde_sdk.management.models.get_organizations_response import GetOrganizationsResponse
 from kinde_sdk.management.models.get_organizations_user_permissions_response import GetOrganizationsUserPermissionsResponse
@@ -38,6 +44,8 @@ from kinde_sdk.management.models.get_user_mfa_response import GetUserMfaResponse
 from kinde_sdk.management.models.read_logo_response import ReadLogoResponse
 from kinde_sdk.management.models.replace_organization_mfa_request import ReplaceOrganizationMFARequest
 from kinde_sdk.management.models.success_response import SuccessResponse
+from kinde_sdk.management.models.update_organization_passkey200_response import UpdateOrganizationPasskey200Response
+from kinde_sdk.management.models.update_organization_passkey_request import UpdateOrganizationPasskeyRequest
 from kinde_sdk.management.models.update_organization_properties_request import UpdateOrganizationPropertiesRequest
 from kinde_sdk.management.models.update_organization_request import UpdateOrganizationRequest
 from kinde_sdk.management.models.update_organization_sessions_request import UpdateOrganizationSessionsRequest
@@ -1256,6 +1264,304 @@ class OrganizationsApi:
         return self.api_client.param_serialize(
             method='POST',
             resource_path='/api/v1/organization',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def create_organization_invite(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        create_organization_invite_request: Annotated[CreateOrganizationInviteRequest, Field(description="Invitation details. `email` is capped at 254 characters (RFC 5321). `first_name` and `last_name` are capped at 64 characters each. Inputs over these limits are rejected with `EMAIL_TOO_LONG`, `FIRST_NAME_TOO_LONG`, or `LAST_NAME_TOO_LONG`.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> CreateOrganizationInviteResponse:
+        """Create organization invite
+
+        Create a new invitation for an organization. An invitation email will be sent to the provided email address if `send_email` is set to `true`.  Invitations cannot be created for organizations that are managed by directory sync; user and role changes for those organizations must be made in the upstream identity provider.  Roles that require an explicit assignment permission cannot be granted to an invitee unless the caller (or the user the token represents) holds that permission. On Kinde-hosted plans, roles outside `owner`/`admin` additionally require the `extended_roles` entitlement.  Per-organization rate limits apply: a maximum number of invitations may be created per rolling 24 hour window, and a maximum number of active (non-accepted, non-revoked) invitations may exist at any time. Requests that exceed either limit are rejected.  <div>   <code>create:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param create_organization_invite_request: Invitation details. `email` is capped at 254 characters (RFC 5321). `first_name` and `last_name` are capped at 64 characters each. Inputs over these limits are rejected with `EMAIL_TOO_LONG`, `FIRST_NAME_TOO_LONG`, or `LAST_NAME_TOO_LONG`. (required)
+        :type create_organization_invite_request: CreateOrganizationInviteRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._create_organization_invite_serialize(
+            org_code=org_code,
+            create_organization_invite_request=create_organization_invite_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '201': "CreateOrganizationInviteResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def create_organization_invite_with_http_info(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        create_organization_invite_request: Annotated[CreateOrganizationInviteRequest, Field(description="Invitation details. `email` is capped at 254 characters (RFC 5321). `first_name` and `last_name` are capped at 64 characters each. Inputs over these limits are rejected with `EMAIL_TOO_LONG`, `FIRST_NAME_TOO_LONG`, or `LAST_NAME_TOO_LONG`.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[CreateOrganizationInviteResponse]:
+        """Create organization invite
+
+        Create a new invitation for an organization. An invitation email will be sent to the provided email address if `send_email` is set to `true`.  Invitations cannot be created for organizations that are managed by directory sync; user and role changes for those organizations must be made in the upstream identity provider.  Roles that require an explicit assignment permission cannot be granted to an invitee unless the caller (or the user the token represents) holds that permission. On Kinde-hosted plans, roles outside `owner`/`admin` additionally require the `extended_roles` entitlement.  Per-organization rate limits apply: a maximum number of invitations may be created per rolling 24 hour window, and a maximum number of active (non-accepted, non-revoked) invitations may exist at any time. Requests that exceed either limit are rejected.  <div>   <code>create:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param create_organization_invite_request: Invitation details. `email` is capped at 254 characters (RFC 5321). `first_name` and `last_name` are capped at 64 characters each. Inputs over these limits are rejected with `EMAIL_TOO_LONG`, `FIRST_NAME_TOO_LONG`, or `LAST_NAME_TOO_LONG`. (required)
+        :type create_organization_invite_request: CreateOrganizationInviteRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._create_organization_invite_serialize(
+            org_code=org_code,
+            create_organization_invite_request=create_organization_invite_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '201': "CreateOrganizationInviteResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def create_organization_invite_without_preload_content(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        create_organization_invite_request: Annotated[CreateOrganizationInviteRequest, Field(description="Invitation details. `email` is capped at 254 characters (RFC 5321). `first_name` and `last_name` are capped at 64 characters each. Inputs over these limits are rejected with `EMAIL_TOO_LONG`, `FIRST_NAME_TOO_LONG`, or `LAST_NAME_TOO_LONG`.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Create organization invite
+
+        Create a new invitation for an organization. An invitation email will be sent to the provided email address if `send_email` is set to `true`.  Invitations cannot be created for organizations that are managed by directory sync; user and role changes for those organizations must be made in the upstream identity provider.  Roles that require an explicit assignment permission cannot be granted to an invitee unless the caller (or the user the token represents) holds that permission. On Kinde-hosted plans, roles outside `owner`/`admin` additionally require the `extended_roles` entitlement.  Per-organization rate limits apply: a maximum number of invitations may be created per rolling 24 hour window, and a maximum number of active (non-accepted, non-revoked) invitations may exist at any time. Requests that exceed either limit are rejected.  <div>   <code>create:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param create_organization_invite_request: Invitation details. `email` is capped at 254 characters (RFC 5321). `first_name` and `last_name` are capped at 64 characters each. Inputs over these limits are rejected with `EMAIL_TOO_LONG`, `FIRST_NAME_TOO_LONG`, or `LAST_NAME_TOO_LONG`. (required)
+        :type create_organization_invite_request: CreateOrganizationInviteRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._create_organization_invite_serialize(
+            org_code=org_code,
+            create_organization_invite_request=create_organization_invite_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '201': "CreateOrganizationInviteResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _create_organization_invite_serialize(
+        self,
+        org_code,
+        create_organization_invite_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if org_code is not None:
+            _path_params['org_code'] = org_code
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if create_organization_invite_request is not None:
+            _body_params = create_organization_invite_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/api/v1/organization/{org_code}/invites',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -2979,6 +3285,294 @@ class OrganizationsApi:
         return self.api_client.param_serialize(
             method='DELETE',
             resource_path='/api/v1/organization/{org_code}/handle',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def delete_organization_invite(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        invite_code: Annotated[StrictStr, Field(description="The invitation's code.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> SuccessResponse:
+        """Delete organization invite
+
+        Revoke (delete) an invitation. This will mark the invitation as revoked and prevent it from being accepted.  <div>   <code>delete:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param invite_code: The invitation's code. (required)
+        :type invite_code: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._delete_organization_invite_serialize(
+            org_code=org_code,
+            invite_code=invite_code,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "SuccessResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '404': "NotFoundResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def delete_organization_invite_with_http_info(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        invite_code: Annotated[StrictStr, Field(description="The invitation's code.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[SuccessResponse]:
+        """Delete organization invite
+
+        Revoke (delete) an invitation. This will mark the invitation as revoked and prevent it from being accepted.  <div>   <code>delete:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param invite_code: The invitation's code. (required)
+        :type invite_code: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._delete_organization_invite_serialize(
+            org_code=org_code,
+            invite_code=invite_code,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "SuccessResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '404': "NotFoundResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def delete_organization_invite_without_preload_content(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        invite_code: Annotated[StrictStr, Field(description="The invitation's code.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Delete organization invite
+
+        Revoke (delete) an invitation. This will mark the invitation as revoked and prevent it from being accepted.  <div>   <code>delete:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param invite_code: The invitation's code. (required)
+        :type invite_code: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._delete_organization_invite_serialize(
+            org_code=org_code,
+            invite_code=invite_code,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "SuccessResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '404': "NotFoundResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _delete_organization_invite_serialize(
+        self,
+        org_code,
+        invite_code,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if org_code is not None:
+            _path_params['org_code'] = org_code
+        if invite_code is not None:
+            _path_params['invite_code'] = invite_code
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='DELETE',
+            resource_path='/api/v1/organization/{org_code}/invites/{invite_code}',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -4775,8 +5369,8 @@ class OrganizationsApi:
     @validate_call
     def get_organization(
         self,
-        code: Annotated[Optional[StrictStr], Field(description="The organization's code.")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"billing\".")] = None,
+        code: Annotated[StrictStr, Field(description="The organization's code.")],
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"billing\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4794,9 +5388,9 @@ class OrganizationsApi:
 
         Retrieve organization details by code.  <div>   <code>read:organizations</code> </div> 
 
-        :param code: The organization's code.
+        :param code: The organization's code. (required)
         :type code: str
-        :param expand: Specify additional data to retrieve. Use \"billing\".
+        :param expand: Additional data to include in the response. Allowed value: \"billing\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -4849,8 +5443,8 @@ class OrganizationsApi:
     @validate_call
     def get_organization_with_http_info(
         self,
-        code: Annotated[Optional[StrictStr], Field(description="The organization's code.")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"billing\".")] = None,
+        code: Annotated[StrictStr, Field(description="The organization's code.")],
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"billing\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4868,9 +5462,9 @@ class OrganizationsApi:
 
         Retrieve organization details by code.  <div>   <code>read:organizations</code> </div> 
 
-        :param code: The organization's code.
+        :param code: The organization's code. (required)
         :type code: str
-        :param expand: Specify additional data to retrieve. Use \"billing\".
+        :param expand: Additional data to include in the response. Allowed value: \"billing\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -4923,8 +5517,8 @@ class OrganizationsApi:
     @validate_call
     def get_organization_without_preload_content(
         self,
-        code: Annotated[Optional[StrictStr], Field(description="The organization's code.")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"billing\".")] = None,
+        code: Annotated[StrictStr, Field(description="The organization's code.")],
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"billing\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4942,9 +5536,9 @@ class OrganizationsApi:
 
         Retrieve organization details by code.  <div>   <code>read:organizations</code> </div> 
 
-        :param code: The organization's code.
+        :param code: The organization's code. (required)
         :type code: str
-        :param expand: Specify additional data to retrieve. Use \"billing\".
+        :param expand: Additional data to include in the response. Allowed value: \"billing\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -5603,6 +6197,919 @@ class OrganizationsApi:
 
 
     @validate_call
+    def get_organization_invite(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        invite_code: Annotated[StrictStr, Field(description="The invitation's code.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> GetOrganizationInviteResponse:
+        """Get organization invite
+
+        Get details of a specific invitation by its code.  <div>   <code>read:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param invite_code: The invitation's code. (required)
+        :type invite_code: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_invite_serialize(
+            org_code=org_code,
+            invite_code=invite_code,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationInviteResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '404': "NotFoundResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_organization_invite_with_http_info(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        invite_code: Annotated[StrictStr, Field(description="The invitation's code.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[GetOrganizationInviteResponse]:
+        """Get organization invite
+
+        Get details of a specific invitation by its code.  <div>   <code>read:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param invite_code: The invitation's code. (required)
+        :type invite_code: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_invite_serialize(
+            org_code=org_code,
+            invite_code=invite_code,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationInviteResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '404': "NotFoundResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_organization_invite_without_preload_content(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        invite_code: Annotated[StrictStr, Field(description="The invitation's code.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get organization invite
+
+        Get details of a specific invitation by its code.  <div>   <code>read:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param invite_code: The invitation's code. (required)
+        :type invite_code: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_invite_serialize(
+            org_code=org_code,
+            invite_code=invite_code,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationInviteResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '404': "NotFoundResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_organization_invite_serialize(
+        self,
+        org_code,
+        invite_code,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if org_code is not None:
+            _path_params['org_code'] = org_code
+        if invite_code is not None:
+            _path_params['invite_code'] = invite_code
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/v1/organization/{org_code}/invites/{invite_code}',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_organization_invites(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        include_revoked: Annotated[Optional[StrictBool], Field(description="Include revoked invitations in the results.")] = None,
+        include_accepted: Annotated[Optional[StrictBool], Field(description="Include accepted invitations in the results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> GetOrganizationInvitesResponse:
+        """Get organization invites
+
+        Get a list of invitations for an organization. By default, only pending (non-revoked, non-accepted) invitations are returned.  <div>   <code>read:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param sort: Field and order to sort the result by.
+        :type sort: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param include_revoked: Include revoked invitations in the results.
+        :type include_revoked: bool
+        :param include_accepted: Include accepted invitations in the results.
+        :type include_accepted: bool
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_invites_serialize(
+            org_code=org_code,
+            sort=sort,
+            page_size=page_size,
+            next_token=next_token,
+            include_revoked=include_revoked,
+            include_accepted=include_accepted,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationInvitesResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_organization_invites_with_http_info(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        include_revoked: Annotated[Optional[StrictBool], Field(description="Include revoked invitations in the results.")] = None,
+        include_accepted: Annotated[Optional[StrictBool], Field(description="Include accepted invitations in the results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[GetOrganizationInvitesResponse]:
+        """Get organization invites
+
+        Get a list of invitations for an organization. By default, only pending (non-revoked, non-accepted) invitations are returned.  <div>   <code>read:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param sort: Field and order to sort the result by.
+        :type sort: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param include_revoked: Include revoked invitations in the results.
+        :type include_revoked: bool
+        :param include_accepted: Include accepted invitations in the results.
+        :type include_accepted: bool
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_invites_serialize(
+            org_code=org_code,
+            sort=sort,
+            page_size=page_size,
+            next_token=next_token,
+            include_revoked=include_revoked,
+            include_accepted=include_accepted,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationInvitesResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_organization_invites_without_preload_content(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        sort: Annotated[Optional[StrictStr], Field(description="Field and order to sort the result by.")] = None,
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        include_revoked: Annotated[Optional[StrictBool], Field(description="Include revoked invitations in the results.")] = None,
+        include_accepted: Annotated[Optional[StrictBool], Field(description="Include accepted invitations in the results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get organization invites
+
+        Get a list of invitations for an organization. By default, only pending (non-revoked, non-accepted) invitations are returned.  <div>   <code>read:organization_invites</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param sort: Field and order to sort the result by.
+        :type sort: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param include_revoked: Include revoked invitations in the results.
+        :type include_revoked: bool
+        :param include_accepted: Include accepted invitations in the results.
+        :type include_accepted: bool
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_invites_serialize(
+            org_code=org_code,
+            sort=sort,
+            page_size=page_size,
+            next_token=next_token,
+            include_revoked=include_revoked,
+            include_accepted=include_accepted,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationInvitesResponse",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_organization_invites_serialize(
+        self,
+        org_code,
+        sort,
+        page_size,
+        next_token,
+        include_revoked,
+        include_accepted,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if org_code is not None:
+            _path_params['org_code'] = org_code
+        # process the query parameters
+        if sort is not None:
+            
+            _query_params.append(('sort', sort))
+            
+        if page_size is not None:
+            
+            _query_params.append(('page_size', page_size))
+            
+        if next_token is not None:
+            
+            _query_params.append(('next_token', next_token))
+            
+        if include_revoked is not None:
+            
+            _query_params.append(('include_revoked', include_revoked))
+            
+        if include_accepted is not None:
+            
+            _query_params.append(('include_accepted', include_accepted))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/v1/organization/{org_code}/invites',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_organization_passkey(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> GetOrganizationPasskey200Response:
+        """Get organization passkey settings
+
+        Retrieve passkey settings for an organization, including whether the organization overrides the environment default.  <div>   <code>read:organization_passkey</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_passkey_serialize(
+            org_code=org_code,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationPasskey200Response",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_organization_passkey_with_http_info(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[GetOrganizationPasskey200Response]:
+        """Get organization passkey settings
+
+        Retrieve passkey settings for an organization, including whether the organization overrides the environment default.  <div>   <code>read:organization_passkey</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_passkey_serialize(
+            org_code=org_code,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationPasskey200Response",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_organization_passkey_without_preload_content(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get organization passkey settings
+
+        Retrieve passkey settings for an organization, including whether the organization overrides the environment default.  <div>   <code>read:organization_passkey</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_passkey_serialize(
+            org_code=org_code,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationPasskey200Response",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_organization_passkey_serialize(
+        self,
+        org_code,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if org_code is not None:
+            _path_params['org_code'] = org_code
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/v1/organizations/{org_code}/passkey',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def get_organization_property_values(
         self,
         org_code: Annotated[StrictStr, Field(description="The organization's code.")],
@@ -5874,11 +7381,331 @@ class OrganizationsApi:
 
 
     @validate_call
+    def get_organization_role_users(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> GetOrganizationRoleUsersResponse:
+        """List organization role users
+
+        Get users that have a given role within a specific organization.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_role_users_serialize(
+            org_code=org_code,
+            role_id=role_id,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationRoleUsersResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_organization_role_users_with_http_info(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[GetOrganizationRoleUsersResponse]:
+        """List organization role users
+
+        Get users that have a given role within a specific organization.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_role_users_serialize(
+            org_code=org_code,
+            role_id=role_id,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationRoleUsersResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_organization_role_users_without_preload_content(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        page_size: Annotated[Optional[StrictInt], Field(description="Number of results per page. Defaults to 10 if parameter not sent.")] = None,
+        next_token: Annotated[Optional[StrictStr], Field(description="A string to get the next page of results if there are more results.")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """List organization role users
+
+        Get users that have a given role within a specific organization.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param page_size: Number of results per page. Defaults to 10 if parameter not sent.
+        :type page_size: int
+        :param next_token: A string to get the next page of results if there are more results.
+        :type next_token: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_role_users_serialize(
+            org_code=org_code,
+            role_id=role_id,
+            page_size=page_size,
+            next_token=next_token,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationRoleUsersResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_organization_role_users_serialize(
+        self,
+        org_code,
+        role_id,
+        page_size,
+        next_token,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if org_code is not None:
+            _path_params['org_code'] = org_code
+        if role_id is not None:
+            _path_params['role_id'] = role_id
+        # process the query parameters
+        if page_size is not None:
+            
+            _query_params.append(('page_size', page_size))
+            
+        if next_token is not None:
+            
+            _query_params.append(('next_token', next_token))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json', 
+                    'application/json; charset=utf-8'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/v1/organizations/{org_code}/roles/{role_id}/users',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def get_organization_user_permissions(
         self,
         org_code: Annotated[StrictStr, Field(description="The organization's code.")],
         user_id: Annotated[StrictStr, Field(description="The user's id.")],
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"roles\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"roles\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -5900,7 +7727,7 @@ class OrganizationsApi:
         :type org_code: str
         :param user_id: The user's id. (required)
         :type user_id: str
-        :param expand: Specify additional data to retrieve. Use \"roles\".
+        :param expand: Additional data to include in the response. Allowed value: \"roles\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -5955,7 +7782,7 @@ class OrganizationsApi:
         self,
         org_code: Annotated[StrictStr, Field(description="The organization's code.")],
         user_id: Annotated[StrictStr, Field(description="The user's id.")],
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"roles\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"roles\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -5977,7 +7804,7 @@ class OrganizationsApi:
         :type org_code: str
         :param user_id: The user's id. (required)
         :type user_id: str
-        :param expand: Specify additional data to retrieve. Use \"roles\".
+        :param expand: Additional data to include in the response. Allowed value: \"roles\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -6032,7 +7859,7 @@ class OrganizationsApi:
         self,
         org_code: Annotated[StrictStr, Field(description="The organization's code.")],
         user_id: Annotated[StrictStr, Field(description="The user's id.")],
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"roles\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"roles\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -6054,7 +7881,7 @@ class OrganizationsApi:
         :type org_code: str
         :param user_id: The user's id. (required)
         :type user_id: str
-        :param expand: Specify additional data to retrieve. Use \"roles\".
+        :param expand: Additional data to include in the response. Allowed value: \"roles\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -8851,7 +10678,7 @@ class OrganizationsApi:
     def update_organization(
         self,
         org_code: Annotated[StrictStr, Field(description="The identifier for the organization.")],
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"billing\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"billing\".")] = None,
         update_organization_request: Annotated[Optional[UpdateOrganizationRequest], Field(description="Organization details.")] = None,
         _request_timeout: Union[
             None,
@@ -8872,7 +10699,7 @@ class OrganizationsApi:
 
         :param org_code: The identifier for the organization. (required)
         :type org_code: str
-        :param expand: Specify additional data to retrieve. Use \"billing\".
+        :param expand: Additional data to include in the response. Allowed value: \"billing\".
         :type expand: str
         :param update_organization_request: Organization details.
         :type update_organization_request: UpdateOrganizationRequest
@@ -8929,7 +10756,7 @@ class OrganizationsApi:
     def update_organization_with_http_info(
         self,
         org_code: Annotated[StrictStr, Field(description="The identifier for the organization.")],
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"billing\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"billing\".")] = None,
         update_organization_request: Annotated[Optional[UpdateOrganizationRequest], Field(description="Organization details.")] = None,
         _request_timeout: Union[
             None,
@@ -8950,7 +10777,7 @@ class OrganizationsApi:
 
         :param org_code: The identifier for the organization. (required)
         :type org_code: str
-        :param expand: Specify additional data to retrieve. Use \"billing\".
+        :param expand: Additional data to include in the response. Allowed value: \"billing\".
         :type expand: str
         :param update_organization_request: Organization details.
         :type update_organization_request: UpdateOrganizationRequest
@@ -9007,7 +10834,7 @@ class OrganizationsApi:
     def update_organization_without_preload_content(
         self,
         org_code: Annotated[StrictStr, Field(description="The identifier for the organization.")],
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"billing\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"billing\".")] = None,
         update_organization_request: Annotated[Optional[UpdateOrganizationRequest], Field(description="Organization details.")] = None,
         _request_timeout: Union[
             None,
@@ -9028,7 +10855,7 @@ class OrganizationsApi:
 
         :param org_code: The identifier for the organization. (required)
         :type org_code: str
-        :param expand: Specify additional data to retrieve. Use \"billing\".
+        :param expand: Additional data to include in the response. Allowed value: \"billing\".
         :type expand: str
         :param update_organization_request: Organization details.
         :type update_organization_request: UpdateOrganizationRequest
@@ -9450,6 +11277,304 @@ class OrganizationsApi:
         return self.api_client.param_serialize(
             method='PATCH',
             resource_path='/api/v1/organizations/{org_code}/feature_flags/{feature_flag_key}',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def update_organization_passkey(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        update_organization_passkey_request: Annotated[UpdateOrganizationPasskeyRequest, Field(description="Organization passkey settings.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> UpdateOrganizationPasskey200Response:
+        """Update organization passkey settings
+
+        Update passkey settings for an organization. Set `is_override_environment_passkey_settings` to `false` to revert to the environment default without providing a policy.  <div>   <code>update:organization_passkey</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param update_organization_passkey_request: Organization passkey settings. (required)
+        :type update_organization_passkey_request: UpdateOrganizationPasskeyRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._update_organization_passkey_serialize(
+            org_code=org_code,
+            update_organization_passkey_request=update_organization_passkey_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "UpdateOrganizationPasskey200Response",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def update_organization_passkey_with_http_info(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        update_organization_passkey_request: Annotated[UpdateOrganizationPasskeyRequest, Field(description="Organization passkey settings.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[UpdateOrganizationPasskey200Response]:
+        """Update organization passkey settings
+
+        Update passkey settings for an organization. Set `is_override_environment_passkey_settings` to `false` to revert to the environment default without providing a policy.  <div>   <code>update:organization_passkey</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param update_organization_passkey_request: Organization passkey settings. (required)
+        :type update_organization_passkey_request: UpdateOrganizationPasskeyRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._update_organization_passkey_serialize(
+            org_code=org_code,
+            update_organization_passkey_request=update_organization_passkey_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "UpdateOrganizationPasskey200Response",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def update_organization_passkey_without_preload_content(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        update_organization_passkey_request: Annotated[UpdateOrganizationPasskeyRequest, Field(description="Organization passkey settings.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Update organization passkey settings
+
+        Update passkey settings for an organization. Set `is_override_environment_passkey_settings` to `false` to revert to the environment default without providing a policy.  <div>   <code>update:organization_passkey</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param update_organization_passkey_request: Organization passkey settings. (required)
+        :type update_organization_passkey_request: UpdateOrganizationPasskeyRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._update_organization_passkey_serialize(
+            org_code=org_code,
+            update_organization_passkey_request=update_organization_passkey_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "UpdateOrganizationPasskey200Response",
+            '400': "ErrorResponse",
+            '403': "ErrorResponse",
+            '429': "ErrorResponse",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _update_organization_passkey_serialize(
+        self,
+        org_code,
+        update_organization_passkey_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if org_code is not None:
+            _path_params['org_code'] = org_code
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if update_organization_passkey_request is not None:
+            _body_params = update_organization_passkey_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='PUT',
+            resource_path='/api/v1/organizations/{org_code}/passkey',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,

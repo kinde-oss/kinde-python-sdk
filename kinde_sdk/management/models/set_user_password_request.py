@@ -27,14 +27,18 @@ class SetUserPasswordRequest(BaseModel):
     """
     SetUserPasswordRequest
     """ # noqa: E501
-    hashed_password: StrictStr = Field(description="The hashed password.")
+    hashed_password: StrictStr = Field(description="The hashed password. For aspnet-identity-v2, provide the base64-encoded AspNetUsers.PasswordHash value as-is.")
     hashing_method: Optional[StrictStr] = Field(default=None, description="The hashing method or algorithm used to encrypt the user’s password. Default is bcrypt.")
-    salt: Optional[StrictStr] = Field(default=None, description="Extra characters added to passwords to make them stronger. Not required for bcrypt. Required for pbkdf2; provide the base64-encoded salt.")
+    salt: Optional[StrictStr] = Field(default=None, description="Extra characters added to passwords to make them stronger. Not required for bcrypt. Required for pbkdf2; provide the base64-encoded salt. Required for firebase-scrypt; provide the base64-encoded per-user salt. Not used for aspnet-identity-v2 (the salt is embedded in the hash); do not provide salt, salt_position, iterations, or variant with aspnet-identity-v2.")
     salt_position: Optional[StrictStr] = Field(default=None, description="Position of salt in password string. Not required for bcrypt.")
-    iterations: Optional[StrictInt] = Field(default=None, description="The iteration count (factor) used to derive the hash. Optional for pbkdf2; when omitted, verification defaults to 24000 (the FusionAuth default factor).")
-    variant: Optional[StrictStr] = Field(default=None, description="The hashing variant. Required for pbkdf2 (e.g. salted-pbkdf2-hmac-sha256, salted-pbkdf2-hmac-sha256-512, salted-pbkdf2-hmac-sha512-512).")
+    iterations: Optional[StrictInt] = Field(default=None, description="The iteration count (factor) used to derive the hash. Optional for pbkdf2; when omitted, verification defaults to 24000 (the FusionAuth default factor). Rejected for firebase-scrypt.")
+    variant: Optional[StrictStr] = Field(default=None, description="The hashing variant. Required for pbkdf2 (e.g. salted-pbkdf2-hmac-sha256, salted-pbkdf2-hmac-sha256-512, salted-pbkdf2-hmac-sha512-512). Rejected for firebase-scrypt.")
+    signer_key: Optional[StrictStr] = Field(default=None, description="The base64-encoded signer key from the Firebase project's password hash parameters. Required for firebase-scrypt; rejected for other hashing methods.")
+    salt_separator: Optional[StrictStr] = Field(default=None, description="The base64-encoded salt separator from the Firebase project's password hash parameters. Required for firebase-scrypt; rejected for other hashing methods.")
+    rounds: Optional[StrictInt] = Field(default=None, description="The scrypt rounds from the Firebase project's password hash parameters (1-16). Required for firebase-scrypt; rejected for other hashing methods.")
+    mem_cost: Optional[StrictInt] = Field(default=None, description="The scrypt memory cost from the Firebase project's password hash parameters (1-20). Required for firebase-scrypt; rejected for other hashing methods.")
     is_temporary_password: Optional[StrictBool] = Field(default=None, description="The user will be prompted to set a new password after entering this one.")
-    __properties: ClassVar[List[str]] = ["hashed_password", "hashing_method", "salt", "salt_position", "iterations", "variant", "is_temporary_password"]
+    __properties: ClassVar[List[str]] = ["hashed_password", "hashing_method", "salt", "salt_position", "iterations", "variant", "signer_key", "salt_separator", "rounds", "mem_cost", "is_temporary_password"]
 
     @field_validator('hashing_method')
     def hashing_method_validate_enum(cls, value):
@@ -42,8 +46,8 @@ class SetUserPasswordRequest(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['bcrypt', 'crypt', 'md5', 'sha256', 'wordpress', 'pbkdf2']):
-            raise ValueError("must be one of enum values ('bcrypt', 'crypt', 'md5', 'sha256', 'wordpress', 'pbkdf2')")
+        if value not in set(['bcrypt', 'crypt', 'md5', 'sha256', 'wordpress', 'pbkdf2', 'firebase-scrypt', 'aspnet-identity-v2']):
+            raise ValueError("must be one of enum values ('bcrypt', 'crypt', 'md5', 'sha256', 'wordpress', 'pbkdf2', 'firebase-scrypt', 'aspnet-identity-v2')")
         return value
 
     @field_validator('salt_position')
@@ -113,6 +117,10 @@ class SetUserPasswordRequest(BaseModel):
             "salt_position": obj.get("salt_position"),
             "iterations": obj.get("iterations"),
             "variant": obj.get("variant"),
+            "signer_key": obj.get("signer_key"),
+            "salt_separator": obj.get("salt_separator"),
+            "rounds": obj.get("rounds"),
+            "mem_cost": obj.get("mem_cost"),
             "is_temporary_password": obj.get("is_temporary_password")
         })
         return _obj

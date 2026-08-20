@@ -18,22 +18,20 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class UpdateUserRequest(BaseModel):
+class ApplicationAccessRole(BaseModel):
     """
-    UpdateUserRequest
+    A business role configured as allowed to access an application.
     """ # noqa: E501
-    given_name: Optional[StrictStr] = Field(default=None, description="User's first name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
-    family_name: Optional[StrictStr] = Field(default=None, description="User's last name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
-    picture: Optional[StrictStr] = Field(default=None, description="The user's profile picture.")
-    is_suspended: Optional[StrictBool] = Field(default=None, description="Whether the user is currently suspended or not.")
-    is_password_reset_requested: Optional[StrictBool] = Field(default=None, description="Prompt the user to change their password on next sign in.")
-    provided_id: Optional[StrictStr] = Field(default=None, description="An external id to reference the user.")
-    __properties: ClassVar[List[str]] = ["given_name", "family_name", "picture", "is_suspended", "is_password_reset_requested", "provided_id"]
+    id: Optional[StrictStr] = Field(default=None, description="The role's ID.")
+    key: Optional[StrictStr] = Field(default=None, description="The role identifier to use in code.")
+    name: Optional[StrictStr] = Field(default=None, description="The role's name.")
+    description: Optional[StrictStr] = Field(default=None, description="The role's description.")
+    __properties: ClassVar[List[str]] = ["id", "key", "name", "description"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -53,7 +51,7 @@ class UpdateUserRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of UpdateUserRequest from a JSON string"""
+        """Create an instance of ApplicationAccessRole from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -74,11 +72,16 @@ class UpdateUserRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if description (nullable) is None
+        # and model_fields_set contains the field
+        if self.description is None and "description" in self.model_fields_set:
+            _dict['description'] = None
+
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of UpdateUserRequest from a dict"""
+        """Create an instance of ApplicationAccessRole from a dict"""
         if obj is None:
             return None
 
@@ -86,12 +89,10 @@ class UpdateUserRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "given_name": obj.get("given_name"),
-            "family_name": obj.get("family_name"),
-            "picture": obj.get("picture"),
-            "is_suspended": obj.get("is_suspended"),
-            "is_password_reset_requested": obj.get("is_password_reset_requested"),
-            "provided_id": obj.get("provided_id")
+            "id": obj.get("id"),
+            "key": obj.get("key"),
+            "name": obj.get("name"),
+            "description": obj.get("description")
         })
         return _obj
 

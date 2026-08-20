@@ -62,6 +62,7 @@ __all__ = [
     "AddRoleScopeRequest",
     "AddRoleScopeResponse",
     "ApiResult",
+    "ApplicationAccessRole",
     "Applications",
     "AuthorizeAppApiResponse",
     "Category",
@@ -117,6 +118,9 @@ __all__ = [
     "CreateRolesResponseRole",
     "CreateSubscriberSuccessResponse",
     "CreateSubscriberSuccessResponseSubscriber",
+    "CreateUserBillingCustomerRequest",
+    "CreateUserBillingCustomerResponse",
+    "CreateUserBillingCustomerResponseBillingCustomer",
     "CreateUserIdentityRequest",
     "CreateUserRequest",
     "CreateUserRequestIdentitiesInner",
@@ -150,6 +154,7 @@ __all__ = [
     "GetApisResponse",
     "GetApisResponseApisInner",
     "GetApisResponseApisInnerScopesInner",
+    "GetApplicationAccessRolesResponse",
     "GetApplicationResponse",
     "GetApplicationResponseApplication",
     "GetApplicationsResponse",
@@ -187,6 +192,8 @@ __all__ = [
     "GetOrganizationResponse",
     "GetOrganizationResponseBilling",
     "GetOrganizationResponseBillingAgreementsInner",
+    "GetOrganizationRoleActiveUsersCountResponse",
+    "GetOrganizationRoleUsersCountResponse",
     "GetOrganizationRoleUsersResponse",
     "GetOrganizationRoleUsersResponseUsersInner",
     "GetOrganizationUsersResponse",
@@ -363,6 +370,7 @@ from kinde_sdk.management.models.add_organization_users_response import AddOrgan
 from kinde_sdk.management.models.add_role_scope_request import AddRoleScopeRequest as AddRoleScopeRequest
 from kinde_sdk.management.models.add_role_scope_response import AddRoleScopeResponse as AddRoleScopeResponse
 from kinde_sdk.management.models.api_result import ApiResult as ApiResult
+from kinde_sdk.management.models.application_access_role import ApplicationAccessRole as ApplicationAccessRole
 from kinde_sdk.management.models.applications import Applications as Applications
 from kinde_sdk.management.models.authorize_app_api_response import AuthorizeAppApiResponse as AuthorizeAppApiResponse
 from kinde_sdk.management.models.category import Category as Category
@@ -418,6 +426,9 @@ from kinde_sdk.management.models.create_roles_response import CreateRolesRespons
 from kinde_sdk.management.models.create_roles_response_role import CreateRolesResponseRole as CreateRolesResponseRole
 from kinde_sdk.management.models.create_subscriber_success_response import CreateSubscriberSuccessResponse as CreateSubscriberSuccessResponse
 from kinde_sdk.management.models.create_subscriber_success_response_subscriber import CreateSubscriberSuccessResponseSubscriber as CreateSubscriberSuccessResponseSubscriber
+from kinde_sdk.management.models.create_user_billing_customer_request import CreateUserBillingCustomerRequest as CreateUserBillingCustomerRequest
+from kinde_sdk.management.models.create_user_billing_customer_response import CreateUserBillingCustomerResponse as CreateUserBillingCustomerResponse
+from kinde_sdk.management.models.create_user_billing_customer_response_billing_customer import CreateUserBillingCustomerResponseBillingCustomer as CreateUserBillingCustomerResponseBillingCustomer
 from kinde_sdk.management.models.create_user_identity_request import CreateUserIdentityRequest as CreateUserIdentityRequest
 from kinde_sdk.management.models.create_user_request import CreateUserRequest as CreateUserRequest
 from kinde_sdk.management.models.create_user_request_identities_inner import CreateUserRequestIdentitiesInner as CreateUserRequestIdentitiesInner
@@ -451,6 +462,7 @@ from kinde_sdk.management.models.get_api_scopes_response_scopes_inner import Get
 from kinde_sdk.management.models.get_apis_response import GetApisResponse as GetApisResponse
 from kinde_sdk.management.models.get_apis_response_apis_inner import GetApisResponseApisInner as GetApisResponseApisInner
 from kinde_sdk.management.models.get_apis_response_apis_inner_scopes_inner import GetApisResponseApisInnerScopesInner as GetApisResponseApisInnerScopesInner
+from kinde_sdk.management.models.get_application_access_roles_response import GetApplicationAccessRolesResponse as GetApplicationAccessRolesResponse
 from kinde_sdk.management.models.get_application_response import GetApplicationResponse as GetApplicationResponse
 from kinde_sdk.management.models.get_application_response_application import GetApplicationResponseApplication as GetApplicationResponseApplication
 from kinde_sdk.management.models.get_applications_response import GetApplicationsResponse as GetApplicationsResponse
@@ -488,6 +500,8 @@ from kinde_sdk.management.models.get_organization_passkey200_response import Get
 from kinde_sdk.management.models.get_organization_response import GetOrganizationResponse as GetOrganizationResponse
 from kinde_sdk.management.models.get_organization_response_billing import GetOrganizationResponseBilling as GetOrganizationResponseBilling
 from kinde_sdk.management.models.get_organization_response_billing_agreements_inner import GetOrganizationResponseBillingAgreementsInner as GetOrganizationResponseBillingAgreementsInner
+from kinde_sdk.management.models.get_organization_role_active_users_count_response import GetOrganizationRoleActiveUsersCountResponse as GetOrganizationRoleActiveUsersCountResponse
+from kinde_sdk.management.models.get_organization_role_users_count_response import GetOrganizationRoleUsersCountResponse as GetOrganizationRoleUsersCountResponse
 from kinde_sdk.management.models.get_organization_role_users_response import GetOrganizationRoleUsersResponse as GetOrganizationRoleUsersResponse
 from kinde_sdk.management.models.get_organization_role_users_response_users_inner import GetOrganizationRoleUsersResponseUsersInner as GetOrganizationRoleUsersResponseUsersInner
 from kinde_sdk.management.models.get_organization_users_response import GetOrganizationUsersResponse as GetOrganizationUsersResponse

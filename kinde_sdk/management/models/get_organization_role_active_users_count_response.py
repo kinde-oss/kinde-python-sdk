@@ -18,22 +18,22 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class UpdateUserRequest(BaseModel):
+class GetOrganizationRoleActiveUsersCountResponse(BaseModel):
     """
-    UpdateUserRequest
+    GetOrganizationRoleActiveUsersCountResponse
     """ # noqa: E501
-    given_name: Optional[StrictStr] = Field(default=None, description="User's first name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
-    family_name: Optional[StrictStr] = Field(default=None, description="User's last name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
-    picture: Optional[StrictStr] = Field(default=None, description="The user's profile picture.")
-    is_suspended: Optional[StrictBool] = Field(default=None, description="Whether the user is currently suspended or not.")
-    is_password_reset_requested: Optional[StrictBool] = Field(default=None, description="Prompt the user to change their password on next sign in.")
-    provided_id: Optional[StrictStr] = Field(default=None, description="An external id to reference the user.")
-    __properties: ClassVar[List[str]] = ["given_name", "family_name", "picture", "is_suspended", "is_password_reset_requested", "provided_id"]
+    code: Optional[StrictStr] = Field(default=None, description="Response code.")
+    message: Optional[StrictStr] = Field(default=None, description="Response message.")
+    active_users_count: Optional[StrictInt] = Field(default=None, description="Number of users with the role who received at least one access token during the requested period.")
+    date_time_from: Optional[datetime] = Field(default=None, description="Start of the active period that was used (inclusive), in UTC at second precision after any rounding.")
+    date_time_to: Optional[datetime] = Field(default=None, description="End of the active period that was used (inclusive), in UTC at second precision after any rounding.")
+    __properties: ClassVar[List[str]] = ["code", "message", "active_users_count", "date_time_from", "date_time_to"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -53,7 +53,7 @@ class UpdateUserRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of UpdateUserRequest from a JSON string"""
+        """Create an instance of GetOrganizationRoleActiveUsersCountResponse from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -78,7 +78,7 @@ class UpdateUserRequest(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of UpdateUserRequest from a dict"""
+        """Create an instance of GetOrganizationRoleActiveUsersCountResponse from a dict"""
         if obj is None:
             return None
 
@@ -86,12 +86,11 @@ class UpdateUserRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "given_name": obj.get("given_name"),
-            "family_name": obj.get("family_name"),
-            "picture": obj.get("picture"),
-            "is_suspended": obj.get("is_suspended"),
-            "is_password_reset_requested": obj.get("is_password_reset_requested"),
-            "provided_id": obj.get("provided_id")
+            "code": obj.get("code"),
+            "message": obj.get("message"),
+            "active_users_count": obj.get("active_users_count"),
+            "date_time_from": obj.get("date_time_from"),
+            "date_time_to": obj.get("date_time_to")
         })
         return _obj
 

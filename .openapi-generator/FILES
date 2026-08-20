@@ -40,6 +40,7 @@ kinde_sdk/management/docs/AddOrganizationUsersResponse.md
 kinde_sdk/management/docs/AddRoleScopeRequest.md
 kinde_sdk/management/docs/AddRoleScopeResponse.md
 kinde_sdk/management/docs/ApiResult.md
+kinde_sdk/management/docs/ApplicationAccessRole.md
 kinde_sdk/management/docs/Applications.md
 kinde_sdk/management/docs/ApplicationsApi.md
 kinde_sdk/management/docs/AuthorizeAppApiResponse.md
@@ -103,6 +104,9 @@ kinde_sdk/management/docs/CreateRolesResponse.md
 kinde_sdk/management/docs/CreateRolesResponseRole.md
 kinde_sdk/management/docs/CreateSubscriberSuccessResponse.md
 kinde_sdk/management/docs/CreateSubscriberSuccessResponseSubscriber.md
+kinde_sdk/management/docs/CreateUserBillingCustomerRequest.md
+kinde_sdk/management/docs/CreateUserBillingCustomerResponse.md
+kinde_sdk/management/docs/CreateUserBillingCustomerResponseBillingCustomer.md
 kinde_sdk/management/docs/CreateUserIdentityRequest.md
 kinde_sdk/management/docs/CreateUserRequest.md
 kinde_sdk/management/docs/CreateUserRequestIdentitiesInner.md
@@ -140,6 +144,7 @@ kinde_sdk/management/docs/GetApiScopesResponseScopesInner.md
 kinde_sdk/management/docs/GetApisResponse.md
 kinde_sdk/management/docs/GetApisResponseApisInner.md
 kinde_sdk/management/docs/GetApisResponseApisInnerScopesInner.md
+kinde_sdk/management/docs/GetApplicationAccessRolesResponse.md
 kinde_sdk/management/docs/GetApplicationResponse.md
 kinde_sdk/management/docs/GetApplicationResponseApplication.md
 kinde_sdk/management/docs/GetApplicationsResponse.md
@@ -177,6 +182,8 @@ kinde_sdk/management/docs/GetOrganizationPasskey200Response.md
 kinde_sdk/management/docs/GetOrganizationResponse.md
 kinde_sdk/management/docs/GetOrganizationResponseBilling.md
 kinde_sdk/management/docs/GetOrganizationResponseBillingAgreementsInner.md
+kinde_sdk/management/docs/GetOrganizationRoleActiveUsersCountResponse.md
+kinde_sdk/management/docs/GetOrganizationRoleUsersCountResponse.md
 kinde_sdk/management/docs/GetOrganizationRoleUsersResponse.md
 kinde_sdk/management/docs/GetOrganizationRoleUsersResponseUsersInner.md
 kinde_sdk/management/docs/GetOrganizationUsersResponse.md
@@ -325,6 +332,7 @@ kinde_sdk/management/models/add_organization_users_response.py
 kinde_sdk/management/models/add_role_scope_request.py
 kinde_sdk/management/models/add_role_scope_response.py
 kinde_sdk/management/models/api_result.py
+kinde_sdk/management/models/application_access_role.py
 kinde_sdk/management/models/applications.py
 kinde_sdk/management/models/authorize_app_api_response.py
 kinde_sdk/management/models/category.py
@@ -380,6 +388,9 @@ kinde_sdk/management/models/create_roles_response.py
 kinde_sdk/management/models/create_roles_response_role.py
 kinde_sdk/management/models/create_subscriber_success_response.py
 kinde_sdk/management/models/create_subscriber_success_response_subscriber.py
+kinde_sdk/management/models/create_user_billing_customer_request.py
+kinde_sdk/management/models/create_user_billing_customer_response.py
+kinde_sdk/management/models/create_user_billing_customer_response_billing_customer.py
 kinde_sdk/management/models/create_user_identity_request.py
 kinde_sdk/management/models/create_user_request.py
 kinde_sdk/management/models/create_user_request_identities_inner.py
@@ -413,6 +424,7 @@ kinde_sdk/management/models/get_api_scopes_response_scopes_inner.py
 kinde_sdk/management/models/get_apis_response.py
 kinde_sdk/management/models/get_apis_response_apis_inner.py
 kinde_sdk/management/models/get_apis_response_apis_inner_scopes_inner.py
+kinde_sdk/management/models/get_application_access_roles_response.py
 kinde_sdk/management/models/get_application_response.py
 kinde_sdk/management/models/get_application_response_application.py
 kinde_sdk/management/models/get_applications_response.py
@@ -450,6 +462,8 @@ kinde_sdk/management/models/get_organization_passkey200_response.py
 kinde_sdk/management/models/get_organization_response.py
 kinde_sdk/management/models/get_organization_response_billing.py
 kinde_sdk/management/models/get_organization_response_billing_agreements_inner.py
+kinde_sdk/management/models/get_organization_role_active_users_count_response.py
+kinde_sdk/management/models/get_organization_role_users_count_response.py
 kinde_sdk/management/models/get_organization_role_users_response.py
 kinde_sdk/management/models/get_organization_role_users_response_users_inner.py
 kinde_sdk/management/models/get_organization_users_response.py
@@ -587,6 +601,7 @@ kinde_sdk/management/test/test_add_role_scope_response.py
 kinde_sdk/management/test/test_api_keys_api.py
 kinde_sdk/management/test/test_api_result.py
 kinde_sdk/management/test/test_apis_api.py
+kinde_sdk/management/test/test_application_access_role.py
 kinde_sdk/management/test/test_applications.py
 kinde_sdk/management/test/test_applications_api.py
 kinde_sdk/management/test/test_authorize_app_api_response.py
@@ -650,6 +665,9 @@ kinde_sdk/management/test/test_create_roles_response.py
 kinde_sdk/management/test/test_create_roles_response_role.py
 kinde_sdk/management/test/test_create_subscriber_success_response.py
 kinde_sdk/management/test/test_create_subscriber_success_response_subscriber.py
+kinde_sdk/management/test/test_create_user_billing_customer_request.py
+kinde_sdk/management/test/test_create_user_billing_customer_response.py
+kinde_sdk/management/test/test_create_user_billing_customer_response_billing_customer.py
 kinde_sdk/management/test/test_create_user_identity_request.py
 kinde_sdk/management/test/test_create_user_request.py
 kinde_sdk/management/test/test_create_user_request_identities_inner.py
@@ -687,6 +705,7 @@ kinde_sdk/management/test/test_get_api_scopes_response_scopes_inner.py
 kinde_sdk/management/test/test_get_apis_response.py
 kinde_sdk/management/test/test_get_apis_response_apis_inner.py
 kinde_sdk/management/test/test_get_apis_response_apis_inner_scopes_inner.py
+kinde_sdk/management/test/test_get_application_access_roles_response.py
 kinde_sdk/management/test/test_get_application_response.py
 kinde_sdk/management/test/test_get_application_response_application.py
 kinde_sdk/management/test/test_get_applications_response.py
@@ -724,6 +743,8 @@ kinde_sdk/management/test/test_get_organization_passkey200_response.py
 kinde_sdk/management/test/test_get_organization_response.py
 kinde_sdk/management/test/test_get_organization_response_billing.py
 kinde_sdk/management/test/test_get_organization_response_billing_agreements_inner.py
+kinde_sdk/management/test/test_get_organization_role_active_users_count_response.py
+kinde_sdk/management/test/test_get_organization_role_users_count_response.py
 kinde_sdk/management/test/test_get_organization_role_users_response.py
 kinde_sdk/management/test/test_get_organization_role_users_response_users_inner.py
 kinde_sdk/management/test/test_get_organization_users_response.py

@@ -44,9 +44,9 @@ class CreateOrganizationRequest(BaseModel):
     is_auto_membership_enabled: Optional[StrictBool] = Field(default=None, description="If users become members of this organization when the org code is supplied during authentication.")
     sender_name: Optional[StrictStr] = Field(default=None, description="The name of the organization that will be used in emails")
     sender_email: Optional[StrictStr] = Field(default=None, description="The email address that will be used in emails. Requires custom SMTP to be set up.")
-    is_create_billing_customer: Optional[StrictBool] = Field(default=None, description="If a billing customer is also created for this organization")
-    billing_email: Optional[StrictStr] = Field(default=None, description="The email address used for billing purposes for the organization")
-    billing_plan_code: Optional[StrictStr] = Field(default=None, description="The billing plan to put the customer on. If not specified, the default plan is used")
+    is_create_billing_customer: Optional[StrictBool] = Field(default=None, description="If an organization billing customer is also created for this organization")
+    billing_email: Optional[StrictStr] = Field(default=None, description="The email address used for billing purposes for the organization. Required when is_create_billing_customer is true")
+    billing_plan_code: Optional[StrictStr] = Field(default=None, description="Code of a published organization billing plan to assign to the new billing customer. If omitted, the default organization plan is used. User plans and unpublished plans are rejected. ")
     __properties: ClassVar[List[str]] = ["name", "feature_flags", "external_id", "background_color", "button_color", "button_text_color", "link_color", "background_color_dark", "button_color_dark", "button_text_color_dark", "link_color_dark", "theme_code", "handle", "is_allow_registrations", "is_auto_membership_enabled", "sender_name", "sender_email", "is_create_billing_customer", "billing_email", "billing_plan_code"]
 
     @field_validator('feature_flags')

@@ -27,7 +27,7 @@ class UpdateOrganizationRequest(BaseModel):
     """
     UpdateOrganizationRequest
     """ # noqa: E501
-    name: Optional[StrictStr] = Field(default=None, description="The organization's name.")
+    name: Optional[StrictStr] = Field(default=None, description="The organization's name. If the organization is a billing customer, this update is also propagated to the corresponding billing customer details. ")
     external_id: Optional[StrictStr] = Field(default=None, description="The organization's ID.")
     background_color: Optional[StrictStr] = Field(default=None, description="The organization's brand settings - background color.")
     button_color: Optional[StrictStr] = Field(default=None, description="The organization's brand settings - button color.")

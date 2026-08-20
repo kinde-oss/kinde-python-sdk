@@ -28,14 +28,17 @@ class CreateDirectoryRequest(BaseModel):
     CreateDirectoryRequest
     """ # noqa: E501
     org_code: StrictStr = Field(description="The organization code to create the SCIM directory for.")
-    directory_name: StrictStr = Field(description="A descriptive name for the SCIM directory.")
-    provider_code: StrictStr = Field(description="The SCIM provider code to use for this directory.")
+    directory_name: Optional[StrictStr] = Field(default=None, description="An optional descriptive name for the SCIM directory.")
+    provider_code: Optional[StrictStr] = Field(default=None, description="The SCIM provider code to use for this directory. When omitted, the provider is inferred from the organization enterprise authentication method. If the inferred (or explicit) provider is disabled or missing endpoint configuration, INVALID_PROVIDER is returned. ")
     enterprise_connection_id: Optional[StrictStr] = Field(default=None, description="The enterprise connection ID to associate with this directory for SCIM-provisioned users. Required when the organization has multiple enabled enterprise connections. ")
     __properties: ClassVar[List[str]] = ["org_code", "directory_name", "provider_code", "enterprise_connection_id"]
 
     @field_validator('provider_code')
     def provider_code_validate_enum(cls, value):
         """Validates the enum"""
+        if value is None:
+            return value
+
         if value not in set(['entra_id_azure_ad', 'okta', 'google_workspace', 'custom_scim_v2', 'cyberark', 'jumpcloud', 'onelogin', 'pingfederate', 'rippling']):
             raise ValueError("must be one of enum values ('entra_id_azure_ad', 'okta', 'google_workspace', 'custom_scim_v2', 'cyberark', 'jumpcloud', 'onelogin', 'pingfederate', 'rippling')")
         return value

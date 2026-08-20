@@ -18,22 +18,19 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class UpdateUserRequest(BaseModel):
+class CreateUserBillingCustomerRequest(BaseModel):
     """
-    UpdateUserRequest
+    CreateUserBillingCustomerRequest
     """ # noqa: E501
-    given_name: Optional[StrictStr] = Field(default=None, description="User's first name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
-    family_name: Optional[StrictStr] = Field(default=None, description="User's last name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
-    picture: Optional[StrictStr] = Field(default=None, description="The user's profile picture.")
-    is_suspended: Optional[StrictBool] = Field(default=None, description="Whether the user is currently suspended or not.")
-    is_password_reset_requested: Optional[StrictBool] = Field(default=None, description="Prompt the user to change their password on next sign in.")
-    provided_id: Optional[StrictStr] = Field(default=None, description="An external id to reference the user.")
-    __properties: ClassVar[List[str]] = ["given_name", "family_name", "picture", "is_suspended", "is_password_reset_requested", "provided_id"]
+    org_code: StrictStr = Field(description="The organization code the user belongs to. The billing customer is linked to this organization.")
+    billing_email: StrictStr = Field(description="The email address used for billing purposes for the user.")
+    billing_plan_code: Optional[StrictStr] = Field(default=None, description="Code of a published user billing plan to assign to the new billing customer. If omitted, the default user plan is used. Organization plans and unpublished plans are rejected. ")
+    __properties: ClassVar[List[str]] = ["org_code", "billing_email", "billing_plan_code"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -53,7 +50,7 @@ class UpdateUserRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of UpdateUserRequest from a JSON string"""
+        """Create an instance of CreateUserBillingCustomerRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -78,7 +75,7 @@ class UpdateUserRequest(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of UpdateUserRequest from a dict"""
+        """Create an instance of CreateUserBillingCustomerRequest from a dict"""
         if obj is None:
             return None
 
@@ -86,12 +83,9 @@ class UpdateUserRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "given_name": obj.get("given_name"),
-            "family_name": obj.get("family_name"),
-            "picture": obj.get("picture"),
-            "is_suspended": obj.get("is_suspended"),
-            "is_password_reset_requested": obj.get("is_password_reset_requested"),
-            "provided_id": obj.get("provided_id")
+            "org_code": obj.get("org_code"),
+            "billing_email": obj.get("billing_email"),
+            "billing_plan_code": obj.get("billing_plan_code")
         })
         return _obj
 

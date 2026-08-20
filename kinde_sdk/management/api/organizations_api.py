@@ -17,6 +17,7 @@ from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
+from datetime import datetime
 from pydantic import Field, StrictBool, StrictBytes, StrictInt, StrictStr, field_validator
 from typing import Optional, Tuple, Union
 from typing_extensions import Annotated
@@ -34,6 +35,8 @@ from kinde_sdk.management.models.get_organization_invite_response import GetOrga
 from kinde_sdk.management.models.get_organization_invites_response import GetOrganizationInvitesResponse
 from kinde_sdk.management.models.get_organization_passkey200_response import GetOrganizationPasskey200Response
 from kinde_sdk.management.models.get_organization_response import GetOrganizationResponse
+from kinde_sdk.management.models.get_organization_role_active_users_count_response import GetOrganizationRoleActiveUsersCountResponse
+from kinde_sdk.management.models.get_organization_role_users_count_response import GetOrganizationRoleUsersCountResponse
 from kinde_sdk.management.models.get_organization_role_users_response import GetOrganizationRoleUsersResponse
 from kinde_sdk.management.models.get_organization_users_response import GetOrganizationUsersResponse
 from kinde_sdk.management.models.get_organizations_response import GetOrganizationsResponse
@@ -7381,6 +7384,344 @@ class OrganizationsApi:
 
 
     @validate_call
+    def get_organization_role_active_users_count(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        date_time_from: Annotated[datetime, Field(description="Start of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded down to the nearest second before validation.")],
+        date_time_to: Annotated[datetime, Field(description="End of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded up to the nearest second before validation. The window must not exceed 3 days, so this must be earlier than `date_time_from` plus 3 days.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> GetOrganizationRoleActiveUsersCountResponse:
+        """Get organization role active users count
+
+        Get the number of active users that hold a given role within a specific organization.  A user is counted as active if they were issued at least one access token during the requested period, regardless of organization context on the token. Only users who currently hold the role in the organization are included. The count is scoped to the current environment.  Both `date_time_from` and `date_time_to` are required, inclusive, and must be ISO 8601 datetimes in UTC. Provide them at second precision (no fractional seconds). If a value includes fractional seconds, it is normalized before any other processing: `date_time_from` is rounded down and `date_time_to` is rounded up to the nearest second. Window validation, the active-user query, and the echoed response bounds all use those normalized values.  The requested window must not exceed 3 days. Because both bounds are inclusive, this means `date_time_to` must be earlier than `date_time_from` plus 3 days. For example, `2026-07-01T00:00:00Z` to `2026-07-03T23:59:59Z` is a full 3 day window covering the whole of 1, 2 and 3 July. A longer window is rejected with `DATE_TIME_RANGE_TOO_LARGE`.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param date_time_from: Start of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded down to the nearest second before validation. (required)
+        :type date_time_from: datetime
+        :param date_time_to: End of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded up to the nearest second before validation. The window must not exceed 3 days, so this must be earlier than `date_time_from` plus 3 days. (required)
+        :type date_time_to: datetime
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_role_active_users_count_serialize(
+            org_code=org_code,
+            role_id=role_id,
+            date_time_from=date_time_from,
+            date_time_to=date_time_to,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationRoleActiveUsersCountResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_organization_role_active_users_count_with_http_info(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        date_time_from: Annotated[datetime, Field(description="Start of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded down to the nearest second before validation.")],
+        date_time_to: Annotated[datetime, Field(description="End of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded up to the nearest second before validation. The window must not exceed 3 days, so this must be earlier than `date_time_from` plus 3 days.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[GetOrganizationRoleActiveUsersCountResponse]:
+        """Get organization role active users count
+
+        Get the number of active users that hold a given role within a specific organization.  A user is counted as active if they were issued at least one access token during the requested period, regardless of organization context on the token. Only users who currently hold the role in the organization are included. The count is scoped to the current environment.  Both `date_time_from` and `date_time_to` are required, inclusive, and must be ISO 8601 datetimes in UTC. Provide them at second precision (no fractional seconds). If a value includes fractional seconds, it is normalized before any other processing: `date_time_from` is rounded down and `date_time_to` is rounded up to the nearest second. Window validation, the active-user query, and the echoed response bounds all use those normalized values.  The requested window must not exceed 3 days. Because both bounds are inclusive, this means `date_time_to` must be earlier than `date_time_from` plus 3 days. For example, `2026-07-01T00:00:00Z` to `2026-07-03T23:59:59Z` is a full 3 day window covering the whole of 1, 2 and 3 July. A longer window is rejected with `DATE_TIME_RANGE_TOO_LARGE`.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param date_time_from: Start of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded down to the nearest second before validation. (required)
+        :type date_time_from: datetime
+        :param date_time_to: End of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded up to the nearest second before validation. The window must not exceed 3 days, so this must be earlier than `date_time_from` plus 3 days. (required)
+        :type date_time_to: datetime
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_role_active_users_count_serialize(
+            org_code=org_code,
+            role_id=role_id,
+            date_time_from=date_time_from,
+            date_time_to=date_time_to,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationRoleActiveUsersCountResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_organization_role_active_users_count_without_preload_content(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        date_time_from: Annotated[datetime, Field(description="Start of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded down to the nearest second before validation.")],
+        date_time_to: Annotated[datetime, Field(description="End of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded up to the nearest second before validation. The window must not exceed 3 days, so this must be earlier than `date_time_from` plus 3 days.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get organization role active users count
+
+        Get the number of active users that hold a given role within a specific organization.  A user is counted as active if they were issued at least one access token during the requested period, regardless of organization context on the token. Only users who currently hold the role in the organization are included. The count is scoped to the current environment.  Both `date_time_from` and `date_time_to` are required, inclusive, and must be ISO 8601 datetimes in UTC. Provide them at second precision (no fractional seconds). If a value includes fractional seconds, it is normalized before any other processing: `date_time_from` is rounded down and `date_time_to` is rounded up to the nearest second. Window validation, the active-user query, and the echoed response bounds all use those normalized values.  The requested window must not exceed 3 days. Because both bounds are inclusive, this means `date_time_to` must be earlier than `date_time_from` plus 3 days. For example, `2026-07-01T00:00:00Z` to `2026-07-03T23:59:59Z` is a full 3 day window covering the whole of 1, 2 and 3 July. A longer window is rejected with `DATE_TIME_RANGE_TOO_LARGE`.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param date_time_from: Start of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded down to the nearest second before validation. (required)
+        :type date_time_from: datetime
+        :param date_time_to: End of the active period (inclusive), as an ISO 8601 datetime in UTC at second precision. Fractional seconds are accepted but rounded up to the nearest second before validation. The window must not exceed 3 days, so this must be earlier than `date_time_from` plus 3 days. (required)
+        :type date_time_to: datetime
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_role_active_users_count_serialize(
+            org_code=org_code,
+            role_id=role_id,
+            date_time_from=date_time_from,
+            date_time_to=date_time_to,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationRoleActiveUsersCountResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_organization_role_active_users_count_serialize(
+        self,
+        org_code,
+        role_id,
+        date_time_from,
+        date_time_to,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if org_code is not None:
+            _path_params['org_code'] = org_code
+        if role_id is not None:
+            _path_params['role_id'] = role_id
+        # process the query parameters
+        if date_time_from is not None:
+            if isinstance(date_time_from, datetime):
+                _query_params.append(
+                    (
+                        'date_time_from',
+                        date_time_from.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('date_time_from', date_time_from))
+            
+        if date_time_to is not None:
+            if isinstance(date_time_to, datetime):
+                _query_params.append(
+                    (
+                        'date_time_to',
+                        date_time_to.strftime(
+                            self.api_client.configuration.datetime_format
+                        )
+                    )
+                )
+            else:
+                _query_params.append(('date_time_to', date_time_to))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json', 
+                    'application/json; charset=utf-8'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/v1/organizations/{org_code}/roles/{role_id}/active_users/count',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def get_organization_role_users(
         self,
         org_code: Annotated[StrictStr, Field(description="The organization's code.")],
@@ -7685,6 +8026,292 @@ class OrganizationsApi:
         return self.api_client.param_serialize(
             method='GET',
             resource_path='/api/v1/organizations/{org_code}/roles/{role_id}/users',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def get_organization_role_users_count(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> GetOrganizationRoleUsersCountResponse:
+        """Count organization role users
+
+        Get the number of users that have a given role within a specific organization.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_role_users_count_serialize(
+            org_code=org_code,
+            role_id=role_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationRoleUsersCountResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def get_organization_role_users_count_with_http_info(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[GetOrganizationRoleUsersCountResponse]:
+        """Count organization role users
+
+        Get the number of users that have a given role within a specific organization.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_role_users_count_serialize(
+            org_code=org_code,
+            role_id=role_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationRoleUsersCountResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def get_organization_role_users_count_without_preload_content(
+        self,
+        org_code: Annotated[StrictStr, Field(description="The organization's code.")],
+        role_id: Annotated[StrictStr, Field(description="The role's public id.")],
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Count organization role users
+
+        Get the number of users that have a given role within a specific organization.  <div>   <code>read:organization_user_roles</code> </div> 
+
+        :param org_code: The organization's code. (required)
+        :type org_code: str
+        :param role_id: The role's public id. (required)
+        :type role_id: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._get_organization_role_users_count_serialize(
+            org_code=org_code,
+            role_id=role_id,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "GetOrganizationRoleUsersCountResponse",
+            '400': "ErrorResponse",
+            '403': None,
+            '429': None,
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _get_organization_role_users_count_serialize(
+        self,
+        org_code,
+        role_id,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        if org_code is not None:
+            _path_params['org_code'] = org_code
+        if role_id is not None:
+            _path_params['role_id'] = role_id
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json', 
+                    'application/json; charset=utf-8'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'kindeBearerAuth'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/v1/organizations/{org_code}/roles/{role_id}/users/count',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -10695,7 +11322,7 @@ class OrganizationsApi:
     ) -> SuccessResponse:
         """Update Organization
 
-        Update an organization.  <div>   <code>update:organizations</code> </div> 
+        Update an organization.  When the organization name is updated and the organization is a billing customer, the change is also propagated to the corresponding billing customer details.  <div>   <code>update:organizations</code> </div> 
 
         :param org_code: The identifier for the organization. (required)
         :type org_code: str
@@ -10773,7 +11400,7 @@ class OrganizationsApi:
     ) -> ApiResponse[SuccessResponse]:
         """Update Organization
 
-        Update an organization.  <div>   <code>update:organizations</code> </div> 
+        Update an organization.  When the organization name is updated and the organization is a billing customer, the change is also propagated to the corresponding billing customer details.  <div>   <code>update:organizations</code> </div> 
 
         :param org_code: The identifier for the organization. (required)
         :type org_code: str
@@ -10851,7 +11478,7 @@ class OrganizationsApi:
     ) -> RESTResponseType:
         """Update Organization
 
-        Update an organization.  <div>   <code>update:organizations</code> </div> 
+        Update an organization.  When the organization name is updated and the organization is a billing customer, the change is also propagated to the corresponding billing customer details.  <div>   <code>update:organizations</code> </div> 
 
         :param org_code: The identifier for the organization. (required)
         :type org_code: str

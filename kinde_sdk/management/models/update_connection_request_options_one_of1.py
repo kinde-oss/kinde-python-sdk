@@ -29,7 +29,8 @@ class UpdateConnectionRequestOptionsOneOf1(BaseModel):
     """ # noqa: E501
     home_realm_domains: Optional[List[StrictStr]] = Field(default=None, description="List of domains to restrict authentication.")
     saml_entity_id: Optional[StrictStr] = Field(default=None, description="SAML Entity ID.")
-    saml_idp_metadata_url: Optional[StrictStr] = Field(default=None, description="URL for the IdP metadata.")
+    saml_idp_metadata_url: Optional[StrictStr] = Field(default=None, description="URL for the IdP metadata. Optional if saml_idp_metadata_xml is provided.")
+    saml_idp_metadata_xml: Optional[StrictStr] = Field(default=None, description="Raw IdP metadata XML. Use when the IdP does not host a metadata URL (e.g. Google Workspace). Takes precedence over saml_idp_metadata_url when both are set.")
     saml_sign_in_url: Optional[StrictStr] = Field(default=None, description="Override the default SSO endpoint with a URL your IdP recognizes.")
     sign_request_algorithm: Optional[StrictStr] = Field(default=None, description="Algorithm used to sign SAML requests.")
     protocol_binding: Optional[StrictStr] = Field(default=None, description="Protocol binding used to send SAML requests.")
@@ -45,7 +46,7 @@ class UpdateConnectionRequestOptionsOneOf1(BaseModel):
     saml_signing_private_key: Optional[StrictStr] = Field(default=None, description="Private key associated with the signing certificate.")
     is_use_custom_domain: Optional[StrictBool] = Field(default=None, description="Use custom domain callback URL.")
     is_trusted: Optional[StrictBool] = Field(default=None, description="Trust this connection for account merging.")
-    __properties: ClassVar[List[str]] = ["home_realm_domains", "saml_entity_id", "saml_idp_metadata_url", "saml_sign_in_url", "sign_request_algorithm", "protocol_binding", "name_id_format", "saml_email_key_attr", "saml_user_id_key_attr", "saml_first_name_key_attr", "saml_last_name_key_attr", "is_create_missing_user", "is_force_show_sso_button", "upstream_params", "saml_signing_certificate", "saml_signing_private_key", "is_use_custom_domain", "is_trusted"]
+    __properties: ClassVar[List[str]] = ["home_realm_domains", "saml_entity_id", "saml_idp_metadata_url", "saml_idp_metadata_xml", "saml_sign_in_url", "sign_request_algorithm", "protocol_binding", "name_id_format", "saml_email_key_attr", "saml_user_id_key_attr", "saml_first_name_key_attr", "saml_last_name_key_attr", "is_create_missing_user", "is_force_show_sso_button", "upstream_params", "saml_signing_certificate", "saml_signing_private_key", "is_use_custom_domain", "is_trusted"]
 
     @field_validator('sign_request_algorithm')
     def sign_request_algorithm_validate_enum(cls, value):
@@ -131,6 +132,7 @@ class UpdateConnectionRequestOptionsOneOf1(BaseModel):
             "home_realm_domains": obj.get("home_realm_domains"),
             "saml_entity_id": obj.get("saml_entity_id"),
             "saml_idp_metadata_url": obj.get("saml_idp_metadata_url"),
+            "saml_idp_metadata_xml": obj.get("saml_idp_metadata_xml"),
             "saml_sign_in_url": obj.get("saml_sign_in_url"),
             "sign_request_algorithm": obj.get("sign_request_algorithm"),
             "protocol_binding": obj.get("protocol_binding"),

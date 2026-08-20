@@ -18,22 +18,20 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from kinde_sdk.management.models.create_user_billing_customer_response_billing_customer import CreateUserBillingCustomerResponseBillingCustomer
 from typing import Optional, Set
 from typing_extensions import Self
 
-class UpdateUserRequest(BaseModel):
+class CreateUserBillingCustomerResponse(BaseModel):
     """
-    UpdateUserRequest
+    CreateUserBillingCustomerResponse
     """ # noqa: E501
-    given_name: Optional[StrictStr] = Field(default=None, description="User's first name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
-    family_name: Optional[StrictStr] = Field(default=None, description="User's last name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
-    picture: Optional[StrictStr] = Field(default=None, description="The user's profile picture.")
-    is_suspended: Optional[StrictBool] = Field(default=None, description="Whether the user is currently suspended or not.")
-    is_password_reset_requested: Optional[StrictBool] = Field(default=None, description="Prompt the user to change their password on next sign in.")
-    provided_id: Optional[StrictStr] = Field(default=None, description="An external id to reference the user.")
-    __properties: ClassVar[List[str]] = ["given_name", "family_name", "picture", "is_suspended", "is_password_reset_requested", "provided_id"]
+    message: Optional[StrictStr] = Field(default=None, description="Response message.")
+    code: Optional[StrictStr] = Field(default=None, description="Response code.")
+    billing_customer: Optional[CreateUserBillingCustomerResponseBillingCustomer] = None
+    __properties: ClassVar[List[str]] = ["message", "code", "billing_customer"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -53,7 +51,7 @@ class UpdateUserRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of UpdateUserRequest from a JSON string"""
+        """Create an instance of CreateUserBillingCustomerResponse from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -74,11 +72,14 @@ class UpdateUserRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of billing_customer
+        if self.billing_customer:
+            _dict['billing_customer'] = self.billing_customer.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of UpdateUserRequest from a dict"""
+        """Create an instance of CreateUserBillingCustomerResponse from a dict"""
         if obj is None:
             return None
 
@@ -86,12 +87,9 @@ class UpdateUserRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "given_name": obj.get("given_name"),
-            "family_name": obj.get("family_name"),
-            "picture": obj.get("picture"),
-            "is_suspended": obj.get("is_suspended"),
-            "is_password_reset_requested": obj.get("is_password_reset_requested"),
-            "provided_id": obj.get("provided_id")
+            "message": obj.get("message"),
+            "code": obj.get("code"),
+            "billing_customer": CreateUserBillingCustomerResponseBillingCustomer.from_dict(obj["billing_customer"]) if obj.get("billing_customer") is not None else None
         })
         return _obj
 

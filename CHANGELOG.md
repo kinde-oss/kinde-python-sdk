@@ -5,6 +5,15 @@ All notable changes to the Kinde Python SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **CI**: Hardened `renovate.json` so Renovate can no longer re-propose bumping the Python
+  `<3.12` `django` pin in `requirements.txt` to Django 6.x (Django 6.0+ requires Python
+  3.12+). Django is a test-only dependency for this SDK (no runtime usage), and the
+  `>=4.2.0,<5.0.0` pin for `python_version < "3.12"` is intentional; the same breaking
+  bump was already rejected once in PR #198 and recurred in PR #200.
+
 ## [2.3.1] - 2026-07-06
 
 ### Fixed

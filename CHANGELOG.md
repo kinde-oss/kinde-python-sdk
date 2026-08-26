@@ -14,6 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `>=4.2.0,<5.0.0` pin for `python_version < "3.12"` is intentional; the same breaking
   bump was already rejected once in PR #198 and recurred in PR #200.
 
+## [2.4.0] - 2026-08-20
+
+### Added
+- **Management client**: Regenerated from the latest OpenAPI spec, adding the `directories_api`
+  and `environments_api` namespaces, plus expanded `organizations_api`, `roles_api`, `users_api`
+  and `applications_api` surfaces (including application access roles and billing customer
+  endpoints/models)
+
+### Improved
+- **Documentation**: Refreshed `README_management_client.md` examples to use the namespaced
+  management client accessors (e.g. `client.users_api.get_users()`,
+  `client.environments_api.get_environement_feature_flags()`) instead of the flattened,
+  deprecated top-level methods
+- **CI**: Bumped `actions/setup-python` to v7
+
 ## [2.3.1] - 2026-07-06
 
 ### Fixed

@@ -1,19 +1,53 @@
 # AGENTS.md
 
-## Cursor Cloud specific instructions
+Instructions for coding agents working in this repository.
 
-This repo is the **Kinde Python SDK** — a client library (plus optional `kinde_fastapi` and `kinde_flask` framework integrations), not a standalone server product. There are **no long-running services** required for development, and the automated test suite (`testv2/`) is fully mocked, so it needs no network, database, or Kinde account.
+This is the **Kinde Python SDK**: a client library plus optional `kinde_fastapi` and `kinde_flask` integrations. It is not a standalone server. There are **no long-running services** required for development. The automated test suite (`testv2/`) is fully mocked and needs no network, database, or Kinde account.
 
-### Environment
-- Python dependencies are installed into a virtualenv at `.venv/` (Ubuntu's system Python is PEP 668 "externally managed", so a venv is used instead of global installs). The startup update script keeps `.venv` in sync with `requirements.txt`.
-- Run tools via the venv without needing to activate it, e.g. `.venv/bin/pytest`, `.venv/bin/black`, `.venv/bin/flake8`. To activate for an interactive shell: `source .venv/bin/activate`.
-- `requirements.txt` is the source of truth for dev (matches CI); `pip install -e ".[fastapi,flask,dev]"` also works.
+## Repo map
 
-### Test / lint / build
-- Tests: `.venv/bin/pytest` (config in `pytest.ini`; `testpaths=testv2`, coverage + 30s per-test timeout). CI mirrors this across Python 3.9–3.13 (`.github/workflows/ci.yml`).
-- Lint/format: `black` and `flake8` are available. Note the repo's pre-commit pins an older `black` (22.12.0) than the version installed from `requirements.txt`, so `black --check` reports many "would reformat" files against the newer version — this is pre-existing and not caused by your changes.
+- `kinde_sdk/auth/`, `kinde_sdk/core/` — hand-written auth, storage, session, and framework glue. Prefer editing here.
+- `kinde_sdk/management/` — Management API. Mostly OpenAPI-generated. Hand-written wrappers: `management_client.py`, `management_token_manager.py`.
+- `kinde_sdk/frontend/` — Frontend/Account API. Almost entirely OpenAPI-generated.
+- `kinde_sdk/docs/`, `kinde_sdk/test/` — generated artifacts. `kinde_sdk/test/` is **not** collected by pytest.
+- `kinde_fastapi/`, `kinde_flask/` — framework integrations and example apps.
+- `testv2/` — the real test suite (`testv2_auth`, `testv2_core`, `testv2_management`, `testv2_framework`, `testv2_expected_behavior`).
+- `generate_management_sdk.py`, `generate_frontend_sdk.py` — regenerate OpenAPI clients from Kinde's public specs.
 
-### Running the example apps (manual E2E)
-- FastAPI example: `.venv/bin/python -m uvicorn kinde_fastapi.examples.example_app:app --host 127.0.0.1 --port 8000`. Flask example lives at `kinde_flask/examples/example_app.py`.
-- The example apps read `KINDE_CLIENT_ID`, `KINDE_CLIENT_SECRET`, `KINDE_REDIRECT_URI`, `KINDE_HOST` (from env or a `.env` beside the example). Only `KINDE_CLIENT_ID` is strictly required for the app to boot.
-- With placeholder credentials the app still boots and `/login` correctly generates a full OAuth2/OIDC + PKCE authorization redirect to `${KINDE_HOST}/oauth2/auth?...`. **Completing an actual login requires a real Kinde account/app** whose allowed callback URLs include the configured redirect URI; otherwise Kinde returns "Invalid callback URL" (expected with placeholders).
+## Environment
+
+- Python `>=3.9` (CI matrix: 3.9–3.13). Use the virtualenv at `.venv/`.
+- On Cursor Cloud (Ubuntu, PEP 668 externally-managed Python), the startup update script already creates `.venv` from `requirements.txt`. Recreate it locally with:
+
+  ```
+  python3 -m venv .venv
+  .venv/bin/pip install -r requirements.txt
+  ```
+
+- Run tools via the venv without activating it: `.venv/bin/pytest`, `.venv/bin/python`, `.venv/bin/black`, `.venv/bin/flake8`.
+- `requirements.txt` is the source of truth for dev installs (matches CI). `pip install -e ".[fastapi,flask,dev]"` also works. Do **not** add a `poetry.lock`; Poetry is not the supported install path (see `.gitignore`).
+- CI does not install the package editable. Import `kinde_sdk` from the repo root and run pytest from the repo root.
+
+## Tests, lint, verification
+
+- Default command: `.venv/bin/pytest` (`pytest.ini`: `testpaths=testv2`, coverage, 30s per-test timeout). After a focused change, run the matching `testv2/` file first, then the full suite.
+- The merge gate is `.github/workflows/ci.yml`: `pip install -r requirements.txt` then `pytest --cov=kinde_sdk --cov-branch --cov-report=xml` on Python 3.9–3.13. CI does **not** run Black or flake8.
+- Black and flake8 are available locally. Pre-commit pins Black **22.12.0** while `requirements.txt` installs a newer Black, so `black --check` reports many pre-existing diffs. Do not reformat the tree to satisfy the newer Black unless the task is specifically a format change.
+- Add or update tests in `testv2/` for behavior you change. Do not add tests under `kinde_sdk/test/`.
+
+## Conventions
+
+- **Version:** bump only `kinde_sdk/_version.py`. `pyproject.toml` and the generated sub-package `__init__.py` files derive from it. Keep `packageVersion` as the placeholder `"SDK_VERSION"` in OpenAPI generator configs. `testv2/testv2_core/test_version_sync.py` enforces this.
+- **Generated code:** do not hand-edit files marked `Generated by OpenAPI Generator` / `Do not edit the class manually` (especially `kinde_sdk/management/{api,models}/` and `kinde_sdk/frontend/{api,models}/`). Change the spec or a generator wrapper, then regenerate. The management generator preserves the hand-written wrappers listed above.
+- **Regeneration:** `python3 generate_management_sdk.py` and `python3 generate_frontend_sdk.py` need Node/`npx`, `@openapitools/openapi-generator-cli`, and network access to `api-spec.kinde.com`. Only run these when the task is to refresh generated clients.
+- **OAuth env vars** (`kinde_sdk/auth/oauth.py`): `KINDE_CLIENT_ID`, `KINDE_CLIENT_SECRET`, `KINDE_REDIRECT_URI`, `KINDE_HOST` (full URL, e.g. `https://your-domain.kinde.com`). **Management** credentials use `KINDE_DOMAIN` (hostname only, e.g. `your-domain.kinde.com`) plus `KINDE_MANAGEMENT_CLIENT_ID` / `KINDE_MANAGEMENT_CLIENT_SECRET`. Some READMEs mix these names; trust the code.
+- Never commit `.env` files or secrets.
+
+## Example apps (manual E2E)
+
+From the repo root:
+
+- FastAPI: `.venv/bin/python -m uvicorn kinde_fastapi.examples.example_app:app --host 127.0.0.1 --port 8000`
+- Flask: `.venv/bin/python kinde_flask/examples/example_app.py` (port 5000)
+
+Each app loads a `.env` beside the example script. Only `KINDE_CLIENT_ID` is required to boot. With placeholder credentials, `/login` still builds a valid OAuth2/OIDC + PKCE redirect to `${KINDE_HOST}/oauth2/auth?...`. Completing an actual login requires a real Kinde application whose allowed callback URLs include the configured redirect URI; otherwise Kinde returns "Invalid callback URL" (expected with placeholders).

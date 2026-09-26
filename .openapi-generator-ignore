@@ -16,8 +16,6 @@ kinde_sdk/__init__.py
 # Custom Kinde SDK files - never overwrite these
 management_client.py
 management_token_manager.py
-custom_exceptions.py
-kinde_api_client.py
 
 # Backup directory (if it exists from old script)
 backup/

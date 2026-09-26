@@ -11,6 +11,8 @@ from typing import Dict, Union, Any, Optional, List
 
 logger = logging.getLogger("kinde_sdk")
 
+REQUEST_TIMEOUT = 30  # seconds
+
 def generate_random_string(length: int = 32) -> str:
     """
     Generate a random string of specified length.
@@ -96,7 +98,7 @@ async def get_user_details(userinfo_url: str, token_manager, logger) -> Dict[str
         }
         
         # Make the request to userinfo endpoint
-        response = requests.get(userinfo_url, headers=headers)
+        response = requests.get(userinfo_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         # Return user profile data
@@ -198,7 +200,7 @@ def get_user_organizations(api_url: str, token_manager, logger) -> List[Dict[str
         
         # Make the request to organizations endpoint
         orgs_url = f"{api_url}/user/organizations"
-        response = requests.get(orgs_url, headers=headers)
+        response = requests.get(orgs_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         # Return organizations data
@@ -252,7 +254,7 @@ def get_organization_details(api_url: str, org_code: str, token_manager, logger)
         
         # Make the request to organization details endpoint
         org_url = f"{api_url}/organization/{org_code}"
-        response = requests.get(org_url, headers=headers)
+        response = requests.get(org_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         # Return organization data
@@ -305,7 +307,7 @@ def get_organization_users(api_url: str, org_code: str, token_manager, logger) -
         
         # Make the request to organization users endpoint
         users_url = f"{api_url}/organization/{org_code}/users"
-        response = requests.get(users_url, headers=headers)
+        response = requests.get(users_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         # Return users data
@@ -364,7 +366,7 @@ def get_user_permissions(api_url: str, token_manager, org_code: Optional[str] = 
             permissions_url = f"{api_url}/user/permissions"
             
         # Make the request to permissions endpoint
-        response = requests.get(permissions_url, headers=headers)
+        response = requests.get(permissions_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         # Return permissions data
@@ -455,7 +457,7 @@ def get_user_roles(api_url: str, token_manager, org_code: Optional[str] = None, 
             roles_url = f"{api_url}/user/roles"
             
         # Make the request to roles endpoint
-        response = requests.get(roles_url, headers=headers)
+        response = requests.get(roles_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         # Return roles data
@@ -544,7 +546,7 @@ def get_flag_value(api_url: str, flag_code: str, default_value: Any, token_manag
             flag_url = f"{api_url}/feature-flags/{flag_code}"
             
         # Make the request to flag endpoint
-        response = requests.get(flag_url, headers=headers)
+        response = requests.get(flag_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         # Parse the response
@@ -723,7 +725,7 @@ def get_user_details_sync(userinfo_url: str, token_manager, logger) -> Dict[str,
             "Authorization": f"Bearer {access_token}",
             "Accept": "application/json"
         }
-        response = requests.get(userinfo_url, headers=headers)
+        response = requests.get(userinfo_url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except RuntimeError:

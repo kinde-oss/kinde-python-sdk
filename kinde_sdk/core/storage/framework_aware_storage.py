@@ -51,7 +51,7 @@ class FrameworkAwareStorage(StorageInterface):
         session = self._get_session()
         if session is not None:
             value = session.get(key)
-            self._logger.debug(f"Getting key '{key}' from session: {value}")
+            self._logger.debug(f"Getting key '{key}' from session")
             return value
         return None
         
@@ -65,7 +65,7 @@ class FrameworkAwareStorage(StorageInterface):
         """
         session = self._get_session()
         if session is not None:
-            self._logger.debug(f"Setting key '{key}' in session with value: {value}")
+            self._logger.debug(f"Setting key '{key}' in session")
             session[key] = value
             # Mark session as modified for Flask
             if hasattr(session, 'modified'):
@@ -97,7 +97,7 @@ class FrameworkAwareStorage(StorageInterface):
         """
         session = self._get_session()
         if session is not None:
-            self._logger.debug(f"Setting flat data in session: {value}")
+            self._logger.debug("Setting flat data in session")
             session["_flat_data"] = value
             # Mark session as modified for Flask
             if hasattr(session, 'modified'):

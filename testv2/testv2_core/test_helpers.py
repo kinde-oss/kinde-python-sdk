@@ -11,6 +11,7 @@ from requests.exceptions import RequestException
 
 # Import the functions to test
 from kinde_sdk.core.helpers import (
+    REQUEST_TIMEOUT,
     generate_random_string,
     base64_url_encode,
     generate_pkce_pair,
@@ -142,7 +143,8 @@ class TestHelpers(unittest.TestCase):
                 headers={
                     "Authorization": "Bearer test_access_token",
                     "Accept": "application/json"
-                }
+                },
+                timeout=REQUEST_TIMEOUT
             )
 
     def test_get_user_details_token_error(self):
@@ -280,7 +282,8 @@ class TestHelpers(unittest.TestCase):
                 headers={
                     "Authorization": "Bearer test_access_token",
                     "Accept": "application/json"
-                }
+                },
+                timeout=REQUEST_TIMEOUT
             )
 
     def test_get_user_organizations_token_error(self):
@@ -366,7 +369,8 @@ class TestHelpers(unittest.TestCase):
                 headers={
                     "Authorization": "Bearer test_access_token",
                     "Accept": "application/json"
-                }
+                },
+                timeout=REQUEST_TIMEOUT
             )
 
     def test_get_organization_details_token_error(self):
@@ -456,7 +460,8 @@ class TestHelpers(unittest.TestCase):
                 headers={
                     "Authorization": "Bearer test_access_token",
                     "Accept": "application/json"
-                }
+                },
+                timeout=REQUEST_TIMEOUT
             )
 
     def test_get_organization_users_token_error(self):
@@ -545,7 +550,8 @@ class TestHelpers(unittest.TestCase):
                 headers={
                     "Authorization": "Bearer test_access_token",
                     "Accept": "application/json"
-                }
+                },
+                timeout=REQUEST_TIMEOUT
             )
             
             # Reset mock and test with org_code
@@ -561,7 +567,8 @@ class TestHelpers(unittest.TestCase):
                 headers={
                     "Authorization": "Bearer test_access_token",
                     "Accept": "application/json"
-                }
+                },
+                timeout=REQUEST_TIMEOUT
             )
 
     def test_get_user_permissions_token_error(self):
@@ -713,7 +720,8 @@ class TestHelpers(unittest.TestCase):
                 headers={
                     "Authorization": "Bearer test_access_token",
                     "Accept": "application/json"
-                }
+                },
+                timeout=REQUEST_TIMEOUT
             )
             
             # Reset mock and test with org_code
@@ -729,7 +737,8 @@ class TestHelpers(unittest.TestCase):
                 headers={
                     "Authorization": "Bearer test_access_token",
                     "Accept": "application/json"
-                }
+                },
+                timeout=REQUEST_TIMEOUT
             )
 
     def test_get_user_roles_token_error(self):
@@ -904,7 +913,8 @@ class TestHelpers(unittest.TestCase):
                 headers={
                     "Authorization": "Bearer test_access_token",
                     "Accept": "application/json"
-                }
+                },
+                timeout=REQUEST_TIMEOUT
             )
 
     def test_get_flag_value_request_error(self):
@@ -1146,7 +1156,8 @@ class TestHelpers(unittest.TestCase):
                     headers={
                         "Authorization": "Bearer test_access_token",
                         "Accept": "application/json"
-                    }
+                    },
+                    timeout=REQUEST_TIMEOUT
                 )
 
     def test_get_user_details_sync_token_error(self):

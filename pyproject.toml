@@ -35,18 +35,13 @@ classifiers = [
 dependencies = [
     "urllib3 >=2.2.0, <3.0",
     "python-dateutil >=2.9.0, <3.0",
-    "Authlib >=1.3.0, <2.0",
     "pyjwt >=2.10.0, <3.0",
     "requests ~=2.32.5; python_version < '3.10'",
     "requests ~=2.34.2; python_version >= '3.10'",
     "typing-extensions >=4.11.0, <5.0",
-    "frozendict >=2.4.3, <3.0",
     "certifi >=2026.1.4",
     "PyYAML >=6.0.1, <7.0.0",
-    "cryptography >=50.0.0, <50.1",
     "python-dotenv >=1.0.0, <2.0.0",
-    "itsdangerous >=2.2.0, <3.0.0",
-    "nest-asyncio >=1.5.8, <2.0.0",
     "httpx >=0.25.0, <0.29.0",
     "pydantic >=2.0.0, <3.0.0",
 ]
@@ -59,6 +54,10 @@ fastapi = [
 ]
 flask = [
     "flask >=3.0.0, <4.0.0",
+    # kinde_flask imports flask_session at module load. 0.7.0 is excluded
+    # because it dropped the cachelib dependency that its default
+    # filesystem backend (used by kinde_flask) needs; 0.8.0 restored it.
+    "flask-session >=0.5.0, !=0.7.0, <1.0.0",
 ]
 dev = [
     # pytest 9 requires Python >=3.10; pytest 9.0.3 fixes CVE-2025-71176
@@ -98,25 +97,3 @@ version = {attr = "kinde_sdk._version.__version__"}
 "kinde_sdk" = ["**/*.py", "**/*.json", "**/*.yaml", "**/*.yml"]
 "kinde_fastapi" = ["**/*.py", "**/*.json", "**/*.yaml", "**/*.yml"]
 "kinde_flask" = ["**/*.py", "**/*.json", "**/*.yaml", "**/*.yml"]
-
-[tool.poetry.dev-dependencies]
-# pytest 9 requires Python >=3.10; pytest 9.0.3 fixes CVE-2025-71176
-pytest = [
-    {version = ">=7.4.0,<9", python = "~3.9"},
-    {version = "^9.0.3", python = ">=3.10"}
-]
-pytest-cov = "^7.0.0"
-coverage = ">=7.10.6"
-pytest-django = "^4.5.2"
-mypy = "^1.5.0"
-bandit = "^1.7"
-pylint = [
-    {version = ">=3.3.9,<4.0.0", python = "~3.9"},
-    {version = ">=4.0.5,<4.1.0", python = ">=3.10"}
-]
-pycodestyle = "^2.0"
-pytest-asyncio = "^0.26.0"
-pytest-timeout = "^2.2.0"
-black = "^26.0.0"
-flake8 = "^7.0.0"
-isort = "^8.0.0"

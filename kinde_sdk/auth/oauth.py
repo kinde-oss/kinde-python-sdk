@@ -60,7 +60,9 @@ class OAuth:
         # Validate required configurations
         if not self.client_id:
             raise KindeConfigurationException("Client ID is required.")
-        UserSession.client_secrets[self.client_id] = self.client_secret
+        # Don't let a secretless (PKCE) instance for the same client_id wipe a configured secret
+        if self.client_secret:
+            UserSession.client_secrets[self.client_id] = self.client_secret
         
         # Initialize API endpoints
         self._set_api_endpoints()

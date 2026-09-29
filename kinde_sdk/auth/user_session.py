@@ -50,8 +50,10 @@ class UserSession:
         if session_data:
             # We need to serialize the session data
             # Token manager can't be directly serialized
+            # Never persist client_secret, even if a caller passed it in user_info
+            user_info = {k: v for k, v in session_data["user_info"].items() if k != "client_secret"}
             serialized_data = {
-                "user_info": session_data["user_info"],
+                "user_info": user_info,
                 "tokens": session_data["token_manager"].tokens,
             }
             # Store with user: prefix to make it user-specific but device-independent
@@ -86,8 +88,10 @@ class UserSession:
             "token_url" not in user_info or
             "access_token" not in tokens):
             return False
-            
-        
+
+        # Sessions saved by older SDK versions may still contain client_secret; drop it
+        user_info = {k: v for k, v in user_info.items() if k != "client_secret"}
+
         token_manager = TokenManager(
             user_id,
             user_info.get("client_id"),

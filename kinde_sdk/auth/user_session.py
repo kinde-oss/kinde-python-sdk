@@ -1,8 +1,11 @@
 from .token_manager import TokenManager
+import logging
 import threading
 import time
 from typing import Dict, Any, Optional
 from kinde_sdk.core.storage.storage_manager import StorageManager
+
+logger = logging.getLogger(__name__)
 
 class UserSession:
     def __init__(self):
@@ -25,7 +28,8 @@ class UserSession:
                 # Set redirect URI if available
                 if "redirect_uri" in user_info:
                     token_manager.set_redirect_uri(user_info["redirect_uri"])
-                
+                self._persist_refreshed_tokens(user_id, token_manager)
+
                 self.user_sessions[user_id] = {
                     "user_info": user_info,
                     "token_manager": token_manager
@@ -53,6 +57,11 @@ class UserSession:
             # Store with user: prefix to make it user-specific but device-independent
             # if you want device-specific sessions, remove the "user:" prefix
             self.storage_manager.setItems(user_id, serialized_data)
+
+    def _persist_refreshed_tokens(self, user_id: str, token_manager: TokenManager):
+        """Save the session again whenever the token manager refreshes its tokens,
+        so a restarted process or another worker doesn't reuse the old refresh token."""
+        token_manager.on_tokens_refreshed = lambda: self._save_to_storage(user_id)
 
     def reset(self):
         """Reset all session data - useful for testing"""
@@ -94,7 +103,8 @@ class UserSession:
         # Set redirect URI if available
         if "redirect_uri" in user_info:
             token_manager.set_redirect_uri(user_info["redirect_uri"])
-            
+        self._persist_refreshed_tokens(user_id, token_manager)
+
         # Set tokens
         token_manager.tokens = tokens
         
@@ -138,11 +148,13 @@ class UserSession:
             # This will handle refreshing if needed
             access_token = token_manager.get_access_token()
             return access_token is not None and len(access_token) > 0
-        except ValueError:
+        except ValueError as e:
             # Token is expired and cannot be refreshed
+            logger.info("User is not authenticated: %s", e)
             return False
-        except Exception:
+        except Exception as e:
             # Any other error means authentication failed
+            logger.warning("User is not authenticated: %s", type(e).__name__)
             return False
 
     def logout(self, user_id: str) -> None:

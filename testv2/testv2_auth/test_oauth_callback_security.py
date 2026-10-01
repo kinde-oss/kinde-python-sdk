@@ -5,8 +5,9 @@ Covers:
   * state is always required: a callback is rejected unless a login was
     started by the SDK in this session (state stored) and the callback
     presents the same state (login CSRF / authorization code injection),
-  * the ID token ``nonce`` claim must match the nonce sent in the
-    authorization request,
+  * a nonce must have been stored for the login, the token response must
+    contain an ID token, and its ``nonce`` claim must match the nonce sent
+    in the authorization request,
   * stored state / nonce are single-use and cleared after the callback.
 
 The standalone tests use the real in-memory storage path (null framework);
@@ -216,12 +217,24 @@ class TestCallbackNonceStandalone:
         with pytest.raises(KindeLoginException):
             asyncio.run(standalone_oauth.handle_redirect("code", "u1", q["state"]))
 
-    def test_token_response_without_id_token_still_accepted(self, standalone_oauth, network):
-        """Nonce binds the ID token only; non-OIDC responses (no id_token) are unaffected."""
+    def test_token_response_without_id_token_rejected(self, standalone_oauth, network):
+        """Without an ID token the nonce can't be checked, so a swapped code from an
+        authorization request without `openid` must not establish a session."""
         q = _query(asyncio.run(standalone_oauth.login()))
         network.return_value = _token_response(include_id_token=False)
-        result = asyncio.run(standalone_oauth.handle_redirect("code", "u1", q["state"]))
-        assert "id_token" not in result["tokens"]
+        with pytest.raises(KindeLoginException):
+            asyncio.run(standalone_oauth.handle_redirect("code", "u1", q["state"]))
+        assert standalone_oauth._session_manager.get_token_manager("u1") is None
+
+    def test_missing_stored_nonce_rejected_before_token_exchange(self, standalone_oauth, network):
+        """Losing the stored nonce must not turn nonce validation off."""
+        q = _query(asyncio.run(standalone_oauth.login()))
+        _storage().delete("user:nonce")
+        network.return_value = _token_response(_id_token(nonce=q["nonce"]))
+        with pytest.raises(KindeLoginException):
+            asyncio.run(standalone_oauth.handle_redirect("code", "u1", q["state"]))
+        network.assert_not_called()
+        assert standalone_oauth._session_manager.get_token_manager("u1") is None
 
 
 # ---------------------------------------------------------------------------
@@ -271,6 +284,17 @@ class TestFlaskCallback:
         r = flask_client.get(f"/callback?code=c&state={q['state']}")
         assert r.status_code == 400
 
+    def test_callback_without_code_rejected_and_keeps_pending_login(self, flask_client, network):
+        q = _query(flask_client.get("/login").headers["Location"])
+        r = flask_client.get(f"/callback?state={q['state']}")
+        assert r.status_code == 400
+        network.assert_not_called()
+
+        network.return_value = _token_response(_id_token(nonce=q["nonce"]))
+        r = flask_client.get(f"/callback?code=c&state={q['state']}")
+        assert r.status_code == 302
+        assert network.call_args.kwargs["data"].get("code_verifier")
+
     def test_callback_happy_path(self, flask_client, network):
         q = _query(flask_client.get("/login").headers["Location"])
         network.return_value = _token_response(_id_token(nonce=q["nonce"]))
@@ -310,22 +334,33 @@ class TestFastAPICallback:
 
         r = fastapi_client.get("/callback?code=attacker_code")
 
-        # FastAPI route re-raises SDK exceptions (pre-existing behaviour) -> 500
-        assert r.status_code >= 400
+        assert r.status_code == 400
         network.assert_not_called()
 
     @pytest.mark.parametrize("qs", ["code=attacker_code", "code=attacker_code&state=attacker-state"])
     def test_callback_rejected_when_no_login_in_progress(self, fastapi_client, network, qs):
         network.return_value = _token_response(_id_token(nonce="x"))
         r = fastapi_client.get(f"/callback?{qs}")
-        assert r.status_code >= 400
+        assert r.status_code == 400
         network.assert_not_called()
 
     def test_callback_wrong_nonce_rejected(self, fastapi_client, network):
         q = _query(fastapi_client.get("/login").headers["location"])
         network.return_value = _token_response(_id_token(nonce="attacker-nonce"))
         r = fastapi_client.get(f"/callback?code=c&state={q['state']}")
-        assert r.status_code >= 400
+        assert r.status_code == 400
+
+    def test_callback_without_code_rejected_and_keeps_pending_login(self, fastapi_client, network):
+        q = _query(fastapi_client.get("/login").headers["location"])
+        r = fastapi_client.get(f"/callback?state={q['state']}")
+        assert r.status_code == 400
+        network.assert_not_called()
+
+        # State, nonce and code verifier weren't consumed: the genuine callback still completes
+        network.return_value = _token_response(_id_token(nonce=q["nonce"]))
+        r = fastapi_client.get(f"/callback?code=c&state={q['state']}")
+        assert r.status_code in (302, 307)
+        assert network.call_args.kwargs["data"].get("code_verifier")
 
     def test_callback_happy_path(self, fastapi_client, network):
         q = _query(fastapi_client.get("/login").headers["location"])

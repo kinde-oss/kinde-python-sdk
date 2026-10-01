@@ -526,10 +526,16 @@ class OAuth:
             self._logger.error("State mismatch in OAuth callback")
             raise KindeLoginException("Invalid state parameter")
 
-        # State and nonce are single-use: consume them once state has been
-        # validated, so they can't be replayed even if the rest of the flow fails.
+        # Every SDK-started login stores a nonce. Without it the ID token can't be
+        # bound to this login, so reject before the code is redeemed.
         stored_nonce = storage.get("user:nonce")
         expected_nonce = stored_nonce.get("value") if stored_nonce else None
+        if not expected_nonce:
+            self._logger.error("No nonce stored for OAuth callback")
+            raise KindeLoginException("Missing nonce for this login")
+
+        # State and nonce are single-use: consume them once they have been
+        # validated, so they can't be replayed even if the rest of the flow fails.
         storage.delete("user:state")
         storage.delete("user:nonce")
 
@@ -549,16 +555,22 @@ class OAuth:
             self._logger.error(f"Token exchange failed: {str(e)}")
             raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}") from e
 
-        # Verify the ID token nonce matches the one sent in the authorization request
+        # Verify the ID token nonce matches the one sent in the authorization request.
+        # A response without an ID token is rejected too: otherwise a swapped code
+        # from an authorization request without `openid` would skip this check.
         id_token = token_data.get("id_token")
-        if expected_nonce and id_token:
-            try:
-                id_token_claims = jwt.decode(id_token, options={"verify_signature": False})
-            except jwt.PyJWTError as e:
-                raise KindeLoginException("Invalid ID token") from e
-            if id_token_claims.get("nonce") != expected_nonce:
-                self._logger.error("Nonce mismatch in ID token")
-                raise KindeLoginException("Invalid nonce in ID token")
+        if not id_token:
+            self._logger.error("Token response has no ID token")
+            raise KindeLoginException("Missing ID token")
+        try:
+            # Signature not verified, as elsewhere in the SDK: the token comes
+            # directly from the token endpoint over TLS
+            id_token_claims = jwt.decode(id_token, options={"verify_signature": False})
+        except jwt.PyJWTError as e:
+            raise KindeLoginException("Invalid ID token") from e
+        if id_token_claims.get("nonce") != expected_nonce:
+            self._logger.error("Nonce mismatch in ID token")
+            raise KindeLoginException("Invalid nonce in ID token")
         
         # Store tokens
         user_info = {

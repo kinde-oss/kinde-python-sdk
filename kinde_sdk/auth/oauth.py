@@ -2,6 +2,7 @@ import os
 import requests
 import logging
 import time
+import jwt
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
@@ -514,13 +515,30 @@ class OAuth:
         Returns:
             Dict with user and token information
         """
-        # Verify state if provided
-        if state:
-            stored_state = self._session_manager.storage_manager.get("user:state")
-            if not stored_state or state != stored_state.get("value"):
-                self._logger.error("State mismatch in OAuth callback")
-                raise KindeLoginException("Invalid state parameter")
-        
+        storage = self._session_manager.storage_manager
+
+        # Verify state. A callback is only accepted for a login started by this
+        # SDK in this session: a state must have been stored, and the callback
+        # must present the same value. Missing state is rejected, not skipped.
+        stored_state = storage.get("user:state")
+        expected_state = stored_state.get("value") if stored_state else None
+        if not expected_state or state != expected_state:
+            self._logger.error("State mismatch in OAuth callback")
+            raise KindeLoginException("Invalid state parameter")
+
+        # Every SDK-started login stores a nonce. Without it the ID token can't be
+        # bound to this login, so reject before the code is redeemed.
+        stored_nonce = storage.get("user:nonce")
+        expected_nonce = stored_nonce.get("value") if stored_nonce else None
+        if not expected_nonce:
+            self._logger.error("No nonce stored for OAuth callback")
+            raise KindeLoginException("Missing nonce for this login")
+
+        # State and nonce are single-use: consume them once they have been
+        # validated, so they can't be replayed even if the rest of the flow fails.
+        storage.delete("user:state")
+        storage.delete("user:nonce")
+
         # Get code verifier for PKCE
         code_verifier = None
         stored_code_verifier = self._session_manager.storage_manager.get("user:code_verifier")
@@ -536,6 +554,23 @@ class OAuth:
         except Exception as e:
             self._logger.error(f"Token exchange failed: {str(e)}")
             raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}") from e
+
+        # Verify the ID token nonce matches the one sent in the authorization request.
+        # A response without an ID token is rejected too: otherwise a swapped code
+        # from an authorization request without `openid` would skip this check.
+        id_token = token_data.get("id_token")
+        if not id_token:
+            self._logger.error("Token response has no ID token")
+            raise KindeLoginException("Missing ID token")
+        try:
+            # Signature not verified, as elsewhere in the SDK: the token comes
+            # directly from the token endpoint over TLS
+            id_token_claims = jwt.decode(id_token, options={"verify_signature": False})
+        except jwt.PyJWTError as e:
+            raise KindeLoginException("Invalid ID token") from e
+        if id_token_claims.get("nonce") != expected_nonce:
+            self._logger.error("Nonce mismatch in ID token")
+            raise KindeLoginException("Invalid nonce in ID token")
         
         # Store tokens
         user_info = {
@@ -561,13 +596,6 @@ class OAuth:
             token_manager=token_manager,
             logger=self._logger
         )
-        
-        # Clean up state
-        if state:
-            self._session_manager.storage_manager.delete("user:state")
-        
-        # Clean up nonce
-        self._session_manager.storage_manager.delete("user:nonce")
         
         return {
             "tokens": token_data,

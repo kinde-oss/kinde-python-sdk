@@ -139,7 +139,6 @@ class FastAPIFramework(FrameworkInterface):
                 login_options['invitation_code'] = invitation_code
             
             url = await self._oauth.login(login_options)
-            self._logger.warning(f"[Login] Session is: {request.session}")
             return RedirectResponse(url=url)
         
         # Callback route

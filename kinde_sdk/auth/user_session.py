@@ -5,6 +5,10 @@ from typing import Dict, Any, Optional
 from kinde_sdk.core.storage.storage_manager import StorageManager
 
 class UserSession:
+    # Keyed by client_id and populated by OAuth. Kept in process memory so the
+    # secret is never written to session storage (which may be a browser cookie).
+    client_secrets: Dict[str, Optional[str]] = {}
+
     def __init__(self):
         self.user_sessions = {}  # Store user-specific session data
         self.lock = threading.Lock()  # Add a lock for thread safety
@@ -18,7 +22,7 @@ class UserSession:
                 token_manager = TokenManager(
                     user_id, 
                     user_info["client_id"], 
-                    user_info.get("client_secret"),  # May be None for PKCE flow
+                    self.client_secrets.get(user_info["client_id"]),  # May be None for PKCE flow
                     user_info["token_url"]
                 )
                 
@@ -46,8 +50,10 @@ class UserSession:
         if session_data:
             # We need to serialize the session data
             # Token manager can't be directly serialized
+            # Never persist client_secret, even if a caller passed it in user_info
+            user_info = {k: v for k, v in session_data["user_info"].items() if k != "client_secret"}
             serialized_data = {
-                "user_info": session_data["user_info"],
+                "user_info": user_info,
                 "tokens": session_data["token_manager"].tokens,
             }
             # Store with user: prefix to make it user-specific but device-independent
@@ -82,12 +88,14 @@ class UserSession:
             "token_url" not in user_info or
             "access_token" not in tokens):
             return False
-            
-        
+
+        # Sessions saved by older SDK versions may still contain client_secret; drop it
+        user_info = {k: v for k, v in user_info.items() if k != "client_secret"}
+
         token_manager = TokenManager(
             user_id,
             user_info.get("client_id"),
-            user_info.get("client_secret"),
+            self.client_secrets.get(user_info.get("client_id")),
             user_info.get("token_url")
         )
         

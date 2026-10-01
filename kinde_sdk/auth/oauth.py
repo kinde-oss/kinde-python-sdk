@@ -12,7 +12,7 @@ from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from .config_loader import load_config
 from .enums import IssuerRouteTypes, PromptTypes
 from .login_options import LoginOptions
-from kinde_sdk.core.helpers import generate_random_string, generate_pkce_pair, get_user_details as helper_get_user_details, get_user_details_sync
+from kinde_sdk.core.helpers import REQUEST_TIMEOUT, generate_random_string, generate_pkce_pair, get_user_details as helper_get_user_details, get_user_details_sync
 from kinde_sdk.core.exceptions import (
     KindeConfigurationException,
     KindeLoginException,
@@ -60,6 +60,9 @@ class OAuth:
         # Validate required configurations
         if not self.client_id:
             raise KindeConfigurationException("Client ID is required.")
+        # Don't let a secretless (PKCE) instance for the same client_id wipe a configured secret
+        if self.client_secret:
+            UserSession.client_secrets[self.client_id] = self.client_secret
         
         # Initialize API endpoints
         self._set_api_endpoints()
@@ -84,9 +87,7 @@ class OAuth:
 
         self._session_manager = UserSession()
 
-        # Logging settings
         self._logger = logging.getLogger("kinde_sdk")
-        self._logger.setLevel(logging.INFO)
 
         # Authentication properties
         self.verify_ssl = True
@@ -195,9 +196,7 @@ class OAuth:
             token_manager=token_manager,
             logger=self._logger
         )
-            
-        # Get claims from token manager
-        self._logger.info(f"Get the claims from the token manager {user_details}")
+
         return user_details
 
     def _set_api_endpoints(self):
@@ -221,7 +220,7 @@ class OAuth:
         openid_config_url = f"{self.host}/.well-known/openid-configuration"
         
         # Make the request
-        response = requests.get(openid_config_url)
+        response = requests.get(openid_config_url, timeout=REQUEST_TIMEOUT)
         
         if response.status_code == 200:
             config = response.json()
@@ -518,9 +517,8 @@ class OAuth:
         # Verify state if provided
         if state:
             stored_state = self._session_manager.storage_manager.get("user:state")
-            self._logger.warning(f"stored_state: {stored_state}, state: {state}")
             if not stored_state or state != stored_state.get("value"):
-                self._logger.error(f"State mismatch: received {state}, stored {stored_state}")
+                self._logger.error("State mismatch in OAuth callback")
                 raise KindeLoginException("Invalid state parameter")
         
         # Get code verifier for PKCE
@@ -542,7 +540,6 @@ class OAuth:
         # Store tokens
         user_info = {
             "client_id": self.client_id,
-            "client_secret": self.client_secret,
             "token_url": self.token_url,
             "redirect_uri": self.redirect_uri,
         }
@@ -603,10 +600,8 @@ class OAuth:
         if code_verifier:
             data["code_verifier"] = code_verifier
         
-        self._logger.debug(f"[Exchange code for tokens] [{self.token_url}] [{data}]")
-
-        response = requests.post(self.token_url, data=data)
-        self._logger.debug(f"[Exchange code for tokens] [{response.status_code}] [{response.text}]")
+        response = requests.post(self.token_url, data=data, timeout=REQUEST_TIMEOUT)
+        self._logger.debug(f"[Exchange code for tokens] [{response.status_code}]")
         if response.status_code != 200:
             raise KindeTokenException(f"Token exchange failed: {response.text}")
         

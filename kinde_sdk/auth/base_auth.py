@@ -11,7 +11,6 @@ class BaseAuth:
     
     def __init__(self):
         self._logger = logging.getLogger("kinde_sdk")
-        self._logger.setLevel(logging.INFO)
         self._framework = None
         self._session_manager = UserSession()
 

@@ -5,6 +5,8 @@ import logging
 from typing import Any, Dict, Optional
 import jwt
 
+from kinde_sdk.core.helpers import REQUEST_TIMEOUT
+
 class TokenManager:
     _instances = {}
     _lock = threading.Lock()  # Add a lock for thread safety
@@ -112,7 +114,7 @@ class TokenManager:
         if code_verifier:
             data["code_verifier"] = code_verifier
             
-        response = requests.post(self.token_url, data=data)
+        response = requests.post(self.token_url, data=data, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         token_data = response.json()
         
@@ -151,7 +153,7 @@ class TokenManager:
         if self.client_secret:
             data["client_secret"] = self.client_secret
             
-        response = requests.post(self.token_url, data=data)
+        response = requests.post(self.token_url, data=data, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         token_data = response.json()
         
@@ -218,7 +220,7 @@ class TokenManager:
             data["client_secret"] = self.client_secret
             
         try:
-            response = requests.post(revoke_url, data=data)
+            response = requests.post(revoke_url, data=data, timeout=REQUEST_TIMEOUT)
             response.raise_for_status()
         except Exception:
             pass  # Best effort revocation

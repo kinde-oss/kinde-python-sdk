@@ -94,7 +94,9 @@ class TestUserSession(unittest.TestCase):
         # Check storage dict reflects the data
         self.assertIn(self.user_id, self.storage_dict)
         stored_data = self.storage_dict[self.user_id]
-        self.assertEqual(stored_data["user_info"], self.user_info)
+        # client_secret is never written to session storage
+        expected_stored_info = {k: v for k, v in self.user_info.items() if k != "client_secret"}
+        self.assertEqual(stored_data["user_info"], expected_stored_info)
         self.assertIn("tokens", stored_data)
         
         # Verify tokens
@@ -152,12 +154,13 @@ class TestUserSession(unittest.TestCase):
             "user_info": self.user_info,
             "tokens": token_manager.tokens,
         }
-        
+
         # Get user data
         retrieved_user_info = self.user_session.get_user_data(self.user_id)
-        
-        # Check user info
-        self.assertEqual(retrieved_user_info, self.user_info)
+
+        # Check user info (a client_secret left in older stored sessions is dropped on load)
+        expected_info = {k: v for k, v in self.user_info.items() if k != "client_secret"}
+        self.assertEqual(retrieved_user_info, expected_info)
         
         # Verify storage.get was called
         self.mock_storage_manager.get.assert_called_with(self.user_id)

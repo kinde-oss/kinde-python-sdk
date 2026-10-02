@@ -4,6 +4,7 @@ import threading
 import time
 from typing import Dict, Any, Optional
 from kinde_sdk.core.storage.storage_manager import StorageManager
+from kinde_sdk.core.exceptions import KindeTokenPersistenceException
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,10 @@ class UserSession:
             # This will handle refreshing if needed
             access_token = token_manager.get_access_token()
             return access_token is not None and len(access_token) > 0
+        except KindeTokenPersistenceException:
+            # The refreshed tokens are valid; only saving them failed (already logged),
+            # and the save is retried on the next call
+            return True
         except ValueError as e:
             # Token is expired and cannot be refreshed
             logger.info("User is not authenticated: %s", e)

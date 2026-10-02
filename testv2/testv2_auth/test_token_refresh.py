@@ -98,6 +98,28 @@ class TestTokenRefresh(unittest.TestCase):
         """Overwrite the stored session as another worker's refresh would."""
         StorageManager().setItems("user_1", {"user_info": dict(USER_INFO), "tokens": tokens})
 
+    def test_direct_refresh_access_token_call_saves_rotated_tokens(self):
+        session = UserSession()
+        session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self.refresh_ok):
+            session.get_token_manager("user_1").refresh_access_token()
+
+        self.assertEqual(StorageManager().get("user_1")["tokens"]["refresh_token"], "new_refresh_token")
+
+    def test_get_access_token_saves_once_per_refresh(self):
+        session = UserSession()
+        session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+        token_manager = session.get_token_manager("user_1")
+        save = MagicMock(wraps=token_manager.on_tokens_refreshed)
+        token_manager.on_tokens_refreshed = save
+
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self.refresh_ok):
+            token_manager.get_access_token()
+            token_manager.get_access_token()  # Still valid: no refresh, no save
+
+        self.assertEqual(save.call_count, 1)
+
     def test_uses_tokens_another_worker_already_refreshed(self):
         # This worker has the session cached with an expired access token
         session = UserSession()

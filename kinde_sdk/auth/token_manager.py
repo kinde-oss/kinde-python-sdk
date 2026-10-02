@@ -141,13 +141,10 @@ class TokenManager:
                 # Try to refresh token if available
                 if "refresh_token" in self.tokens:
                     try:
-                        access_token = self.refresh_access_token()
+                        return self.refresh_access_token()
                     except requests.RequestException as e:
                         self._log_refresh_failure(e)
                         raise
-                    self._save_pending = True
-                    self._save_refreshed_tokens()
-                    return access_token
                 else:
                     raise ValueError("Access token expired and no refresh token available")
 
@@ -217,8 +214,12 @@ class TokenManager:
         response = requests.post(self.token_url, data=data)
         response.raise_for_status()
         token_data = response.json()
-        
+
         self.set_tokens(token_data)
+        # Save here, not in get_access_token(), so direct callers also persist the rotated refresh token
+        with self.lock:
+            self._save_pending = True
+            self._save_refreshed_tokens()
         return self.tokens["access_token"]
 
     def get_id_token(self):

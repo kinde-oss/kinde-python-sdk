@@ -28,7 +28,7 @@ class UserSession:
                 # Set redirect URI if available
                 if "redirect_uri" in user_info:
                     token_manager.set_redirect_uri(user_info["redirect_uri"])
-                self._persist_refreshed_tokens(user_id, token_manager)
+                self._bind_token_storage(user_id, token_manager)
 
                 self.user_sessions[user_id] = {
                     "user_info": user_info,
@@ -58,10 +58,12 @@ class UserSession:
             # if you want device-specific sessions, remove the "user:" prefix
             self.storage_manager.setItems(user_id, serialized_data)
 
-    def _persist_refreshed_tokens(self, user_id: str, token_manager: TokenManager):
-        """Save the session again whenever the token manager refreshes its tokens,
-        so a restarted process or another worker doesn't reuse the old refresh token."""
+    def _bind_token_storage(self, user_id: str, token_manager: TokenManager):
+        """Save the session again whenever the token manager refreshes its tokens, and
+        let it read the saved tokens before refreshing, so neither a restarted process
+        nor another worker reuses a refresh token that Kinde has already rotated out."""
         token_manager.on_tokens_refreshed = lambda: self._save_to_storage(user_id)
+        token_manager.load_persisted_tokens = lambda: (self.storage_manager.get(user_id) or {}).get("tokens")
 
     def reset(self):
         """Reset all session data - useful for testing"""
@@ -103,7 +105,7 @@ class UserSession:
         # Set redirect URI if available
         if "redirect_uri" in user_info:
             token_manager.set_redirect_uri(user_info["redirect_uri"])
-        self._persist_refreshed_tokens(user_id, token_manager)
+        self._bind_token_storage(user_id, token_manager)
 
         # Set tokens
         token_manager.tokens = tokens

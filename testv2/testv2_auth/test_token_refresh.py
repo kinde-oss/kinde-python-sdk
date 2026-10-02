@@ -1,3 +1,4 @@
+import copy
 import threading
 import time
 import unittest
@@ -20,6 +21,17 @@ def _jwt(sub="user_1"):
     return jwt.encode({"sub": sub, "iat": time.time()}, "key", algorithm="HS256")
 
 
+class CopyingMemoryStorage(MemoryStorage):
+    """Copies values on write and read, like a serialising session store (e.g. Flask-Session
+    files), so tests can't pass by sharing a dict with the in-memory token manager."""
+
+    def set(self, key, value):
+        super().set(key, copy.deepcopy(value))
+
+    def get(self, key):
+        return copy.deepcopy(super().get(key))
+
+
 def _token_response(status, body):
     response = requests.Response()
     response.status_code = status
@@ -30,6 +42,7 @@ def _token_response(status, body):
 class TestTokenRefresh(unittest.TestCase):
     def setUp(self):
         StorageManager().reset()
+        StorageManager().initialize({"type": "memory"}, storage=CopyingMemoryStorage())
         TokenManager.reset_instances()
         self.old_access_token = _jwt()
         self.new_access_token = _jwt()
@@ -79,6 +92,39 @@ class TestTokenRefresh(unittest.TestCase):
         TokenManager.reset_instances()
         restored = UserSession().get_token_manager("user_1")
         self.assertEqual(restored.tokens["refresh_token"], "new_refresh_token")
+
+    def _saved_by_other_worker(self, tokens):
+        """Overwrite the stored session as another worker's refresh would."""
+        StorageManager().setItems("user_1", {"user_info": dict(USER_INFO), "tokens": tokens})
+
+    def test_uses_tokens_another_worker_already_refreshed(self):
+        # This worker has the session cached with an expired access token
+        session = UserSession()
+        session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+        # Another worker refreshed and saved new tokens, rotating the refresh token
+        self._saved_by_other_worker({
+            "access_token": self.new_access_token,
+            "refresh_token": "rotated_by_other_worker",
+            "expires_at": time.time() + 3600,
+        })
+
+        with patch("kinde_sdk.auth.token_manager.requests.post") as post:
+            self.assertEqual(session.get_token_manager("user_1").get_access_token(), self.new_access_token)
+        post.assert_not_called()
+
+    def test_refreshes_with_the_latest_saved_refresh_token(self):
+        session = UserSession()
+        session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+        # Another worker refreshed earlier; its access token has since expired too
+        self._saved_by_other_worker({
+            "access_token": _jwt(),
+            "refresh_token": "rotated_by_other_worker",
+            "expires_at": time.time() - 1,
+        })
+
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self.refresh_ok) as post:
+            self.assertEqual(session.get_token_manager("user_1").get_access_token(), self.new_access_token)
+        self.assertEqual(post.call_args.kwargs["data"]["refresh_token"], "rotated_by_other_worker")
 
     def test_refresh_failure_is_logged_without_token_values(self):
         UserSession().set_user_data("user_1", dict(USER_INFO), self.expired_tokens)

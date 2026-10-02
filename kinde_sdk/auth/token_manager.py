@@ -38,6 +38,7 @@ class TokenManager:
         self.redirect_uri = None  # Initialize the redirect_uri attribute
         self.force_api = False  # Initialize force_api setting
         self.on_tokens_refreshed = None  # Called after a successful refresh, e.g. to persist tokens
+        self.load_persisted_tokens = None  # Returns the saved tokens, which another process may have refreshed
         self.initialized = True
 
     def set_force_api(self, force_api: bool):
@@ -130,6 +131,11 @@ class TokenManager:
             # Check if token is expired
             # if time.time() >= self.tokens["expires_at"]:
             if time.time() >= self.tokens.get("expires_at", 0):
+                # Another worker may already have refreshed and saved newer tokens
+                self._adopt_newer_persisted_tokens()
+                if time.time() < self.tokens.get("expires_at", 0):
+                    return self.tokens["access_token"]
+
                 # Try to refresh token if available
                 if "refresh_token" in self.tokens:
                     try:
@@ -149,6 +155,20 @@ class TokenManager:
                     raise ValueError("Access token expired and no refresh token available")
                 
             return self.tokens["access_token"]
+
+    def _adopt_newer_persisted_tokens(self) -> None:
+        """Use tokens that another process refreshed and saved, so this process
+        doesn't refresh with a refresh token Kinde has already rotated out."""
+        if not self.load_persisted_tokens:
+            return
+        try:
+            persisted = self.load_persisted_tokens()
+        except Exception as e:
+            logging.getLogger(__name__).warning("Saved tokens could not be read: %s", type(e).__name__)
+            return
+        if (persisted and persisted.get("access_token")
+                and persisted.get("expires_at", 0) > self.tokens.get("expires_at", 0)):
+            self.tokens = dict(persisted)
 
     def _log_refresh_failure(self, error: Exception) -> None:
         """Log why a refresh failed, without logging any token values."""

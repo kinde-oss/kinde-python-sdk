@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
+from kinde_sdk.core.exceptions import KindeLoginException
 from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
@@ -183,15 +184,18 @@ class FastAPIFramework(FrameworkInterface):
                     except Exception as ex:
                         return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)
 
+            # Reject before handle_redirect, which would consume the pending state
+            if not code:
+                return HTMLResponse("Authentication failed: Missing authorization code", status_code=400)
+
             user_id = request.session.get('user_id') or str(uuid.uuid4())
 
             try:
                 assert self._oauth is not None
                 await self._oauth.handle_redirect(code, user_id, state)
-            except Exception as e:
-                if "State not found" in str(e):
-                    return HTMLResponse("Error: State not found. Please check Kinde Python SDK documentation.\n" + str(e), status_code=500)
-                raise e
+            except KindeLoginException as e:
+                # Missing, forged or stale callbacks are client errors, as in the Flask route
+                return HTMLResponse(f"Authentication failed: {e}", status_code=400)
 
             request.session['user_id'] = user_id
 

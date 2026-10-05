@@ -40,11 +40,16 @@ class TestClientSecretNotPersisted(unittest.TestCase):
         }
 
     def _complete_login(self, user_id="user_1"):
-        # Start the login through the SDK so a state is stored, then return it
-        # on the callback like Kinde would.
+        # Start the login through the SDK so a state and nonce are stored, then
+        # return them on the callback and in the ID token like Kinde would.
         login_url = asyncio.run(self.oauth.login())
-        state = parse_qs(urlparse(login_url).query)["state"][0]
-        with patch.object(OAuth, "exchange_code_for_tokens", AsyncMock(return_value=self._token_data())), \
+        query = parse_qs(urlparse(login_url).query)
+        state, nonce = query["state"][0], query["nonce"][0]
+        token_data = {
+            **self._token_data(),
+            "id_token": jwt.encode({"sub": "user_1", "nonce": nonce}, "key", algorithm="HS256"),
+        }
+        with patch.object(OAuth, "exchange_code_for_tokens", AsyncMock(return_value=token_data)), \
                 patch("kinde_sdk.auth.oauth.helper_get_user_details", AsyncMock(return_value={})):
             asyncio.run(self.oauth.handle_redirect("code", user_id, state))
 

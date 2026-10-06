@@ -29,6 +29,7 @@ class UserSession:
                 # Set redirect URI if available
                 if "redirect_uri" in user_info:
                     token_manager.set_redirect_uri(user_info["redirect_uri"])
+                self._persist_refreshes(user_id, token_manager)
                 
                 self.user_sessions[user_id] = {
                     "user_info": user_info,
@@ -44,6 +45,10 @@ class UserSession:
             # Save to persistent storage
             self._save_to_storage(user_id)
     
+    def _persist_refreshes(self, user_id: str, token_manager: TokenManager) -> None:
+        """Write tokens back to storage after a refresh, so other workers and restarts see them."""
+        token_manager.on_tokens_refreshed = lambda: self._save_to_storage(user_id)
+
     def _save_to_storage(self, user_id: str):
         """Save session data to storage."""
         session_data = self.user_sessions.get(user_id)
@@ -102,6 +107,7 @@ class UserSession:
         # Set redirect URI if available
         if "redirect_uri" in user_info:
             token_manager.set_redirect_uri(user_info["redirect_uri"])
+        self._persist_refreshes(user_id, token_manager)
             
         # Set tokens
         token_manager.tokens = tokens

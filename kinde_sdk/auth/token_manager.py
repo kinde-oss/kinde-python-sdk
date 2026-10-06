@@ -2,7 +2,7 @@ import time
 import requests
 import threading
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 import jwt
 
 from kinde_sdk.core.helpers import REQUEST_TIMEOUT
@@ -35,9 +35,13 @@ class TokenManager:
         self.client_secret = client_secret
         self.token_url = token_url
         self.tokens = {}  # Store tokens (access/refresh)
-        self.lock = threading.Lock()  # Add a lock for thread safety
+        # Re-entrant: get_access_token holds it while refreshing, and the refresh
+        # path re-acquires it in set_tokens
+        self.lock = threading.RLock()
         self.redirect_uri = None  # Initialize the redirect_uri attribute
         self.force_api = False  # Initialize force_api setting
+        # Set by UserSession so refreshed tokens are written back to session storage
+        self.on_tokens_refreshed: Optional[Callable[[], None]] = None
         self.initialized = True
 
     def set_force_api(self, force_api: bool):
@@ -158,6 +162,11 @@ class TokenManager:
         token_data = response.json()
         
         self.set_tokens(token_data)
+        if self.on_tokens_refreshed:
+            try:
+                self.on_tokens_refreshed()
+            except Exception as e:
+                logging.warning("Failed to persist refreshed tokens: %s", type(e).__name__)
         return self.tokens["access_token"]
 
     def get_id_token(self):

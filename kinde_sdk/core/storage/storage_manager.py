@@ -8,7 +8,7 @@ from .storage_interface import StorageInterface
 
 class StorageManager:
     _instance = None
-    _lock = threading.Lock()  # Lock for thread safety
+    _lock = threading.RLock()  # Reentrant: reset() calls initialize() while holding it
     
     def __new__(cls):
         with cls._lock:
@@ -72,18 +72,26 @@ class StorageManager:
         Returns:
             str: The current device ID
         """
+        # Framework storage is the user's session, so the ID stored there is the
+        # one every process and worker must use; the in-process ID is only a
+        # fallback (memory storage, or no request in context).
+        storage = self._storage
+        if storage is not None:
+            stored_device = storage.get("_device_id")
+            if isinstance(stored_device, dict) and stored_device.get("value"):
+                return stored_device["value"]
+
         with self._lock:
             if not self._device_id:
-                # Try to load from storage
-                stored_device = self.get("_device_id")
-                if stored_device and "value" in stored_device:
-                    self._device_id = stored_device["value"]
-                else:
-                    # Generate a new device ID
-                    self._device_id = str(uuid.uuid4())
-                    self.setItems("_device_id", {"value": self._device_id, "timestamp": time.time()})
-                    
-            return self._device_id
+                self._device_id = str(uuid.uuid4())
+            device_id = self._device_id
+
+        if storage is not None:
+            try:
+                storage.set("_device_id", {"value": device_id, "timestamp": time.time()})
+            except Exception:
+                pass
+        return device_id
     
     @property
     def storage(self) -> Optional[StorageInterface]:

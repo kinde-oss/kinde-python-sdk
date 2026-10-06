@@ -1,5 +1,6 @@
 from typing import Optional, Any
 import logging
+import os
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.auth.user_session import UserSession
 
@@ -49,6 +50,23 @@ class BaseAuth:
             return False
         return token_manager.get_force_api()
 
+    @staticmethod
+    def _describe_api_error(error: Exception) -> str:
+        """Exception type and HTTP status only: API exception messages include the response body."""
+        status = getattr(error, "status", None)
+        return f"{type(error).__name__} (HTTP {status})" if status else type(error).__name__
+
+    @staticmethod
+    def _get_account_api_host(token_manager) -> Optional[str]:
+        """
+        The Account API lives on the Kinde domain that issued the user's token,
+        which also covers custom domains; KINDE_HOST is the fallback.
+        """
+        claims = token_manager.get_claims() if hasattr(token_manager, "get_claims") else {}
+        issuer = claims.get("iss") if isinstance(claims, dict) else None
+        host = issuer if isinstance(issuer, str) and issuer.startswith("https://") else os.getenv("KINDE_HOST")
+        return host.rstrip("/") if host else None
+
     def _create_authenticated_api_client(self, api_class):
         """
         Create an authenticated API client for the current user.
@@ -78,8 +96,12 @@ class BaseAuth:
         from kinde_sdk.frontend.configuration import Configuration
         from kinde_sdk.frontend.api_client import ApiClient
         
-        # Create configuration with the access token
-        config = Configuration()
+        host = self._get_account_api_host(token_manager)
+        if not host:
+            self._logger.error("Cannot determine the Kinde host for Account API calls")
+            return None
+
+        config = Configuration(host=host)
         config.access_token = access_token
         
         # Create API client with the configuration

@@ -21,6 +21,24 @@ from kinde_sdk.core.exceptions import (
     KindeRetrieveException,
 )
 
+
+def _describe_token_error(response: requests.Response) -> str:
+    """Summarise a failed token response without echoing its body.
+
+    Only the status code and the standard OAuth ``error`` code (RFC 6749 5.2)
+    are kept; the raw body and ``error_description`` may reflect request data.
+    """
+    message = f"Token exchange failed with status {response.status_code}"
+    try:
+        body = response.json()
+    except ValueError:
+        return message
+    error = body.get("error") if isinstance(body, dict) else None
+    if isinstance(error, str) and error.replace("_", "").isalnum() and len(error) <= 64:
+        message += f" ({error})"
+    return message
+
+
 class OAuth:
     def __init__(
         self,
@@ -486,9 +504,14 @@ class OAuth:
             "client_id": self.client_id,
         }
         
-        # Add redirect URI
-        redirect_uri = logout_options.get("post_logout_redirect_uri", self.redirect_uri)
+        redirect_uri = (
+            logout_options.get("post_logout_redirect_uri")
+            or os.getenv("KINDE_POST_LOGOUT_REDIRECT_URI")
+            or self.redirect_uri
+        )
         if redirect_uri:
+            # Kinde's logout endpoint reads `redirect`; `redirect_uri` is kept for compatibility
+            params["redirect"] = redirect_uri
             params["redirect_uri"] = redirect_uri
         
         # Add state if provided
@@ -631,7 +654,7 @@ class OAuth:
         response = requests.post(self.token_url, data=data, timeout=REQUEST_TIMEOUT)
         self._logger.debug(f"[Exchange code for tokens] [{response.status_code}]")
         if response.status_code != 200:
-            raise KindeTokenException(f"Token exchange failed: {response.text}")
+            raise KindeTokenException(_describe_token_error(response))
         
         return response.json()
 

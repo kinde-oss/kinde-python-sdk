@@ -169,10 +169,32 @@ class FeatureFlags(BaseAuth):
         feature_flags = claims.get("feature_flags", {})
         
         return {
-            code: self._parse_flag_value(flag_data)
+            code: self._parse_flag_value({**flag_data, "code": code})
             for code, flag_data in feature_flags.items()
         }
     
+    @staticmethod
+    def _flags_from_api_response(response: Any) -> Dict[str, Dict[str, Any]]:
+        """
+        Convert the Account API's ``data.feature_flags`` list of {key, type, value}
+        into the token claim shape: {code: {"t": "s"|"b"|"i", "v": value}}.
+        """
+        data = getattr(response, "data", None)
+        items = getattr(data, "feature_flags", None) or []
+        flags: Dict[str, Dict[str, Any]] = {}
+        for item in items:
+            if isinstance(item, dict):
+                key, flag_type, value = item.get("key"), item.get("type"), item.get("value")
+            else:
+                key, flag_type, value = getattr(item, "key", None), getattr(item, "type", None), getattr(item, "value", None)
+            if not key:
+                continue
+            # oneOf wrappers keep the real value in actual_instance
+            value = getattr(value, "actual_instance", value)
+            type_code = {"string": "s", "boolean": "b", "integer": "i"}.get(str(flag_type).lower(), str(flag_type or "")[:1].lower())
+            flags[key] = {"t": type_code, "v": value}
+        return flags
+
     async def _call_account_api(self, flag_code: Optional[str] = None) -> Dict[str, Any]:
         """
         Calls the Kinde Account API to get feature flags.
@@ -189,13 +211,11 @@ class FeatureFlags(BaseAuth):
         except Exception as e:
             # Log error and return empty result
             if hasattr(self, '_logger'):
-                self._logger.error(f"Failed to fetch feature flags from API: {str(e)}")
+                self._logger.error("Failed to fetch feature flags from API: %s", self._describe_api_error(e))
             return {}
         
-        flags = {}
-        if response and response.data and hasattr(response.data, "flags"):
-            flags = response.data.flags or {}
-        
+        flags = self._flags_from_api_response(response)
+
         if flag_code is not None:
             return flags.get(flag_code, {})
         return flags

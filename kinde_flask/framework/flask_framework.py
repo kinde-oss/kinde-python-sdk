@@ -3,6 +3,7 @@ from flask import Flask, request, redirect, session
 from flask_session import Session
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
+from kinde_sdk.core.exceptions import KindeLoginException
 from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
@@ -229,7 +230,8 @@ class FlaskFramework(FrameworkInterface):
 
                         return redirect(login_url)
                     except Exception as ex:
-                        return f"Error parsing reauth state: {str(ex)}", 400
+                        logger.warning("Invalid reauth state: %s", type(ex).__name__)
+                        return "Error parsing reauth state", 400
 
             post_login_redirect = session.pop('post_login_redirect_url', None)
             if post_login_redirect:
@@ -244,15 +246,21 @@ class FlaskFramework(FrameworkInterface):
             if not code:
                 return "Authentication failed: Missing authorization code", 400
             
-            # Get or generate user_id
-            user_id = session.get('user_id', str(uuid.uuid4()))
-            session['user_id'] = user_id
-            
-            # Handle async call to handle_redirect
+            user_id = session.get('user_id') or str(uuid.uuid4())
+
+            # Exception messages can carry token-endpoint details, so they are
+            # logged by type only and never returned to the browser
             try:
                 self._run_async(self._oauth.handle_redirect(code, user_id, state))
+            except KindeLoginException:
+                logger.warning("OAuth callback rejected")
+                return "Authentication failed: invalid or expired login request", 400
             except Exception as e:
-                return f"Authentication failed: {str(e)}", 400
+                logger.error("OAuth callback failed: %s", type(e).__name__)
+                return "Authentication failed", 400
+
+            # Only bind the session to a user once the callback has succeeded
+            session['user_id'] = user_id
 
             if not post_login_redirect.startswith('http'):
                 # Use url_root to get just the scheme and host without the current path
@@ -288,7 +296,8 @@ class FlaskFramework(FrameworkInterface):
                 
                 return self._oauth.get_user_info()
             except Exception as e:
-                return f"Failed to get user info: {str(e)}", 400
+                logger.error("Failed to get user info: %s", type(e).__name__)
+                return "Failed to get user info", 400
     
     def can_auto_detect(self) -> bool:
         """

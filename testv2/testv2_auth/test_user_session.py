@@ -433,3 +433,40 @@ class TestUserSession(unittest.TestCase):
 
 if __name__ == "__main__":
     pytest.main(["-xvs", __file__])
+
+class TestRefreshedTokensPersisted(unittest.TestCase):
+    """A refresh must reach session storage, or other workers and restarts keep the old tokens."""
+
+    setUp = TestUserSession.setUp
+
+    def _refresh_response(self):
+        response = MagicMock()
+        response.json.return_value = {"access_token": "refreshed_access", "refresh_token": "rotated_refresh",
+                                      "expires_in": 3600}
+        return response
+
+    def test_refresh_after_sign_in_is_saved(self):
+        self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        token_manager = self.user_session.get_token_manager(self.user_id)
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self._refresh_response()):
+            token_manager.refresh_access_token()
+        stored = self.storage_dict[self.user_id]["tokens"]
+        self.assertEqual(stored["access_token"], "refreshed_access")
+        self.assertEqual(stored["refresh_token"], "rotated_refresh")
+
+    def test_refresh_after_loading_from_storage_is_saved(self):
+        self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        TokenManager._instances = {}
+        restarted = UserSession()
+        token_manager = restarted.get_token_manager(self.user_id)
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self._refresh_response()):
+            token_manager.refresh_access_token()
+        self.assertEqual(self.storage_dict[self.user_id]["tokens"]["access_token"], "refreshed_access")
+        self.assertNotIn("client_secret", self.storage_dict[self.user_id]["user_info"])
+
+    def test_storage_failure_does_not_break_refresh(self):
+        self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        token_manager = self.user_session.get_token_manager(self.user_id)
+        self.mock_storage_manager.setItems.side_effect = RuntimeError("storage down")
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self._refresh_response()):
+            self.assertEqual(token_manager.refresh_access_token(), "refreshed_access")

@@ -239,3 +239,52 @@ class TestFeatureFlags:
             assert result.code == "test"
             assert result.type == "unknown"
             assert result.value == None
+
+class TestFeatureFlagsRealShapes:
+    """Token claims and Account API responses as Kinde actually returns them."""
+
+    @pytest.mark.asyncio
+    async def test_get_all_flags_keeps_codes_from_token_claim_keys(self, mock_framework_factory, mock_session_manager, mock_token_manager):
+        # Real tokens don't repeat the code inside each flag
+        mock_token_manager.get_claims.return_value = {"feature_flags": {"theme": {"t": "s", "v": "pink"}}}
+        with patch.object(feature_flags, "_session_manager", mock_session_manager):
+            flags = await feature_flags.get_all_flags()
+        assert flags["theme"].code == "theme"
+        assert flags["theme"].value == "pink"
+
+    @pytest.mark.asyncio
+    async def test_account_api_response_is_parsed(self):
+        from kinde_sdk.frontend.models import (
+            GetFeatureFlagsResponse,
+            GetFeatureFlagsResponseData,
+            GetFeatureFlagsResponseDataFeatureFlagsInner,
+            GetFeatureFlagsResponseDataFeatureFlagsInnerValue,
+        )
+
+        def flag(key, flag_type, value):
+            return GetFeatureFlagsResponseDataFeatureFlagsInner(
+                id=f"flag_{key}", name=key, key=key, type=flag_type,
+                value=GetFeatureFlagsResponseDataFeatureFlagsInnerValue(value),
+            )
+
+        response = GetFeatureFlagsResponse(data=GetFeatureFlagsResponseData(feature_flags=[
+            flag("theme", "string", "pink"),
+            flag("is_dark_mode", "boolean", True),
+            flag("competitions_limit", "integer", 5),
+        ]))
+        api = Mock()
+        api.get_feature_flags.return_value = response
+
+        with patch.object(feature_flags, "_create_authenticated_api_client", return_value=api), \
+             patch.object(feature_flags, "_get_force_api_setting", return_value=True):
+            all_flags = await feature_flags.get_all_flags()
+            dark_mode = await feature_flags.get_flag("is_dark_mode", default_value=False)
+            missing = await feature_flags.get_flag("nope", default_value="fallback")
+
+        assert {code: (f.type, f.value) for code, f in all_flags.items()} == {
+            "theme": ("string", "pink"),
+            "is_dark_mode": ("boolean", True),
+            "competitions_limit": ("integer", 5),
+        }
+        assert dark_mode.value is True
+        assert missing.value == "fallback"

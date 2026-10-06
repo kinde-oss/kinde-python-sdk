@@ -69,7 +69,8 @@ Create a `.env` file with your Kinde credentials:
 KINDE_CLIENT_ID=your_client_id
 KINDE_CLIENT_SECRET=your_client_secret
 KINDE_REDIRECT_URI=http://localhost:8000/callback
-KINDE_DOMAIN=your_kinde_domain
+KINDE_POST_LOGOUT_REDIRECT_URI=http://localhost:8000
+KINDE_HOST=https://your_kinde_domain.kinde.com
 ```
 
 #### Available Routes
@@ -141,7 +142,8 @@ Create a `.env` file with your Kinde credentials:
 KINDE_CLIENT_ID=your_client_id
 KINDE_CLIENT_SECRET=your_client_secret
 KINDE_REDIRECT_URI=http://localhost:5000/callback
-KINDE_DOMAIN=your_kinde_domain
+KINDE_POST_LOGOUT_REDIRECT_URI=http://localhost:5000
+KINDE_HOST=https://your_kinde_domain.kinde.com
 ```
 
 #### Available Routes
@@ -179,11 +181,41 @@ def protected_route():
 For both FastAPI and Flask integrations:
 
 1. Always use HTTPS in production
-2. Use a secure session secret key
-3. Implement proper state parameter validation
+2. Use a secure session secret key (`SECRET_KEY` for Flask, the session middleware key for FastAPI)
+3. Use **server-side sessions** (see below)
 4. Handle OAuth errors appropriately
-5. Implement proper session management
-6. Consider implementing CSRF protection
+5. Consider implementing CSRF protection for your own state-changing routes
+
+**What the SDK keeps in the session.** After login the session holds the user's access token,
+refresh token and ID token (plus their decoded claims) so the user stays signed in across
+requests. During a login it also holds the OAuth `state`, the `nonce` and the PKCE
+`code_verifier` until the callback consumes them. The `client_secret` is never written to the
+session: it is held in process memory only.
+
+Because those values are bearer credentials, keep the session data on the server:
+
+- **Flask**: the integration configures Flask-Session with `SESSION_TYPE=filesystem` by default.
+  Set `SESSION_FILE_DIR` to a private directory, or use `redis` in multi-instance deployments.
+- **FastAPI**: Starlette's `SessionMiddleware` stores the whole session in a signed (not
+  encrypted) cookie, so the tokens would travel in the cookie. Prefer a server-side session
+  middleware that keeps only a session ID in the cookie.
+
+**Logout.** The logout URL carries the ID token as the standard OIDC `id_token_hint` query
+parameter, so it can appear in browser history and in the access logs of the identity
+provider. Access and refresh tokens are never put in URLs.
+
+**Callback validation.** The `/callback` route only accepts a callback for a login started by
+this SDK in the same session: the `state` parameter is required and must match, and the ID
+token's `nonce` must match the one sent with the authorization request. Both are single-use.
+As a consequence:
+
+- callbacks without a `state` parameter are rejected with HTTP 400;
+- logins must request the `openid` scope (the SDK default) so that an ID token is returned.
+
+**Errors and logs.** Callback failures return a generic HTTP 400 message; details such as the
+token endpoint's response body are never echoed to the browser or written to the logs. The SDK
+does not log secrets, authorization codes or tokens at any log level, and it does not change
+the level of your loggers.
 
 # Kinde Management API Module
 

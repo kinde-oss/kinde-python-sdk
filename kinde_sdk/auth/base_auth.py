@@ -65,7 +65,10 @@ class BaseAuth:
         claims = token_manager.get_claims() if hasattr(token_manager, "get_claims") else {}
         issuer = claims.get("iss") if isinstance(claims, dict) else None
         host = issuer if isinstance(issuer, str) and issuer.startswith("https://") else os.getenv("KINDE_HOST")
-        return host.rstrip("/") if host else None
+        # The client sends the user's access token, so never use a plain HTTP host
+        if not host or not host.startswith("https://"):
+            return None
+        return host.rstrip("/")
 
     def _create_authenticated_api_client(self, api_class):
         """
@@ -98,7 +101,7 @@ class BaseAuth:
         
         host = self._get_account_api_host(token_manager)
         if not host:
-            self._logger.error("Cannot determine the Kinde host for Account API calls")
+            self._logger.error("Cannot determine an HTTPS Kinde host for Account API calls")
             return None
 
         config = Configuration(host=host)

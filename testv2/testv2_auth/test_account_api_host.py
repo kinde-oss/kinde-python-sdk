@@ -47,6 +47,13 @@ def test_non_https_issuer_is_ignored(monkeypatch):
     assert api.api_client.configuration.host == "https://acme.kinde.com"
 
 
+def test_http_kinde_host_fallback_is_refused(monkeypatch):
+    # The client would send the access token, so it must not be created for a plain HTTP host
+    monkeypatch.setenv("KINDE_HOST", "http://acme.kinde.com")
+    for claims in ({}, {"iss": "http://acme.kinde.com"}):
+        assert _auth_with_claims(claims)._create_authenticated_api_client(PermissionsApi) is None
+
+
 def test_no_client_without_a_host(monkeypatch):
     monkeypatch.delenv("KINDE_HOST", raising=False)
     auth = _auth_with_claims({})

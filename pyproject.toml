@@ -54,10 +54,11 @@ fastapi = [
 ]
 flask = [
     "flask >=3.0.0, <4.0.0",
-    # kinde_flask imports flask_session at module load. 0.7.0 is excluded
-    # because it dropped the cachelib dependency that its default
-    # filesystem backend (used by kinde_flask) needs; 0.8.0 restored it.
-    "flask-session >=0.5.0, !=0.7.0, <1.0.0",
+    # kinde_flask imports flask_session at module load. 0.6.0 is the first
+    # release that supports Flask 3. 0.7.0 is excluded because it dropped the
+    # cachelib dependency that its default filesystem backend (used by
+    # kinde_flask) needs; 0.8.0 restored it.
+    "flask-session >=0.6.0, !=0.7.0, <1.0.0",
 ]
 dev = [
     # pytest 9 requires Python >=3.10; pytest 9.0.3 fixes CVE-2025-71176

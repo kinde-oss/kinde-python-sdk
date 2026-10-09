@@ -229,3 +229,16 @@ class TestPermissionsAccountApiResponse:
         with patch.object(permissions, "_create_authenticated_api_client", return_value=api):
             result = await permissions._call_account_api()
         assert result == {"orgCode": "org_123", "permissions": ["create:todos", "read:todos"]}
+
+class TestPermissionKey:
+    """Account API permissions can be model objects, dicts or plain key strings."""
+
+    @pytest.mark.parametrize("permission, expected", [
+        ("read:todos", "read:todos"),
+        ({"id": "perm_1", "key": "read:todos"}, "read:todos"),
+        (Mock(key="read:todos"), "read:todos"),
+        ({"id": "perm_1"}, None),
+        (None, None),
+    ])
+    def test_permission_key(self, permission, expected):
+        assert permissions._permission_key(permission) == expected

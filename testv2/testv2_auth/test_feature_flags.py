@@ -288,3 +288,15 @@ class TestFeatureFlagsRealShapes:
         }
         assert dark_mode.value is True
         assert missing.value == "fallback"
+
+
+class TestFlagsFromApiResponse:
+    def test_dict_items_are_parsed_and_items_without_a_key_are_skipped(self):
+        response = Mock()
+        response.data = Mock(feature_flags=[
+            {"key": "theme", "type": "string", "value": "pink"},
+            {"type": "boolean", "value": True},
+            {"key": "", "type": "integer", "value": 1},
+        ])
+
+        assert feature_flags._flags_from_api_response(response) == {"theme": {"t": "s", "v": "pink"}}

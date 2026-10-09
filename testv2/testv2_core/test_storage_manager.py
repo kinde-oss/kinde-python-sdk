@@ -192,5 +192,33 @@ class TestStorageManager(unittest.TestCase):
         self.storage_manager.get("test_key")
         self.assertIsNotNone(self.storage_manager._storage)
 
+
+class TestDeviceIdFallbacks(unittest.TestCase):
+    def setUp(self):
+        StorageManager._instance = None
+        self.storage_manager = StorageManager()
+
+    def tearDown(self):
+        StorageManager._instance = None
+
+    def test_without_storage_an_in_process_id_is_generated_once(self):
+        self.assertIsNone(self.storage_manager._storage)
+
+        device_id = self.storage_manager.get_device_id()
+
+        self.assertEqual(str(uuid.UUID(device_id)), device_id)
+        self.assertEqual(self.storage_manager.get_device_id(), device_id)
+
+    def test_failed_device_id_write_still_returns_the_id(self):
+        storage = MagicMock(spec=StorageInterface)
+        storage.get.return_value = None
+        storage.set.side_effect = OSError("session not writable")
+        self.storage_manager._storage = storage
+
+        device_id = self.storage_manager.get_device_id()
+
+        self.assertTrue(device_id)
+        self.assertEqual(self.storage_manager.get_device_id(), device_id)
+
 if __name__ == "__main__":
     unittest.main() 

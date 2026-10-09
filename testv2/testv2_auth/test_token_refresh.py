@@ -176,6 +176,40 @@ class TestTokenRefresh(unittest.TestCase):
                 patch.object(StorageManager, "setItems", side_effect=OSError("disk full")):
             self.assertTrue(session.is_authenticated("user_1"))
 
+    def test_unreadable_saved_tokens_are_skipped_and_refresh_still_happens(self):
+        session = UserSession()
+        session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+        token_manager = session.get_token_manager("user_1")
+        token_manager.load_persisted_tokens = MagicMock(side_effect=OSError("storage down"))
+
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self.refresh_ok), \
+                self.assertLogs("kinde_sdk.auth.token_manager", level="WARNING") as logs:
+            self.assertEqual(token_manager.get_access_token(), self.new_access_token)
+
+        self.assertIn("Saved tokens could not be read: OSError", "\n".join(logs.output))
+
+    def test_refresh_without_a_response_logs_the_error_type(self):
+        UserSession().set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+
+        with patch("kinde_sdk.auth.token_manager.requests.post",
+                   side_effect=requests.ConnectionError("network down")), \
+                self.assertLogs("kinde_sdk.auth.token_manager", level="WARNING") as logs, \
+                self.assertRaises(requests.ConnectionError):
+            UserSession().get_token_manager("user_1").get_access_token()
+
+        self.assertIn("Token refresh failed: ConnectionError", "\n".join(logs.output))
+
+    def test_refresh_error_without_a_json_body_is_logged(self):
+        UserSession().set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+        bad_gateway = _token_response(502, "<html>Bad gateway</html>")
+
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=bad_gateway), \
+                self.assertLogs("kinde_sdk.auth.token_manager", level="WARNING") as logs, \
+                self.assertRaises(requests.HTTPError):
+            UserSession().get_token_manager("user_1").get_access_token()
+
+        self.assertIn("Token refresh failed: HTTP 502 (no error code)", "\n".join(logs.output))
+
     def test_refresh_failure_is_logged_without_token_values(self):
         UserSession().set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
         rejected = _token_response(400, '{"error": "invalid_grant", "error_description": "expired"}')

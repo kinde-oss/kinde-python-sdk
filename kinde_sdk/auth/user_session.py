@@ -8,6 +8,9 @@ class UserSession:
     # Keyed by client_id and populated by OAuth. Kept in process memory so the
     # secret is never written to session storage (which may be a browser cookie).
     client_secrets: Dict[str, Optional[str]] = {}
+    # Configured Kinde host per client_id, also set by OAuth. The Account API
+    # host is checked against it rather than trusted from a token's iss claim.
+    client_hosts: Dict[str, str] = {}
 
     def __init__(self):
         self.user_sessions = {}  # Store user-specific session data

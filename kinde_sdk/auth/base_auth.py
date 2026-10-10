@@ -1,6 +1,7 @@
 from typing import Optional, Any
 import logging
 import os
+from urllib.parse import urlsplit
 from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from kinde_sdk.auth.user_session import UserSession
 
@@ -57,18 +58,47 @@ class BaseAuth:
         return f"{type(error).__name__} (HTTP {status})" if status else type(error).__name__
 
     @staticmethod
+    def _https_origin(url: Any) -> Optional[str]:
+        """Lower-cased https://host[:port] of a bare https URL, or None."""
+        if not isinstance(url, str):
+            return None
+        try:
+            parts = urlsplit(url.strip())
+            parts.port  # raises ValueError for an invalid port
+        except ValueError:
+            return None
+        if (parts.scheme.lower() != "https" or not parts.hostname or parts.username
+                or parts.password or parts.path not in ("", "/") or parts.query or parts.fragment):
+            return None
+        return f"https://{parts.netloc.lower()}"
+
+    @staticmethod
     def _get_account_api_host(token_manager) -> Optional[str]:
         """
-        The Account API lives on the Kinde domain that issued the user's token,
-        which also covers custom domains; KINDE_HOST is the fallback.
+        The Account API lives on the configured Kinde host (the OAuth client's
+        host, then KINDE_HOST). The token's iss claim is unverified, so it can
+        only select one of those hosts; the access token is never sent to a host
+        that comes from the token alone.
         """
+        client_id = getattr(token_manager, "client_id", None)
+        client_host = UserSession.client_hosts.get(client_id) if isinstance(client_id, str) else None
+        # The client sends the user's access token, so never use a plain HTTP host
+        hosts = [
+            host.rstrip("/") for host in (client_host, os.getenv("KINDE_HOST"))
+            if BaseAuth._https_origin(host)
+        ]
+
         claims = token_manager.get_claims() if hasattr(token_manager, "get_claims") else {}
         issuer = claims.get("iss") if isinstance(claims, dict) else None
-        host = issuer if isinstance(issuer, str) and issuer.startswith("https://") else os.getenv("KINDE_HOST")
-        # The client sends the user's access token, so never use a plain HTTP host
-        if not host or not host.startswith("https://"):
-            return None
-        return host.rstrip("/")
+        if issuer is not None:
+            issuer_origin = BaseAuth._https_origin(issuer)
+            for host in hosts:
+                if BaseAuth._https_origin(host) == issuer_origin:
+                    return host
+            logging.getLogger("kinde_sdk").warning(
+                "Token issuer does not match the configured Kinde host; using the configured host"
+            )
+        return hosts[0] if hosts else None
 
     def _create_authenticated_api_client(self, api_class):
         """

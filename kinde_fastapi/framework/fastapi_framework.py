@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
-from kinde_sdk.core.exceptions import KindeLoginException
+from kinde_sdk.core.exceptions import KindeLoginException, KindeTokenException
 from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
@@ -200,9 +200,14 @@ class FastAPIFramework(FrameworkInterface):
                 # Missing, forged or stale callbacks are client errors, as in the Flask route
                 self._logger.warning("OAuth callback rejected")
                 return HTMLResponse("Authentication failed: invalid or expired login request", status_code=400)
-            except Exception as e:
-                self._logger.error("OAuth callback failed: %s", type(e).__name__)
+            except KindeTokenException:
+                # Kinde rejected the authorization code; the message is already logged by type and status
+                self._logger.warning("OAuth callback token exchange failed")
                 return HTMLResponse("Authentication failed", status_code=400)
+            except Exception as e:
+                # Anything else is a server-side fault, not a bad request
+                self._logger.error("OAuth callback failed: %s", type(e).__name__)
+                return HTMLResponse("Authentication failed", status_code=500)
 
             request.session['user_id'] = user_id
 

@@ -368,3 +368,15 @@ class TestFastAPICallback:
         r = fastapi_client.get(f"/callback?code=c&state={q['state']}")
         assert r.status_code in (302, 307)
         assert network.call_count == 1
+
+    def test_unexpected_callback_error_returns_500_without_details(self, fastapi_client, network):
+        q = _query(fastapi_client.get("/login").headers["location"])
+        failure = AsyncMock(side_effect=RuntimeError("internal-detail-do-not-show"))
+
+        with patch.object(OAuth, "handle_redirect", failure):
+            r = fastapi_client.get(f"/callback?code=c&state={q['state']}")
+
+        assert failure.await_count == 1
+        assert r.status_code == 500
+        assert "internal-detail-do-not-show" not in r.text
+        assert "RuntimeError" not in r.text

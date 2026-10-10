@@ -27,7 +27,7 @@ class FlaskStorage(FrameworkAwareStorage):
         session = self._get_session()
         if session is not None:
             value = session.get(key)
-            logger.debug(f"Getting key '{key}' from session: {value}")
+            logger.debug(f"Getting key '{key}' from session")
             return value
         return None
         

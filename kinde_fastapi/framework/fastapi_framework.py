@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
+from kinde_sdk.core.exceptions import KindeLoginException, KindeTokenException
 from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
@@ -139,7 +140,6 @@ class FastAPIFramework(FrameworkInterface):
                 login_options['invitation_code'] = invitation_code
             
             url = await self._oauth.login(login_options)
-            self._logger.warning(f"[Login] Session is: {request.session}")
             return RedirectResponse(url=url)
         
         # Callback route
@@ -182,17 +182,32 @@ class FastAPIFramework(FrameworkInterface):
 
                         return RedirectResponse(login_url)
                     except Exception as ex:
-                        return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)
+                        self._logger.warning("Invalid reauth state: %s", type(ex).__name__)
+                        return HTMLResponse("Error parsing reauth state", status_code=400)
+
+            # Reject before handle_redirect, which would consume the pending state
+            if not code:
+                return HTMLResponse("Authentication failed: Missing authorization code", status_code=400)
 
             user_id = request.session.get('user_id') or str(uuid.uuid4())
 
+            # Exception messages can carry token-endpoint details, so they are
+            # logged by type only and never returned to the browser
             try:
                 assert self._oauth is not None
                 await self._oauth.handle_redirect(code, user_id, state)
+            except KindeLoginException:
+                # Missing, forged or stale callbacks are client errors, as in the Flask route
+                self._logger.warning("OAuth callback rejected")
+                return HTMLResponse("Authentication failed: invalid or expired login request", status_code=400)
+            except KindeTokenException:
+                # Kinde rejected the authorization code; the message is already logged by type and status
+                self._logger.warning("OAuth callback token exchange failed")
+                return HTMLResponse("Authentication failed", status_code=400)
             except Exception as e:
-                if "State not found" in str(e):
-                    return HTMLResponse("Error: State not found. Please check Kinde Python SDK documentation.\n" + str(e), status_code=500)
-                raise e
+                # Anything else is a server-side fault, not a bad request
+                self._logger.error("OAuth callback failed: %s", type(e).__name__)
+                return HTMLResponse("Authentication failed", status_code=500)
 
             request.session['user_id'] = user_id
 
@@ -206,23 +221,18 @@ class FastAPIFramework(FrameworkInterface):
             if not post_login_redirect.startswith('http'):
                 post_login_redirect = str(request.base_url).rstrip('/') + post_login_redirect
 
-            parsed = urlparse(post_login_redirect)
-            if state:
-                query_dict = parse_qs(parsed.query)
-                query_dict['state'] = [state]
-                new_query = urlencode(query_dict, doseq=True)
-                redirect_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment))
-            else:
-                redirect_url = post_login_redirect
-
-            return RedirectResponse(redirect_url)
+            # The consumed OAuth state is not forwarded: it would only end up in
+            # browser history, Referer headers and access logs
+            return RedirectResponse(post_login_redirect)
         
         # Logout route
         @self.app.get("/logout")
         async def logout(request: Request):
             """Logout the user and redirect to Kinde logout page."""
+            # Pass the user_id so the SDK also drops the server-side tokens
+            user_id = request.session.get('user_id')
             request.session.clear()
-            return RedirectResponse(url=await self._oauth.logout())
+            return RedirectResponse(url=await self._oauth.logout(user_id))
         
         # Register route
         @self.app.get("/register")

@@ -258,3 +258,29 @@ class TestKindeSessionManagementIntegration(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestKindeSessionManagementUnpatched(unittest.TestCase):
+    """The standalone-only guard, without mocking NullFramework away."""
+
+    def setUp(self):
+        FrameworkFactory._framework_instance = None
+        NullFramework._instance = None
+
+    tearDown = setUp
+
+    def test_raises_when_a_web_framework_is_active(self):
+        mock_framework = MagicMock()
+        mock_framework.get_name.return_value = "flask"
+        with patch.object(FrameworkFactory, "get_framework_instance", return_value=mock_framework):
+            with self.assertRaises(RuntimeError):
+                KindeSessionManagement()
+
+    def test_raises_when_no_oauth_client_exists(self):
+        NullFramework()  # constructed by some other code path, but no OAuth attached
+        with self.assertRaises(RuntimeError):
+            KindeSessionManagement()
+
+    def test_available_after_standalone_oauth(self):
+        OAuth(client_id="test_client_id", redirect_uri="http://localhost/callback", framework=None)
+        self.assertFalse(KindeSessionManagement().is_user_logged_in())

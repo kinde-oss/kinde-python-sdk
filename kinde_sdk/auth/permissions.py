@@ -97,6 +97,14 @@ class Permissions(BaseAuth):
             "permissions": permissions
         }
     
+    @staticmethod
+    def _permission_key(permission: Any) -> Optional[str]:
+        if isinstance(permission, str):
+            return permission
+        if isinstance(permission, dict):
+            return permission.get("key")
+        return getattr(permission, "key", None)
+
     async def _call_account_api(self, permission_key: Optional[str] = None) -> Dict[str, Any]:
         """
         Calls the Kinde Account API to get permissions.
@@ -115,7 +123,7 @@ class Permissions(BaseAuth):
         except Exception as e:
             # Log error and return empty result
             if hasattr(self, '_logger'):
-                self._logger.error(f"Failed to fetch permissions from API: {str(e)}")
+                self._logger.error("Failed to fetch permissions from API: %s", self._describe_api_error(e))
             if permission_key is None:
                 return {"orgCode": None, "permissions": []}
             return {"permissionKey": permission_key, "orgCode": None, "isGranted": False}
@@ -128,6 +136,9 @@ class Permissions(BaseAuth):
         else:
             permissions = getattr(response, "permissions", []) or []
             org_code = getattr(response, "org_code", None)
+
+        # The Account API returns {id, name, key} objects; expose keys, as the token claim does
+        permissions = [key for key in (self._permission_key(p) for p in permissions) if key]
         
         if permission_key is None:
             return {

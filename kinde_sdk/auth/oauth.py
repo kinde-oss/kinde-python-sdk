@@ -2,6 +2,7 @@ import os
 import requests
 import logging
 import time
+import jwt
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
@@ -12,13 +13,31 @@ from kinde_sdk.core.framework.framework_factory import FrameworkFactory
 from .config_loader import load_config
 from .enums import IssuerRouteTypes, PromptTypes
 from .login_options import LoginOptions
-from kinde_sdk.core.helpers import generate_random_string, generate_pkce_pair, get_user_details as helper_get_user_details, get_user_details_sync
+from kinde_sdk.core.helpers import REQUEST_TIMEOUT, generate_random_string, generate_pkce_pair, get_user_details as helper_get_user_details, get_user_details_sync
 from kinde_sdk.core.exceptions import (
     KindeConfigurationException,
     KindeLoginException,
     KindeTokenException,
     KindeRetrieveException,
 )
+
+
+def _describe_token_error(response: requests.Response) -> str:
+    """Summarise a failed token response without echoing its body.
+
+    Only the status code and the standard OAuth ``error`` code (RFC 6749 5.2)
+    are kept; the raw body and ``error_description`` may reflect request data.
+    """
+    message = f"Token exchange failed with status {response.status_code}"
+    try:
+        body = response.json()
+    except ValueError:
+        return message
+    error = body.get("error") if isinstance(body, dict) else None
+    if isinstance(error, str) and error.replace("_", "").isalnum() and len(error) <= 64:
+        message += f" ({error})"
+    return message
+
 
 class OAuth:
     def __init__(
@@ -60,6 +79,10 @@ class OAuth:
         # Validate required configurations
         if not self.client_id:
             raise KindeConfigurationException("Client ID is required.")
+        # Don't let a secretless (PKCE) instance for the same client_id wipe a configured secret
+        if self.client_secret:
+            UserSession.client_secrets[self.client_id] = self.client_secret
+        UserSession.client_hosts[self.client_id] = self.host
         
         # Initialize API endpoints
         self._set_api_endpoints()
@@ -84,9 +107,7 @@ class OAuth:
 
         self._session_manager = UserSession()
 
-        # Logging settings
         self._logger = logging.getLogger("kinde_sdk")
-        self._logger.setLevel(logging.INFO)
 
         # Authentication properties
         self.verify_ssl = True
@@ -195,9 +216,7 @@ class OAuth:
             token_manager=token_manager,
             logger=self._logger
         )
-            
-        # Get claims from token manager
-        self._logger.info(f"Get the claims from the token manager {user_details}")
+
         return user_details
 
     def _set_api_endpoints(self):
@@ -221,7 +240,7 @@ class OAuth:
         openid_config_url = f"{self.host}/.well-known/openid-configuration"
         
         # Make the request
-        response = requests.get(openid_config_url)
+        response = requests.get(openid_config_url, timeout=REQUEST_TIMEOUT)
         
         if response.status_code == 200:
             config = response.json()
@@ -486,9 +505,14 @@ class OAuth:
             "client_id": self.client_id,
         }
         
-        # Add redirect URI
-        redirect_uri = logout_options.get("post_logout_redirect_uri", self.redirect_uri)
+        redirect_uri = (
+            logout_options.get("post_logout_redirect_uri")
+            or os.getenv("KINDE_POST_LOGOUT_REDIRECT_URI")
+            or self.redirect_uri
+        )
         if redirect_uri:
+            # Kinde's logout endpoint reads `redirect`; `redirect_uri` is kept for compatibility
+            params["redirect"] = redirect_uri
             params["redirect_uri"] = redirect_uri
         
         # Add state if provided
@@ -515,14 +539,30 @@ class OAuth:
         Returns:
             Dict with user and token information
         """
-        # Verify state if provided
-        if state:
-            stored_state = self._session_manager.storage_manager.get("user:state")
-            self._logger.warning(f"stored_state: {stored_state}, state: {state}")
-            if not stored_state or state != stored_state.get("value"):
-                self._logger.error(f"State mismatch: received {state}, stored {stored_state}")
-                raise KindeLoginException("Invalid state parameter")
-        
+        storage = self._session_manager.storage_manager
+
+        # Verify state. A callback is only accepted for a login started by this
+        # SDK in this session: a state must have been stored, and the callback
+        # must present the same value. Missing state is rejected, not skipped.
+        stored_state = storage.get("user:state")
+        expected_state = stored_state.get("value") if stored_state else None
+        if not expected_state or state != expected_state:
+            self._logger.error("State mismatch in OAuth callback")
+            raise KindeLoginException("Invalid state parameter")
+
+        # Every SDK-started login stores a nonce. Without it the ID token can't be
+        # bound to this login, so reject before the code is redeemed.
+        stored_nonce = storage.get("user:nonce")
+        expected_nonce = stored_nonce.get("value") if stored_nonce else None
+        if not expected_nonce:
+            self._logger.error("No nonce stored for OAuth callback")
+            raise KindeLoginException("Missing nonce for this login")
+
+        # State and nonce are single-use: consume them once they have been
+        # validated, so they can't be replayed even if the rest of the flow fails.
+        storage.delete("user:state")
+        storage.delete("user:nonce")
+
         # Get code verifier for PKCE
         code_verifier = None
         stored_code_verifier = self._session_manager.storage_manager.get("user:code_verifier")
@@ -538,11 +578,27 @@ class OAuth:
         except Exception as e:
             self._logger.error(f"Token exchange failed: {str(e)}")
             raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}") from e
+
+        # Verify the ID token nonce matches the one sent in the authorization request.
+        # A response without an ID token is rejected too: otherwise a swapped code
+        # from an authorization request without `openid` would skip this check.
+        id_token = token_data.get("id_token")
+        if not id_token:
+            self._logger.error("Token response has no ID token")
+            raise KindeLoginException("Missing ID token")
+        try:
+            # Signature not verified, as elsewhere in the SDK: the token comes
+            # directly from the token endpoint over TLS
+            id_token_claims = jwt.decode(id_token, options={"verify_signature": False})
+        except jwt.PyJWTError as e:
+            raise KindeLoginException("Invalid ID token") from e
+        if id_token_claims.get("nonce") != expected_nonce:
+            self._logger.error("Nonce mismatch in ID token")
+            raise KindeLoginException("Invalid nonce in ID token")
         
         # Store tokens
         user_info = {
             "client_id": self.client_id,
-            "client_secret": self.client_secret,
             "token_url": self.token_url,
             "redirect_uri": self.redirect_uri,
         }
@@ -564,13 +620,6 @@ class OAuth:
             token_manager=token_manager,
             logger=self._logger
         )
-        
-        # Clean up state
-        if state:
-            self._session_manager.storage_manager.delete("user:state")
-        
-        # Clean up nonce
-        self._session_manager.storage_manager.delete("user:nonce")
         
         return {
             "tokens": token_data,
@@ -603,12 +652,10 @@ class OAuth:
         if code_verifier:
             data["code_verifier"] = code_verifier
         
-        self._logger.debug(f"[Exchange code for tokens] [{self.token_url}] [{data}]")
-
-        response = requests.post(self.token_url, data=data)
-        self._logger.debug(f"[Exchange code for tokens] [{response.status_code}] [{response.text}]")
+        response = requests.post(self.token_url, data=data, timeout=REQUEST_TIMEOUT)
+        self._logger.debug(f"[Exchange code for tokens] [{response.status_code}]")
         if response.status_code != 200:
-            raise KindeTokenException(f"Token exchange failed: {response.text}")
+            raise KindeTokenException(_describe_token_error(response))
         
         return response.json()
 

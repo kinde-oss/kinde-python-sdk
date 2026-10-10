@@ -5,6 +5,13 @@ from typing import Dict, Any, Optional
 from kinde_sdk.core.storage.storage_manager import StorageManager
 
 class UserSession:
+    # Keyed by client_id and populated by OAuth. Kept in process memory so the
+    # secret is never written to session storage (which may be a browser cookie).
+    client_secrets: Dict[str, Optional[str]] = {}
+    # Configured Kinde host per client_id, also set by OAuth. The Account API
+    # host is checked against it rather than trusted from a token's iss claim.
+    client_hosts: Dict[str, str] = {}
+
     def __init__(self):
         self.user_sessions = {}  # Store user-specific session data
         self.lock = threading.Lock()  # Add a lock for thread safety
@@ -18,13 +25,14 @@ class UserSession:
                 token_manager = TokenManager(
                     user_id, 
                     user_info["client_id"], 
-                    user_info.get("client_secret"),  # May be None for PKCE flow
+                    self.client_secrets.get(user_info["client_id"]),  # May be None for PKCE flow
                     user_info["token_url"]
                 )
                 
                 # Set redirect URI if available
                 if "redirect_uri" in user_info:
                     token_manager.set_redirect_uri(user_info["redirect_uri"])
+                self._persist_refreshes(user_id, token_manager)
                 
                 self.user_sessions[user_id] = {
                     "user_info": user_info,
@@ -40,14 +48,20 @@ class UserSession:
             # Save to persistent storage
             self._save_to_storage(user_id)
     
+    def _persist_refreshes(self, user_id: str, token_manager: TokenManager) -> None:
+        """Write tokens back to storage after a refresh, so other workers and restarts see them."""
+        token_manager.on_tokens_refreshed = lambda: self._save_to_storage(user_id)
+
     def _save_to_storage(self, user_id: str):
         """Save session data to storage."""
         session_data = self.user_sessions.get(user_id)
         if session_data:
             # We need to serialize the session data
             # Token manager can't be directly serialized
+            # Never persist client_secret, even if a caller passed it in user_info
+            user_info = {k: v for k, v in session_data["user_info"].items() if k != "client_secret"}
             serialized_data = {
-                "user_info": session_data["user_info"],
+                "user_info": user_info,
                 "tokens": session_data["token_manager"].tokens,
             }
             # Store with user: prefix to make it user-specific but device-independent
@@ -82,18 +96,21 @@ class UserSession:
             "token_url" not in user_info or
             "access_token" not in tokens):
             return False
-            
-        
+
+        # Sessions saved by older SDK versions may still contain client_secret; drop it
+        user_info = {k: v for k, v in user_info.items() if k != "client_secret"}
+
         token_manager = TokenManager(
             user_id,
             user_info.get("client_id"),
-            user_info.get("client_secret"),
+            self.client_secrets.get(user_info.get("client_id")),
             user_info.get("token_url")
         )
         
         # Set redirect URI if available
         if "redirect_uri" in user_info:
             token_manager.set_redirect_uri(user_info["redirect_uri"])
+        self._persist_refreshes(user_id, token_manager)
             
         # Set tokens
         token_manager.tokens = tokens

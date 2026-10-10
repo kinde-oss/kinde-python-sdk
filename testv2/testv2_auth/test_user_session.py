@@ -94,7 +94,9 @@ class TestUserSession(unittest.TestCase):
         # Check storage dict reflects the data
         self.assertIn(self.user_id, self.storage_dict)
         stored_data = self.storage_dict[self.user_id]
-        self.assertEqual(stored_data["user_info"], self.user_info)
+        # client_secret is never written to session storage
+        expected_stored_info = {k: v for k, v in self.user_info.items() if k != "client_secret"}
+        self.assertEqual(stored_data["user_info"], expected_stored_info)
         self.assertIn("tokens", stored_data)
         
         # Verify tokens
@@ -152,12 +154,13 @@ class TestUserSession(unittest.TestCase):
             "user_info": self.user_info,
             "tokens": token_manager.tokens,
         }
-        
+
         # Get user data
         retrieved_user_info = self.user_session.get_user_data(self.user_id)
-        
-        # Check user info
-        self.assertEqual(retrieved_user_info, self.user_info)
+
+        # Check user info (a client_secret left in older stored sessions is dropped on load)
+        expected_info = {k: v for k, v in self.user_info.items() if k != "client_secret"}
+        self.assertEqual(retrieved_user_info, expected_info)
         
         # Verify storage.get was called
         self.mock_storage_manager.get.assert_called_with(self.user_id)
@@ -430,3 +433,40 @@ class TestUserSession(unittest.TestCase):
 
 if __name__ == "__main__":
     pytest.main(["-xvs", __file__])
+
+class TestRefreshedTokensPersisted(unittest.TestCase):
+    """A refresh must reach session storage, or other workers and restarts keep the old tokens."""
+
+    setUp = TestUserSession.setUp
+
+    def _refresh_response(self):
+        response = MagicMock()
+        response.json.return_value = {"access_token": "refreshed_access", "refresh_token": "rotated_refresh",
+                                      "expires_in": 3600}
+        return response
+
+    def test_refresh_after_sign_in_is_saved(self):
+        self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        token_manager = self.user_session.get_token_manager(self.user_id)
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self._refresh_response()):
+            token_manager.refresh_access_token()
+        stored = self.storage_dict[self.user_id]["tokens"]
+        self.assertEqual(stored["access_token"], "refreshed_access")
+        self.assertEqual(stored["refresh_token"], "rotated_refresh")
+
+    def test_refresh_after_loading_from_storage_is_saved(self):
+        self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        TokenManager._instances = {}
+        restarted = UserSession()
+        token_manager = restarted.get_token_manager(self.user_id)
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self._refresh_response()):
+            token_manager.refresh_access_token()
+        self.assertEqual(self.storage_dict[self.user_id]["tokens"]["access_token"], "refreshed_access")
+        self.assertNotIn("client_secret", self.storage_dict[self.user_id]["user_info"])
+
+    def test_storage_failure_does_not_break_refresh(self):
+        self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        token_manager = self.user_session.get_token_manager(self.user_id)
+        self.mock_storage_manager.setItems.side_effect = RuntimeError("storage down")
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self._refresh_response()):
+            self.assertEqual(token_manager.refresh_access_token(), "refreshed_access")

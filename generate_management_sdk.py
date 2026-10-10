@@ -646,6 +646,50 @@ def add_custom_imports(config: Dict[str, Any]):
 
 
 # =============================================================================
+# SPEC ERRATA
+# =============================================================================
+
+# Places where the published spec disagrees with what the API returns.
+# Each entry: (model file, text the generator emits, corrected text).
+SPEC_ERRATA = [
+    # Flag values are typed by "type" (str, int or bool), but the spec declares them as strings,
+    # so boolean and integer flags failed validation.
+    (
+        "models/get_organization_feature_flags_response_feature_flags_value.py",
+        "    value: Optional[StrictStr] = None",
+        "    value: Optional[Union[StrictBool, StrictInt, StrictStr]] = None",
+    ),
+    (
+        "models/get_organization_feature_flags_response_feature_flags_value.py",
+        "from pydantic import BaseModel, ConfigDict, StrictStr, field_validator\n"
+        "from typing import Any, ClassVar, Dict, List, Optional\n",
+        "from pydantic import BaseModel, ConfigDict, StrictBool, StrictInt, StrictStr, field_validator\n"
+        "from typing import Any, ClassVar, Dict, List, Optional, Union\n",
+    ),
+]
+
+
+def apply_spec_errata(config: Dict[str, Any]):
+    """Correct generated models where the spec doesn't match the API."""
+    print_section("Applying Spec Errata")
+
+    output_dir = Path(config["output_dir"])
+    for relative_path, generated, corrected in SPEC_ERRATA:
+        path = output_dir / relative_path
+        if not path.exists():
+            print(f"⚠️  Warning: {relative_path} not found")
+            continue
+        content = path.read_text(encoding="utf-8")
+        if corrected in content:
+            continue
+        if generated not in content:
+            print(f"⚠️  Warning: {relative_path} changed upstream; review the erratum")
+            continue
+        path.write_text(content.replace(generated, corrected), encoding="utf-8")
+        print(f"✓ Patched {relative_path}")
+
+
+# =============================================================================
 # VALIDATION
 # =============================================================================
 
@@ -799,6 +843,9 @@ def generate_single_sdk(skip_tests: bool, no_diff: bool) -> bool:
 
     # Step 3: Add custom imports
     add_custom_imports(config)
+
+    # Step 3b: Correct models where the published spec is wrong
+    apply_spec_errata(config)
     
     # Step 4: Validate
     if not validate_generation(config):

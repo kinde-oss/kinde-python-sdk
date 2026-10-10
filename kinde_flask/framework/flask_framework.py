@@ -3,7 +3,7 @@ from flask import Flask, request, redirect, session
 from flask_session import Session
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
 from kinde_sdk.auth.oauth import OAuth
-from kinde_sdk.core.exceptions import KindeLoginException
+from kinde_sdk.core.exceptions import KindeLoginException, KindeTokenException
 from ..middleware.framework_middleware import FrameworkMiddleware
 import os
 import uuid
@@ -255,9 +255,14 @@ class FlaskFramework(FrameworkInterface):
             except KindeLoginException:
                 logger.warning("OAuth callback rejected")
                 return "Authentication failed: invalid or expired login request", 400
-            except Exception as e:
-                logger.error("OAuth callback failed: %s", type(e).__name__)
+            except KindeTokenException:
+                # Kinde rejected the authorization code; the message is already logged by type and status
+                logger.warning("OAuth callback token exchange failed")
                 return "Authentication failed", 400
+            except Exception as e:
+                # Anything else is a server-side fault, not a bad request
+                logger.error("OAuth callback failed: %s", type(e).__name__)
+                return "Authentication failed", 500
 
             # Only bind the session to a user once the callback has succeeded
             session['user_id'] = user_id

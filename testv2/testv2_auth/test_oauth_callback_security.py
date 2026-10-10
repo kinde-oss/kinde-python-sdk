@@ -302,6 +302,21 @@ class TestFlaskCallback:
         assert r.status_code == 302
         assert network.call_count == 1
 
+    def test_unexpected_callback_error_returns_500_without_details(self, flask_client, network):
+        q = _query(flask_client.get("/login").headers["Location"])
+        failure = AsyncMock(side_effect=RuntimeError("internal-detail-do-not-show"))
+
+        with patch.object(OAuth, "handle_redirect", failure):
+            r = flask_client.get(f"/callback?code=c&state={q['state']}")
+
+        assert failure.await_count == 1
+        assert r.status_code == 500
+        body = r.get_data(as_text=True)
+        assert "internal-detail-do-not-show" not in body
+        assert "RuntimeError" not in body
+        with flask_client.session_transaction() as session:
+            assert "user_id" not in session
+
 
 # ---------------------------------------------------------------------------
 # FastAPI routes

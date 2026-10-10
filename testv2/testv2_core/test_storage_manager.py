@@ -220,5 +220,21 @@ class TestDeviceIdFallbacks(unittest.TestCase):
         self.assertTrue(device_id)
         self.assertEqual(self.storage_manager.get_device_id(), device_id)
 
+    def test_failed_device_id_write_is_logged_without_details(self):
+        storage = MagicMock(spec=StorageInterface)
+        storage.get.return_value = None
+        storage.set.side_effect = OSError("session not writable: secret-detail")
+        self.storage_manager._storage = storage
+
+        with self.assertLogs("kinde_sdk.core.storage.storage_manager", level="WARNING") as logs:
+            device_id = self.storage_manager.get_device_id()
+
+        self.assertTrue(device_id)
+        output = "\n".join(logs.output)
+        self.assertIn("Failed to persist device ID", output)
+        self.assertIn("OSError", output)
+        self.assertNotIn("secret-detail", output)
+        self.assertNotIn(device_id, output)
+
 if __name__ == "__main__":
     unittest.main() 

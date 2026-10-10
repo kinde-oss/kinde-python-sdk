@@ -1,10 +1,13 @@
 # core/storage/storage_manager.py
+import logging
 import threading
 import uuid
 import time
 from typing import Dict, Any, Optional
 from .storage_factory import StorageFactory
 from .storage_interface import StorageInterface
+
+logger = logging.getLogger(__name__)
 
 class StorageManager:
     _instance = None
@@ -89,8 +92,10 @@ class StorageManager:
         if storage is not None:
             try:
                 storage.set("_device_id", {"value": device_id, "timestamp": time.time()})
-            except Exception:
-                pass
+            except Exception as e:
+                # Not fatal: the in-process ID is still returned, but it won't be
+                # shared with other workers until a write succeeds.
+                logger.warning("Failed to persist device ID to storage: %s", type(e).__name__)
         return device_id
     
     @property

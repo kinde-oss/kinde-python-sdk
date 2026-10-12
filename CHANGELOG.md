@@ -7,7 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Secrets in session storage**: `client_secret` is no longer written to session storage
+  (which may be a browser cookie); it is kept in process memory. Legacy sessions that still
+  contain it are cleaned on load and save.
+- **Secrets in logs**: the SDK no longer logs the token-exchange payload or response, the OAuth
+  `state`, session contents, user details or storage values, and no longer raises its own
+  loggers to INFO.
+- **Token endpoint errors**: a failed code exchange now reports only the HTTP status and the
+  standard OAuth `error` code. The response body is no longer included in exceptions, logs, or
+  the Flask / FastAPI callback responses, which now return a generic HTTP 400.
+- **OAuth callback validation**: `state` is always required and must match the login started
+  in the same session; the ID token `nonce` is verified. Both are single-use.
+- **FastAPI**: the callback no longer forwards the consumed `state` to the post-login URL, and
+  logout now clears the user's server-side tokens (previously only the session cookie was
+  cleared).
+- **Flask**: the session is bound to a user only after a successful callback.
+- **Account API errors**: the permissions, roles and feature flag helpers log only the
+  exception type and HTTP status when an Account API call fails, not the response body.
+
+### Changed
+- Callbacks without a `state` parameter, and token responses without an ID token (e.g. custom
+  scopes that omit `openid`), are now rejected.
+
 ### Fixed
+- **Token refresh deadlock**: `TokenManager.get_access_token()` hung forever when the access
+  token had expired and a refresh token was available (non-reentrant lock re-acquired in
+  `set_tokens`).
+- **Account API host**: permission, role and feature flag lookups with `force_api=True` were sent
+  to the generated client's placeholder host (`your_kinde_subdomain.kinde.com`) and silently
+  returned empty results. They now use the issuer of the user's access token, falling back to
+  `KINDE_HOST`.
+- **Account API permissions**: with `force_api=True`, `get_permission()` never granted anything
+  because the API's `{id, name, key}` objects were compared with the key string;
+  `get_permissions()` now returns keys, as in token mode.
+- **Account API feature flags**: with `force_api=True`, flags were read from a non-existent
+  `data.flags` attribute and always came back empty; the `data.feature_flags` list is now parsed.
+- **Management API feature flags**: `environments_api.get_environement_feature_flags()` and
+  `organizations_api.get_organization_feature_flags()` raised a `ValidationError` for any
+  boolean or integer flag, because the published spec declares every flag value as a string.
+  Values are now `bool`, `int` or `str`, and the generator re-applies the correction
+  (`SPEC_ERRATA` in `generate_management_sdk.py`) until the spec is fixed upstream.
+- **Signed out after a restart or on another worker**: session data is keyed by a device ID that
+  was generated per process and never saved (there is no request at startup), so after a restart,
+  or with several workers (e.g. `gunicorn -w 4`), the tokens in a user's session couldn't be found.
+  The device ID is now stored in the user's session and read from there. Sessions created
+  before this fix will need to sign in once more.
+- **Refreshed tokens persisted**: tokens from a refresh were only kept in process memory, so with
+  server-side or cookie sessions, a restart or another worker kept using (and refreshing with) the
+  old ones. `UserSession` now writes them back to session storage after every refresh.
+- **StorageManager.reset() deadlock**: `reset()` held the class lock while calling `initialize()`,
+  which takes the same non-reentrant lock; the lock is now reentrant.
+- **KindeSessionManagement**: the standalone-only guard never fired, because constructing the
+  `NullFramework` singleton always marks it initialized; it now raises inside Flask / FastAPI
+  apps as documented, and requires a standalone `OAuth` client to exist.
+- **Feature flag codes**: `get_all_flags()` in token mode returned flags with an empty `code`.
+- **Logout redirect**: the logout URL now includes the `redirect` parameter that Kinde's
+  `/logout` endpoint reads (`redirect_uri` is still sent). The target is
+  `post_logout_redirect_uri`, then the new `KINDE_POST_LOGOUT_REDIRECT_URI` environment
+  variable, then `KINDE_REDIRECT_URI` as before, so the built-in `/logout` routes can return
+  users to your home page instead of the callback.
+- Previously unbounded `requests` calls now use a 30 second timeout.
 - **CI**: Hardened `renovate.json` so Renovate can no longer re-propose bumping the Python
   `<3.12` `django` pin in `requirements.txt` to Django 6.x (Django 6.0+ requires Python
   3.12+). Django is a test-only dependency for this SDK (no runtime usage), and the

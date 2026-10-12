@@ -202,27 +202,43 @@ class TestSmartOAuthPerformance:
     
     def test_initialization_performance(self):
         """Test that SmartOAuth initialization is fast."""
+        import gc
         import time
         
         with patch('kinde_sdk.auth.smart_oauth.OAuth'), \
              patch('kinde_sdk.auth.smart_oauth.AsyncOAuth'):
             
-            start_time = time.time()
-            smart_oauth = SmartOAuth(client_id="test")
-            end_time = time.time()
+            # Keep automatic (full) GC pauses out of the timed region
+            gc_was_enabled = gc.isenabled()
+            gc.disable()
+            try:
+                start_time = time.time()
+                smart_oauth = SmartOAuth(client_id="test")
+                end_time = time.time()
+            finally:
+                if gc_was_enabled:
+                    gc.enable()
             
             # Initialization should be fast (< 100ms)
             assert (end_time - start_time) < 0.1
     
     def test_method_delegation_performance(self, smart_oauth, mock_sync_oauth):
         """Test that method delegation is fast."""
+        import gc
         import time
         
-        # Test sync method performance
-        start_time = time.time()
-        for _ in range(100):
-            smart_oauth.is_authenticated()
-        end_time = time.time()
+        # Test sync method performance (automatic GC paused so a full
+        # collection can't land in the timed region)
+        gc_was_enabled = gc.isenabled()
+        gc.disable()
+        try:
+            start_time = time.time()
+            for _ in range(100):
+                smart_oauth.is_authenticated()
+            end_time = time.time()
+        finally:
+            if gc_was_enabled:
+                gc.enable()
         
         # 100 calls should be fast (< 10ms)
         assert (end_time - start_time) < 0.01
@@ -230,13 +246,21 @@ class TestSmartOAuthPerformance:
     @pytest.mark.asyncio
     async def test_async_method_performance(self, smart_oauth, mock_async_oauth):
         """Test that async method delegation is fast."""
+        import gc
         import time
         
-        # Test async method performance
-        start_time = time.time()
-        for _ in range(10):
-            await smart_oauth.get_user_info_async()
-        end_time = time.time()
+        # Test async method performance (automatic GC paused so a full
+        # collection can't land in the timed region)
+        gc_was_enabled = gc.isenabled()
+        gc.disable()
+        try:
+            start_time = time.time()
+            for _ in range(10):
+                await smart_oauth.get_user_info_async()
+            end_time = time.time()
+        finally:
+            if gc_was_enabled:
+                gc.enable()
         
         # 10 async calls should be fast (< 100ms)
         assert (end_time - start_time) < 0.1

@@ -154,7 +154,7 @@ class Roles(BaseAuth):
             
             response = roles_api.get_user_roles()
         except Exception as e:
-            self._logger.error(f"Failed to fetch roles from API: {str(e)}")
+            self._logger.error("Failed to fetch roles from API: %s", self._describe_api_error(e))
             if role_key is None:
                 return {
                     "orgCode": None,

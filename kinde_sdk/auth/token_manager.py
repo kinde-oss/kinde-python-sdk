@@ -1,5 +1,6 @@
 import time
 import requests
+from kinde_sdk.core.exceptions import KindeTokenPersistenceException
 import threading
 import logging
 from typing import Any, Dict, Optional
@@ -33,9 +34,13 @@ class TokenManager:
         self.client_secret = client_secret
         self.token_url = token_url
         self.tokens = {}  # Store tokens (access/refresh)
-        self.lock = threading.Lock()  # Add a lock for thread safety
+        # Reentrant: get_access_token() holds the lock while a refresh calls set_tokens()
+        self.lock = threading.RLock()
         self.redirect_uri = None  # Initialize the redirect_uri attribute
         self.force_api = False  # Initialize force_api setting
+        self.on_tokens_refreshed = None  # Called after a successful refresh, e.g. to persist tokens
+        self.load_persisted_tokens = None  # Returns the saved tokens, which another process may have refreshed
+        self._save_pending = False  # A refresh succeeded but saving its tokens failed
         self.initialized = True
 
     def set_force_api(self, force_api: bool):
@@ -128,13 +133,68 @@ class TokenManager:
             # Check if token is expired
             # if time.time() >= self.tokens["expires_at"]:
             if time.time() >= self.tokens.get("expires_at", 0):
+                # Another worker may already have refreshed and saved newer tokens
+                self._adopt_newer_persisted_tokens()
+                if time.time() < self.tokens.get("expires_at", 0):
+                    return self.tokens["access_token"]
+
                 # Try to refresh token if available
                 if "refresh_token" in self.tokens:
-                    return self.refresh_access_token()
+                    try:
+                        return self.refresh_access_token()
+                    except requests.RequestException as e:
+                        self._log_refresh_failure(e)
+                        raise
                 else:
                     raise ValueError("Access token expired and no refresh token available")
-                
+
+            if self._save_pending:
+                self._save_refreshed_tokens()
             return self.tokens["access_token"]
+
+    def _save_refreshed_tokens(self) -> None:
+        """Save the tokens from a refresh. If saving fails, the refreshed tokens are kept
+        and the save is retried on the next call, without refreshing again."""
+        if self.on_tokens_refreshed:
+            try:
+                self.on_tokens_refreshed()
+            except Exception as e:
+                logging.getLogger(__name__).warning(
+                    "Refreshed tokens could not be saved: %s", type(e).__name__
+                )
+                raise KindeTokenPersistenceException(
+                    "Refreshed tokens could not be saved", access_token=self.tokens["access_token"]
+                ) from e
+        self._save_pending = False
+
+    def _adopt_newer_persisted_tokens(self) -> None:
+        """Use tokens that another process refreshed and saved, so this process
+        doesn't refresh with a refresh token Kinde has already rotated out."""
+        if not self.load_persisted_tokens:
+            return
+        try:
+            persisted = self.load_persisted_tokens()
+        except Exception as e:
+            logging.getLogger(__name__).warning("Saved tokens could not be read: %s", type(e).__name__)
+            return
+        if (persisted and persisted.get("access_token")
+                and persisted.get("expires_at", 0) > self.tokens.get("expires_at", 0)):
+            self.tokens = dict(persisted)
+            self._save_pending = False  # The saved tokens are newer than any unsaved ones
+
+    def _log_refresh_failure(self, error: Exception) -> None:
+        """Log why a refresh failed, without logging any token values."""
+        response = getattr(error, "response", None)
+        if response is None:
+            logging.getLogger(__name__).warning("Token refresh failed: %s", type(error).__name__)
+            return
+        try:
+            error_code = response.json().get("error")
+        except Exception:
+            error_code = None
+        logging.getLogger(__name__).warning(
+            "Token refresh failed: HTTP %s (%s)", response.status_code, error_code or "no error code"
+        )
 
     def refresh_access_token(self):
         """ Use the refresh token to get a new access token. """
@@ -154,8 +214,12 @@ class TokenManager:
         response = requests.post(self.token_url, data=data)
         response.raise_for_status()
         token_data = response.json()
-        
+
         self.set_tokens(token_data)
+        # Save here, not in get_access_token(), so direct callers also persist the rotated refresh token
+        with self.lock:
+            self._save_pending = True
+            self._save_refreshed_tokens()
         return self.tokens["access_token"]
 
     def get_id_token(self):

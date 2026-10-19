@@ -1,4 +1,5 @@
 import asyncio
+import time
 import unittest
 from unittest.mock import AsyncMock, patch
 from urllib.parse import parse_qs, urlparse
@@ -47,7 +48,10 @@ class TestClientSecretNotPersisted(unittest.TestCase):
         state, nonce = query["state"][0], query["nonce"][0]
         token_data = {
             **self._token_data(),
-            "id_token": jwt.encode({"sub": "user_1", "nonce": nonce}, "key", algorithm="HS256"),
+            "id_token": jwt.encode({
+                "sub": "user_1", "nonce": nonce, "iss": "https://example.kinde.com",
+                "aud": ["secret_test_client"], "exp": int(time.time()) + 3600,
+            }, "key", algorithm="HS256"),
         }
         with patch.object(OAuth, "exchange_code_for_tokens", AsyncMock(return_value=token_data)), \
                 patch("kinde_sdk.auth.oauth.helper_get_user_details", AsyncMock(return_value={})):
@@ -85,6 +89,9 @@ class TestClientSecretNotPersisted(unittest.TestCase):
         user_info = session.get_user_data("user_1")
         self.assertNotIn("client_secret", user_info)
         self.assertEqual(session.get_token_manager("user_1").client_secret, "super_secret")
+        # Loading alone cleans the stored session, without waiting for a later save
+        self.assertNotIn("super_secret", repr(StorageManager().get("user_1")))
+        self.assertIn("access_token", StorageManager().get("user_1")["tokens"])
 
         # Saving the session again must not write the secret back
         session.set_user_data("user_1", {**user_info, "client_secret": "super_secret"}, self._token_data())

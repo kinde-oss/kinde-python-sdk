@@ -16,6 +16,7 @@ Only the network calls (token endpoint, userinfo) are mocked.
 """
 import asyncio
 import tempfile
+import time
 from unittest.mock import patch, MagicMock, AsyncMock
 from urllib.parse import urlparse, parse_qs
 
@@ -32,10 +33,13 @@ REDIRECT_URI = "http://localhost/callback"
 
 
 def _id_token(**claims):
-    payload = {"sub": "kp_user", "aud": CLIENT_ID, "iss": "https://example.kinde.com"}
+    payload = {"sub": "kp_user", "aud": CLIENT_ID, "iss": "https://example.kinde.com",
+               "exp": int(time.time()) + 3600}
     payload.update(claims)
-    # Signature is irrelevant here: the SDK decodes the ID token without
-    # verifying the signature (token comes straight from the token endpoint).
+    # A claim passed as None is left out of the token
+    payload = {k: v for k, v in payload.items() if v is not None}
+    # Signature is irrelevant here: the SDK doesn't verify the ID token's
+    # signature (the token comes straight from the token endpoint).
     return jwt.encode(payload, "test-secret-key-of-sufficient-length-123", algorithm="HS256")
 
 
@@ -235,6 +239,26 @@ class TestCallbackNonceStandalone:
             asyncio.run(standalone_oauth.handle_redirect("code", "u1", q["state"]))
         network.assert_not_called()
         assert standalone_oauth._session_manager.get_token_manager("u1") is None
+
+    @pytest.mark.parametrize("claims", [
+        {"iss": "https://attacker.example"},
+        {"aud": "another_client"},
+        {"exp": int(time.time()) - 3600},
+        {"exp": None},
+    ], ids=["wrong-issuer", "wrong-audience", "expired", "no-expiry"])
+    def test_id_token_with_bad_issuer_audience_or_expiry_rejected(self, standalone_oauth, network, claims):
+        """The signature isn't checked, but the issuer, audience and expiry are."""
+        q = _query(asyncio.run(standalone_oauth.login()))
+        network.return_value = _token_response(_id_token(nonce=q["nonce"], **claims))
+        with pytest.raises(KindeLoginException):
+            asyncio.run(standalone_oauth.handle_redirect("code", "u1", q["state"]))
+        assert standalone_oauth._session_manager.get_token_manager("u1") is None
+
+    def test_id_token_issuer_with_trailing_slash_accepted(self, standalone_oauth, network):
+        q = _query(asyncio.run(standalone_oauth.login()))
+        network.return_value = _token_response(_id_token(nonce=q["nonce"], iss="https://example.kinde.com/"))
+        result = asyncio.run(standalone_oauth.handle_redirect("code", "u1", q["state"]))
+        assert result["user"] == {"id": "kp_user"}
 
 
 # ---------------------------------------------------------------------------

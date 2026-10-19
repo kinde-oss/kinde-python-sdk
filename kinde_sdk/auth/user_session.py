@@ -97,8 +97,11 @@ class UserSession:
             "access_token" not in tokens):
             return False
 
-        # Sessions saved by older SDK versions may still contain client_secret; drop it
-        user_info = {k: v for k, v in user_info.items() if k != "client_secret"}
+        # Sessions saved by older SDK versions may still contain client_secret. Drop it,
+        # and write the cleaned record back so it doesn't stay in the stored session
+        if "client_secret" in user_info:
+            user_info = {k: v for k, v in user_info.items() if k != "client_secret"}
+            self.storage_manager.setItems(user_id, {**session_data, "user_info": user_info})
 
         token_manager = TokenManager(
             user_id,

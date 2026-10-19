@@ -46,7 +46,8 @@ class Tokens:
     def __init__(self, nonce, tag="1"):
         self.access = _jwt(sub="kp_user", tag=f"access-{tag}")
         self.refresh = f"SECRET-refresh-token-{tag}"
-        self.id = _jwt(sub="kp_user", nonce=nonce, tag=f"id-{tag}")
+        self.id = _jwt(sub="kp_user", nonce=nonce, tag=f"id-{tag}",
+                       iss=HOST, aud=[CLIENT_ID], exp=int(time.time()) + 3600)
 
     def response(self, expires_in=3600):
         resp = MagicMock()

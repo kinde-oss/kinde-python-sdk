@@ -587,11 +587,26 @@ class OAuth:
             self._logger.error("Token response has no ID token")
             raise KindeLoginException("Missing ID token")
         try:
-            # Signature not verified, as elsewhere in the SDK: the token comes
-            # directly from the token endpoint over TLS
-            id_token_claims = jwt.decode(id_token, options={"verify_signature": False})
+            # The signature isn't verified (the token comes directly from the token
+            # endpoint over TLS), but OpenID Connect still requires the audience and
+            # expiry to be checked, and the issuer below
+            id_token_claims = jwt.decode(
+                id_token,
+                options={
+                    "verify_signature": False,
+                    "verify_aud": True,
+                    "verify_exp": True,
+                    "require": ["iss", "aud", "exp"],
+                },
+                audience=self.client_id,
+                leeway=60,
+            )
         except jwt.PyJWTError as e:
+            self._logger.error("Invalid ID token: %s", type(e).__name__)
             raise KindeLoginException("Invalid ID token") from e
+        if str(id_token_claims["iss"]).rstrip("/") != str(self.host).rstrip("/"):
+            self._logger.error("ID token issuer does not match the configured Kinde host")
+            raise KindeLoginException("Invalid ID token issuer")
         if id_token_claims.get("nonce") != expected_nonce:
             self._logger.error("Nonce mismatch in ID token")
             raise KindeLoginException("Invalid nonce in ID token")

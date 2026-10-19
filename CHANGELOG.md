@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   standard OAuth `error` code. The response body is no longer included in exceptions, logs, or
   the Flask / FastAPI callback responses, which now return a generic HTTP 400.
 - **OAuth callback validation**: `state` is always required and must match the login started
-  in the same session; the ID token `nonce` is verified. Both are single-use.
+  in the same session; the ID token `nonce` is verified. Both are single-use. The ID token's
+  issuer must match the configured Kinde host, its audience must include the client ID, and it
+  must not be expired.
 - **FastAPI**: the callback no longer forwards the consumed `state` to the post-login URL, and
   logout now clears the user's server-side tokens (previously only the session cookie was
   cleared).

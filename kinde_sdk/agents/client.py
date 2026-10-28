@@ -163,6 +163,8 @@ class _LoopbackListener:
         self._server: Optional[asyncio.AbstractServer] = None
         self._result: Optional[asyncio.Future] = None
         self.redirect_uri = redirect_uri
+        # Set once the authorization request exists; callbacks with any other state are ignored
+        self.expected_state: Optional[str] = None
 
     async def start(self) -> None:
         self._result = asyncio.get_running_loop().create_future()
@@ -178,10 +180,18 @@ class _LoopbackListener:
                 pass
             method, _, rest = request_line.partition(" ")
             target = rest.rsplit(" ", 1)[0]
-            if method != "GET" or urlsplit(target).path != self._path or self._result.done():
+            query = parse_qs(urlsplit(target).query)
+            state = (query.get("state") or [""])[0]
+            if (
+                method != "GET"
+                or urlsplit(target).path != self._path
+                or self._result.done()
+                or self.expected_state is None
+                or not secrets.compare_digest(state.encode(), self.expected_state.encode())
+            ):
+                # Another local process can't end the sign-in by calling the callback first
                 writer.write(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
                 return
-            query = parse_qs(urlsplit(target).query)
             failed = "error" in query
             message = "Sign-in failed. You can close this tab." if failed else "Signed in. You can close this tab."
             body = f"<!doctype html><title>Kinde</title><p>{html.escape(message)}</p>".encode()
@@ -354,8 +364,9 @@ class KindeAgentClient:
         candidates: List[str] = []
         if challenge_response is not None:
             challenge = find_bearer_challenge(challenge_response.headers.get_list("www-authenticate"))
-            if challenge and challenge.get("resource_metadata"):
-                candidates.append(challenge.get("resource_metadata"))
+            metadata_url = challenge.get("resource_metadata") if challenge else None
+            if metadata_url and self._may_fetch(metadata_url):
+                candidates.append(metadata_url)
         for url in protected_resource_metadata_urls(self.resource_url):
             if url not in candidates:
                 candidates.append(url)
@@ -371,9 +382,19 @@ class KindeAgentClient:
             except httpx.HTTPError as exc:
                 raise DiscoveryError(f"Could not reach {self.resource_url}: {type(exc).__name__}") from exc
             challenge = find_bearer_challenge(probe.headers.get_list("www-authenticate"))
-            if probe.status_code == 401 and challenge and challenge.get("resource_metadata") not in (None, *candidates):
+            metadata_url = challenge.get("resource_metadata") if challenge else None
+            if probe.status_code == 401 and metadata_url not in (None, *candidates) and self._may_fetch(metadata_url):
                 return await self._fetch_protected_resource_metadata(probe)
         raise DiscoveryError(f"No protected resource metadata found for {self.resource_url}")
+
+    def _may_fetch(self, metadata_url: str) -> bool:
+        # A remote resource must not point the agent at a service on this machine
+        if is_loopback_host(urlsplit(metadata_url).hostname) and not is_loopback_host(
+            urlsplit(self.resource_url).hostname
+        ):
+            logger.warning("Ignoring a loopback resource_metadata URL from a remote resource: %s", metadata_url)
+            return False
+        return True
 
     async def _fetch_authorization_server_metadata(self, issuer: str) -> Dict[str, Any]:
         for url in authorization_server_metadata_urls(issuer):
@@ -467,7 +488,10 @@ class KindeAgentClient:
                 error=error,
                 error_description=description,
             )
-        body = response.json()
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise RegistrationError("The registration response was not JSON") from exc
         if not isinstance(body, dict) or not body.get("client_id"):
             raise RegistrationError("The registration response has no client_id")
         secret = body.get("client_secret")
@@ -578,6 +602,9 @@ class KindeAgentClient:
             raise AuthorizationError("The callback has no authorization code")
 
         metadata = await self.discover()
+        if metadata.get("issuer") != pending.issuer:
+            # Never send the code and verifier to an authorization server other than the one that issued the code
+            raise AuthorizationError("The authorization server changed since sign-in started; start again")
         # The code is bound to the client that started this attempt, so never re-resolve or re-register here
         identity = await self._identity_for(pending.client_id, pending.registration_key)
         if identity is None:
@@ -621,6 +648,7 @@ class KindeAgentClient:
         await listener.start()
         try:
             pending = await self.begin_authorization(redirect_uri=listener.redirect_uri, scopes=scopes)
+            listener.expected_state = pending.state
             result = self.open_browser(pending.authorization_url)
             if asyncio.iscoroutine(result):
                 await result
@@ -688,6 +716,10 @@ class KindeAgentClient:
             if not tokens.get("refresh_token"):
                 return None
             metadata = await self.discover()
+            # discover() drops the tokens when the issuer changed: never send them to the new one
+            tokens = await self.storage.get_tokens(self._token_key)
+            if not tokens or not tokens.get("refresh_token") or tokens.get("issuer") != metadata.get("issuer"):
+                return None
             identity = await self._identity_for_tokens(tokens)
             if identity is None:
                 await self.storage.delete_tokens(self._token_key)
@@ -816,8 +848,19 @@ class KindeAgentClient:
         return response
 
     async def disconnect(self, *, forget: bool = False) -> None:
-        """Revoke the tokens (best effort) and clear them. ``forget`` also drops the DCR registration."""
+        """Revoke the tokens (best effort) and clear them.
+
+        ``forget`` also drops the DCR registration for this redirect URI, even when
+        no tokens are stored.
+        """
         tokens = await self.storage.get_tokens(self._token_key)
+        if forget and not tokens:
+            try:
+                metadata = await self.discover()
+            except AgentClientError:
+                return
+            await self.storage.delete_registration(f"{metadata['issuer']}|{self.redirect_uri}")
+            return
         if tokens:
             identity = await self._identity_for_tokens(tokens)
             try:

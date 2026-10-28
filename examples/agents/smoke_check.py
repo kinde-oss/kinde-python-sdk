@@ -40,9 +40,10 @@ def get_json(client: httpx.Client, url: str):
         report("FAIL", f"GET {url}: {type(exc).__name__}")
         return None, None
     try:
-        return response, response.json()
+        body = response.json()
     except ValueError:
         return response, None
+    return response, body if isinstance(body, dict) else None
 
 
 def check_kinde_discovery(client: httpx.Client, config: AgentAuthConfig) -> None:
@@ -53,6 +54,8 @@ def check_kinde_discovery(client: httpx.Client, config: AgentAuthConfig) -> None
     if not check(
         response.status_code == 200, f"HTTP {response.status_code} (404 means the flag is off or the app ID is wrong)"
     ):
+        return
+    if not check(document is not None, "the body is a JSON object"):
         return
     check(document.get("issuer") == config.issuer, f"issuer is the scoped issuer {config.issuer}")
     check(
@@ -70,6 +73,8 @@ def check_protected_resource(client: httpx.Client, config: AgentAuthConfig) -> N
         report("FAIL", "Is mcp_server.py running?")
         return
     if not check(response.status_code == 200, f"HTTP {response.status_code}"):
+        return
+    if not check(document is not None, "the body is a JSON object"):
         return
     check(document.get("resource") == config.resource_url, "resource matches KINDE_AGENTS_RESOURCE_URL exactly")
     check(document.get("authorization_servers") == [config.issuer], "authorization_servers is [scoped issuer]")
@@ -124,7 +129,9 @@ def check_cimd(client: httpx.Client, url: str) -> None:
     try:
         document = response.json()
     except ValueError:
-        report("FAIL", "body is not JSON")
+        document = None
+    if not isinstance(document, dict):
+        report("FAIL", "body is not a JSON object")
         return
     check(document.get("client_id") == url, "client_id equals the URL it's served at")
     check(bool(document.get("client_name")), "client_name is set")
@@ -148,11 +155,15 @@ def check_token(client: httpx.Client, config: AgentAuthConfig, token: str) -> No
     check("openid" not in scopes, "no openid scope")
     check("offline" in scopes, "token scopes include offline (kinde_auth_settings requires it)")
 
-    response = client.post(
-        config.introspection_url,
-        data={"token": token},
-        auth=(config.client_id, config.client_secret or ""),
-    )
+    try:
+        response = client.post(
+            config.introspection_url,
+            data={"token": token},
+            auth=(config.client_id, config.client_secret or ""),
+        )
+    except httpx.HTTPError as exc:
+        report("FAIL", f"introspection request failed: {type(exc).__name__}")
+        return
     if response.status_code != 200:
         # Kinde answers 401 token_inactive for a bad token, and 401 request_unauthorized for bad app credentials
         try:
@@ -161,7 +172,13 @@ def check_token(client: httpx.Client, config: AgentAuthConfig, token: str) -> No
             error = None
         report("FAIL", f"introspection HTTP {response.status_code} {error or ''}".rstrip())
         return
-    data = response.json()
+    try:
+        data = response.json()
+    except ValueError:
+        data = None
+    if not isinstance(data, dict):
+        report("FAIL", "introspection body is not a JSON object")
+        return
     if not check(data.get("active") is True, "introspection says active"):
         return
     introspected_aud = data.get("aud") if isinstance(data.get("aud"), list) else [data.get("aud")]

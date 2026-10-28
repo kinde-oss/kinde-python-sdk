@@ -16,7 +16,7 @@ turns the core's errors into responses. No protocol logic lives here.
 
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from flask import Blueprint, Flask, Response, current_app, g, jsonify, request
 
@@ -172,5 +172,7 @@ def client_metadata_blueprint(document: Dict[str, Any], path: Optional[str] = No
     def client_metadata():
         return Response(body, headers=headers)
 
-    blueprint.add_url_rule(path or urlsplit(document["client_id"]).path, view_func=client_metadata, methods=["GET"])
+    # Routes match the decoded request path, so decode any %-escapes in the client_id
+    route = path or unquote(urlsplit(document["client_id"]).path)
+    blueprint.add_url_rule(route, view_func=client_metadata, methods=["GET"])
     return blueprint

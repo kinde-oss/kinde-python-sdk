@@ -1,6 +1,7 @@
 import asyncio
 import os
 import stat
+import sys
 import time
 from urllib.parse import parse_qs, urlsplit
 
@@ -185,6 +186,11 @@ class TestDcrFlow:
         with pytest.raises(RegistrationError, match="agent.example.org is not a trusted agent host"):
             await make_client(fake).connect()
 
+    async def test_non_json_registration_response(self, fake):
+        fake._register = lambda request: httpx.Response(201, content=b"<html>ok</html>")
+        with pytest.raises(RegistrationError, match="not JSON"):
+            await make_client(fake).connect()
+
     async def test_too_many_registrations(self, fake):
         fake.register_status = 429
         with pytest.raises(RegistrationError, match="try again later"):
@@ -281,6 +287,25 @@ class TestTokens:
         assert await client.get_token_info() is None
         assert await storage.get_registration(f"{ISSUER}|{REDIRECT}") is None
 
+    async def test_disconnect_forget_without_tokens_drops_registration(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, storage=storage)
+        await client.connect()
+        await storage.delete_tokens(f"{RESOURCE_URL}|default")  # e.g. after invalid_grant
+        await client.disconnect(forget=True)
+        assert await storage.get_registration(f"{ISSUER}|{REDIRECT}") is None
+
+    async def test_refresh_never_sends_tokens_to_a_new_issuer(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, client_metadata_url=CIMD_URL, storage=storage)
+        await client.connect()
+        key = f"{RESOURCE_URL}|default"
+        tokens = await storage.get_tokens(key)
+        await storage.set_tokens(key, {**tokens, "issuer": "https://old.example.com"})
+        client._metadata_at = 0  # metadata cache expired, so refresh() discovers again
+        assert await client.refresh() is None
+        assert not [r for r in fake.requests if b"grant_type=refresh_token" in r.content]
+
     async def test_tokens_dropped_when_issuer_changes(self, fake):
         storage = InMemoryAgentStorage()
         client = make_client(fake, client_metadata_url=CIMD_URL, storage=storage)
@@ -292,6 +317,14 @@ class TestTokens:
 
 
 class TestDiscovery:
+    async def test_remote_resource_cannot_point_metadata_at_loopback(self, fake):
+        client = make_client(fake, client_metadata_url=CIMD_URL)
+        challenge = httpx.Response(
+            401, headers={"WWW-Authenticate": 'Bearer resource_metadata="http://127.0.0.1:9/admin"'}
+        )
+        await client.discover(challenge)
+        assert not [r for r in fake.requests if r.url.host == "127.0.0.1"]
+
     async def test_falls_back_to_challenge_when_well_known_missing(self, fake):
         fake.serve_prm_at_well_known = False
         client = make_client(fake, client_metadata_url=CIMD_URL)
@@ -321,6 +354,24 @@ class TestDiscovery:
 
 
 class TestAuthorizationStep:
+    async def test_code_never_exchanged_with_a_new_issuer(self, fake):
+        client = make_client(fake, client_metadata_url=CIMD_URL)
+        pending = await client.begin_authorization()
+        callback = fake.authorize(pending.authorization_url)
+        other = {
+            **client._as_metadata,
+            "issuer": "https://evil.example.com",
+            "token_endpoint": "https://evil.example.com/t",
+        }
+
+        async def discover(*args, **kwargs):
+            return other
+
+        client.discover = discover
+        with pytest.raises(AuthorizationError, match="changed since sign-in started"):
+            await client.complete_authorization(pending, callback)
+        assert not [r for r in fake.requests if r.url.host == "evil.example.com"]
+
     async def test_state_mismatch(self, fake):
         client = make_client(fake, client_metadata_url=CIMD_URL)
         pending = await client.begin_authorization()
@@ -366,12 +417,17 @@ class TestAuthorizationStep:
     async def test_loopback_listener(self, fake):
         opened = []
 
+        forged = []
+
         async def open_browser(url: str):
             opened.append(url)
             callback = fake.authorize(url)
 
             async def follow():
                 async with httpx.AsyncClient() as browser:
+                    # Another local process calls the callback first: ignored, and sign-in still completes
+                    redirect = query_of(url)["redirect_uri"]
+                    forged.append((await browser.get(f"{redirect}?code=x&state=wrong")).status_code)
                     await browser.get(callback)
 
             asyncio.get_running_loop().create_task(follow())
@@ -385,6 +441,7 @@ class TestAuthorizationStep:
         )
         await client.connect()
         redirect_uri = query_of(opened[0])["redirect_uri"]
+        assert forged == [404]
         assert redirect_uri.startswith("http://127.0.0.1:") and redirect_uri.endswith("/callback")
         assert (await client.get_token_info())["client_id"] == CIMD_URL
 
@@ -400,6 +457,26 @@ class TestFileStorage:
         assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
         await storage.delete_tokens("k")
         assert await storage.get_tokens("k") is None
+
+    async def test_concurrent_processes_do_not_lose_updates(self, tmp_path):
+        path = str(tmp_path / "tokens.json")
+        script = (
+            "import asyncio, sys\n"
+            "from kinde_sdk.agents import FileAgentStorage\n"
+            "async def main():\n"
+            "    storage = FileAgentStorage(sys.argv[1])\n"
+            "    for i in range(25):\n"
+            "        await storage.set_tokens(f'{sys.argv[2]}-{i}', {'access_token': 'a'})\n"
+            "asyncio.run(main())\n"
+        )
+        processes = [
+            await asyncio.create_subprocess_exec(sys.executable, "-c", script, path, f"p{n}") for n in range(4)
+        ]
+        assert [await p.wait() for p in processes] == [0, 0, 0, 0]
+        storage = FileAgentStorage(path)
+        for n in range(4):
+            for i in range(25):
+                assert await storage.get_tokens(f"p{n}-{i}") is not None
 
 
 class TestConcurrentSignIn:

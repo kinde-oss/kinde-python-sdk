@@ -39,6 +39,10 @@ def _redirect_uri_problem(redirect_uri: str, document_host: str) -> Optional[Tup
         return True, f"redirect URI {redirect_uri!r} must not have a fragment"
     if parts.username or parts.password:
         return True, f"redirect URI {redirect_uri!r} must not contain userinfo"
+    try:
+        parts.port
+    except ValueError:
+        return True, f"redirect URI {redirect_uri!r} has an invalid port"
     if parts.scheme == "http" and is_loopback_host(parts.hostname):
         return None  # any port is honoured (RFC 8252 §7.3)
     if parts.scheme == "https" and parts.hostname:

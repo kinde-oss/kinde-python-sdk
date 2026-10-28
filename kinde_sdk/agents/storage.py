@@ -7,10 +7,17 @@ dicts so any store (a database, an encrypted session, a keychain) can hold them.
 """
 
 import asyncio
+import contextlib
 import json
 import os
 import tempfile
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Dict, Iterator, Optional, Protocol
+
+try:  # POSIX
+    import fcntl
+except ImportError:  # pragma: no cover - Windows
+    fcntl = None  # type: ignore[assignment]
+    import msvcrt
 
 
 class AgentClientStorage(Protocol):
@@ -61,6 +68,10 @@ class FileAgentStorage:
     Suitable for CLI agents on a single-user machine. The file holds refresh
     tokens and client secrets in plain text, so prefer the OS keychain or an
     encrypted store where one is available.
+
+    Several processes may share one file: each update holds an OS lock on a
+    ``<path>.lock`` file next to it, so one process never overwrites another's
+    rotated refresh token or registration.
     """
 
     def __init__(self, path: str):
@@ -94,6 +105,26 @@ class FileAgentStorage:
                 pass
             raise
 
+    @contextlib.contextmanager
+    def _file_lock(self) -> Iterator[None]:
+        # Serializes read-modify-write across processes; the asyncio lock covers this process
+        directory = os.path.dirname(os.path.abspath(self.path))
+        os.makedirs(directory, mode=0o700, exist_ok=True)
+        fd = os.open(self.path + ".lock", os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            if fcntl is not None:
+                fcntl.flock(fd, fcntl.LOCK_EX)
+            else:  # pragma: no cover - Windows
+                msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+            yield
+        finally:
+            if fcntl is not None:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            else:  # pragma: no cover - Windows
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+            os.close(fd)
+
     def _guard(self) -> asyncio.Lock:
         # Created lazily so it binds to the running event loop (Python 3.9)
         if self._lock is None:
@@ -106,12 +137,16 @@ class FileAgentStorage:
 
     async def _set(self, section: str, key: str, value: Optional[Dict[str, Any]]) -> None:
         async with self._guard():
-            data = self._read()
-            if value is None:
-                data[section].pop(key, None)
-            else:
-                data[section][key] = value
-            self._write(data)
+            with self._file_lock():
+                self._update(section, key, value)
+
+    def _update(self, section: str, key: str, value: Optional[Dict[str, Any]]) -> None:
+        data = self._read()
+        if value is None:
+            data[section].pop(key, None)
+        else:
+            data[section][key] = value
+        self._write(data)
 
     async def get_tokens(self, key: str) -> Optional[Dict[str, Any]]:
         return await self._get("tokens", key)

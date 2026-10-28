@@ -71,6 +71,7 @@ class _JwksCache:
         self._fetched_at: Optional[float] = None
         self._last_attempt: Optional[float] = None
         self._last_unknown_kid_fetch: Optional[float] = None
+        self._refresh_failed = False
         self._lock = threading.Lock()
 
     def _should_fetch(self, kid: str, now: float) -> bool:
@@ -92,8 +93,11 @@ class _JwksCache:
             document = response.json()
         except ValueError as exc:
             raise VerificationUnavailableError("Kinde JWKS response was not JSON") from exc
+        jwks = document.get("keys") if isinstance(document, dict) else None
+        if not isinstance(jwks, list):
+            raise VerificationUnavailableError("Kinde JWKS response has no keys list")
         keys = {}
-        for jwk in document.get("keys", []) if isinstance(document, dict) else []:
+        for jwk in jwks:
             kid = jwk.get("kid") if isinstance(jwk, dict) else None
             if not kid:
                 continue
@@ -103,9 +107,11 @@ class _JwksCache:
                 logger.debug("Skipping unusable JWKS key %s", kid)
         self._keys = keys
         self._fetched_at = now
+        self._refresh_failed = False
 
     def _fetch_failed(self, exc: Exception) -> None:
         # Keep verifying with the keys we have; only fail when there are none
+        self._refresh_failed = True
         if self._fetched_at is None:
             if isinstance(exc, VerificationUnavailableError):
                 raise exc
@@ -115,7 +121,8 @@ class _JwksCache:
     def _lookup(self, kid: str) -> Any:
         key = self._keys.get(kid)
         if key is None:
-            if self._fetched_at is None:
+            if self._fetched_at is None or self._refresh_failed:
+                # Kinde is unreachable, so the key may be a new one we couldn't fetch: an outage, not a bad token
                 raise VerificationUnavailableError("Kinde signing keys are unavailable")
             raise InvalidTokenError("The access token was signed by an unknown key")
         return key
@@ -591,7 +598,8 @@ class KindeAgentAuth:
     def _check_revocation(self, response: httpx.Response, token: str) -> None:
         if response.status_code != 200:
             raise AgentAuthError(f"Kinde token revocation failed with HTTP {response.status_code}")
-        self._introspection_cache.pop(self._cache_key(token), None)
+        # Revoking either token of a pair revokes both, and the paired token's cache key can't be derived
+        self._introspection_cache.clear()
 
 
 def _oauth_error_code(response: httpx.Response) -> Optional[str]:

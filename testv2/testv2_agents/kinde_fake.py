@@ -104,6 +104,7 @@ class FakeKinde:
         self.introspection_raises = False
         self.inactive_as_200 = False  # the RFC 7662 answer the contract describes
         self.jwks_status = 200
+        self.jwks_body: Optional[Any] = None  # overrides the real key set when set
         self.register_status: Optional[int] = None
         self.register_error: Optional[Dict[str, str]] = None
         self.prm: Optional[Dict[str, Any]] = {
@@ -156,7 +157,7 @@ class FakeKinde:
         if url == f"{DOMAIN}/.well-known/oauth-authorization-server/oauth2/agents/{APP_ID}":
             return httpx.Response(200, json=self.as_metadata)
         if url == f"{DOMAIN}/.well-known/jwks":
-            return httpx.Response(self.jwks_status, json=jwks())
+            return httpx.Response(self.jwks_status, json=jwks() if self.jwks_body is None else self.jwks_body)
         if url == f"{ISSUER}/introspect":
             return self._introspect(request)
         if url == f"{ISSUER}/register":

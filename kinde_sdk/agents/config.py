@@ -45,6 +45,9 @@ def normalize_domain(domain: str) -> str:
     parts = urlsplit(value)
     if not parts.hostname:
         raise AgentConfigError(f"Invalid Kinde domain: {domain!r}")
+    if parts.username or parts.password:
+        # https://yourbiz.kinde.com@other.example would send tokens to other.example
+        raise AgentConfigError(f"The Kinde domain must not contain userinfo: {domain!r}")
     if parts.scheme != "https" and not (parts.scheme == "http" and is_loopback_host(parts.hostname)):
         raise AgentConfigError(f"The Kinde domain must use https: {domain!r}")
     if parts.path not in ("", "/") or parts.query or parts.fragment:

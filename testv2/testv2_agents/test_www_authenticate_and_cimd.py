@@ -113,8 +113,16 @@ class TestClientMetadataDocument:
         with pytest.warns(UserWarning):
             build_client_metadata_document(CIMD_URL, "Agent", [redirect_uri], strict=False)
 
-    @pytest.mark.parametrize("redirect_uri", ["https://agent.onzs.co.za/cb#frag", "https://u:p@agent.onzs.co.za/cb"])
-    def test_fragment_and_userinfo_always_fatal(self, redirect_uri):
+    @pytest.mark.parametrize(
+        "redirect_uri",
+        [
+            "https://agent.onzs.co.za/cb#frag",
+            "https://u:p@agent.onzs.co.za/cb",
+            "http://127.0.0.1:notaport/callback",
+            "http://127.0.0.1:99999/callback",
+        ],
+    )
+    def test_fragment_userinfo_and_bad_port_always_fatal(self, redirect_uri):
         with pytest.raises(AgentConfigError):
             build_client_metadata_document(CIMD_URL, "Agent", [redirect_uri], strict=False)
 

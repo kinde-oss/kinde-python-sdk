@@ -16,7 +16,7 @@ the core's errors into responses. No protocol logic lives here.
 """
 
 from typing import Any, Callable, Dict, Optional
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
@@ -158,7 +158,7 @@ def client_metadata_router(document: Dict[str, Any], path: Optional[str] = None)
     async def client_metadata() -> Response:
         return Response(content=body, headers=headers, media_type="application/json")
 
-    router.add_api_route(
-        path or urlsplit(document["client_id"]).path, client_metadata, methods=["GET"], include_in_schema=False
-    )
+    # Routes match the decoded request path, so decode any %-escapes in the client_id
+    route = path or unquote(urlsplit(document["client_id"]).path)
+    router.add_api_route(route, client_metadata, methods=["GET"], include_in_schema=False)
     return router

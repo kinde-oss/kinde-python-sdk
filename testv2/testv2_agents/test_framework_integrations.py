@@ -144,6 +144,11 @@ class TestIntegrations:
         assert challenge.get("error") == "insufficient_scope"
         assert challenge.get("scope") == "email"
 
+    def test_granted_scope_passes(self, client, fake):
+        response = client.get("/email", headers={"Authorization": f"Bearer {fake.issue(scope='offline email')}"})
+        assert response.status_code == 200
+        assert body(response) == {"user": "kp_user"}
+
     def test_kinde_outage_is_503(self, client, fake):
         fake.introspection_status = 502
         response = client.get("/mcp", headers={"Authorization": f"Bearer {fake.issue()}"})
@@ -160,3 +165,24 @@ class TestIntegrations:
         assert body(response) == CIMD
         assert response.headers["Content-Type"] == "application/json"
         assert response.headers["Cache-Control"] == "public, max-age=3600"
+
+
+ENCODED_CIMD = build_client_metadata_document(
+    "https://agent.onzs.co.za/oauth/%66oo%20bar.json", "Onzs Agent", ["http://127.0.0.1/callback"]
+)
+
+
+def test_fastapi_serves_percent_encoded_client_id_path():
+    app = FastAPI()
+    app.include_router(client_metadata_router(ENCODED_CIMD))
+    response = TestClient(app).get("/oauth/foo%20bar.json")
+    assert response.status_code == 200
+    assert response.json() == ENCODED_CIMD
+
+
+def test_flask_serves_percent_encoded_client_id_path():
+    app = Flask(__name__)
+    app.register_blueprint(client_metadata_blueprint(ENCODED_CIMD))
+    response = app.test_client().get("/oauth/foo%20bar.json")
+    assert response.status_code == 200
+    assert response.get_json() == ENCODED_CIMD

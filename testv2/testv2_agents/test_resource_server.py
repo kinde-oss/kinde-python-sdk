@@ -78,6 +78,7 @@ class TestConfig:
             {"resource_url": "http://api.example.com/mcp"},
             {"domain": "http://test.kinde.com"},
             {"domain": "https://test.kinde.com/oauth2"},
+            {"domain": "https://test.kinde.com@evil.example"},
             {"client_secret": None},
             {"verification": "magic"},
         ],
@@ -328,6 +329,15 @@ class TestIntrospection:
         with pytest.raises(InvalidTokenError):
             auth.verify_token(token)
 
+    def test_revoking_one_token_evicts_its_cached_pair(self, fake):
+        access_token = fake.issue()
+        auth = make_auth(fake, introspection_cache_seconds=30)
+        auth.verify_token(access_token)
+        auth.revoke_token("paired-refresh-token", "refresh_token")
+        fake.active_tokens.pop(access_token)  # Kinde revokes both tokens of the pair
+        with pytest.raises(InvalidTokenError):
+            auth.verify_token(access_token)
+
 
 class TestJwtVerification:
     def jwt_auth(self, fake, strategy="jwt"):
@@ -415,6 +425,26 @@ class TestJwtVerification:
         monkeypatch.setattr(resource_server, "_JWKS_RETRY_SECONDS", 0)
         assert auth.verify_token(make_token()).user_id == "kp_user"
         assert fake.count("/jwks") == 2
+
+    @pytest.mark.parametrize("keys", [None, 42, "keys", {"kid": "x"}])
+    def test_jwks_without_a_keys_list_is_unavailable(self, fake, keys):
+        fake.jwks_body = {"keys": keys}
+        with pytest.raises(VerificationUnavailableError):
+            self.jwt_auth(fake).verify_token(make_token())
+
+    def test_unknown_kid_during_jwks_outage_is_unavailable(self, fake, monkeypatch):
+        from kinde_sdk.agents import resource_server
+
+        auth = self.jwt_auth(fake)
+        auth.verify_token(make_token())
+        fake.jwks_status = 500
+        # The new key might be a rotation we couldn't fetch: 503, not 401
+        with pytest.raises(VerificationUnavailableError):
+            auth.verify_token(make_token(kid="rotated", key=other_key()))
+        fake.jwks_status = 200
+        monkeypatch.setattr(resource_server, "_JWKS_MIN_REFETCH_SECONDS", 0)
+        with pytest.raises(InvalidTokenError):
+            auth.verify_token(make_token(kid="rotated", key=other_key()))
 
     def test_jwt_plus_introspection_requires_both(self, fake):
         auth = self.jwt_auth(fake, "jwt+introspection")

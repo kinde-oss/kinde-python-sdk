@@ -9,6 +9,7 @@ from kinde_sdk.agents.errors import InsufficientScopeError, PermissionDeniedErro
 
 
 def _scopes_from(claims: Mapping[str, Any]) -> List[str]:
+    """Read scopes from ``scp`` (a list) or ``scope`` (a space-separated string)."""
     scp = claims.get("scp")
     if isinstance(scp, list):
         return [str(scope) for scope in scp]
@@ -19,6 +20,7 @@ def _scopes_from(claims: Mapping[str, Any]) -> List[str]:
 
 
 def _role_keys(claims: Mapping[str, Any]) -> List[str]:
+    """Return the ``key`` of each role in the ``roles`` claim."""
     roles = claims.get("roles")
     if not isinstance(roles, list):
         return []
@@ -102,10 +104,12 @@ def has_permission(context: Optional[AgentAuthContext], permission: str) -> bool
 
 
 def has_role(context: Optional[AgentAuthContext], role: str) -> bool:
+    """Whether the context has the Kinde role key. ``False`` when there's no context."""
     return context is not None and role in context.roles
 
 
 def has_scope(context: Optional[AgentAuthContext], scope: str) -> bool:
+    """Whether the context has the OAuth scope. ``False`` when there's no context."""
     return context is not None and scope in context.scopes
 
 

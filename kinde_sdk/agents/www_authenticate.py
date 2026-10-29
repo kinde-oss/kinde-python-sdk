@@ -37,23 +37,28 @@ class _Scanner:
         self.pos = 0
 
     def peek(self) -> str:
+        """Return the current character, or an empty string at the end."""
         return self.text[self.pos] if self.pos < len(self.text) else ""
 
     def skip_spaces(self) -> None:
+        """Skip spaces and tabs."""
         while self.peek() in (" ", "\t"):
             self.pos += 1
 
     def skip_separators(self) -> None:
+        """Skip spaces, tabs and commas."""
         while self.peek() in (" ", "\t", ","):
             self.pos += 1
 
     def token(self, extra=frozenset()) -> str:
+        """Read an RFC 7230 token, also accepting the characters in ``extra``."""
         start = self.pos
         while self.peek() and (self.peek() in _TOKEN_CHARS or self.peek() in extra):
             self.pos += 1
         return self.text[start : self.pos]
 
     def quoted_string(self) -> str:
+        """Read a quoted string, unescaping backslashes."""
         # Assumes the opening quote is at self.pos. An unterminated string runs to the end.
         self.pos += 1
         chars = []
@@ -87,6 +92,7 @@ def parse_www_authenticate(headers: Union[str, Iterable[str], None]) -> List[Cha
 
 
 def _parse_one(text: str) -> List[Challenge]:
+    """Parse one header value into its challenges."""
     scanner = _Scanner(text)
     challenges: List[Challenge] = []
     current: Optional[Challenge] = None

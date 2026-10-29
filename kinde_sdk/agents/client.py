@@ -58,11 +58,13 @@ class AuthorizationRequiredError(AgentClientError):
 
 
 def _origin(url: str) -> Tuple[str, str, Optional[int]]:
+    """Return (scheme, host, port) with the default port filled in, for same-origin checks."""
     parts = urlsplit(url)
     return parts.scheme.lower(), (parts.hostname or "").lower(), parts.port or _DEFAULT_PORTS.get(parts.scheme.lower())
 
 
 def _require_secure(url: str, what: str) -> None:
+    """Raise :class:`DiscoveryError` unless ``url`` is https, or http on a loopback host."""
     parts = urlsplit(url)
     if parts.scheme == "https" and parts.hostname:
         return
@@ -105,6 +107,7 @@ def authorization_server_metadata_urls(issuer: str) -> List[str]:
 
 
 def _oauth_error(response: httpx.Response) -> Tuple[Optional[str], Optional[str]]:
+    """Return the OAuth ``error`` and ``error_description`` from a response, if it has them."""
     try:
         body = response.json()
     except ValueError:
@@ -152,6 +155,7 @@ class _LoopbackListener:
     """Accepts one browser redirect on a loopback address (RFC 8252 §7.3), then stops."""
 
     def __init__(self, redirect_uri: str):
+        """Check the redirect URI is http on a loopback host and remember where to listen."""
         parts = urlsplit(redirect_uri)
         if parts.scheme != "http" or not is_loopback_host(parts.hostname):
             raise AgentConfigError(f"A loopback redirect URI is required, got {redirect_uri!r}")
@@ -167,6 +171,7 @@ class _LoopbackListener:
         self.expected_state: Optional[str] = None
 
     async def start(self) -> None:
+        """Start listening, on an ephemeral port when the redirect URI has none."""
         self._result = asyncio.get_running_loop().create_future()
         bind = "127.0.0.1" if self._host == "localhost" else self._host
         self._server = await asyncio.start_server(self._handle, bind, self._port)
@@ -174,6 +179,7 @@ class _LoopbackListener:
         self.redirect_uri = f"http://{self._netloc_host}:{self._bound_port}{self._path}"
 
     async def _handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        """Answer one HTTP request; complete the sign-in only for the callback path with the expected state."""
         try:
             request_line = (await asyncio.wait_for(reader.readline(), 10)).decode("latin-1")
             while (await asyncio.wait_for(reader.readline(), 10)) not in (b"\r\n", b"\n", b""):
@@ -211,12 +217,14 @@ class _LoopbackListener:
             writer.close()
 
     async def wait(self, timeout: float) -> str:
+        """Wait for the callback URL, raising :class:`AuthorizationError` on timeout."""
         try:
             return await asyncio.wait_for(asyncio.shield(self._result), timeout)
         except asyncio.TimeoutError as exc:
             raise AuthorizationError("Timed out waiting for the browser to finish signing in") from exc
 
     async def close(self) -> None:
+        """Stop listening."""
         if self._server is not None:
             self._server.close()
             await self._server.wait_closed()
@@ -263,6 +271,7 @@ class KindeAgentClient:
         timeout_seconds: float = 10.0,
         callback_timeout_seconds: float = 300.0,
     ):
+        """Validate the configuration and set up storage and the HTTP client."""
         _require_secure_resource(resource_url)
         if client_metadata_url is not None:
             validate_client_metadata_url(client_metadata_url)
@@ -294,6 +303,7 @@ class KindeAgentClient:
     # -- Lifecycle ------------------------------------------------------------
 
     async def aclose(self) -> None:
+        """Close the HTTP client if this client created it."""
         if self._owns_http:
             await self._http.aclose()
 
@@ -304,7 +314,7 @@ class KindeAgentClient:
         await self.aclose()
 
     def _lock_for(self, name: str) -> asyncio.Lock:
-        # Created lazily so they bind to the running event loop
+        """Return the named lock, creating it lazily so it binds to the running event loop."""
         lock = self._locks.get(name)
         if lock is None:
             lock = self._locks[name] = asyncio.Lock()
@@ -316,6 +326,7 @@ class KindeAgentClient:
 
     @property
     def issuer(self) -> Optional[str]:
+        """The discovered authorization server's issuer, or ``None`` before discovery."""
         return self._as_metadata.get("issuer") if self._as_metadata else None
 
     # -- Discovery ------------------------------------------------------------
@@ -348,6 +359,7 @@ class KindeAgentClient:
         return metadata
 
     async def _get_json(self, url: str) -> Optional[Dict[str, Any]]:
+        """GET a URL; return its JSON object body, or ``None`` when it isn't one."""
         try:
             response = await self._http.get(url, headers={"Accept": "application/json"})
         except httpx.HTTPError as exc:
@@ -361,6 +373,7 @@ class KindeAgentClient:
         return body if isinstance(body, dict) else None
 
     async def _fetch_protected_resource_metadata(self, challenge_response: Optional[httpx.Response]) -> Dict[str, Any]:
+        """Find the RFC 9728 document: challenge URL, then well-known URLs, then a probe."""
         candidates: List[str] = []
         if challenge_response is not None:
             challenge = find_bearer_challenge(challenge_response.headers.get_list("www-authenticate"))
@@ -388,6 +401,7 @@ class KindeAgentClient:
         raise DiscoveryError(f"No protected resource metadata found for {self.resource_url}")
 
     def _may_fetch(self, metadata_url: str) -> bool:
+        """Whether a ``resource_metadata`` URL from a challenge is safe to fetch."""
         # A remote resource must not point the agent at a service on this machine
         if is_loopback_host(urlsplit(metadata_url).hostname) and not is_loopback_host(
             urlsplit(self.resource_url).hostname
@@ -397,6 +411,7 @@ class KindeAgentClient:
         return True
 
     async def _fetch_authorization_server_metadata(self, issuer: str) -> Dict[str, Any]:
+        """Fetch and validate the issuer's metadata (issuer match, PKCE S256, https)."""
         for url in authorization_server_metadata_urls(issuer):
             metadata = await self._get_json(url)
             if metadata is None:
@@ -420,6 +435,7 @@ class KindeAgentClient:
     # -- Client identity ------------------------------------------------------
 
     def _effective_scope(self, scopes: Optional[Sequence[str]] = None) -> str:
+        """The scope to request: configured or given scopes, without ``openid`` if unsupported."""
         requested = list(scopes) if scopes else list(self.scopes)
         supported = (self._as_metadata or {}).get("scopes_supported")
         if isinstance(supported, list) and "openid" not in supported and "openid" in requested:
@@ -433,6 +449,7 @@ class KindeAgentClient:
         return " ".join(seen)
 
     async def _client_identity(self, redirect_uri: str) -> Dict[str, Any]:
+        """Pick the client identity: CIMD URL, pre-registered client, or a (re)used DCR registration."""
         metadata = self._as_metadata or {}
         if self.client_metadata_url and metadata.get("client_id_metadata_document_supported") is True:
             return {"client_id": self.client_metadata_url, "auth_method": "none"}
@@ -456,6 +473,7 @@ class KindeAgentClient:
         return _identity_from_registration(await self._register(redirect_uri, key), key)
 
     async def _register(self, redirect_uri: str, key: str) -> Dict[str, Any]:
+        """Register this agent with DCR and store the registration."""
         endpoint = self._as_metadata["registration_endpoint"]
         request = {
             "redirect_uris": [redirect_uri],
@@ -530,6 +548,7 @@ class KindeAgentClient:
 
     @staticmethod
     def _apply_client_auth(identity: Dict[str, Any], data: Dict[str, str], headers: Dict[str, str]) -> None:
+        """Add client authentication to a token request, using the method the server returned."""
         method = identity.get("auth_method") or "none"
         secret = identity.get("client_secret")
         if method == "client_secret_basic" and secret:
@@ -660,6 +679,7 @@ class KindeAgentClient:
     # -- Tokens ---------------------------------------------------------------
 
     async def _post_token(self, endpoint: str, data: Dict[str, str], headers: Dict[str, str]) -> httpx.Response:
+        """POST to the token endpoint, turning network errors into :class:`TokenRequestError`."""
         try:
             return await self._http.post(endpoint, data=data, headers=headers)
         except httpx.HTTPError as exc:
@@ -672,6 +692,7 @@ class KindeAgentClient:
         redirect_uri: Optional[str],
         previous: Optional[Dict[str, Any]],
     ) -> Dict[str, Any]:
+        """Store a token response, keeping the previous refresh token when none is returned."""
         try:
             body = response.json()
         except ValueError as exc:
@@ -698,6 +719,7 @@ class KindeAgentClient:
 
     @staticmethod
     def _expiring(tokens: Dict[str, Any]) -> bool:
+        """Whether the access token expires within the refresh margin."""
         expires_at = tokens.get("expires_at")
         return expires_at is not None and expires_at - time.time() < _REFRESH_MARGIN_SECONDS
 
@@ -750,6 +772,7 @@ class KindeAgentClient:
             )
 
     async def _usable_tokens(self) -> Dict[str, Any]:
+        """Return stored tokens, refreshing or signing in first when needed."""
         tokens = await self.storage.get_tokens(self._token_key)
         if tokens and self._expiring(tokens):
             tokens = await self.refresh(stale_access_token=tokens["access_token"])
@@ -804,6 +827,7 @@ class KindeAgentClient:
     # -- Calling the resource -------------------------------------------------
 
     def _resolve(self, url: str) -> str:
+        """Resolve ``url`` against the resource URL, refusing other origins."""
         if not url:
             return self.resource_url
         if url.startswith("/"):
@@ -890,6 +914,7 @@ class KindeAgentClient:
 
 
 def _identity_from_registration(registration: Dict[str, Any], key: str) -> Dict[str, Any]:
+    """Turn a stored DCR registration into a client identity."""
     return {
         "client_id": registration["client_id"],
         "client_secret": registration.get("client_secret"),
@@ -899,6 +924,7 @@ def _identity_from_registration(registration: Dict[str, Any], key: str) -> Dict[
 
 
 def _require_secure_resource(resource_url: str) -> None:
+    """Raise :class:`AgentConfigError` unless the resource URL is https or http loopback."""
     try:
         _require_secure(resource_url, "resource URL")
     except DiscoveryError as exc:

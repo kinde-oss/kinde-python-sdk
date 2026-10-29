@@ -46,6 +46,7 @@ def make_token(
     algorithm: str = "RS256",
     **claims: Any,
 ) -> str:
+    """Sign a Kinde-shaped access token with the test key."""
     now = int(time.time())
     payload = {
         "iss": iss,
@@ -121,9 +122,11 @@ class FakeKinde:
     # -- helpers --------------------------------------------------------------
 
     def paths(self) -> List[str]:
+        """The method and URL of every request seen, without query strings."""
         return [f"{r.method} {r.url.copy_with(query=None)}" for r in self.requests]
 
     def count(self, path_suffix: str) -> int:
+        """How many requests went to a path ending in ``path_suffix``."""
         return sum(1 for r in self.requests if r.url.path.endswith(path_suffix))
 
     def issue(self, *, scope: str = "offline", client_id: str = "https://agent.example.com/cimd.json", **claims) -> str:
@@ -151,6 +154,7 @@ class FakeKinde:
     # -- routing --------------------------------------------------------------
 
     def handle(self, request: httpx.Request) -> httpx.Response:
+        """Route a request to the fake endpoint, failing on any shared ``/oauth2/*`` endpoint."""
         self.requests.append(request)
         url = str(request.url.copy_with(query=None))
         path = request.url.path
@@ -176,6 +180,7 @@ class FakeKinde:
         return httpx.Response(404)
 
     def _introspect(self, request: httpx.Request) -> httpx.Response:
+        """Answer introspection as live Kinde does: 401 ``token_inactive`` for unknown tokens."""
         if self.introspection_raises:
             raise httpx.ConnectError("boom", request=request)
         if self.introspection_status is not None:
@@ -205,6 +210,7 @@ class FakeKinde:
         )
 
     def _register(self, request: httpx.Request) -> httpx.Response:
+        """Answer DCR the way Kinde does: always a secret and ``client_secret_post``."""
         if self.register_status is not None:
             return httpx.Response(self.register_status, json=self.register_error or {})
         body = json.loads(request.content)
@@ -236,6 +242,7 @@ class FakeKinde:
         return f"{query['redirect_uri']}?code={code}&state={query['state']}&iss={ISSUER}"
 
     def _client_ok(self, form: Dict[str, str]) -> bool:
+        """Check client authentication: no secret for CIMD, the registered secret for DCR."""
         client_id = form.get("client_id", "")
         if client_id.startswith("https://"):
             return "client_secret" not in form
@@ -243,6 +250,7 @@ class FakeKinde:
         return registration is not None and form.get("client_secret") == registration["client_secret"]
 
     def _token(self, request: httpx.Request) -> httpx.Response:
+        """Answer the authorization code and refresh token grants."""
         form = _form(request)
         if not self._client_ok(form):
             return httpx.Response(401, json={"error": "invalid_client"})
@@ -278,6 +286,7 @@ class FakeKinde:
         return httpx.Response(400, json={"error": "unsupported_grant_type"})
 
     def _resource(self, request: httpx.Request) -> httpx.Response:
+        """Act as the protected resource: metadata, 401 challenges and scope checks."""
         if request.url.path.startswith("/.well-known/oauth-protected-resource"):
             if self.serve_prm_at_well_known and self.prm is not None:
                 return httpx.Response(200, json=self.prm)
@@ -309,6 +318,7 @@ class FakeKinde:
 
 
 def _form(request: httpx.Request) -> Dict[str, str]:
+    """Decode a form-encoded request body."""
     return {
         k: unquote_plus(v)
         for k, v in (pair.split("=", 1) for pair in request.content.decode().split("&") if "=" in pair)

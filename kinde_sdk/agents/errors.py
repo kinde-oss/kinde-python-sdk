@@ -50,6 +50,7 @@ class InsufficientScopeError(AgentAuthError):
     error = "insufficient_scope"
 
     def __init__(self, scopes, description: Optional[str] = None):
+        """Record the missing scopes, for the ``scope`` parameter of the challenge."""
         self.scopes = list(scopes)
         self.description = description or "Required scope: " + " ".join(self.scopes)
         super().__init__(self.description)
@@ -62,6 +63,7 @@ class PermissionDeniedError(AgentAuthError):
     error = "forbidden"
 
     def __init__(self, permissions, description: Optional[str] = None):
+        """Record the missing permissions."""
         self.permissions = list(permissions)
         self.description = description or "Missing permission: " + ", ".join(self.permissions)
         super().__init__(self.description)

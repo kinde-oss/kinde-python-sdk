@@ -33,10 +33,12 @@ class KindeTokenStorage:
     """
 
     def __init__(self, storage: Optional[AgentClientStorage] = None, key: str = "default"):
+        """Store under ``mcp|<key>`` in ``storage`` (in memory by default)."""
         self.storage = storage or InMemoryAgentStorage()
         self.key = f"mcp|{key}"
 
     async def get_tokens(self) -> Optional[OAuthToken]:
+        """Return the stored tokens, or ``None``."""
         data = await self.storage.get_tokens(self.key)
         return OAuthToken.model_validate(data) if data else None
 
@@ -44,6 +46,7 @@ class KindeTokenStorage:
         await self.storage.set_tokens(self.key, tokens.model_dump(mode="json", exclude_none=True))
 
     async def get_client_info(self) -> Optional[OAuthClientInformationFull]:
+        """Return the stored client registration, or ``None``."""
         data = await self.storage.get_registration(self.key)
         return OAuthClientInformationFull.model_validate(data) if data else None
 
@@ -70,6 +73,7 @@ class KindeOAuthClientProvider(OAuthClientProvider):
         client_metadata: Optional[OAuthClientMetadata] = None,
         **options: Any,
     ):
+        """Build the client metadata from the Kinde defaults unless ``client_metadata`` is given."""
         if client_metadata_url is not None:
             validate_client_metadata_url(client_metadata_url)
         self._default_scopes = [scope for scope in scopes if scope != "openid"] or ["offline"]

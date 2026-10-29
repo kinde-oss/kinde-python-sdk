@@ -29,6 +29,7 @@ _LOOPBACK_HOSTS = ("localhost", "127.0.0.1", "::1")
 
 
 def is_loopback_host(host: Optional[str]) -> bool:
+    """Whether ``host`` is localhost, 127.0.0.1 or ::1."""
     return (host or "").lower() in _LOOPBACK_HOSTS
 
 
@@ -56,6 +57,7 @@ def normalize_domain(domain: str) -> str:
 
 
 def _validate_resource_url(resource_url: str) -> str:
+    """Check the Resource URL is https (http only on localhost) with no fragment or userinfo; return it as is."""
     # Kept byte for byte: Kinde stores and compares the Resource URL exactly as configured
     if not resource_url:
         raise AgentConfigError("resource_url is required (set KINDE_AGENTS_RESOURCE_URL)")
@@ -70,6 +72,7 @@ def _validate_resource_url(resource_url: str) -> str:
 
 
 def _with_offline(scopes: Optional[Sequence[str]]) -> List[str]:
+    """Return the scopes with ``offline`` first, so agents get refresh tokens."""
     # Without offline, MCP clients never ask for a refresh token and users sign in every 24 hours
     result = list(scopes) if scopes else []
     if "offline" not in result:
@@ -106,6 +109,7 @@ class AgentAuthConfig:
     timeout_seconds: float = 5.0
 
     def __post_init__(self):
+        """Normalise and validate the configuration."""
         self.domain = normalize_domain(self.domain)
         if not self.client_id:
             raise AgentConfigError("client_id is required (set KINDE_AGENTS_CLIENT_ID)")

@@ -29,11 +29,13 @@ def report(status: str, message: str) -> None:
 
 
 def check(condition: bool, message: str, warn_only: bool = False) -> bool:
+    """Report PASS, or FAIL (WARN when ``warn_only``), and return the condition."""
     report("PASS" if condition else ("WARN" if warn_only else "FAIL"), message)
     return condition
 
 
 def get_json(client: httpx.Client, url: str):
+    """GET a URL; return the response and its JSON object body, or ``None`` for either."""
     try:
         response = client.get(url)
     except httpx.HTTPError as exc:
@@ -47,6 +49,7 @@ def get_json(client: httpx.Client, url: str):
 
 
 def check_kinde_discovery(client: httpx.Client, config: AgentAuthConfig) -> None:
+    """Check 1: Kinde's scoped discovery document advertises CIMD, DCR and ``offline``."""
     print(f"\n1. Kinde discovery: {config.authorization_server_metadata_url}")
     response, document = get_json(client, config.authorization_server_metadata_url)
     if response is None:
@@ -67,6 +70,7 @@ def check_kinde_discovery(client: httpx.Client, config: AgentAuthConfig) -> None
 
 
 def check_protected_resource(client: httpx.Client, config: AgentAuthConfig) -> None:
+    """Check 2: your server's protected resource metadata names the right resource and issuer."""
     print(f"\n2. Your protected resource metadata: {config.protected_resource_metadata_url}")
     response, document = get_json(client, config.protected_resource_metadata_url)
     if response is None:
@@ -82,6 +86,7 @@ def check_protected_resource(client: httpx.Client, config: AgentAuthConfig) -> N
 
 
 def check_challenge(client: httpx.Client, config: AgentAuthConfig) -> None:
+    """Check 3: requests with no token or a bad token get a 401 with the right challenge."""
     print(f"\n3. Challenge from {config.resource_url}")
     headers = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
     for label, extra, expected_error in (
@@ -110,6 +115,7 @@ def check_challenge(client: httpx.Client, config: AgentAuthConfig) -> None:
 
 
 def check_cimd(client: httpx.Client, url: str) -> None:
+    """Check 4: the client ID metadata document is served the way Kinde needs it."""
     print(f"\n4. Client ID metadata document: {url}")
     try:
         validate_client_metadata_url(url)
@@ -140,6 +146,7 @@ def check_cimd(client: httpx.Client, url: str) -> None:
 
 
 def check_token(client: httpx.Client, config: AgentAuthConfig, token: str) -> None:
+    """Check 5: decode an access token, introspect it, and check its audience and scopes."""
     print("\n5. Access token")
     try:
         claims = jwt.decode(token, options={"verify_signature": False})
@@ -191,6 +198,7 @@ def check_token(client: httpx.Client, config: AgentAuthConfig, token: str) -> No
 
 
 def main() -> int:
+    """Run the checks and exit non-zero if any failed."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--cimd-url", help="your agent's client ID metadata document URL")
     parser.add_argument("--token", help="an access token an agent received (decoded and introspected)")

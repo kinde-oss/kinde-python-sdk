@@ -63,6 +63,7 @@ class FastAPIAgentAuth:
         *,
         mirror_authorization_server_metadata: bool = True,
     ):
+        """Build the core helper from the environment unless one is passed, and create the metadata routes."""
         self.auth = auth if auth is not None else KindeAgentAuth()
         self.router = APIRouter()
         self._add_metadata_routes(mirror_authorization_server_metadata)
@@ -73,7 +74,10 @@ class FastAPIAgentAuth:
         app.add_exception_handler(AgentAuthHTTPException, agent_auth_exception_handler)
 
     def _add_metadata_routes(self, mirror: bool) -> None:
+        """Add the protected resource metadata routes, and the authorization server mirror if asked."""
+
         async def protected_resource_metadata(request: Request) -> Response:
+            """Serve the RFC 9728 document, answering CORS preflight requests."""
             if request.method == "OPTIONS":
                 return Response(status_code=204, headers=_CORS_HEADERS)
             return JSONResponse(
@@ -92,6 +96,7 @@ class FastAPIAgentAuth:
         if mirror:
 
             async def authorization_server_metadata(request: Request) -> Response:
+                """Serve Kinde's scoped authorization server metadata from this origin."""
                 if request.method == "OPTIONS":
                     return Response(status_code=204, headers=_CORS_HEADERS)
                 document = await self.auth.fetch_authorization_server_metadata_async()
@@ -117,6 +122,7 @@ class FastAPIAgentAuth:
         """
 
         async def dependency(request: Request) -> AgentAuthContext:
+            """Verify the bearer token and required scopes, and store the context on ``request.state``."""
             try:
                 context = await self.auth.authenticate_async(request.headers.get("authorization"))
                 if scopes:
@@ -136,6 +142,7 @@ class FastAPIAgentAuth:
         authenticate = self.require()
 
         async def dependency(request: Request) -> AgentAuthContext:
+            """Verify the bearer token, then require the Kinde permissions."""
             context = await authenticate(request)
             try:
                 require_permission(context, *permissions)

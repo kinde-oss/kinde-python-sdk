@@ -75,6 +75,7 @@ class _JwksCache:
         self._lock = threading.Lock()
 
     def _should_fetch(self, kid: str, now: float) -> bool:
+        """Whether to fetch the JWKS now: missing or stale keys, or an unknown kid, within rate limits."""
         if self._fetched_at is None or now - self._fetched_at >= _JWKS_CACHE_SECONDS:
             # Missing or stale: retry, but not on every request while Kinde is down
             return self._last_attempt is None or now - self._last_attempt >= _JWKS_RETRY_SECONDS
@@ -87,6 +88,7 @@ class _JwksCache:
         return True
 
     def _store(self, response: httpx.Response, now: float) -> None:
+        """Store the keys from a JWKS response, raising :class:`VerificationUnavailableError` if it's unusable."""
         if response.status_code != 200:
             raise VerificationUnavailableError(f"Kinde JWKS request failed with HTTP {response.status_code}")
         try:
@@ -110,7 +112,7 @@ class _JwksCache:
         self._refresh_failed = False
 
     def _fetch_failed(self, exc: Exception) -> None:
-        # Keep verifying with the keys we have; only fail when there are none
+        """Keep the cached keys after a failed fetch; raise only when there are none."""
         self._refresh_failed = True
         if self._fetched_at is None:
             if isinstance(exc, VerificationUnavailableError):
@@ -119,6 +121,7 @@ class _JwksCache:
         logger.warning("Kinde JWKS refresh failed; using cached keys")
 
     def _lookup(self, kid: str) -> Any:
+        """Return the key for ``kid``: 503 while keys can't be fetched, 401 when it's simply unknown."""
         key = self._keys.get(kid)
         if key is None:
             if self._fetched_at is None or self._refresh_failed:
@@ -128,6 +131,7 @@ class _JwksCache:
         return key
 
     def get_key(self, kid: str, client: httpx.Client) -> Any:
+        """Return the signing key for ``kid``, fetching the JWKS when needed."""
         with self._lock:
             now = time.monotonic()
             if self._should_fetch(kid, now):
@@ -139,6 +143,7 @@ class _JwksCache:
             return self._lookup(kid)
 
     async def get_key_async(self, kid: str, client: httpx.AsyncClient) -> Any:
+        """Async version of :meth:`get_key`."""
         now = time.monotonic()
         if self._should_fetch(kid, now):
             self._last_attempt = now
@@ -177,6 +182,7 @@ class KindeAgentAuth:
         clock: Callable[[], float] = time.time,
         **options: Any,
     ):
+        """Use ``config``, or build one from ``options`` or the environment."""
         if config is None:
             config = AgentAuthConfig.from_env(**options)
         elif options:
@@ -194,21 +200,25 @@ class KindeAgentAuth:
     # -- HTTP clients ---------------------------------------------------------
 
     def _client(self) -> httpx.Client:
+        """Return the sync HTTP client, creating it on first use."""
         if self._http_client is None:
             self._http_client = httpx.Client(timeout=self.config.timeout_seconds)
         return self._http_client
 
     def _async_client(self) -> httpx.AsyncClient:
+        """Return the async HTTP client, creating it on first use."""
         if self._async_http_client is None:
             self._async_http_client = httpx.AsyncClient(timeout=self.config.timeout_seconds)
         return self._async_http_client
 
     def close(self) -> None:
+        """Close the sync HTTP client if this helper created it."""
         if self._owns_http_client and self._http_client is not None:
             self._http_client.close()
             self._http_client = None
 
     async def aclose(self) -> None:
+        """Close both HTTP clients if this helper created them."""
         if self._owns_async_http_client and self._async_http_client is not None:
             await self._async_http_client.aclose()
             self._async_http_client = None
@@ -254,11 +264,13 @@ class KindeAgentAuth:
         }
 
     def _cached_as_metadata(self) -> Optional[Dict[str, Any]]:
+        """Return a copy of the cached Kinde metadata while it's fresh."""
         if self._as_metadata_cache and time.monotonic() - self._as_metadata_cache[0] < _AS_METADATA_CACHE_SECONDS:
             return dict(self._as_metadata_cache[1])
         return None
 
     def _store_as_metadata(self, response: Optional[httpx.Response]) -> Dict[str, Any]:
+        """Cache Kinde's metadata from a response, or fall back to the static copy."""
         document = None
         if response is not None and response.status_code == 200:
             try:
@@ -295,6 +307,7 @@ class KindeAgentAuth:
         return self._store_as_metadata(response)
 
     async def fetch_authorization_server_metadata_async(self) -> Dict[str, Any]:
+        """Async version of :meth:`fetch_authorization_server_metadata`."""
         cached = self._cached_as_metadata()
         if cached is not None:
             return cached
@@ -398,6 +411,7 @@ class KindeAgentAuth:
         return self._context_from_introspection(token, data, claims)
 
     async def verify_token_async(self, token: str) -> AgentAuthContext:
+        """Async version of :meth:`verify_token`."""
         strategy = self.config.verification
         claims = None
         if strategy in (VERIFICATION_JWT, VERIFICATION_JWT_AND_INTROSPECTION):
@@ -411,11 +425,13 @@ class KindeAgentAuth:
         return self._context_from_introspection(token, data, claims)
 
     def _application_auth_header(self) -> str:
+        """HTTP Basic credentials for the AI agents and MCP application."""
         # RFC 6749 §2.3.1: form-urlencode each part before joining
         credentials = f"{quote_plus(self.config.client_id)}:{quote_plus(self.config.client_secret or '')}"
         return "Basic " + base64.b64encode(credentials.encode()).decode()
 
     def _post_introspection(self, token: str) -> Union[httpx.Response, Exception]:
+        """POST the token to Kinde's introspection endpoint; return the response or the network error."""
         try:
             return self._client().post(
                 self.config.introspection_url,
@@ -426,6 +442,7 @@ class KindeAgentAuth:
             return exc
 
     async def _post_introspection_async(self, token: str) -> Union[httpx.Response, Exception]:
+        """Async version of :meth:`_post_introspection`."""
         try:
             return await self._async_client().post(
                 self.config.introspection_url,
@@ -436,6 +453,7 @@ class KindeAgentAuth:
             return exc
 
     def _handle_introspection(self, response: Union[httpx.Response, Exception], token: str) -> Dict[str, Any]:
+        """Map an introspection result to token data, or to an invalid-token or unavailable error."""
         if isinstance(response, Exception):
             logger.warning("Kinde introspection request failed: %s", type(response).__name__)
             raise VerificationUnavailableError("Could not reach Kinde to verify the token")
@@ -481,6 +499,7 @@ class KindeAgentAuth:
     def _context_from_introspection(
         self, token: str, data: Mapping[str, Any], verified_claims: Optional[Mapping[str, Any]]
     ) -> AgentAuthContext:
+        """Build the context from introspection data plus the token's claims."""
         claims = verified_claims
         if claims is None:
             # Safe without a signature check: Kinde has just said the token is active.
@@ -499,6 +518,7 @@ class KindeAgentAuth:
         return hashlib.sha256(token.encode()).hexdigest()
 
     def _cached_introspection(self, token: str) -> Optional[Dict[str, Any]]:
+        """Return a cached introspection result that hasn't expired."""
         if not self.config.introspection_cache_seconds:
             return None
         entry = self._introspection_cache.get(self._cache_key(token))
@@ -510,6 +530,7 @@ class KindeAgentAuth:
         return entry[1]
 
     def _remember_introspection(self, token: str, data: Dict[str, Any]) -> None:
+        """Cache an active introspection result, no longer than the token lives."""
         if not self.config.introspection_cache_seconds:
             return
         now = self._clock()
@@ -527,6 +548,7 @@ class KindeAgentAuth:
 
     @staticmethod
     def _kid(token: str) -> str:
+        """Return the token's key ID, rejecting anything but RS256."""
         try:
             header = jwt.get_unverified_header(token)
         except jwt.PyJWTError as exc:
@@ -540,6 +562,7 @@ class KindeAgentAuth:
         return kid
 
     def _verify_jwt(self, token: str, key: Any) -> Dict[str, Any]:
+        """Verify the signature, audience, expiry and issuer, and return the claims."""
         try:
             claims = jwt.decode(
                 token,
@@ -584,6 +607,7 @@ class KindeAgentAuth:
         self._check_revocation(response, token)
 
     async def revoke_token_async(self, token: str, token_type_hint: Optional[str] = None) -> None:
+        """Async version of :meth:`revoke_token`."""
         data = {"token": token}
         if token_type_hint:
             data["token_type_hint"] = token_type_hint
@@ -596,6 +620,7 @@ class KindeAgentAuth:
         self._check_revocation(response, token)
 
     def _check_revocation(self, response: httpx.Response, token: str) -> None:
+        """Raise unless Kinde accepted the revocation, then clear the introspection cache."""
         if response.status_code != 200:
             raise AgentAuthError(f"Kinde token revocation failed with HTTP {response.status_code}")
         # Revoking either token of a pair revokes both, and the paired token's cache key can't be derived
@@ -603,6 +628,7 @@ class KindeAgentAuth:
 
 
 def _oauth_error_code(response: httpx.Response) -> Optional[str]:
+    """Return the OAuth ``error`` code from a response body, if any."""
     try:
         body = response.json()
     except ValueError:
@@ -612,4 +638,5 @@ def _oauth_error_code(response: httpx.Response) -> Optional[str]:
 
 
 def _strip_one_slash(value: str) -> str:
+    """Remove one trailing slash."""
     return value[:-1] if value.endswith("/") else value

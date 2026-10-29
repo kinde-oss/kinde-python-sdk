@@ -57,6 +57,7 @@ class FlaskAgentAuth:
         *,
         mirror_authorization_server_metadata: bool = True,
     ):
+        """Build the core helper from the environment unless one is passed, and register on ``app`` if given."""
         self.auth = auth if auth is not None else KindeAgentAuth()
         self.blueprint = self._metadata_blueprint(mirror_authorization_server_metadata)
         if app is not None:
@@ -66,9 +67,11 @@ class FlaskAgentAuth:
         app.register_blueprint(self.blueprint)
 
     def _metadata_blueprint(self, mirror: bool) -> Blueprint:
+        """Build the blueprint serving the metadata routes, with the authorization server mirror if asked."""
         blueprint = Blueprint("kinde_agent_auth", __name__)
 
         def protected_resource_metadata():
+            """Serve the RFC 9728 document, answering CORS preflight requests."""
             if request.method == "OPTIONS":
                 return Response(status=204, headers=_CORS_HEADERS)
             response = jsonify(self.auth.protected_resource_metadata())
@@ -90,6 +93,7 @@ class FlaskAgentAuth:
         if mirror:
 
             def authorization_server_metadata():
+                """Serve Kinde's scoped authorization server metadata from this origin."""
                 if request.method == "OPTIONS":
                     return Response(status=204, headers=_CORS_HEADERS)
                 response = jsonify(self.auth.fetch_authorization_server_metadata())
@@ -113,6 +117,7 @@ class FlaskAgentAuth:
         return response
 
     def _authenticate(self, scopes) -> AgentAuthContext:
+        """Verify the request's bearer token and scopes, and store the context on ``g``."""
         context = self.auth.authenticate(request.headers.get("Authorization"))
         if scopes:
             require_scope(context, *scopes)
@@ -128,8 +133,11 @@ class FlaskAgentAuth:
         """
 
         def decorator(view: Callable[..., Any]) -> Callable[..., Any]:
+            """Wrap ``view`` so it runs only with a valid bearer token."""
+
             @wraps(view)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
+                """Answer with the auth error, or run the view."""
                 try:
                     self._authenticate(scopes)
                 except AgentAuthError as exc:
@@ -147,8 +155,11 @@ class FlaskAgentAuth:
         """
 
         def decorator(view: Callable[..., Any]) -> Callable[..., Any]:
+            """Wrap ``view`` so it runs only with a valid token carrying the permissions."""
+
             @wraps(view)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
+                """Answer with the auth error, or run the view."""
                 try:
                     require_permission(self._authenticate(()), *permissions)
                 except AgentAuthError as exc:

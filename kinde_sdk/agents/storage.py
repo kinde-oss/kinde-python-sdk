@@ -42,6 +42,7 @@ class InMemoryAgentStorage:
         self._registrations: Dict[str, Dict[str, Any]] = {}
 
     async def get_tokens(self, key: str) -> Optional[Dict[str, Any]]:
+        """Return a copy of the stored tokens, or ``None``."""
         value = self._tokens.get(key)
         return dict(value) if value is not None else None
 
@@ -52,6 +53,7 @@ class InMemoryAgentStorage:
         self._tokens.pop(key, None)
 
     async def get_registration(self, key: str) -> Optional[Dict[str, Any]]:
+        """Return a copy of the stored registration, or ``None``."""
         value = self._registrations.get(key)
         return dict(value) if value is not None else None
 
@@ -79,6 +81,7 @@ class FileAgentStorage:
         self._lock: Optional[asyncio.Lock] = None
 
     def _read(self) -> Dict[str, Dict[str, Any]]:
+        """Load the file, or empty sections when it doesn't exist yet."""
         try:
             with open(self.path, "r", encoding="utf-8") as handle:
                 data = json.load(handle)
@@ -89,6 +92,7 @@ class FileAgentStorage:
         return data
 
     def _write(self, data: Dict[str, Dict[str, Any]]) -> None:
+        """Write the file atomically with mode 0600."""
         directory = os.path.dirname(os.path.abspath(self.path))
         os.makedirs(directory, mode=0o700, exist_ok=True)
         # Write then rename so a crash never leaves a half-written file
@@ -107,6 +111,7 @@ class FileAgentStorage:
 
     @contextlib.contextmanager
     def _file_lock(self) -> Iterator[None]:
+        """Hold an exclusive OS lock on ``<path>.lock`` for one read-modify-write."""
         # Serializes read-modify-write across processes; the asyncio lock covers this process
         directory = os.path.dirname(os.path.abspath(self.path))
         os.makedirs(directory, mode=0o700, exist_ok=True)
@@ -126,7 +131,7 @@ class FileAgentStorage:
             os.close(fd)
 
     def _guard(self) -> asyncio.Lock:
-        # Created lazily so it binds to the running event loop (Python 3.9)
+        """Return the in-process lock, created lazily so it binds to the running event loop (Python 3.9)."""
         if self._lock is None:
             self._lock = asyncio.Lock()
         return self._lock
@@ -141,6 +146,7 @@ class FileAgentStorage:
                 self._update(section, key, value)
 
     def _update(self, section: str, key: str, value: Optional[Dict[str, Any]]) -> None:
+        """Set or delete one entry in a section and write the file."""
         data = self._read()
         if value is None:
             data[section].pop(key, None)

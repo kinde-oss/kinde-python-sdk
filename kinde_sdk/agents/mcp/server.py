@@ -46,9 +46,11 @@ class KindeTokenVerifier(TokenVerifier):
     """
 
     def __init__(self, auth: Optional[KindeAgentAuth] = None, **options: Any):
+        """Use ``auth``, or build a :class:`KindeAgentAuth` from ``options`` or the environment."""
         self.auth = auth if auth is not None else KindeAgentAuth(**options)
 
     async def verify_token(self, token: str) -> Optional[AccessToken]:
+        """Return an ``AccessToken`` for a valid token, ``None`` for an invalid one; raise on an outage."""
         try:
             context = await self.auth.verify_token_async(token)
         except InvalidTokenError:
@@ -113,6 +115,7 @@ def mount_authorization_server_metadata(server: Any, auth: KindeAgentAuth) -> No
 
     @server.custom_route("/.well-known/oauth-authorization-server", methods=["GET", "OPTIONS"])
     async def authorization_server_metadata(request: Request) -> Response:
+        """Serve Kinde's scoped authorization server metadata from this origin."""
         if request.method == "OPTIONS":
             return Response(status_code=204, headers=_CORS_HEADERS)
         document = await auth.fetch_authorization_server_metadata_async()

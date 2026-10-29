@@ -276,7 +276,7 @@ Requests without a valid token get `401` with a `WWW-Authenticate` challenge poi
 
 ### How tokens are verified
 
-Tokens are checked with Kinde's introspection endpoint by default, using the application's client ID and secret, so a revoked token stops working immediately. To verify signatures locally instead (no network call per request, but a revoked token stays valid until it expires, 24 hours by default), pass `verification="jwt"`. `"jwt+introspection"` does both. `introspection_cache_seconds` (up to 60) caches successful introspections to cut traffic.
+Tokens are checked with Kinde's introspection endpoint by default, using the application's client ID and secret, so a revoked token stops working immediately. To verify signatures locally instead (no network call per request, but a revoked token stays valid until it expires, 24 hours by default), pass `verification="jwt"`. `"jwt+introspection"` does both. `introspection_cache_seconds` (up to 60) caches successful introspections to cut traffic. With caching on, `revoke_token` clears only the calling process's cache: other workers keep accepting a revoked token until their cached entry expires, at most `introspection_cache_seconds` later.
 
 To cut off an agent, revoke its token with `auth.revoke_token(token)`. This revokes both the access token and refresh token of the pair.
 

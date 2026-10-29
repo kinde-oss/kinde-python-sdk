@@ -5,6 +5,7 @@ from starlette.testclient import TestClient
 
 from kinde_sdk.agents import (
     AgentAuthConfig,
+    AgentConfigError,
     AgentAuthContext,
     KindeAgentAuth,
     build_client_metadata_document,
@@ -186,3 +187,15 @@ def test_flask_serves_percent_encoded_client_id_path():
     response = app.test_client().get("/oauth/foo%20bar.json")
     assert response.status_code == 200
     assert response.get_json() == ENCODED_CIMD
+
+
+@pytest.mark.parametrize(
+    "build, encoded",
+    [(client_metadata_router, "%7Bname%7D"), (client_metadata_blueprint, "%3Cname%3E")],
+)
+def test_client_id_path_that_would_become_a_route_variable(build, encoded):
+    document = build_client_metadata_document(
+        f"https://agent.onzs.co.za/oauth/{encoded}.json", "Onzs Agent", ["http://127.0.0.1/callback"]
+    )
+    with pytest.raises(AgentConfigError):
+        build(document)

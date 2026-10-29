@@ -466,11 +466,24 @@ class KindeAgentClient:
             )
         key = f"{metadata['issuer']}|{redirect_uri}"
         registration = await self.storage.get_registration(key)
-        if registration:
-            expires_at = registration.get("client_secret_expires_at") or 0
-            if not expires_at or expires_at - time.time() > _REREGISTER_MARGIN_SECONDS:
-                return _identity_from_registration(registration, key)
-        return _identity_from_registration(await self._register(redirect_uri, key), key)
+        if not registration or (
+            registration.get("client_secret_expires_at")
+            and registration["client_secret_expires_at"] - time.time() <= _REREGISTER_MARGIN_SECONDS
+        ):
+            registration = await self._register(redirect_uri, key)
+        await self._remember_registration_key(key)
+        return _identity_from_registration(registration, key)
+
+    @property
+    def _registration_index_key(self) -> str:
+        return f"index|{self.resource_url}|{self.account}"
+
+    async def _remember_registration_key(self, key: str) -> None:
+        """Record a registration this client used, so ``disconnect(forget=True)`` can find it offline."""
+        index = await self.storage.get_registration(self._registration_index_key) or {}
+        keys = index.get("keys") if isinstance(index.get("keys"), list) else []
+        if key not in keys:
+            await self.storage.set_registration(self._registration_index_key, {"keys": [*keys, key]})
 
     async def _register(self, redirect_uri: str, key: str) -> Dict[str, Any]:
         """Register this agent with DCR and store the registration."""
@@ -510,7 +523,7 @@ class KindeAgentClient:
             body = response.json()
         except ValueError as exc:
             raise RegistrationError("The registration response was not JSON") from exc
-        if not isinstance(body, dict) or not body.get("client_id"):
+        if not isinstance(body, dict) or not isinstance(body.get("client_id"), str) or not body["client_id"]:
             raise RegistrationError("The registration response has no client_id")
         secret = body.get("client_secret")
         registration = {
@@ -874,17 +887,10 @@ class KindeAgentClient:
     async def disconnect(self, *, forget: bool = False) -> None:
         """Revoke the tokens (best effort) and clear them.
 
-        ``forget`` also drops the DCR registration for this redirect URI, even when
-        no tokens are stored.
+        ``forget`` also drops the DCR registrations this client used, even when no
+        tokens are stored or the authorization server can't be reached.
         """
         tokens = await self.storage.get_tokens(self._token_key)
-        if forget and not tokens:
-            try:
-                metadata = await self.discover()
-            except AgentClientError:
-                return
-            await self.storage.delete_registration(f"{metadata['issuer']}|{self.redirect_uri}")
-            return
         if tokens:
             identity = await self._identity_for_tokens(tokens)
             try:
@@ -892,7 +898,9 @@ class KindeAgentClient:
             except AgentClientError:
                 metadata = {}
             endpoint = metadata.get("revocation_endpoint")
-            if endpoint and identity:
+            # Never send the tokens or client secret to an issuer other than the one that granted them
+            same_issuer = metadata.get("issuer") == tokens.get("issuer")
+            if endpoint and identity and same_issuer:
                 # On Kinde revoking either token of the pair revokes both
                 token, hint = (
                     (tokens["refresh_token"], "refresh_token")
@@ -909,8 +917,14 @@ class KindeAgentClient:
                 except httpx.HTTPError as exc:
                     logger.info("Token revocation failed: %s", type(exc).__name__)
             await self.storage.delete_tokens(self._token_key)
-            if forget and tokens.get("registration_key"):
-                await self.storage.delete_registration(tokens["registration_key"])
+        if forget:
+            index = await self.storage.get_registration(self._registration_index_key) or {}
+            keys = index.get("keys") if isinstance(index.get("keys"), list) else []
+            if tokens and tokens.get("registration_key"):
+                keys = [*keys, tokens["registration_key"]]
+            for key in dict.fromkeys(keys):
+                await self.storage.delete_registration(key)
+            await self.storage.delete_registration(self._registration_index_key)
 
 
 def _identity_from_registration(registration: Dict[str, Any], key: str) -> Dict[str, Any]:

@@ -12,8 +12,10 @@ Tokens and secrets are never printed. Exits non-zero if any check fails.
 """
 
 import argparse
+import base64
 import json
 import sys
+from urllib.parse import quote_plus
 
 import httpx
 import jwt
@@ -32,6 +34,12 @@ def check(condition: bool, message: str, warn_only: bool = False) -> bool:
     """Report PASS, or FAIL (WARN when ``warn_only``), and return the condition."""
     report("PASS" if condition else ("WARN" if warn_only else "FAIL"), message)
     return condition
+
+
+def basic_auth(client_id: str, client_secret: str) -> str:
+    """HTTP Basic credentials with each part form-encoded first (RFC 6749 §2.3.1)."""
+    credentials = f"{quote_plus(client_id)}:{quote_plus(client_secret)}"
+    return "Basic " + base64.b64encode(credentials.encode()).decode()
 
 
 def get_json(client: httpx.Client, url: str):
@@ -166,7 +174,8 @@ def check_token(client: httpx.Client, config: AgentAuthConfig, token: str) -> No
         response = client.post(
             config.introspection_url,
             data={"token": token},
-            auth=(config.client_id, config.client_secret or ""),
+            # RFC 6749 §2.3.1: form-encode the ID and secret before HTTP Basic, as the SDK does
+            headers={"Authorization": basic_auth(config.client_id, config.client_secret or "")},
         )
     except httpx.HTTPError as exc:
         report("FAIL", f"introspection request failed: {type(exc).__name__}")

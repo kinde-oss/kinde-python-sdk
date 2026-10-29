@@ -24,7 +24,7 @@ from fastapi.responses import JSONResponse, Response
 from kinde_sdk.agents.client_metadata import client_metadata_response
 from kinde_sdk.agents.config import AUTHORIZATION_SERVER_WELL_KNOWN, PROTECTED_RESOURCE_WELL_KNOWN
 from kinde_sdk.agents.context import AgentAuthContext, require_permission, require_scope
-from kinde_sdk.agents.errors import AgentAuthError
+from kinde_sdk.agents.errors import AgentAuthError, AgentConfigError
 from kinde_sdk.agents.resource_server import KindeAgentAuth
 
 # Browser-based MCP clients fetch metadata cross-origin
@@ -167,5 +167,8 @@ def client_metadata_router(document: Dict[str, Any], path: Optional[str] = None)
 
     # Routes match the decoded request path, so decode any %-escapes in the client_id
     route = path or unquote(urlsplit(document["client_id"]).path)
+    if "{" in route or "}" in route:
+        # Starlette would read these as a path parameter
+        raise AgentConfigError(f"The client metadata path must not contain '{{' or '}}': {route!r}")
     router.add_api_route(route, client_metadata, methods=["GET"], include_in_schema=False)
     return router

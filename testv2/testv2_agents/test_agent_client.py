@@ -191,6 +191,11 @@ class TestDcrFlow:
         with pytest.raises(RegistrationError, match="not JSON"):
             await make_client(fake).connect()
 
+    async def test_non_string_client_id_in_registration(self, fake):
+        fake._register = lambda request: httpx.Response(201, json={"client_id": 123, "client_secret": "s"})
+        with pytest.raises(RegistrationError, match="no client_id"):
+            await make_client(fake).connect()
+
     async def test_too_many_registrations(self, fake):
         fake.register_status = 429
         with pytest.raises(RegistrationError, match="try again later"):
@@ -294,6 +299,51 @@ class TestTokens:
         await storage.delete_tokens(f"{RESOURCE_URL}|default")  # e.g. after invalid_grant
         await client.disconnect(forget=True)
         assert await storage.get_registration(f"{ISSUER}|{REDIRECT}") is None
+
+    async def test_disconnect_forget_works_without_discovery(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, storage=storage)
+        await client.connect()
+        await storage.delete_tokens(f"{RESOURCE_URL}|default")
+        fake.prm = None  # discovery now fails
+        client._metadata_at = 0
+        await client.disconnect(forget=True)
+        assert await storage.get_registration(f"{ISSUER}|{REDIRECT}") is None
+        assert await storage.get_registration(f"index|{RESOURCE_URL}|default") is None
+
+    async def test_disconnect_forget_finds_registration_under_bound_port(self, fake):
+        async def open_browser(url: str):
+            callback = fake.authorize(url)
+
+            async def follow():
+                async with httpx.AsyncClient() as browser:
+                    await browser.get(callback)
+
+            asyncio.get_running_loop().create_task(follow())
+
+        storage = InMemoryAgentStorage()
+        # The default redirect has no port, so the registration is stored under the port the listener bound
+        client = KindeAgentClient(
+            RESOURCE_URL, storage=storage, open_browser=open_browser, http_client=fake.async_client()
+        )
+        await client.connect()
+        key = (await storage.get_tokens(f"{RESOURCE_URL}|default"))["registration_key"]
+        assert key != f"{ISSUER}|http://127.0.0.1/callback"
+        await storage.delete_tokens(f"{RESOURCE_URL}|default")
+        await client.disconnect(forget=True)
+        assert await storage.get_registration(key) is None
+
+    async def test_disconnect_never_revokes_at_a_new_issuer(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, storage=storage)
+        await client.connect()
+        key = f"{RESOURCE_URL}|default"
+        tokens = await storage.get_tokens(key)
+        await storage.set_tokens(key, {**tokens, "issuer": "https://old.example.com"})
+        client._metadata_at = 0
+        await client.disconnect()
+        assert fake.count("/revoke") == 0
+        assert await storage.get_tokens(key) is None
 
     async def test_refresh_never_sends_tokens_to_a_new_issuer(self, fake):
         storage = InMemoryAgentStorage()

@@ -23,7 +23,7 @@ from flask import Blueprint, Flask, Response, current_app, g, jsonify, request
 from kinde_sdk.agents.client_metadata import client_metadata_response
 from kinde_sdk.agents.config import AUTHORIZATION_SERVER_WELL_KNOWN, PROTECTED_RESOURCE_WELL_KNOWN
 from kinde_sdk.agents.context import AgentAuthContext, require_permission, require_scope
-from kinde_sdk.agents.errors import AgentAuthError
+from kinde_sdk.agents.errors import AgentAuthError, AgentConfigError
 from kinde_sdk.agents.resource_server import KindeAgentAuth
 
 # Browser-based MCP clients fetch metadata cross-origin
@@ -185,5 +185,8 @@ def client_metadata_blueprint(document: Dict[str, Any], path: Optional[str] = No
 
     # Routes match the decoded request path, so decode any %-escapes in the client_id
     route = path or unquote(urlsplit(document["client_id"]).path)
+    if "<" in route or ">" in route:
+        # Werkzeug would read these as a route variable
+        raise AgentConfigError(f"The client metadata path must not contain '<' or '>': {route!r}")
     blueprint.add_url_rule(route, view_func=client_metadata, methods=["GET"])
     return blueprint

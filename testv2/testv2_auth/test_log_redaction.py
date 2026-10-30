@@ -295,6 +295,30 @@ class TestFlaskRoutes:
         with client.session_transaction() as session:
             assert "user_id" not in session
 
+    def test_logout_after_restart_still_revokes_and_sends_id_token_hint(self, flask_app, network):
+        exchange, token_manager_post = network
+        app, oauth = flask_app
+        client = app.test_client()
+        q = _query(client.get("/login").headers["Location"])
+        tokens = Tokens(q["nonce"])
+        exchange.return_value = tokens.response()
+        token_manager_post.return_value = MagicMock(status_code=200)
+        client.get(f"/callback?code={AUTH_CODE}&state={q['state']}")
+        _forget_in_memory_sessions(oauth)
+
+        logout = client.get("/logout")
+
+        assert _query(logout.headers["Location"]).get("id_token_hint") == tokens.id
+        assert token_manager_post.call_args.args[0].endswith("/oauth2/revoke")
+        with client.session_transaction() as session:
+            assert "user_id" not in session
+
+
+def _forget_in_memory_sessions(oauth):
+    """Simulate a restarted process or another worker: only the session has the tokens."""
+    oauth._session_manager.user_sessions.clear()
+    TokenManager.reset_instances()
+
 
 # ---------------------------------------------------------------------------
 # FastAPI routes
@@ -352,6 +376,21 @@ class TestFastAPIRoutes:
 
         assert oauth._session_manager.user_sessions == {}
         # Best-effort revocation of the access token was attempted
+        assert token_manager_post.call_args.args[0].endswith("/oauth2/revoke")
+
+    def test_logout_after_restart_still_revokes_and_sends_id_token_hint(self, fastapi_app, network):
+        exchange, token_manager_post = network
+        client, oauth = fastapi_app
+        q = _query(client.get("/login").headers["location"])
+        tokens = Tokens(q["nonce"])
+        exchange.return_value = tokens.response()
+        token_manager_post.return_value = MagicMock(status_code=200)
+        client.get(f"/callback?code={AUTH_CODE}&state={q['state']}")
+        _forget_in_memory_sessions(oauth)
+
+        logout = client.get("/logout")
+
+        assert _query(logout.headers["location"]).get("id_token_hint") == tokens.id
         assert token_manager_post.call_args.args[0].endswith("/oauth2/revoke")
 
     def test_failed_exchange_returns_400_without_body_echo(self, fastapi_app, debug_logs, network):

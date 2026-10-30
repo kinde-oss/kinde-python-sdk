@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   logout now clears the user's server-side tokens (previously only the session cookie was
   cleared).
 - **Flask**: the session is bound to a user only after a successful callback.
+- **Logout after a restart or on another worker**: the Flask and FastAPI `/logout` routes cleared
+  the session before logging out, so the SDK couldn't find the user's tokens there: the access
+  token wasn't revoked and the logout URL had no `id_token_hint`. They now log out first.
+- **Legacy Account API helpers**: the helper functions in `kinde_sdk.core.helpers` now log only
+  the HTTP status and the standard OAuth `error` code when a request fails, not the response's
+  `error_description`.
 - **Account API errors**: the permissions, roles and feature flag helpers log only the
   exception type and HTTP status when an Account API call fails, not the response body.
 
@@ -38,8 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `set_tokens`).
 - **Account API host**: permission, role and feature flag lookups with `force_api=True` were sent
   to the generated client's placeholder host (`your_kinde_subdomain.kinde.com`) and silently
-  returned empty results. They now use the issuer of the user's access token, falling back to
-  `KINDE_HOST`.
+  returned empty results. They now use the configured Kinde host (`OAuth(host=...)` or
+  `KINDE_HOST`). The access token's `iss` is used only when it exactly matches a configured
+  host; otherwise the configured host is used and a warning is logged.
 - **Account API permissions**: with `force_api=True`, `get_permission()` never granted anything
   because the API's `{id, name, key}` objects were compared with the key string;
   `get_permissions()` now returns keys, as in token mode.

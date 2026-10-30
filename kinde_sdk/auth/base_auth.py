@@ -82,10 +82,13 @@ class BaseAuth:
         """
         client_id = getattr(token_manager, "client_id", None)
         client_host = UserSession.client_hosts.get(client_id) if isinstance(client_id, str) else None
-        # The client sends the user's access token, so never use a plain HTTP host
+        # The client sends the user's access token, so never use a plain HTTP host.
+        # Use the normalised origin, so stray whitespace or a trailing slash in the
+        # configuration can't end up in the API URL.
         hosts = [
-            host.rstrip("/") for host in (client_host, os.getenv("KINDE_HOST"))
-            if BaseAuth._https_origin(host)
+            origin for origin in (
+                BaseAuth._https_origin(host) for host in (client_host, os.getenv("KINDE_HOST"))
+            ) if origin
         ]
 
         claims = token_manager.get_claims() if hasattr(token_manager, "get_claims") else {}
@@ -93,7 +96,7 @@ class BaseAuth:
         if issuer is not None:
             issuer_origin = BaseAuth._https_origin(issuer)
             for host in hosts:
-                if BaseAuth._https_origin(host) == issuer_origin:
+                if host == issuer_origin:
                     return host
             logging.getLogger("kinde_sdk").warning(
                 "Token issuer does not match the configured Kinde host; using the configured host"

@@ -279,8 +279,11 @@ class FlaskFramework(FrameworkInterface):
         def logout():
             """Logout the user and redirect to Kinde logout page."""
             user_id = session.get('user_id')
-            session.clear()
+            # Log out before clearing the session: after a restart, or on another worker,
+            # the SDK reads the user's tokens from the session to revoke them and to build
+            # the logout URL
             logout_url = self._run_async(self._oauth.logout(user_id))
+            session.clear()
             return redirect(logout_url)
         
         # Register route

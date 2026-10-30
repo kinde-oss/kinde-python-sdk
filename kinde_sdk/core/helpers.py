@@ -115,7 +115,7 @@ async def get_user_details(userinfo_url: str, token_manager, logger) -> Dict[str
         if hasattr(e, 'response') and e.response is not None:
             try:
                 error_data = e.response.json()
-                error_message = f"User details retrieval failed: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}"
+                error_message = f"User details retrieval failed with status code: {e.response.status_code} ({error_data.get('error') or 'no error code'})"
             except Exception:
                 error_message = f"User details retrieval failed with status code: {e.response.status_code}"
         
@@ -218,7 +218,7 @@ def get_user_organizations(api_url: str, token_manager, logger) -> List[Dict[str
         if hasattr(e, 'response') and e.response is not None:
             try:
                 error_data = e.response.json()
-                error_message = f"Organizations retrieval failed: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}"
+                error_message = f"Organizations retrieval failed with status code: {e.response.status_code} ({error_data.get('error') or 'no error code'})"
             except Exception:
                 error_message = f"Organizations retrieval failed with status code: {e.response.status_code}"
         
@@ -271,7 +271,7 @@ def get_organization_details(api_url: str, org_code: str, token_manager, logger)
         if hasattr(e, 'response') and e.response is not None:
             try:
                 error_data = e.response.json()
-                error_message = f"Organization details retrieval failed: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}"
+                error_message = f"Organization details retrieval failed with status code: {e.response.status_code} ({error_data.get('error') or 'no error code'})"
             except Exception:
                 error_message = f"Organization details retrieval failed with status code: {e.response.status_code}"
         
@@ -325,7 +325,7 @@ def get_organization_users(api_url: str, org_code: str, token_manager, logger) -
         if hasattr(e, 'response') and e.response is not None:
             try:
                 error_data = e.response.json()
-                error_message = f"Organization users retrieval failed: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}"
+                error_message = f"Organization users retrieval failed with status code: {e.response.status_code} ({error_data.get('error') or 'no error code'})"
             except Exception:
                 error_message = f"Organization users retrieval failed with status code: {e.response.status_code}"
         
@@ -389,7 +389,7 @@ def get_user_permissions(api_url: str, token_manager, org_code: Optional[str] = 
         if hasattr(e, 'response') and e.response is not None:
             try:
                 error_data = e.response.json()
-                error_message = f"User permissions retrieval failed: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}"
+                error_message = f"User permissions retrieval failed with status code: {e.response.status_code} ({error_data.get('error') or 'no error code'})"
             except Exception:
                 error_message = f"User permissions retrieval failed with status code: {e.response.status_code}"
         
@@ -476,7 +476,7 @@ def get_user_roles(api_url: str, token_manager, org_code: Optional[str] = None, 
         if hasattr(e, 'response') and e.response is not None:
             try:
                 error_data = e.response.json()
-                error_message = f"User roles retrieval failed: {error_data.get('error_description', error_data.get('error', 'Unknown error'))}"
+                error_message = f"User roles retrieval failed with status code: {e.response.status_code} ({error_data.get('error') or 'no error code'})"
             except Exception:
                 error_message = f"User roles retrieval failed with status code: {e.response.status_code}"
         

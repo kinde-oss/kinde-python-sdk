@@ -169,13 +169,14 @@ class TestHelpers(unittest.TestCase):
         # Create a mock response with JSON error data
         with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
             mock_response = MagicMock()
+            mock_response.status_code = 401
             mock_response.json.return_value = {"error": "invalid_token", "error_description": "Token is invalid"}
             mock_get.side_effect = RequestException(response=mock_response)
             
             with self.assertRaises(RequestException):
                 asyncio.run(get_user_details(userinfo_url, token_manager, logger))
             
-            logger.error.assert_called_with("User details retrieval failed: Token is invalid")
+            logger.error.assert_called_with("User details retrieval failed with status code: 401 (invalid_token)")
 
     def test_get_user_details_request_error_without_json(self):
         """Test get_user_details handles request errors without JSON response."""
@@ -308,13 +309,14 @@ class TestHelpers(unittest.TestCase):
         # Create a mock response with JSON error data
         with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
             mock_response = MagicMock()
+            mock_response.status_code = 403
             mock_response.json.return_value = {"error": "forbidden", "error_description": "Access denied"}
             mock_get.side_effect = RequestException(response=mock_response)
             
             with self.assertRaises(RequestException):
                 get_user_organizations(api_url, token_manager, logger)
             
-            logger.error.assert_called_with("Organizations retrieval failed: Access denied")
+            logger.error.assert_called_with("Organizations retrieval failed with status code: 403 (forbidden)")
 
     def test_get_user_organizations_request_error_without_json(self):
         """Test get_user_organizations handles request errors without JSON response."""
@@ -397,13 +399,14 @@ class TestHelpers(unittest.TestCase):
         # Create a mock response with JSON error data
         with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
             mock_response = MagicMock()
+            mock_response.status_code = 404
             mock_response.json.return_value = {"error": "not_found", "error_description": "Organization not found"}
             mock_get.side_effect = RequestException(response=mock_response)
             
             with self.assertRaises(RequestException):
                 get_organization_details(api_url, org_code, token_manager, logger)
             
-            logger.error.assert_called_with("Organization details retrieval failed: Organization not found")
+            logger.error.assert_called_with("Organization details retrieval failed with status code: 404 (not_found)")
 
     def test_get_organization_details_request_error_without_json(self):
         """Test get_organization_details handles request errors without JSON response."""
@@ -488,13 +491,14 @@ class TestHelpers(unittest.TestCase):
         # Create a mock response with JSON error data
         with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
             mock_response = MagicMock()
+            mock_response.status_code = 403
             mock_response.json.return_value = {"error": "forbidden", "error_description": "Access denied"}
             mock_get.side_effect = RequestException(response=mock_response)
             
             with self.assertRaises(RequestException):
                 get_organization_users(api_url, org_code, token_manager, logger)
             
-            logger.error.assert_called_with("Organization users retrieval failed: Access denied")
+            logger.error.assert_called_with("Organization users retrieval failed with status code: 403 (forbidden)")
 
     def test_get_organization_users_request_error_without_json(self):
         """Test get_organization_users handles request errors without JSON response."""
@@ -593,13 +597,14 @@ class TestHelpers(unittest.TestCase):
         # Create a mock response with JSON error data
         with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
             mock_response = MagicMock()
+            mock_response.status_code = 403
             mock_response.json.return_value = {"error": "forbidden", "error_description": "Access denied"}
             mock_get.side_effect = RequestException(response=mock_response)
             
             with self.assertRaises(RequestException):
                 get_user_permissions(api_url, token_manager, logger=logger)
             
-            logger.error.assert_called_with("User permissions retrieval failed: Access denied")
+            logger.error.assert_called_with("User permissions retrieval failed with status code: 403 (forbidden)")
 
     def test_get_user_permissions_request_error_without_json(self):
         """Test get_user_permissions handles request errors without JSON response."""
@@ -763,13 +768,14 @@ class TestHelpers(unittest.TestCase):
         # Create a mock response with JSON error data
         with patch('kinde_sdk.core.helpers.requests.get') as mock_get:
             mock_response = MagicMock()
+            mock_response.status_code = 403
             mock_response.json.return_value = {"error": "forbidden", "error_description": "Access denied"}
             mock_get.side_effect = RequestException(response=mock_response)
             
             with self.assertRaises(RequestException):
                 get_user_roles(api_url, token_manager, logger=logger)
             
-            logger.error.assert_called_with("User roles retrieval failed: Access denied")
+            logger.error.assert_called_with("User roles retrieval failed with status code: 403 (forbidden)")
 
     def test_get_user_roles_request_error_without_json(self):
         """Test get_user_roles handles request errors without JSON response."""

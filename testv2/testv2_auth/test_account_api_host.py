@@ -125,3 +125,11 @@ def test_never_uses_placeholder_host(monkeypatch):
     for claims in ({}, {"iss": "https://acme.kinde.com"}):
         api = _auth_with_claims(claims)._create_authenticated_api_client(PermissionsApi)
         assert PLACEHOLDER not in api.api_client.configuration.host
+
+
+def test_configured_host_is_normalised(monkeypatch):
+    # Stray whitespace, a trailing slash or upper case must not reach the API URL
+    monkeypatch.setenv("KINDE_HOST", " https://Acme.Kinde.com/ ")
+    for claims in ({}, {"iss": "https://acme.kinde.com"}):
+        api = _auth_with_claims(claims)._create_authenticated_api_client(PermissionsApi)
+        assert api.api_client.configuration.host == "https://acme.kinde.com"

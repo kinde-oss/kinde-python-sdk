@@ -231,8 +231,12 @@ class FastAPIFramework(FrameworkInterface):
             """Logout the user and redirect to Kinde logout page."""
             # Pass the user_id so the SDK also drops the server-side tokens
             user_id = request.session.get('user_id')
+            # Log out before clearing the session: after a restart, or on another worker,
+            # the SDK reads the user's tokens from the session to revoke them and to build
+            # the logout URL
+            logout_url = await self._oauth.logout(user_id)
             request.session.clear()
-            return RedirectResponse(url=await self._oauth.logout(user_id))
+            return RedirectResponse(url=logout_url)
         
         # Register route
         @self.app.get("/register")

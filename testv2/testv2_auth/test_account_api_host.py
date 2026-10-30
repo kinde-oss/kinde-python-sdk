@@ -133,3 +133,8 @@ def test_configured_host_is_normalised(monkeypatch):
     for claims in ({}, {"iss": "https://acme.kinde.com"}):
         api = _auth_with_claims(claims)._create_authenticated_api_client(PermissionsApi)
         assert api.api_client.configuration.host == "https://acme.kinde.com"
+
+
+def test_host_with_an_invalid_port_is_refused(monkeypatch):
+    monkeypatch.setenv("KINDE_HOST", "https://acme.kinde.com:not-a-port")
+    assert _auth_with_claims({})._create_authenticated_api_client(PermissionsApi) is None

@@ -21,6 +21,14 @@ except ImportError:  # pragma: no cover - Windows
 
 
 class AgentClientStorage(Protocol):
+    """Where an agent keeps its tokens and DCR registrations.
+
+    A store shared between processes can also define
+    ``async delete_registration_if_client(key, client_id)``, which deletes the
+    registration only if it still has that ``client_id``, in one atomic step.
+    The client uses it when present.
+    """
+
     async def get_tokens(self, key: str) -> Optional[Dict[str, Any]]: ...
 
     async def set_tokens(self, key: str, tokens: Dict[str, Any]) -> None: ...
@@ -62,6 +70,11 @@ class InMemoryAgentStorage:
 
     async def delete_registration(self, key: str) -> None:
         self._registrations.pop(key, None)
+
+    async def delete_registration_if_client(self, key: str, client_id: Optional[str]) -> None:
+        """Delete the registration only if it still belongs to ``client_id``."""
+        if (self._registrations.get(key) or {}).get("client_id") == client_id:
+            self._registrations.pop(key, None)
 
 
 class FileAgentStorage:
@@ -171,3 +184,10 @@ class FileAgentStorage:
 
     async def delete_registration(self, key: str) -> None:
         await self._set("registrations", key, None)
+
+    async def delete_registration_if_client(self, key: str, client_id: Optional[str]) -> None:
+        """Delete the registration only if it still belongs to ``client_id``, under the file lock."""
+        async with self._guard():
+            with self._file_lock():
+                if (self._read()["registrations"].get(key) or {}).get("client_id") == client_id:
+                    self._update("registrations", key, None)

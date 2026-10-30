@@ -490,6 +490,11 @@ class KindeAgentClient:
         key = identity.get("registration_key")
         if not key:
             return
+        delete_if = getattr(self.storage, "delete_registration_if_client", None)
+        if delete_if is not None:
+            # The storage checks and deletes in one step, so a newer registration can't slip in between
+            await delete_if(key, identity.get("client_id"))
+            return
         stored = await self.storage.get_registration(key)
         if stored and stored.get("client_id") == identity.get("client_id"):
             await self.storage.delete_registration(key)
@@ -537,13 +542,16 @@ class KindeAgentClient:
         secret = body.get("client_secret")
         if secret is not None and (not isinstance(secret, str) or not secret):
             raise RegistrationError("The registration response has an invalid client_secret")
+        expires_at = body.get("client_secret_expires_at") or 0
+        if isinstance(expires_at, bool) or not isinstance(expires_at, (int, float)):
+            raise RegistrationError("The registration response has an invalid client_secret_expires_at")
         registration = {
             "client_id": body["client_id"],
             "client_secret": secret,
             # Use what came back, not what was asked for
             "token_endpoint_auth_method": body.get("token_endpoint_auth_method")
             or ("client_secret_post" if secret else "none"),
-            "client_secret_expires_at": body.get("client_secret_expires_at") or 0,
+            "client_secret_expires_at": expires_at,
             "redirect_uri": redirect_uri,
             "issuer": self._as_metadata["issuer"],
         }

@@ -281,6 +281,56 @@ class TestDcrFlow:
         await make_client(fake, storage=storage).connect()
         assert fake.count("/register") == 2
 
+    async def test_tokens_for_a_replaced_registration_need_a_new_sign_in(self, fake):
+        storage = InMemoryAgentStorage()
+        await make_client(fake, storage=storage, redirect_uri="http://127.0.0.1:8001/callback").connect()
+        old_tokens = await storage.get_tokens(f"{RESOURCE_URL}|default")
+        # Another sign-in on a new port replaced this account's registration
+        await make_client(fake, storage=storage, redirect_uri="http://127.0.0.1:8002/callback").authorize()
+        assert fake.count("/register") == 2
+        await storage.set_tokens(f"{RESOURCE_URL}|default", {**old_tokens, "expires_at": time.time() - 10})
+        client = make_client(fake, storage=storage, redirect_uri="http://127.0.0.1:8002/callback")
+        assert await client.refresh(stale_access_token=old_tokens["access_token"]) is None
+        assert await storage.get_tokens(f"{RESOURCE_URL}|default") is None
+
+    @pytest.mark.parametrize("value", ["2030-01-01", True, [1]])
+    async def test_invalid_secret_expiry_in_registration(self, fake, value):
+        fake._register = lambda request: httpx.Response(
+            201, json={"client_id": "c", "client_secret": "s", "client_secret_expires_at": value}
+        )
+        with pytest.raises(RegistrationError, match="client_secret_expires_at"):
+            await make_client(fake).connect()
+
+    @pytest.mark.parametrize("storage_class", ["memory", "file"])
+    async def test_drop_registration_is_compare_and_delete(self, fake, tmp_path, storage_class):
+        storage = InMemoryAgentStorage() if storage_class == "memory" else FileAgentStorage(str(tmp_path / "t.json"))
+        client = make_client(fake, storage=storage)
+        await storage.set_registration(REGISTRATION_KEY, {"client_id": "newer"})
+        await client._drop_registration({"client_id": "older", "registration_key": REGISTRATION_KEY})
+        assert (await storage.get_registration(REGISTRATION_KEY))["client_id"] == "newer"
+        await client._drop_registration({"client_id": "newer", "registration_key": REGISTRATION_KEY})
+        assert await storage.get_registration(REGISTRATION_KEY) is None
+
+    async def test_drop_registration_without_compare_and_delete(self, fake):
+        class BasicStorage:
+            """A custom store with only the required methods."""
+
+            def __init__(self):
+                self.inner = InMemoryAgentStorage()
+
+            def __getattr__(self, name):
+                if name == "delete_registration_if_client":
+                    raise AttributeError(name)
+                return getattr(self.inner, name)
+
+        storage = BasicStorage()
+        client = make_client(fake, storage=storage)
+        await storage.set_registration(REGISTRATION_KEY, {"client_id": "newer"})
+        await client._drop_registration({"client_id": "older", "registration_key": REGISTRATION_KEY})
+        assert (await storage.get_registration(REGISTRATION_KEY))["client_id"] == "newer"
+        await client._drop_registration({"client_id": "newer", "registration_key": REGISTRATION_KEY})
+        assert await storage.get_registration(REGISTRATION_KEY) is None
+
     async def test_too_many_registrations(self, fake):
         fake.register_status = 429
         with pytest.raises(RegistrationError, match="try again later"):

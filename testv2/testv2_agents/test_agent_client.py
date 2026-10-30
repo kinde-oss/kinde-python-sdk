@@ -28,6 +28,7 @@ from testv2.testv2_agents.kinde_fake import APP_ID, DOMAIN, ISSUER, RESOURCE_URL
 
 CIMD_URL = "https://agent.onzs.co.za/oauth/client-metadata.json"
 REDIRECT = "http://127.0.0.1:8765/callback"
+REGISTRATION_KEY = f"dcr|{RESOURCE_URL}|default"
 
 
 @pytest.fixture
@@ -154,7 +155,7 @@ class TestDcrFlow:
         assert "scope" not in body and "resource" not in body
 
         token_form = form_of(next(r for r in fake.requests if r.url.path.endswith("/token")))
-        registration = await storage.get_registration(f"{ISSUER}|{REDIRECT}")
+        registration = await storage.get_registration(REGISTRATION_KEY)
         assert token_form["client_id"] == registration["client_id"]
         assert token_form["client_secret"] == registration["client_secret"]
         assert registration["token_endpoint_auth_method"] == "client_secret_post"
@@ -195,6 +196,74 @@ class TestDcrFlow:
         fake._register = lambda request: httpx.Response(201, json={"client_id": 123, "client_secret": "s"})
         with pytest.raises(RegistrationError, match="no client_id"):
             await make_client(fake).connect()
+
+    async def test_non_string_client_secret_in_registration(self, fake):
+        fake._register = lambda request: httpx.Response(201, json={"client_id": "c", "client_secret": 123})
+        with pytest.raises(RegistrationError, match="invalid client_secret"):
+            await make_client(fake).connect()
+
+    async def test_public_registration_without_secret(self, fake):
+        storage = InMemoryAgentStorage()
+        fake_register = fake._register
+
+        def without_secret(request):
+            body = fake_register(request).json()
+            del body["client_secret"]
+            body["token_endpoint_auth_method"] = "none"
+            fake.registrations[body["client_id"]]["client_secret"] = None
+            return httpx.Response(201, json=body)
+
+        fake._register = without_secret
+        await make_client(fake, storage=storage).connect()
+        registration = await storage.get_registration(REGISTRATION_KEY)
+        assert registration["client_secret"] is None
+        assert registration["token_endpoint_auth_method"] == "none"
+        exchange = next(r for r in fake.requests if b"grant_type=authorization_code" in r.content)
+        assert "client_secret" not in form_of(exchange)
+
+    async def test_accounts_get_their_own_registrations(self, fake):
+        storage = InMemoryAgentStorage()
+        await make_client(fake, storage=storage, account="a").connect()
+        await make_client(fake, storage=storage, account="b").connect()
+        a = await storage.get_registration(f"dcr|{RESOURCE_URL}|a")
+        b = await storage.get_registration(f"dcr|{RESOURCE_URL}|b")
+        assert a["client_id"] != b["client_id"]
+
+    async def test_forget_leaves_other_accounts_working(self, fake):
+        storage = InMemoryAgentStorage()
+        await make_client(fake, storage=storage, account="a").connect()
+        b = make_client(fake, storage=storage, account="b")
+        await b.connect()
+        await make_client(fake, storage=storage, account="a").disconnect(forget=True)
+        assert await storage.get_registration(f"dcr|{RESOURCE_URL}|a") is None
+        # b still refreshes with its own registration
+        tokens = await storage.get_tokens(f"{RESOURCE_URL}|b")
+        tokens["expires_at"] = time.time() - 10
+        await storage.set_tokens(f"{RESOURCE_URL}|b", tokens)
+        assert await b.refresh(stale_access_token=tokens["access_token"]) is not None
+        assert fake.count("/register") == 2
+
+    async def test_new_redirect_uri_replaces_the_registration(self, fake):
+        storage = InMemoryAgentStorage()
+        await make_client(fake, storage=storage, redirect_uri="http://127.0.0.1:8001/callback").connect()
+        await storage.delete_tokens(f"{RESOURCE_URL}|default")
+        await make_client(fake, storage=storage, redirect_uri="http://127.0.0.1:8002/callback").connect()
+        assert fake.count("/register") == 2
+        # One registration slot per account, holding the latest
+        registration = await storage.get_registration(REGISTRATION_KEY)
+        assert registration["redirect_uri"] == "http://127.0.0.1:8002/callback"
+        assert set(storage._registrations) == {REGISTRATION_KEY}
+
+    async def test_invalid_client_keeps_a_newer_registration(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, storage=storage)
+        await client.connect()
+        tokens = await storage.get_tokens(f"{RESOURCE_URL}|default")
+        # Another process re-registered this account since these tokens were issued
+        newer = {**(await storage.get_registration(REGISTRATION_KEY)), "client_id": "newer"}
+        await storage.set_registration(REGISTRATION_KEY, newer)
+        await client._drop_registration({"client_id": tokens["client_id"], "registration_key": REGISTRATION_KEY})
+        assert (await storage.get_registration(REGISTRATION_KEY))["client_id"] == "newer"
 
     async def test_too_many_registrations(self, fake):
         fake.register_status = 429
@@ -290,7 +359,7 @@ class TestTokens:
         assert form["token_type_hint"] == "refresh_token"
         assert "client_secret" in form  # DCR client: same auth as the token endpoint
         assert await client.get_token_info() is None
-        assert await storage.get_registration(f"{ISSUER}|{REDIRECT}") is None
+        assert await storage.get_registration(REGISTRATION_KEY) is None
 
     async def test_disconnect_forget_without_tokens_drops_registration(self, fake):
         storage = InMemoryAgentStorage()
@@ -298,7 +367,7 @@ class TestTokens:
         await client.connect()
         await storage.delete_tokens(f"{RESOURCE_URL}|default")  # e.g. after invalid_grant
         await client.disconnect(forget=True)
-        assert await storage.get_registration(f"{ISSUER}|{REDIRECT}") is None
+        assert await storage.get_registration(REGISTRATION_KEY) is None
 
     async def test_disconnect_forget_works_without_discovery(self, fake):
         storage = InMemoryAgentStorage()
@@ -308,8 +377,7 @@ class TestTokens:
         fake.prm = None  # discovery now fails
         client._metadata_at = 0
         await client.disconnect(forget=True)
-        assert await storage.get_registration(f"{ISSUER}|{REDIRECT}") is None
-        assert await storage.get_registration(f"index|{RESOURCE_URL}|default") is None
+        assert await storage.get_registration(REGISTRATION_KEY) is None
 
     async def test_disconnect_forget_finds_registration_under_bound_port(self, fake):
         async def open_browser(url: str):
@@ -328,7 +396,7 @@ class TestTokens:
         )
         await client.connect()
         key = (await storage.get_tokens(f"{RESOURCE_URL}|default"))["registration_key"]
-        assert key != f"{ISSUER}|http://127.0.0.1/callback"
+        assert (await storage.get_registration(key))["redirect_uri"] != "http://127.0.0.1/callback"
         await storage.delete_tokens(f"{RESOURCE_URL}|default")
         await client.disconnect(forget=True)
         assert await storage.get_registration(key) is None

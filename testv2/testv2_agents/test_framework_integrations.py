@@ -199,3 +199,22 @@ def test_client_id_path_that_would_become_a_route_variable(build, encoded):
     )
     with pytest.raises(AgentConfigError):
         build(document)
+
+
+@pytest.mark.parametrize("encoded", ["%7Bconfig", "config%7D", "%7B%7D", "%7B1x%7D", "%7Ba-b%7D"])
+def test_fastapi_allows_braces_that_are_not_route_variables(encoded):
+    url = f"https://agent.onzs.co.za/oauth/{encoded}.json"
+    document = build_client_metadata_document(url, "Onzs Agent", ["http://127.0.0.1/callback"])
+    app = FastAPI()
+    app.include_router(client_metadata_router(document))
+    response = TestClient(app).get(url.replace("https://agent.onzs.co.za", ""))
+    assert response.status_code == 200
+    assert response.json()["client_id"] == url
+
+
+def test_fastapi_rejects_a_converter_route_variable():
+    document = build_client_metadata_document(
+        "https://agent.onzs.co.za/oauth/%7Bname:path%7D", "Onzs Agent", ["http://127.0.0.1/callback"]
+    )
+    with pytest.raises(AgentConfigError):
+        client_metadata_router(document)

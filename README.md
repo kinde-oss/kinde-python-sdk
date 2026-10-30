@@ -297,7 +297,7 @@ async with KindeAgentClient(
     response = await client.request("POST", json={...})
 ```
 
-A CLI agent uses a loopback redirect (`http://127.0.0.1/callback`, port picked automatically). A server-hosted agent passes its own `redirect_uri` and uses `begin_authorization()` and `complete_authorization()` in its login and callback routes. For DCR, prefer a fixed port (`http://127.0.0.1:8765/callback`), because a registration is tied to its exact redirect URI.
+A CLI agent uses a loopback redirect (`http://127.0.0.1/callback`, port picked automatically). A server-hosted agent passes its own `redirect_uri` and uses `begin_authorization()` and `complete_authorization()` in its login and callback routes. For DCR, prefer a fixed port (`http://127.0.0.1:8765/callback`), because a registration is tied to its exact redirect URI. Each account keeps one registration, and signing in on a new redirect URI replaces it. Two processes signing in the same account at the same moment on different ports can replace each other's registration; the loser gets an error and should sign in again.
 
 Agents built on the official MCP client use the adapter instead:
 

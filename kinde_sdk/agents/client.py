@@ -464,26 +464,35 @@ class KindeAgentClient:
                 "The authorization server supports neither client ID metadata documents nor registration; "
                 "configure client_id"
             )
-        key = f"{metadata['issuer']}|{redirect_uri}"
+        key = self._registration_key
         registration = await self.storage.get_registration(key)
-        if not registration or (
-            registration.get("client_secret_expires_at")
-            and registration["client_secret_expires_at"] - time.time() <= _REREGISTER_MARGIN_SECONDS
+        if (
+            not registration
+            # Kinde only wildcards loopback ports for CIMD, so a new redirect URI needs a new registration
+            or registration.get("redirect_uri") != redirect_uri
+            or registration.get("issuer") != metadata["issuer"]
+            or (
+                registration.get("client_secret_expires_at")
+                and registration["client_secret_expires_at"] - time.time() <= _REREGISTER_MARGIN_SECONDS
+            )
         ):
+            # Replaces this account's previous registration, so registrations don't pile up
             registration = await self._register(redirect_uri, key)
-        await self._remember_registration_key(key)
         return _identity_from_registration(registration, key)
 
     @property
-    def _registration_index_key(self) -> str:
-        return f"index|{self.resource_url}|{self.account}"
+    def _registration_key(self) -> str:
+        """Where this account's one DCR registration lives. Accounts never share a registration."""
+        return f"dcr|{self.resource_url}|{self.account}"
 
-    async def _remember_registration_key(self, key: str) -> None:
-        """Record a registration this client used, so ``disconnect(forget=True)`` can find it offline."""
-        index = await self.storage.get_registration(self._registration_index_key) or {}
-        keys = index.get("keys") if isinstance(index.get("keys"), list) else []
-        if key not in keys:
-            await self.storage.set_registration(self._registration_index_key, {"keys": [*keys, key]})
+    async def _drop_registration(self, identity: Dict[str, Any]) -> None:
+        """Delete the stored registration behind ``identity``, unless it was already replaced."""
+        key = identity.get("registration_key")
+        if not key:
+            return
+        stored = await self.storage.get_registration(key)
+        if stored and stored.get("client_id") == identity.get("client_id"):
+            await self.storage.delete_registration(key)
 
     async def _register(self, redirect_uri: str, key: str) -> Dict[str, Any]:
         """Register this agent with DCR and store the registration."""
@@ -526,6 +535,8 @@ class KindeAgentClient:
         if not isinstance(body, dict) or not isinstance(body.get("client_id"), str) or not body["client_id"]:
             raise RegistrationError("The registration response has no client_id")
         secret = body.get("client_secret")
+        if secret is not None and (not isinstance(secret, str) or not secret):
+            raise RegistrationError("The registration response has an invalid client_secret")
         registration = {
             "client_id": body["client_id"],
             "client_secret": secret,
@@ -653,8 +664,8 @@ class KindeAgentClient:
         response = await self._post_token(metadata["token_endpoint"], data, headers)
         if response.status_code != 200:
             error, description = _oauth_error(response)
-            if error == "invalid_client" and identity.get("registration_key"):
-                await self.storage.delete_registration(identity["registration_key"])
+            if error == "invalid_client":
+                await self._drop_registration(identity)
             raise TokenRequestError(
                 f"The code exchange failed: {error or response.status_code}", error=error, error_description=description
             )
@@ -776,8 +787,7 @@ class KindeAgentClient:
                 return None
             if error == "invalid_client":
                 # The registration expired: register again and sign in again
-                if identity.get("registration_key"):
-                    await self.storage.delete_registration(identity["registration_key"])
+                await self._drop_registration(identity)
                 await self.storage.delete_tokens(self._token_key)
                 return None
             raise TokenRequestError(
@@ -887,8 +897,8 @@ class KindeAgentClient:
     async def disconnect(self, *, forget: bool = False) -> None:
         """Revoke the tokens (best effort) and clear them.
 
-        ``forget`` also drops the DCR registrations this client used, even when no
-        tokens are stored or the authorization server can't be reached.
+        ``forget`` also drops this account's DCR registration, even when no tokens
+        are stored or the authorization server can't be reached.
         """
         tokens = await self.storage.get_tokens(self._token_key)
         if tokens:
@@ -918,13 +928,8 @@ class KindeAgentClient:
                     logger.info("Token revocation failed: %s", type(exc).__name__)
             await self.storage.delete_tokens(self._token_key)
         if forget:
-            index = await self.storage.get_registration(self._registration_index_key) or {}
-            keys = index.get("keys") if isinstance(index.get("keys"), list) else []
-            if tokens and tokens.get("registration_key"):
-                keys = [*keys, tokens["registration_key"]]
-            for key in dict.fromkeys(keys):
-                await self.storage.delete_registration(key)
-            await self.storage.delete_registration(self._registration_index_key)
+            # Only this account's own registration: other accounts have their own
+            await self.storage.delete_registration(self._registration_key)
 
 
 def _identity_from_registration(registration: Dict[str, Any], key: str) -> Dict[str, Any]:

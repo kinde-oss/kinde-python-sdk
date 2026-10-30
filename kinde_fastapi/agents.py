@@ -15,6 +15,7 @@ the core's errors into responses. No protocol logic lives here.
         ...
 """
 
+import re
 from typing import Any, Callable, Dict, Optional
 from urllib.parse import unquote, urlsplit
 
@@ -26,6 +27,9 @@ from kinde_sdk.agents.config import AUTHORIZATION_SERVER_WELL_KNOWN, PROTECTED_R
 from kinde_sdk.agents.context import AgentAuthContext, require_permission, require_scope
 from kinde_sdk.agents.errors import AgentAuthError, AgentConfigError
 from kinde_sdk.agents.resource_server import KindeAgentAuth
+
+# The pattern Starlette uses for path parameters, like {name} or {name:path}
+_PATH_PARAM = re.compile(r"{[a-zA-Z_][a-zA-Z0-9_]*(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
 
 # Browser-based MCP clients fetch metadata cross-origin
 _CORS_HEADERS = {
@@ -167,8 +171,8 @@ def client_metadata_router(document: Dict[str, Any], path: Optional[str] = None)
 
     # Routes match the decoded request path, so decode any %-escapes in the client_id
     route = path or unquote(urlsplit(document["client_id"]).path)
-    if "{" in route or "}" in route:
-        # Starlette would read these as a path parameter
-        raise AgentConfigError(f"The client metadata path must not contain '{{' or '}}': {route!r}")
+    if _PATH_PARAM.search(route):
+        # Starlette would read this as a path parameter, not literal text
+        raise AgentConfigError(f"The client metadata path must not contain a {{name}} segment: {route!r}")
     router.add_api_route(route, client_metadata, methods=["GET"], include_in_schema=False)
     return router

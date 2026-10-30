@@ -26,8 +26,8 @@ security = HTTPBearer()
 # Extract, introspect, and validate management token from header
 def get_management_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> ManagementTokenManager:
     logger.debug("Starting token validation")
+    # Never log the bearer token, not even a prefix
     bearer_token = credentials.credentials
-    logger.debug(f"Received bearer token (first 20 chars): {bearer_token[:20]}...")
     
     # SDK config from env
     domain = os.getenv("KINDE_HOST", "https://app.kinde.com")
@@ -53,10 +53,10 @@ def get_management_token(credentials: HTTPAuthorizationCredentials = Depends(sec
             client_id=client_id,
             client_secret=client_secret
         )
-        logger.debug(f"ManagementTokenManager instantiated {bearer_token}")
+        logger.debug("ManagementTokenManager instantiated")
         
         introspection_result = token_manager.validate_and_set_via_introspection(bearer_token)
-        logger.debug(f"Introspection result: {introspection_result}")
+        logger.debug(f"Introspection active: {bool(introspection_result.get('active'))}")
         
         access_token = token_manager.get_access_token()
         if not access_token:
@@ -74,10 +74,10 @@ def get_management_token(credentials: HTTPAuthorizationCredentials = Depends(sec
             headers={"WWW-Authenticate": "Bearer"}
         )
     except Exception as e:
-        logger.error(f"Exception in token validation: {str(e)}", exc_info=True)
+        logger.error(f"Exception in token validation: {type(e).__name__}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token introspection failed: {str(e)}",
+            detail="Token introspection failed",
             headers={"WWW-Authenticate": "Bearer"}
         )
 
@@ -107,10 +107,10 @@ async def get_users(token_manager: ManagementTokenManager = Depends(get_manageme
             "users": users_response.users if users_response.users else []  # In production, filter sensitive data
         }
     except Exception as e:
-        logger.error(f"Error in get_users: {str(e)}", exc_info=True)
+        logger.error(f"Error in get_users: {type(e).__name__}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch users: {str(e)}"
+            detail="Failed to fetch users"
         ) from e
 
 # Run the app

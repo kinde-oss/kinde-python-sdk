@@ -185,6 +185,151 @@ For both FastAPI and Flask integrations:
 5. Implement proper session management
 6. Consider implementing CSRF protection
 
+# AI agents and MCP (CIMD and DCR)
+
+`kinde_sdk.agents` lets you protect your own MCP server (or any API) with Kinde, and build agents that sign users in to such servers. It is separate from the login flow above and changes nothing about it.
+
+Agents identify themselves in one of two ways:
+
+- **Client ID Metadata Document (CIMD), preferred.** The agent publishes a small JSON document on its own domain, and the document's URL is its client ID. There's no registration step. Claude and ChatGPT already work this way.
+- **Dynamic Client Registration (DCR), the fallback.** The agent registers with Kinde and gets back a client ID and secret. It's for agents that can't host a document.
+
+## Set up Kinde
+
+1. Create an application of type **AI agents and MCP** and set its **Resource URL** to your server's URL, for example `https://api.example.com/mcp`. The application has no callback URLs, on purpose: agents bring their own.
+2. If you run your own agent, add the domain that serves its metadata document to **Trusted agent hosts** (bare domains, up to 10). Vendor agents such as Claude and ChatGPT are already trusted.
+3. Set the environment variables. These belong to the AI agents and MCP application, not your login application:
+
+```bash
+KINDE_HOST=https://yourbiz.kinde.com
+KINDE_AGENTS_CLIENT_ID=<agents application client id>
+KINDE_AGENTS_CLIENT_SECRET=<agents application client secret>
+KINDE_AGENTS_RESOURCE_URL=https://api.example.com/mcp
+```
+
+`KINDE_AGENTS_RESOURCE_URL` must match the Resource URL in Kinde exactly, character for character.
+
+## Protect an MCP server
+
+Install the extra (needs Python 3.10 or newer):
+
+```bash
+pip install "kinde-python-sdk[mcp]"
+```
+
+```python
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
+
+from kinde_sdk.agents import KindeAgentAuth, has_permission
+from kinde_sdk.agents.mcp import KindeTokenVerifier, get_agent_auth_context, kinde_auth_settings
+
+auth = KindeAgentAuth()  # reads the environment variables above
+
+server = MCPServer(
+    "Docs server",
+    token_verifier=KindeTokenVerifier(auth),
+    auth=kinde_auth_settings(auth),
+)
+
+@server.tool()
+async def read_docs() -> str:
+    if not has_permission(get_agent_auth_context(), "read:docs"):
+        raise ToolError("You don't have permission to read docs.")
+    return "..."
+```
+
+`kinde_auth_settings` sets the values the MCP SDK needs: the scoped issuer, `required_scopes=["offline"]` (agents request what's listed here, and without `offline` they get no refresh token and users sign in again every 24 hours), and `validate_token_resource=True`.
+
+Check permissions inside each tool with `has_permission`, and fail with a tool error. Don't answer with an HTTP 403: agents treat that as "sign in again", and signing in again can't grant a permission. Use permissions and roles managed in Kinde rather than email allowlists.
+
+## Protect a FastAPI or Flask API
+
+```python
+from fastapi import Depends, FastAPI
+from kinde_fastapi.agents import FastAPIAgentAuth
+from kinde_sdk.agents import AgentAuthContext
+
+app = FastAPI()
+agents = FastAPIAgentAuth()   # serves /.well-known/oauth-protected-resource[/path]
+agents.install(app)
+
+@app.get("/api/docs")
+async def docs(auth: AgentAuthContext = Depends(agents.require_permission("read:docs"))):
+    return {"user": auth.user_id, "agent": auth.client_id}
+```
+
+```python
+from flask import Flask
+from kinde_flask.agents import FlaskAgentAuth, current_agent_auth
+
+app = Flask(__name__)
+agents = FlaskAgentAuth(app=app)
+
+@app.get("/api/docs")
+@agents.require_permission("read:docs")
+def docs():
+    return {"user": current_agent_auth().user_id}
+```
+
+Requests without a valid token get `401` with a `WWW-Authenticate` challenge pointing at the protected resource metadata, which is how agents discover Kinde. If Kinde can't be reached, the response is `503`, so agents don't restart their sign-in.
+
+### How tokens are verified
+
+Tokens are checked with Kinde's introspection endpoint by default, using the application's client ID and secret, so a revoked token stops working immediately. To verify signatures locally instead (no network call per request, but a revoked token stays valid until it expires, 24 hours by default), pass `verification="jwt"`. `"jwt+introspection"` does both. `introspection_cache_seconds` (up to 60) caches successful introspections to cut traffic. With caching on, `revoke_token` clears only the calling process's cache: other workers keep accepting a revoked token until their cached entry expires, at most `introspection_cache_seconds` later.
+
+To cut off an agent, revoke its token with `auth.revoke_token(token)`. This revokes both the access token and refresh token of the pair.
+
+## Build an agent
+
+`KindeAgentClient` signs a user in to a protected server and calls it. It uses the CIMD document when the server supports it and you set `client_metadata_url`, and registers dynamically otherwise.
+
+```python
+from kinde_sdk.agents import FileAgentStorage, KindeAgentClient
+
+async with KindeAgentClient(
+    "https://api.example.com/mcp",
+    client_metadata_url="https://agent.example.com/oauth/client-metadata.json",
+    client_name="Example Agent",
+    storage=FileAgentStorage("~/.example-agent/tokens.json"),
+) as client:
+    await client.connect()                 # opens the browser if a sign-in is needed
+    response = await client.request("POST", json={...})
+```
+
+A CLI agent uses a loopback redirect (`http://127.0.0.1/callback`, port picked automatically). A server-hosted agent passes its own `redirect_uri` and uses `begin_authorization()` and `complete_authorization()` in its login and callback routes. For DCR, prefer a fixed port (`http://127.0.0.1:8765/callback`), because a registration is tied to its exact redirect URI. Each account keeps one registration, and signing in on a new redirect URI replaces it. Two processes signing in the same account at the same moment on different ports can replace each other's registration; the loser gets an error and should sign in again.
+
+Agents built on the official MCP client use the adapter instead:
+
+```python
+from kinde_sdk.agents.mcp import KindeOAuthClientProvider
+
+provider = KindeOAuthClientProvider(
+    "https://api.example.com/mcp",
+    client_metadata_url="https://agent.example.com/oauth/client-metadata.json",
+    client_name="Example Agent",
+    redirect_handler=..., callback_handler=...,
+)
+```
+
+### Publish the client metadata document
+
+```python
+from kinde_sdk.agents import build_client_metadata_document
+from kinde_fastapi.agents import client_metadata_router   # or kinde_flask.agents.client_metadata_blueprint
+
+document = build_client_metadata_document(
+    "https://agent.example.com/oauth/client-metadata.json",   # must be the exact URL it's served at
+    "Example Agent",
+    ["http://127.0.0.1/callback", "https://agent.example.com/oauth/callback"],
+)
+app.include_router(client_metadata_router(document))
+```
+
+Kinde fetches the document from the public internet, so it can't be served from `localhost`; use a tunnel with a real domain when testing. Kinde honours redirect URIs that are https on the document's own host, or http loopback on any port. It drops custom schemes (`myapp://`) and other hosts, and the builder raises an error for those.
+
+See [examples/agents](examples/agents) for complete examples.
+
 # Kinde Management API Module
 
 This module provides a client for the Kinde Management API, allowing you to manage users, organizations, roles, permissions, and feature flags programmatically.

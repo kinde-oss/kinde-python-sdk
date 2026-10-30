@@ -129,7 +129,18 @@ class TokenManager:
         with self.lock:
             if not self.tokens or "access_token" not in self.tokens:
                 raise ValueError("No access token available")
-                
+
+            # Save tokens from an earlier refresh before deciding whether to refresh
+            # again. Refresh tokens rotate, so storage must not keep the old one: if
+            # this save fails and a refresh below fails too, a restart could not
+            # recover the session. A failed save keeps the refreshed tokens in memory.
+            save_error = None
+            if self._save_pending:
+                try:
+                    self._save_refreshed_tokens()
+                except KindeTokenPersistenceException as e:
+                    save_error = e
+
             # Check if token is expired
             # if time.time() >= self.tokens["expires_at"]:
             if time.time() >= self.tokens.get("expires_at", 0):
@@ -148,8 +159,8 @@ class TokenManager:
                 else:
                     raise ValueError("Access token expired and no refresh token available")
 
-            if self._save_pending:
-                self._save_refreshed_tokens()
+            if save_error is not None:
+                raise save_error
             return self.tokens["access_token"]
 
     def _save_refreshed_tokens(self) -> None:

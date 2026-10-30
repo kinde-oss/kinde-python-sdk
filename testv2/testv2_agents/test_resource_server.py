@@ -6,6 +6,7 @@ import pytest
 
 from kinde_sdk.agents import (
     AgentAuthConfig,
+    AgentAuthError,
     AgentConfigError,
     AuthenticationRequired,
     InsufficientScopeError,
@@ -338,10 +339,89 @@ class TestIntrospection:
         with pytest.raises(InvalidTokenError):
             auth.verify_token(access_token)
 
+    async def test_async_revoke_clears_cache(self, fake):
+        token = fake.issue()
+        auth = make_auth(fake, introspection_cache_seconds=30)
+        await auth.verify_token_async(token)
+        await auth.revoke_token_async(token, "access_token")
+        assert fake.revoked == [token]
+        assert fake.requests[-1].headers["authorization"].startswith("Basic ")
+        with pytest.raises(InvalidTokenError):
+            await auth.verify_token_async(token)
+
+    def test_revoke_network_failure_is_unavailable(self, fake):
+        fake.handle = lambda request: (_ for _ in ()).throw(httpx.ConnectError("offline"))
+        with pytest.raises(VerificationUnavailableError, match="revoke"):
+            make_auth(fake).revoke_token("t")
+
+    async def test_async_revoke_network_failure_is_unavailable(self, fake):
+        fake.handle = lambda request: (_ for _ in ()).throw(httpx.ConnectError("offline"))
+        with pytest.raises(VerificationUnavailableError, match="revoke"):
+            await make_auth(fake).revoke_token_async("t")
+
+    def test_revoke_refused_keeps_the_cache(self, fake):
+        handle = fake.handle
+        fake.handle = lambda request: httpx.Response(400) if request.url.path.endswith("/revoke") else handle(request)
+        token = fake.issue()
+        auth = make_auth(fake, introspection_cache_seconds=30)
+        auth.verify_token(token)
+        with pytest.raises(AgentAuthError, match="HTTP 400"):
+            auth.revoke_token(token)
+        assert auth._introspection_cache
+
+    def test_full_cache_drops_expired_entries_first(self, fake, monkeypatch):
+        from kinde_sdk.agents import resource_server
+
+        monkeypatch.setattr(resource_server, "_INTROSPECTION_CACHE_MAX_ENTRIES", 2)
+        now = [1000.0]
+        auth = make_auth(fake, introspection_cache_seconds=30)
+        auth._clock = lambda: now[0]
+        auth._remember_introspection("old", {"exp": 1010})
+        auth._remember_introspection("live", {"exp": 2000})
+        now[0] = 1020  # "old" has expired
+        auth._remember_introspection("new", {"exp": 2000})
+        assert auth._cached_introspection("live") is not None
+        assert auth._cached_introspection("new") is not None
+        assert len(auth._introspection_cache) == 2
+
+    def test_full_cache_of_live_entries_is_cleared(self, fake, monkeypatch):
+        from kinde_sdk.agents import resource_server
+
+        monkeypatch.setattr(resource_server, "_INTROSPECTION_CACHE_MAX_ENTRIES", 2)
+        auth = make_auth(fake, introspection_cache_seconds=30)
+        for token in ("a", "b", "c"):
+            auth._remember_introspection(token, {})
+        # Never grows past the limit: when nothing has expired it starts again
+        assert list(auth._introspection_cache) == [auth._cache_key("c")]
+
 
 class TestJwtVerification:
     def jwt_auth(self, fake, strategy="jwt"):
         return make_auth(fake, verification=strategy)
+
+    async def test_async_valid_token(self, fake):
+        context = await self.jwt_auth(fake).verify_token_async(make_token(permissions=["read:docs"]))
+        assert context.permissions == ["read:docs"]
+        assert fake.count("/introspect") == 0
+
+    async def test_async_wrong_signature(self, fake):
+        with pytest.raises(InvalidTokenError):
+            await self.jwt_auth(fake).verify_token_async(make_token(key=other_key()))
+
+    async def test_async_jwt_and_introspection(self, fake):
+        auth = self.jwt_auth(fake, "jwt+introspection")
+        token = fake.issue(permissions=["read:docs"])
+        context = await auth.verify_token_async(token)
+        assert context.permissions == ["read:docs"]
+        assert fake.count("/jwks") == 1 and fake.count("/introspect") == 1
+        fake.active_tokens.pop(token)  # revoked: the signature is still good, introspection is not
+        with pytest.raises(InvalidTokenError):
+            await auth.verify_token_async(token)
+
+    async def test_async_jwt_and_introspection_checks_signature_first(self, fake):
+        with pytest.raises(InvalidTokenError):
+            await self.jwt_auth(fake, "jwt+introspection").verify_token_async(make_token(key=other_key()))
+        assert fake.count("/introspect") == 0
 
     def test_valid_token(self, fake):
         context = self.jwt_auth(fake).verify_token(make_token(permissions=["read:docs"]))

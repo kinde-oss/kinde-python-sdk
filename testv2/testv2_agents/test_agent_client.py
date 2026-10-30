@@ -18,6 +18,7 @@ from kinde_sdk.agents import (
     KindeAgentClient,
     PendingAuthorization,
     RegistrationError,
+    TokenRequestError,
 )
 from kinde_sdk.agents.client import (
     authorization_server_metadata_urls,
@@ -264,6 +265,21 @@ class TestDcrFlow:
         await storage.set_registration(REGISTRATION_KEY, newer)
         await client._drop_registration({"client_id": tokens["client_id"], "registration_key": REGISTRATION_KEY})
         assert (await storage.get_registration(REGISTRATION_KEY))["client_id"] == "newer"
+
+    async def test_invalid_client_on_code_exchange_drops_registration(self, fake):
+        storage = InMemoryAgentStorage()
+
+        async def browser(url: str) -> str:
+            callback = fake.authorize(url)
+            fake.registrations.clear()  # Kinde dropped the registration mid sign-in
+            return callback
+
+        with pytest.raises(TokenRequestError, match="invalid_client"):
+            await make_client(fake, storage=storage, authorization_handler=browser).connect()
+        assert await storage.get_registration(REGISTRATION_KEY) is None
+        # The next sign-in registers again and works
+        await make_client(fake, storage=storage).connect()
+        assert fake.count("/register") == 2
 
     async def test_too_many_registrations(self, fake):
         fake.register_status = 429

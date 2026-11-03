@@ -20,6 +20,11 @@ class UserSession:
     def set_user_data(self, user_id: str, user_info: Dict[str, Any], token_data: Dict[str, Any]):
         """Store user session details and associate tokens."""
         with self.lock:  # Acquire the lock
+            # A secret passed in user_info (e.g. without an OAuth client) is kept in
+            # memory only; it's still never written to session storage
+            if user_info.get("client_secret") and not self.client_secrets.get(user_info["client_id"]):
+                self.client_secrets[user_info["client_id"]] = user_info["client_secret"]
+
             if user_id not in self.user_sessions:
                 # Create new token manager
                 token_manager = TokenManager(

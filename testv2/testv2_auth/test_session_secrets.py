@@ -74,6 +74,30 @@ class TestClientSecretNotPersisted(unittest.TestCase):
 
         self.assertEqual(UserSession.client_secrets.get("secret_test_client"), "super_secret")
 
+    def test_secret_passed_to_set_user_data_is_used_but_not_stored(self):
+        # Using UserSession directly, without an OAuth client registering the secret
+        UserSession.client_secrets.clear()
+        user_info = {
+            "client_id": "direct_client",
+            "client_secret": "direct_secret",
+            "token_url": "https://example.kinde.com/oauth2/token",
+        }
+
+        session = UserSession()
+        session.set_user_data("user_2", user_info, self._token_data())
+
+        self.assertEqual(session.get_token_manager("user_2").client_secret, "direct_secret")
+        self.assertNotIn("direct_secret", repr(StorageManager().get("user_2")))
+
+    def test_secret_in_user_info_does_not_replace_the_configured_secret(self):
+        UserSession().set_user_data("user_3", {
+            "client_id": "secret_test_client",
+            "client_secret": "other_secret",
+            "token_url": "https://example.kinde.com/oauth2/token",
+        }, self._token_data())
+
+        self.assertEqual(UserSession.client_secrets["secret_test_client"], "super_secret")
+
     def test_legacy_session_secret_is_dropped_on_load_and_not_saved_again(self):
         # A session written by an older SDK version, with client_secret in user_info
         StorageManager().setItems("user_1", {

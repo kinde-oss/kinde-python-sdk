@@ -218,3 +218,44 @@ def test_fastapi_rejects_a_converter_route_variable():
     )
     with pytest.raises(AgentConfigError):
         client_metadata_router(document)
+
+
+ENCODED_RESOURCE = "https://api.example.com/mcp/a%20b"
+
+
+def encoded_resource_auth():
+    config = AgentAuthConfig(
+        domain="test.kinde.com", client_id=APP_ID, verification="jwt", resource_url=ENCODED_RESOURCE
+    )
+    return KindeAgentAuth(config)
+
+
+@pytest.mark.parametrize("framework", ["fastapi", "flask"])
+def test_metadata_served_at_the_advertised_url_for_an_encoded_resource_path(framework):
+    auth = encoded_resource_auth()
+    if framework == "fastapi":
+        app = FastAPI()
+        FastAPIAgentAuth(auth).install(app)
+        client = TestClient(app)
+    else:
+        app = Flask(__name__)
+        FlaskAgentAuth(auth, app=app)
+        client = app.test_client()
+    # The challenge advertises the encoded URL; the route must answer it
+    advertised = auth.config.protected_resource_metadata_url
+    assert advertised == "https://api.example.com/.well-known/oauth-protected-resource/mcp/a%20b"
+    response = client.get("/.well-known/oauth-protected-resource/mcp/a%20b")
+    assert response.status_code == 200
+    assert body(response)["resource"] == ENCODED_RESOURCE
+
+
+@pytest.mark.parametrize("framework, encoded", [("fastapi", "%7Bname%7D"), ("flask", "%3Cname%3E")])
+def test_encoded_resource_path_that_would_become_a_route_variable(framework, encoded):
+    config = AgentAuthConfig(
+        domain="test.kinde.com", client_id=APP_ID, verification="jwt", resource_url=f"https://api.example.com/{encoded}"
+    )
+    with pytest.raises(AgentConfigError):
+        if framework == "fastapi":
+            FastAPIAgentAuth(KindeAgentAuth(config)).install(FastAPI())
+        else:
+            FlaskAgentAuth(KindeAgentAuth(config), app=Flask(__name__))

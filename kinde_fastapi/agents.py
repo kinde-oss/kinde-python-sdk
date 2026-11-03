@@ -89,7 +89,12 @@ class FastAPIAgentAuth:
                 headers={**_CORS_HEADERS, "Cache-Control": "max-age=3600"},
             )
 
-        paths = [self.auth.config.protected_resource_metadata_path]
+        # Routes match the decoded request path; the challenge still advertises the encoded URL
+        route = unquote(self.auth.config.protected_resource_metadata_path)
+        if _PATH_PARAM.search(route):
+            # Starlette would read this as a path parameter, not literal text
+            raise AgentConfigError(f"The resource URL path must not contain a {{name}} segment: {route!r}")
+        paths = [route]
         if PROTECTED_RESOURCE_WELL_KNOWN not in paths:
             paths.append(PROTECTED_RESOURCE_WELL_KNOWN)
         for path in paths:

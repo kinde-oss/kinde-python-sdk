@@ -23,10 +23,14 @@ except ImportError:  # pragma: no cover - Windows
 class AgentClientStorage(Protocol):
     """Where an agent keeps its tokens and DCR registrations.
 
-    A store shared between processes can also define
-    ``async delete_registration_if_client(key, client_id)``, which deletes the
-    registration only if it still has that ``client_id``, in one atomic step.
-    The client uses it when present.
+    A store shared between processes can also define two compare-and-delete
+    methods, each one atomic step. The client uses them when present:
+
+    - ``async delete_registration_if_client(key, client_id)`` deletes the
+      registration only if it still has that ``client_id``.
+    - ``async delete_tokens_if_refresh_token(key, refresh_token)`` deletes the
+      tokens only if they still hold that ``refresh_token``, so a failed refresh
+      never removes a newer pair another process just saved.
     """
 
     async def get_tokens(self, key: str) -> Optional[Dict[str, Any]]: ...
@@ -75,6 +79,11 @@ class InMemoryAgentStorage:
         """Delete the registration only if it still belongs to ``client_id``."""
         if (self._registrations.get(key) or {}).get("client_id") == client_id:
             self._registrations.pop(key, None)
+
+    async def delete_tokens_if_refresh_token(self, key: str, refresh_token: Optional[str]) -> None:
+        """Delete the tokens only if they still hold ``refresh_token``."""
+        if (self._tokens.get(key) or {}).get("refresh_token") == refresh_token:
+            self._tokens.pop(key, None)
 
 
 class FileAgentStorage:
@@ -191,3 +200,10 @@ class FileAgentStorage:
             with self._file_lock():
                 if (self._read()["registrations"].get(key) or {}).get("client_id") == client_id:
                     self._update("registrations", key, None)
+
+    async def delete_tokens_if_refresh_token(self, key: str, refresh_token: Optional[str]) -> None:
+        """Delete the tokens only if they still hold ``refresh_token``, under the file lock."""
+        async with self._guard():
+            with self._file_lock():
+                if (self._read()["tokens"].get(key) or {}).get("refresh_token") == refresh_token:
+                    self._update("tokens", key, None)

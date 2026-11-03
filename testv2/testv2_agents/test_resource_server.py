@@ -1,7 +1,10 @@
+import asyncio
 import base64
+import json
 import time
 
 import httpx
+import jwt
 import pytest
 
 from kinde_sdk.agents import (
@@ -28,6 +31,7 @@ from testv2.testv2_agents.kinde_fake import (
     make_token,
     other_key,
 )
+from testv2.testv2_agents.kinde_fake import jwks as fake_jwks
 
 
 def make_auth(fake: FakeKinde, **options) -> KindeAgentAuth:
@@ -137,8 +141,10 @@ class TestMetadata:
         assert document["client_id_metadata_document_supported"] is True
         assert "openid" not in document["scopes_supported"]
 
-    def test_as_metadata_proxy_is_cached_and_forces_cimd_flag(self, fake):
-        fake.as_metadata = {**fake.as_metadata, "client_id_metadata_document_supported": False, "extra": 1}
+    def test_as_metadata_proxy_is_cached_and_adds_missing_cimd_flag(self, fake):
+        metadata = {**fake.as_metadata, "extra": 1}
+        del metadata["client_id_metadata_document_supported"]
+        fake.as_metadata = metadata
         auth = make_auth(fake)
         first = auth.fetch_authorization_server_metadata()
         second = auth.fetch_authorization_server_metadata()
@@ -146,6 +152,12 @@ class TestMetadata:
         assert first["extra"] == 1
         assert second == first
         assert fake.count("/oauth2/agents/" + APP_ID) == 1
+
+    def test_as_metadata_proxy_keeps_an_explicit_false_cimd_flag(self, fake):
+        fake.as_metadata = {**fake.as_metadata, "client_id_metadata_document_supported": False}
+        document = make_auth(fake).fetch_authorization_server_metadata()
+        # Agents must register instead of sending a CIMD URL the server refuses
+        assert document["client_id_metadata_document_supported"] is False
 
     async def test_as_metadata_proxy_falls_back_to_static(self):
         def down(request):
@@ -349,6 +361,23 @@ class TestIntrospection:
         with pytest.raises(InvalidTokenError):
             await auth.verify_token_async(token)
 
+    async def test_revocation_during_introspection_is_not_cached(self, fake):
+        token = fake.issue()
+        auth = make_auth(fake, introspection_cache_seconds=30)
+        real = auth._post_introspection_async
+
+        async def revoked_while_in_flight(value):
+            response = await real(value)  # Kinde says active...
+            await auth.revoke_token_async(token)  # ...then the token is revoked before the answer is handled
+            return response
+
+        auth._post_introspection_async = revoked_while_in_flight
+        await auth.verify_token_async(token)
+        auth._post_introspection_async = real
+        with pytest.raises(InvalidTokenError):
+            await auth.verify_token_async(token)
+        assert fake.count("/introspect") == 2
+
     def test_revoke_network_failure_is_unavailable(self, fake):
         fake.handle = lambda request: (_ for _ in ()).throw(httpx.ConnectError("offline"))
         with pytest.raises(VerificationUnavailableError, match="revoke"):
@@ -488,6 +517,35 @@ class TestJwtVerification:
         for _ in range(5):
             with pytest.raises(InvalidTokenError):
                 auth.verify_token(make_token(kid="unknown", key=other_key()))
+        assert fake.count("/jwks") == 2
+
+    @staticmethod
+    def slow_jwks_auth(fake):
+        """JWT verification whose JWKS responses take a moment, so concurrent requests overlap a fetch."""
+
+        async def handler(request):
+            if request.url.path.endswith("/jwks"):
+                await asyncio.sleep(0.05)
+            return fake.handle(request)
+
+        config = AgentAuthConfig(domain=DOMAIN, client_id=APP_ID, resource_url=RESOURCE_URL, verification="jwt")
+        return KindeAgentAuth(config, async_http_client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+
+    async def test_concurrent_requests_on_a_cold_cache_wait_for_one_fetch(self, fake):
+        auth = self.slow_jwks_auth(fake)
+        contexts = await asyncio.gather(*(auth.verify_token_async(make_token()) for _ in range(5)))
+        assert len(contexts) == 5
+        assert fake.count("/jwks") == 1
+
+    async def test_concurrent_requests_during_key_rotation_wait_for_one_fetch(self, fake):
+        auth = self.slow_jwks_auth(fake)
+        await auth.verify_token_async(make_token())
+        rotated = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(other_key().public_key()))
+        rotated.update({"kid": "rotated", "alg": "RS256", "use": "sig"})
+        fake.jwks_body = {"keys": [*fake_jwks()["keys"], rotated]}
+        tokens = [make_token(kid="rotated", key=other_key()) for _ in range(5)]
+        contexts = await asyncio.gather(*(auth.verify_token_async(token) for token in tokens))
+        assert len(contexts) == 5
         assert fake.count("/jwks") == 2
 
     async def test_jwks_unavailable(self, fake):

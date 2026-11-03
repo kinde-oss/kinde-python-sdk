@@ -6,12 +6,14 @@ only adapt request and response types. Every method that talks to Kinde has a
 sync form and an ``_async`` form.
 """
 
+import asyncio
 import base64
 import hashlib
 import logging
 import re
 import threading
 import time
+import weakref
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Union
 from urllib.parse import quote_plus
@@ -73,6 +75,10 @@ class _JwksCache:
         self._last_unknown_kid_fetch: Optional[float] = None
         self._refresh_failed = False
         self._lock = threading.Lock()
+        # One asyncio lock per event loop: a lock can't be shared across loops
+        self._async_locks: "weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock]" = (
+            weakref.WeakKeyDictionary()
+        )
 
     def _should_fetch(self, kid: str, now: float) -> bool:
         """Whether to fetch the JWKS now: missing or stale keys, or an unknown kid, within rate limits."""
@@ -142,16 +148,31 @@ class _JwksCache:
                     self._fetch_failed(exc)
             return self._lookup(kid)
 
+    def _fresh_key(self, kid: str) -> Any:
+        """The cached key for ``kid`` while the key set is fresh, else ``None``."""
+        if self._fetched_at is None or time.monotonic() - self._fetched_at >= _JWKS_CACHE_SECONDS:
+            return None
+        return self._keys.get(kid)
+
     async def get_key_async(self, kid: str, client: httpx.AsyncClient) -> Any:
         """Async version of :meth:`get_key`."""
-        now = time.monotonic()
-        if self._should_fetch(kid, now):
-            self._last_attempt = now
-            try:
-                self._store(await client.get(self.url), now)
-            except (httpx.HTTPError, VerificationUnavailableError) as exc:
-                self._fetch_failed(exc)
-        return self._lookup(kid)
+        key = self._fresh_key(kid)
+        if key is not None:
+            return key
+        loop = asyncio.get_running_loop()
+        lock = self._async_locks.get(loop)
+        if lock is None:
+            lock = self._async_locks[loop] = asyncio.Lock()
+        # Requests arriving during a fetch wait for it, then find the new keys instead of failing
+        async with lock:
+            now = time.monotonic()
+            if self._should_fetch(kid, now):
+                self._last_attempt = now
+                try:
+                    self._store(await client.get(self.url), now)
+                except (httpx.HTTPError, VerificationUnavailableError) as exc:
+                    self._fetch_failed(exc)
+            return self._lookup(kid)
 
 
 class KindeAgentAuth:
@@ -195,6 +216,8 @@ class KindeAgentAuth:
         self._owns_async_http_client = async_http_client is None
         self._jwks = _JwksCache(config.jwks_url)
         self._introspection_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+        # Bumped on every revocation, so an introspection answer from before it is never cached
+        self._revocation_generation = 0
         self._as_metadata_cache: Optional[Tuple[float, Dict[str, Any]]] = None
 
     # -- HTTP clients ---------------------------------------------------------
@@ -285,8 +308,9 @@ class KindeAgentAuth:
                 )
             # Not cached, so the next request tries Kinde again
             return self.authorization_server_metadata()
-        # Without this flag agents fall back to registration, which MCP has deprecated
-        document["client_id_metadata_document_supported"] = True
+        # Without this flag agents fall back to registration, which MCP has deprecated. An explicit
+        # false from Kinde is kept: agents must not send a CIMD URL to a server that refuses it.
+        document.setdefault("client_id_metadata_document_supported", True)
         self._as_metadata_cache = (time.monotonic(), document)
         return dict(document)
 
@@ -407,7 +431,8 @@ class KindeAgentAuth:
                 return AgentAuthContext.from_claims(token, claims)
         data = self._cached_introspection(token)
         if data is None:
-            data = self._handle_introspection(self._post_introspection(token), token)
+            generation = self._revocation_generation
+            data = self._handle_introspection(self._post_introspection(token), token, generation)
         return self._context_from_introspection(token, data, claims)
 
     async def verify_token_async(self, token: str) -> AgentAuthContext:
@@ -421,7 +446,8 @@ class KindeAgentAuth:
                 return AgentAuthContext.from_claims(token, claims)
         data = self._cached_introspection(token)
         if data is None:
-            data = self._handle_introspection(await self._post_introspection_async(token), token)
+            generation = self._revocation_generation
+            data = self._handle_introspection(await self._post_introspection_async(token), token, generation)
         return self._context_from_introspection(token, data, claims)
 
     def _application_auth_header(self) -> str:
@@ -452,7 +478,9 @@ class KindeAgentAuth:
         except httpx.HTTPError as exc:
             return exc
 
-    def _handle_introspection(self, response: Union[httpx.Response, Exception], token: str) -> Dict[str, Any]:
+    def _handle_introspection(
+        self, response: Union[httpx.Response, Exception], token: str, generation: int
+    ) -> Dict[str, Any]:
         """Map an introspection result to token data, or to an invalid-token or unavailable error."""
         if isinstance(response, Exception):
             logger.warning("Kinde introspection request failed: %s", type(response).__name__)
@@ -493,7 +521,9 @@ class KindeAgentAuth:
         exp = data.get("exp")
         if isinstance(exp, (int, float)) and exp <= self._clock() - self.config.clock_tolerance_seconds:
             raise InvalidTokenError("The access token has expired")
-        self._remember_introspection(token, data)
+        # Not cached if a revocation landed while this request was in flight: the answer may be stale
+        if generation == self._revocation_generation:
+            self._remember_introspection(token, data)
         return data
 
     def _context_from_introspection(
@@ -624,6 +654,7 @@ class KindeAgentAuth:
         if response.status_code != 200:
             raise AgentAuthError(f"Kinde token revocation failed with HTTP {response.status_code}")
         # Revoking either token of a pair revokes both, and the paired token's cache key can't be derived
+        self._revocation_generation += 1
         self._introspection_cache.clear()
 
 

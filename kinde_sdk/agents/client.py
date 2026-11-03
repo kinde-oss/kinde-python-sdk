@@ -73,6 +73,13 @@ def _require_secure(url: str, what: str) -> None:
     raise DiscoveryError(f"Refusing a non-https {what}: {url}")
 
 
+def _refuse_loopback_from_remote(url: str, resource_url: str, what: str) -> None:
+    """Raise :class:`DiscoveryError` when a remote resource's metadata points at this machine."""
+    # Loopback is fine for local development, where the resource itself is on loopback
+    if is_loopback_host(urlsplit(url).hostname) and not is_loopback_host(urlsplit(resource_url).hostname):
+        raise DiscoveryError(f"Refusing a loopback {what} from a remote resource: {url}")
+
+
 def resource_covers(prm_resource: str, resource_url: str) -> bool:
     """Whether metadata for ``prm_resource`` applies to ``resource_url``: same origin, same or parent path."""
     if _origin(prm_resource) != _origin(resource_url):
@@ -164,6 +171,7 @@ class _LoopbackListener:
         self._port = parts.port or 0
         self._bound_port = self._port
         self._path = parts.path or "/"
+        self._query = parts.query
         self._server: Optional[asyncio.AbstractServer] = None
         self._result: Optional[asyncio.Future] = None
         self.redirect_uri = redirect_uri
@@ -176,7 +184,9 @@ class _LoopbackListener:
         bind = "127.0.0.1" if self._host == "localhost" else self._host
         self._server = await asyncio.start_server(self._handle, bind, self._port)
         self._bound_port = self._server.sockets[0].getsockname()[1]
-        self.redirect_uri = f"http://{self._netloc_host}:{self._bound_port}{self._path}"
+        # Keep any query: the authorization server compares the whole registered URI
+        query = f"?{self._query}" if self._query else ""
+        self.redirect_uri = f"http://{self._netloc_host}:{self._bound_port}{self._path}{query}"
 
     async def _handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         """Answer one HTTP request; complete the sign-in only for the callback path with the expected state."""
@@ -325,6 +335,12 @@ class KindeAgentClient:
         return f"{self.resource_url}|{self.account}"
 
     @property
+    def _resource_indicator(self) -> str:
+        """The RFC 8707 ``resource`` to ask for: the one the metadata names, which may be a parent of the URL called."""
+        resource = (self._prm or {}).get("resource")
+        return resource if isinstance(resource, str) else self.resource_url
+
+    @property
     def issuer(self) -> Optional[str]:
         """The discovered authorization server's issuer, or ``None`` before discovery."""
         return self._as_metadata.get("issuer") if self._as_metadata else None
@@ -348,6 +364,7 @@ class KindeAgentClient:
             raise DiscoveryError("The protected resource metadata lists no authorization server")
         issuer = servers[0]
         _require_secure(issuer, "authorization server")
+        _refuse_loopback_from_remote(issuer, self.resource_url, "authorization server")
 
         metadata = await self._fetch_authorization_server_metadata(issuer)
         stored = await self.storage.get_tokens(self._token_key)
@@ -403,9 +420,9 @@ class KindeAgentClient:
     def _may_fetch(self, metadata_url: str) -> bool:
         """Whether a ``resource_metadata`` URL from a challenge is safe to fetch."""
         # A remote resource must not point the agent at a service on this machine
-        if is_loopback_host(urlsplit(metadata_url).hostname) and not is_loopback_host(
-            urlsplit(self.resource_url).hostname
-        ):
+        try:
+            _refuse_loopback_from_remote(metadata_url, self.resource_url, "resource_metadata URL")
+        except DiscoveryError:
             logger.warning("Ignoring a loopback resource_metadata URL from a remote resource: %s", metadata_url)
             return False
         return True
@@ -429,6 +446,7 @@ class KindeAgentClient:
             for name in ("authorization_endpoint", "token_endpoint", "registration_endpoint", "revocation_endpoint"):
                 if metadata.get(name):
                     _require_secure(metadata[name], name.replace("_", " "))
+                    _refuse_loopback_from_remote(metadata[name], self.resource_url, name.replace("_", " "))
             return metadata
         raise DiscoveryError(f"No authorization server metadata found for {issuer}")
 
@@ -611,7 +629,7 @@ class KindeAgentClient:
             "code_challenge": challenge,
             "code_challenge_method": "S256",
             # RFC 8707, which MCP requires; Kinde ignores it and sets the audience from the path
-            "resource": self.resource_url,
+            "resource": self._resource_indicator,
         }
         if scope:
             params["scope"] = scope
@@ -665,7 +683,7 @@ class KindeAgentClient:
             "code": code,
             "redirect_uri": pending.redirect_uri,
             "code_verifier": pending.code_verifier,
-            "resource": self.resource_url,
+            "resource": self._resource_indicator,
         }
         headers = {"Accept": "application/json"}
         self._apply_client_auth(identity, data, headers)
@@ -677,7 +695,9 @@ class KindeAgentClient:
             raise TokenRequestError(
                 f"The code exchange failed: {error or response.status_code}", error=error, error_description=description
             )
-        await self._store_token_response(response, identity, pending.redirect_uri, previous=None)
+        await self._store_token_response(
+            response, identity, pending.redirect_uri, previous=None, requested_scope=pending.scope
+        )
 
     async def authorize(
         self, *, scopes: Optional[Sequence[str]] = None, challenge_response: Optional[httpx.Response] = None
@@ -723,6 +743,7 @@ class KindeAgentClient:
         identity: Dict[str, Any],
         redirect_uri: Optional[str],
         previous: Optional[Dict[str, Any]],
+        requested_scope: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Store a token response, keeping the previous refresh token when none is returned."""
         try:
@@ -739,7 +760,10 @@ class KindeAgentClient:
             # Replace a rotated refresh token; keep the old one when the server doesn't send one
             "refresh_token": body.get("refresh_token") or (previous or {}).get("refresh_token"),
             "expires_at": time.time() + float(expires_in) if isinstance(expires_in, (int, float)) else None,
-            "scope": body.get("scope") or (previous or {}).get("scope"),
+            # Kept so the refresh margin can scale with short-lived tokens
+            "expires_in": float(expires_in) if isinstance(expires_in, (int, float)) else None,
+            # RFC 6749 §5.1: no scope in the response means the requested scope was granted
+            "scope": body.get("scope") or requested_scope or (previous or {}).get("scope"),
             "issuer": self._as_metadata["issuer"],
             "resource_url": self.resource_url,
             "client_id": identity["client_id"],
@@ -753,7 +777,14 @@ class KindeAgentClient:
     def _expiring(tokens: Dict[str, Any]) -> bool:
         """Whether the access token expires within the refresh margin."""
         expires_at = tokens.get("expires_at")
-        return expires_at is not None and expires_at - time.time() < _REFRESH_MARGIN_SECONDS
+        if expires_at is None:
+            return False
+        margin = _REFRESH_MARGIN_SECONDS
+        lifetime = tokens.get("expires_in")
+        if isinstance(lifetime, (int, float)) and lifetime > 0:
+            # At most half the lifetime, or a token living 60 seconds or less would refresh on every call
+            margin = min(margin, lifetime / 2)
+        return expires_at - time.time() < margin
 
     async def refresh(self, *, stale_access_token: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Refresh the stored tokens. Returns ``None`` when a new sign-in is needed.
@@ -781,7 +812,7 @@ class KindeAgentClient:
             data = {
                 "grant_type": "refresh_token",
                 "refresh_token": tokens["refresh_token"],
-                "resource": self.resource_url,
+                "resource": self._resource_indicator,
             }
             headers = {"Accept": "application/json"}
             self._apply_client_auth(identity, data, headers)
@@ -790,9 +821,9 @@ class KindeAgentClient:
                 return await self._store_token_response(response, identity, tokens.get("redirect_uri"), previous=tokens)
             error, description = _oauth_error(response)
             if error == "invalid_grant":
-                # Revoked, expired after 15 days, or the application was deleted
-                await self.storage.delete_tokens(self._token_key)
-                return None
+                # Revoked, expired after 15 days, or the application was deleted. Or another client
+                # sharing this storage rotated the refresh token first: then keep its newer tokens.
+                return await self._drop_tokens_unless_replaced(tokens["refresh_token"])
             if error == "invalid_client":
                 # The registration expired: register again and sign in again
                 await self._drop_registration(identity)
@@ -801,6 +832,18 @@ class KindeAgentClient:
             raise TokenRequestError(
                 f"The refresh failed: {error or response.status_code}", error=error, error_description=description
             )
+
+    async def _drop_tokens_unless_replaced(self, refresh_token: str) -> Optional[Dict[str, Any]]:
+        """Delete the stored tokens if they still hold ``refresh_token``; return any newer tokens left."""
+        delete_if = getattr(self.storage, "delete_tokens_if_refresh_token", None)
+        if delete_if is not None:
+            # The storage checks and deletes in one step, so a newer pair can't slip in between
+            await delete_if(self._token_key, refresh_token)
+        else:
+            stored = await self.storage.get_tokens(self._token_key)
+            if stored and stored.get("refresh_token") == refresh_token:
+                await self.storage.delete_tokens(self._token_key)
+        return await self.storage.get_tokens(self._token_key)
 
     async def _usable_tokens(self) -> Dict[str, Any]:
         """Return stored tokens, refreshing or signing in first when needed."""
@@ -888,7 +931,9 @@ class KindeAgentClient:
         if response.status_code == 401:
             refreshed = await self.refresh(stale_access_token=tokens["access_token"])
             if refreshed:
-                response = await send(refreshed["access_token"])
+                # So a second 401 tells _sign_in which token was just refused
+                tokens = refreshed
+                response = await send(tokens["access_token"])
             if response.status_code == 401:
                 tokens = await self._sign_in(tokens["access_token"], challenge_response=response)
                 response = await send(tokens["access_token"])

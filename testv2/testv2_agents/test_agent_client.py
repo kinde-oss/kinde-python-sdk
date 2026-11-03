@@ -21,6 +21,7 @@ from kinde_sdk.agents import (
     TokenRequestError,
 )
 from kinde_sdk.agents.client import (
+    _LoopbackListener,
     authorization_server_metadata_urls,
     protected_resource_metadata_urls,
     resource_covers,
@@ -44,6 +45,18 @@ def make_client(fake: FakeKinde, **options) -> KindeAgentClient:
     options.setdefault("authorization_handler", browser)
     options.setdefault("redirect_uri", REDIRECT)
     return KindeAgentClient(RESOURCE_URL, http_client=fake.async_client(), **options)
+
+
+def client_with_handler(handler, **options) -> KindeAgentClient:
+    """A CIMD client whose HTTP calls go through ``handler`` (sync or async) instead of the fake directly."""
+    fake = options.pop("fake")
+    client = make_client(fake, client_metadata_url=CIMD_URL, **options)
+    client._http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    return client
+
+
+def is_grant(request: httpx.Request, grant: str) -> bool:
+    return request.url.path.endswith("/token") and f"grant_type={grant}".encode() in request.content
 
 
 def form_of(request: httpx.Request) -> dict:
@@ -385,6 +398,93 @@ class TestTokens:
         ]
         assert len(refreshes) == 1
 
+    async def test_signs_in_again_when_the_refreshed_token_is_refused(self, fake):
+        refused = set()
+
+        def handler(request):
+            response = fake.handle(request)
+            if is_grant(request, "refresh_token"):
+                refused.add(response.json()["access_token"])  # the resource refuses refreshed tokens too
+            bearer = request.headers.get("authorization", "")[7:]
+            if request.url.host == "api.example.com" and bearer in refused:
+                return httpx.Response(401, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'})
+            return response
+
+        client = client_with_handler(handler, fake=fake)
+        await client.connect()
+        refused.add(await client.get_access_token())
+        response = await client.request("GET")
+        assert response.status_code == 200
+        assert len([r for r in fake.requests if is_grant(r, "authorization_code")]) == 2
+
+    async def test_scope_missing_from_the_token_response_is_the_requested_scope(self, fake):
+        def handler(request):
+            response = fake.handle(request)
+            if request.url.path.endswith("/token"):
+                body = {k: v for k, v in response.json().items() if k != "scope"}
+                return httpx.Response(response.status_code, json=body)
+            return response
+
+        client = client_with_handler(handler, fake=fake, scopes=["offline", "email"])
+        await client.connect()
+        assert (await client.get_token_info())["scopes"] == ["offline", "email"]
+
+    async def test_short_lived_tokens_are_not_refreshed_on_every_call(self, fake):
+        def handler(request):
+            response = fake.handle(request)
+            if request.url.path.endswith("/token") and response.status_code == 200:
+                return httpx.Response(200, json={**response.json(), "expires_in": 60})
+            return response
+
+        client = client_with_handler(handler, fake=fake)
+        await client.connect()
+        for _ in range(3):
+            assert (await client.request("GET")).status_code == 200
+        assert not [r for r in fake.requests if is_grant(r, "refresh_token")]
+
+    def test_refresh_margin_is_at_most_half_the_lifetime(self):
+        now = time.time()
+        assert KindeAgentClient._expiring({"expires_at": now + 40, "expires_in": 60}) is False
+        assert KindeAgentClient._expiring({"expires_at": now + 20, "expires_in": 60}) is True
+        # Long-lived, and tokens stored before the lifetime was kept: the usual 60 seconds
+        assert KindeAgentClient._expiring({"expires_at": now + 50, "expires_in": 86400}) is True
+        assert KindeAgentClient._expiring({"expires_at": now + 50}) is True
+        assert KindeAgentClient._expiring({"expires_at": now + 120}) is False
+
+    @pytest.mark.parametrize("storage_class", ["memory", "file", "basic"])
+    async def test_invalid_grant_keeps_tokens_another_client_just_rotated(self, fake, tmp_path, storage_class):
+        class BasicStorage:
+            """A custom store with only the required methods."""
+
+            def __init__(self):
+                self.inner = InMemoryAgentStorage()
+
+            def __getattr__(self, name):
+                if name == "delete_tokens_if_refresh_token":
+                    raise AttributeError(name)
+                return getattr(self.inner, name)
+
+        storage = {
+            "memory": InMemoryAgentStorage,
+            "file": lambda: FileAgentStorage(str(tmp_path / "t.json")),
+            "basic": BasicStorage,
+        }[storage_class]()
+        fake.rotate_refresh_tokens = True
+        other = make_client(fake, client_metadata_url=CIMD_URL, storage=storage)
+        await other.connect()
+
+        async def handler(request):
+            if is_grant(request, "refresh_token"):
+                # The other client (another process) rotates the same refresh token first
+                await other.refresh()
+            return fake.handle(request)
+
+        client = client_with_handler(handler, fake=fake, storage=storage)
+        tokens = await client.refresh()
+        stored = await storage.get_tokens(f"{RESOURCE_URL}|default")
+        assert stored is not None and tokens == stored
+        assert stored["refresh_token"] in fake.refresh_tokens
+
     async def test_invalid_grant_restarts_sign_in(self, fake):
         client = make_client(fake, client_metadata_url=CIMD_URL)
         await client.connect()
@@ -509,6 +609,44 @@ class TestDiscovery:
         await client.discover(challenge)
         assert not [r for r in fake.requests if r.url.host == "127.0.0.1"]
 
+    async def test_remote_resource_cannot_name_a_loopback_issuer(self, fake):
+        fake.prm["authorization_servers"] = ["http://127.0.0.1:9/oauth2"]
+        with pytest.raises(DiscoveryError, match="loopback authorization server"):
+            await make_client(fake, client_metadata_url=CIMD_URL).discover()
+        assert not [r for r in fake.requests if r.url.host == "127.0.0.1"]
+
+    @pytest.mark.parametrize("endpoint", ["token_endpoint", "registration_endpoint", "revocation_endpoint"])
+    async def test_remote_authorization_server_cannot_name_loopback_endpoints(self, fake, endpoint):
+        fake.as_metadata[endpoint] = "http://localhost:9/admin"
+        with pytest.raises(DiscoveryError, match="loopback"):
+            await make_client(fake).discover()
+
+    def test_loopback_resource_may_use_a_loopback_issuer(self):
+        from kinde_sdk.agents.client import _refuse_loopback_from_remote
+
+        _refuse_loopback_from_remote("http://127.0.0.1:8000/oauth2", "http://localhost:3001/mcp", "issuer")
+        with pytest.raises(DiscoveryError):
+            _refuse_loopback_from_remote("http://127.0.0.1:8000/oauth2", RESOURCE_URL, "issuer")
+
+    async def test_sends_the_resource_the_metadata_names(self, fake):
+        fake.prm["resource"] = "https://api.example.com/"  # a parent of the URL the agent calls
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, client_metadata_url=CIMD_URL, storage=storage)
+        authorizations = []
+
+        async def browser(url):
+            authorizations.append(url)
+            return fake.authorize(url)
+
+        client.authorization_handler = browser
+        assert (await client.request("GET")).status_code == 200
+        await client.refresh()
+        assert query_of(authorizations[0])["resource"] == "https://api.example.com/"
+        grants = [form_of(r) for r in fake.requests if r.url.path.endswith("/token")]
+        assert [grant["resource"] for grant in grants] == ["https://api.example.com/"] * 2
+        # Requests still go to the URL the developer gave
+        assert any(str(r.url) == RESOURCE_URL for r in fake.requests)
+
     async def test_falls_back_to_challenge_when_well_known_missing(self, fake):
         fake.serve_prm_at_well_known = False
         client = make_client(fake, client_metadata_url=CIMD_URL)
@@ -628,6 +766,21 @@ class TestAuthorizationStep:
         assert forged == [404]
         assert redirect_uri.startswith("http://127.0.0.1:") and redirect_uri.endswith("/callback")
         assert (await client.get_token_info())["client_id"] == CIMD_URL
+
+
+async def test_loopback_listener_keeps_the_redirect_query():
+    listener = _LoopbackListener("http://127.0.0.1/callback?tenant=1")
+    await listener.start()
+    try:
+        assert listener.redirect_uri.startswith("http://127.0.0.1:")
+        assert listener.redirect_uri.endswith("/callback?tenant=1")
+        listener.expected_state = "s"
+        async with httpx.AsyncClient() as browser:
+            response = await browser.get(listener.redirect_uri + "&code=c&state=s")
+        assert response.status_code == 200
+        assert query_of(await listener.wait(1)) == {"tenant": "1", "code": "c", "state": "s"}
+    finally:
+        await listener.close()
 
 
 class TestFileStorage:

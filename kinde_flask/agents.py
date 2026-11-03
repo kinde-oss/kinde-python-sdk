@@ -78,7 +78,12 @@ class FlaskAgentAuth:
             response.headers.update({**_CORS_HEADERS, "Cache-Control": "max-age=3600"})
             return response
 
-        paths = [self.auth.config.protected_resource_metadata_path]
+        # Routes match the decoded request path; the challenge still advertises the encoded URL
+        route = unquote(self.auth.config.protected_resource_metadata_path)
+        if "<" in route or ">" in route:
+            # Werkzeug would read these as a route variable
+            raise AgentConfigError(f"The resource URL path must not contain '<' or '>': {route!r}")
+        paths = [route]
         if PROTECTED_RESOURCE_WELL_KNOWN not in paths:
             paths.append(PROTECTED_RESOURCE_WELL_KNOWN)
         for index, path in enumerate(paths):

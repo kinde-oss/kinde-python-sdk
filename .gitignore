@@ -77,13 +77,3 @@ docs/_build/
 .env.*
 !.env.example
 !.env.sample
-*.env
-
-# macOS
-.DS_Store
-
-# Cloudflare Wrangler local state
-.wrangler/
-
-# Personal editor workspaces
-*.code-workspace

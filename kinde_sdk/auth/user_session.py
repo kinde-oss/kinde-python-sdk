@@ -20,17 +20,18 @@ class UserSession:
     def set_user_data(self, user_id: str, user_info: Dict[str, Any], token_data: Dict[str, Any]):
         """Store user session details and associate tokens."""
         with self.lock:  # Acquire the lock
-            # A secret passed in user_info (e.g. without an OAuth client) is kept in
-            # memory only; it's still never written to session storage
-            if user_info.get("client_secret") and not self.client_secrets.get(user_info["client_id"]):
-                self.client_secrets[user_info["client_id"]] = user_info["client_secret"]
+            # A secret passed in user_info (e.g. without an OAuth client) belongs to this
+            # session's token manager only. It isn't shared with other sessions for the
+            # same client, and it's never written to session storage.
+            # May be None for PKCE flow.
+            client_secret = user_info.get("client_secret") or self.client_secrets.get(user_info["client_id"])
 
             if user_id not in self.user_sessions:
                 # Create new token manager
                 token_manager = TokenManager(
-                    user_id, 
-                    user_info["client_id"], 
-                    self.client_secrets.get(user_info["client_id"]),  # May be None for PKCE flow
+                    user_id,
+                    user_info["client_id"],
+                    client_secret,
                     user_info["token_url"]
                 )
                 
@@ -46,7 +47,13 @@ class UserSession:
             else:
                 # Update existing user info
                 self.user_sessions[user_id]["user_info"] = user_info
-            
+
+            # The manager may already exist (one per user), so give it the secret if it
+            # has none, but keep a secret it already has
+            token_manager = self.user_sessions[user_id]["token_manager"]
+            if not token_manager.client_secret and client_secret:
+                token_manager.client_secret = client_secret
+
             # Set tokens in token manager
             self.user_sessions[user_id]["token_manager"].set_tokens(token_data)
             

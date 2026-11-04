@@ -98,6 +98,37 @@ class TestClientSecretNotPersisted(unittest.TestCase):
 
         self.assertEqual(UserSession.client_secrets["secret_test_client"], "super_secret")
 
+    def _direct_user_info(self, client_secret=None):
+        user_info = {"client_id": "direct_client", "token_url": "https://example.kinde.com/oauth2/token"}
+        if client_secret:
+            user_info["client_secret"] = client_secret
+        return user_info
+
+    def test_secret_passed_to_set_user_data_is_not_shared_with_other_sessions(self):
+        session = UserSession()
+        session.set_user_data("user_2", self._direct_user_info("direct_secret"), self._token_data())
+        session.set_user_data("user_4", self._direct_user_info(), self._token_data())
+
+        self.assertNotIn("direct_client", UserSession.client_secrets)
+        self.assertIsNone(session.get_token_manager("user_4").client_secret)
+
+    def test_updating_a_session_gives_its_manager_a_new_secret_but_keeps_an_existing_one(self):
+        session = UserSession()
+        session.set_user_data("user_5", self._direct_user_info(), self._token_data())
+        session.set_user_data("user_5", self._direct_user_info("first_secret"), self._token_data())
+        self.assertEqual(session.get_token_manager("user_5").client_secret, "first_secret")
+
+        session.set_user_data("user_5", self._direct_user_info("second_secret"), self._token_data())
+        self.assertEqual(session.get_token_manager("user_5").client_secret, "first_secret")
+
+    def test_updating_a_session_without_a_secret_uses_the_configured_one(self):
+        session = UserSession()
+        session.set_user_data("user_6", self._direct_user_info(), self._token_data())
+        UserSession.client_secrets["direct_client"] = "configured_secret"
+
+        session.set_user_data("user_6", self._direct_user_info(), self._token_data())
+        self.assertEqual(session.get_token_manager("user_6").client_secret, "configured_secret")
+
     def test_legacy_session_secret_is_dropped_on_load_and_not_saved_again(self):
         # A session written by an older SDK version, with client_secret in user_info
         StorageManager().setItems("user_1", {

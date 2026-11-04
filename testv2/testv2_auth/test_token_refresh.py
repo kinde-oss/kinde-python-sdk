@@ -178,15 +178,17 @@ class TestTokenRefresh(unittest.TestCase):
                 self.assertRaises(KindeTokenPersistenceException):
             token_manager.get_access_token()
 
+        def check_saved_then_fail(*args, **kwargs):
+            # Runs when the refresh is sent: the pending save must already have happened
+            self.assertEqual(StorageManager().get("user_1")["tokens"]["refresh_token"], "new_refresh_token")
+            raise requests.ConnectionError("offline")
+
         # The refreshed access token expires before the next call, and Kinde is unreachable
         token_manager.tokens["expires_at"] = time.time() - 10
-        with patch("kinde_sdk.auth.token_manager.requests.post",
-                   side_effect=requests.ConnectionError("offline")), \
+        with patch("kinde_sdk.auth.token_manager.requests.post", side_effect=check_saved_then_fail) as post, \
                 self.assertRaises(requests.RequestException):
             token_manager.get_access_token()
-
-        # The rotated refresh token was saved before the refresh was attempted
-        self.assertEqual(StorageManager().get("user_1")["tokens"]["refresh_token"], "new_refresh_token")
+        self.assertEqual(post.call_count, 1)
 
     def test_user_stays_authenticated_when_saving_refreshed_tokens_fails(self):
         session = UserSession()

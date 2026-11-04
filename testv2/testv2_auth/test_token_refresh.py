@@ -94,15 +94,6 @@ class TestTokenRefresh(unittest.TestCase):
         restored = UserSession().get_token_manager("user_1")
         self.assertEqual(restored.tokens["refresh_token"], "new_refresh_token")
 
-    def test_updating_a_session_passes_a_new_secret_but_keeps_an_existing_one(self):
-        session = UserSession()
-        session.set_user_data("user_1", dict(USER_INFO, client_secret=None), self.expired_tokens)
-        session.set_user_data("user_1", dict(USER_INFO, client_secret="first"), self.expired_tokens)
-        self.assertEqual(session.get_token_manager("user_1").client_secret, "first")
-
-        session.set_user_data("user_1", dict(USER_INFO, client_secret="second"), self.expired_tokens)
-        self.assertEqual(session.get_token_manager("user_1").client_secret, "first")
-
     def _saved_by_other_worker(self, tokens):
         """Overwrite the stored session as another worker's refresh would."""
         StorageManager().setItems("user_1", {"user_info": dict(USER_INFO), "tokens": tokens})

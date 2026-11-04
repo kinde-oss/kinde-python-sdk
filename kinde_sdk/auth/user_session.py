@@ -38,10 +38,6 @@ class UserSession:
             else:
                 # Update existing user info
                 self.user_sessions[user_id]["user_info"] = user_info
-                # Give the existing manager a newly supplied secret, but keep one it already has
-                token_manager = self.user_sessions[user_id]["token_manager"]
-                if not token_manager.client_secret and user_info.get("client_secret"):
-                    token_manager.client_secret = user_info["client_secret"]
             
             # Set tokens in token manager
             self.user_sessions[user_id]["token_manager"].set_tokens(token_data)

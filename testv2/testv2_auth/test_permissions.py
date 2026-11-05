@@ -183,4 +183,62 @@ class TestPermissions:
             result = await permissions.get_permission("create:todos", options)
             assert result["permissionKey"] == "create:todos"
             assert result["orgCode"] == "org_123"
-            assert result["isGranted"] is False                  
+            assert result["isGranted"] is False
+
+
+class TestPermissionsAccountApiResponse:
+    """_call_account_api against the real generated response models."""
+
+    @staticmethod
+    def _api_returning(*keys):
+        from kinde_sdk.frontend.models import (
+            GetUserPermissionsResponse,
+            GetUserPermissionsResponseData,
+            GetUserPermissionsResponseDataPermissionsInner,
+        )
+        response = GetUserPermissionsResponse(
+            data=GetUserPermissionsResponseData(
+                org_code="org_123",
+                permissions=[
+                    GetUserPermissionsResponseDataPermissionsInner(id=f"perm_{i}", name=key.title(), key=key)
+                    for i, key in enumerate(keys)
+                ],
+            )
+        )
+        api = Mock()
+        api.get_user_permissions.return_value = response
+        return api
+
+    @pytest.mark.asyncio
+    async def test_granted_permission_is_found_by_key(self):
+        api = self._api_returning("create:todos", "read:todos")
+        with patch.object(permissions, "_create_authenticated_api_client", return_value=api):
+            result = await permissions._call_account_api("create:todos")
+        assert result == {"permissionKey": "create:todos", "orgCode": "org_123", "isGranted": True}
+
+    @pytest.mark.asyncio
+    async def test_missing_permission_is_not_granted(self):
+        api = self._api_returning("read:todos")
+        with patch.object(permissions, "_create_authenticated_api_client", return_value=api):
+            result = await permissions._call_account_api("delete:todos")
+        assert result["isGranted"] is False
+
+    @pytest.mark.asyncio
+    async def test_all_permissions_are_returned_as_keys(self):
+        api = self._api_returning("create:todos", "read:todos")
+        with patch.object(permissions, "_create_authenticated_api_client", return_value=api):
+            result = await permissions._call_account_api()
+        assert result == {"orgCode": "org_123", "permissions": ["create:todos", "read:todos"]}
+
+class TestPermissionKey:
+    """Account API permissions can be model objects, dicts or plain key strings."""
+
+    @pytest.mark.parametrize("permission, expected", [
+        ("read:todos", "read:todos"),
+        ({"id": "perm_1", "key": "read:todos"}, "read:todos"),
+        (Mock(key="read:todos"), "read:todos"),
+        ({"id": "perm_1"}, None),
+        (None, None),
+    ])
+    def test_permission_key(self, permission, expected):
+        assert permissions._permission_key(permission) == expected

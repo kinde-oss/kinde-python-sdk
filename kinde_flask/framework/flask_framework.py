@@ -282,7 +282,12 @@ class FlaskFramework(FrameworkInterface):
             # Log out before clearing the session: after a restart, or on another worker,
             # the SDK reads the user's tokens from the session to revoke them and to build
             # the logout URL
-            logout_url = self._run_async(self._oauth.logout(user_id))
+            try:
+                logout_url = self._run_async(self._oauth.logout(user_id))
+            except Exception as e:
+                # Still sign the user out here and at Kinde
+                logger.error("Logout failed: %s", type(e).__name__)
+                logout_url = self._run_async(self._oauth.logout())
             session.clear()
             return redirect(logout_url)
         

@@ -234,7 +234,13 @@ class FastAPIFramework(FrameworkInterface):
             # Log out before clearing the session: after a restart, or on another worker,
             # the SDK reads the user's tokens from the session to revoke them and to build
             # the logout URL
-            logout_url = await self._oauth.logout(user_id)
+            try:
+                logout_url = await self._oauth.logout(user_id)
+            except Exception as e:
+                # Still sign the user out here and at Kinde. Returning a response (not
+                # raising) is what saves the cleared session to the cookie
+                self._logger.error("Logout failed: %s", type(e).__name__)
+                logout_url = await self._oauth.logout()
             request.session.clear()
             return RedirectResponse(url=logout_url)
         

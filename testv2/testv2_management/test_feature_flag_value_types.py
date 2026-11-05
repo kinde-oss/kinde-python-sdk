@@ -40,10 +40,25 @@ def test_generator_erratum_patches_generated_model(tmp_path):
     )
     target.write_text(generated)
 
-    generator.apply_spec_errata({"output_dir": str(tmp_path)})
+    assert generator.apply_spec_errata({"output_dir": str(tmp_path)})
     patched = target.read_text()
     assert "Optional[Union[StrictBool, StrictInt, StrictStr]]" in patched
     assert "StrictBool, StrictInt, StrictStr, field_validator" in patched
 
-    generator.apply_spec_errata({"output_dir": str(tmp_path)})
+    assert generator.apply_spec_errata({"output_dir": str(tmp_path)})
     assert target.read_text() == patched
+
+
+@pytest.mark.parametrize("generated", [
+    None,  # the model file is missing
+    "from pydantic import BaseModel\nclass M(BaseModel):\n    value: Optional[StrictStr] = Field(default=None)\n",
+])
+def test_generator_fails_when_erratum_cannot_be_applied(tmp_path, generated):
+    import generate_management_sdk as generator
+
+    if generated is not None:
+        target = tmp_path / "models" / "get_organization_feature_flags_response_feature_flags_value.py"
+        target.parent.mkdir()
+        target.write_text(generated)
+
+    assert generator.apply_spec_errata({"output_dir": str(tmp_path)}) is False

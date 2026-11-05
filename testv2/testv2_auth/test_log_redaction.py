@@ -314,6 +314,22 @@ class TestFlaskRoutes:
         with client.session_transaction() as session:
             assert "user_id" not in session
 
+    def test_logout_still_signs_out_when_sdk_logout_fails(self, flask_app, network):
+        exchange, token_manager_post = network
+        app, oauth = flask_app
+        client = app.test_client()
+        q = _query(client.get("/login").headers["Location"])
+        exchange.return_value = Tokens(q["nonce"]).response()
+        client.get(f"/callback?code={AUTH_CODE}&state={q['state']}")
+
+        with patch.object(oauth._session_manager, "logout", side_effect=OSError("storage down")):
+            logout = client.get("/logout")
+
+        assert logout.status_code == 302
+        assert logout.headers["Location"].startswith(f"{HOST}/logout")
+        with client.session_transaction() as session:
+            assert "user_id" not in session
+
 
 def _forget_in_memory_sessions(oauth):
     """Simulate a restarted process or another worker: only the session has the tokens."""
@@ -396,6 +412,28 @@ class TestFastAPIRoutes:
         assert _query(logout.headers["location"]).get("id_token_hint") == tokens.id
         assert token_manager_post.call_args.args[0].endswith("/oauth2/revoke")
         assert token_manager_post.call_args.kwargs["data"]["token"] == tokens.access
+
+    def test_logout_still_signs_out_when_sdk_logout_fails(self, fastapi_app, network):
+        exchange, _ = network
+        client, oauth = fastapi_app
+        from fastapi import Request
+
+        @client.app.get("/whoami")
+        async def whoami(request: Request):
+            return {"user_id": request.session.get("user_id")}
+
+        q = _query(client.get("/login").headers["location"])
+        exchange.return_value = Tokens(q["nonce"]).response()
+        client.get(f"/callback?code={AUTH_CODE}&state={q['state']}")
+        assert client.get("/whoami").json()["user_id"]
+
+        with patch.object(oauth._session_manager, "logout", side_effect=OSError("storage down")):
+            logout = client.get("/logout")
+
+        assert logout.status_code in (302, 307)
+        assert logout.headers["location"].startswith(f"{HOST}/logout")
+        # The cleared session reached the cookie, so the user is signed out
+        assert client.get("/whoami").json()["user_id"] is None
 
     def test_failed_exchange_returns_400_without_body_echo(self, fastapi_app, debug_logs, network):
         exchange, _ = network

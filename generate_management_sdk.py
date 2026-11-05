@@ -669,24 +669,33 @@ SPEC_ERRATA = [
 ]
 
 
-def apply_spec_errata(config: Dict[str, Any]):
-    """Correct generated models where the spec doesn't match the API."""
+def apply_spec_errata(config: Dict[str, Any]) -> bool:
+    """Correct generated models where the spec doesn't match the API.
+
+    Returns False if a correction can't be applied, so generation fails instead of
+    shipping the bug the correction fixes.
+    """
     print_section("Applying Spec Errata")
 
     output_dir = Path(config["output_dir"])
+    ok = True
     for relative_path, generated, corrected in SPEC_ERRATA:
         path = output_dir / relative_path
         if not path.exists():
-            print(f"⚠️  Warning: {relative_path} not found")
+            print(f"❌ {relative_path} not found; update SPEC_ERRATA")
+            ok = False
             continue
         content = path.read_text(encoding="utf-8")
         if corrected in content:
             continue
         if generated not in content:
-            print(f"⚠️  Warning: {relative_path} changed upstream; review the erratum")
+            print(f"❌ {relative_path} changed upstream; update the entry in SPEC_ERRATA, "
+                  "or remove it if the spec is now correct")
+            ok = False
             continue
         path.write_text(content.replace(generated, corrected), encoding="utf-8")
         print(f"✓ Patched {relative_path}")
+    return ok
 
 
 # =============================================================================
@@ -845,7 +854,8 @@ def generate_single_sdk(skip_tests: bool, no_diff: bool) -> bool:
     add_custom_imports(config)
 
     # Step 3b: Correct models where the published spec is wrong
-    apply_spec_errata(config)
+    if not apply_spec_errata(config):
+        return False
     
     # Step 4: Validate
     if not validate_generation(config):

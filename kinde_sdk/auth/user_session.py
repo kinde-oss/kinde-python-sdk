@@ -38,6 +38,9 @@ class UserSession:
             else:
                 # Update existing user info
                 self.user_sessions[user_id]["user_info"] = user_info
+                # The token manager is shared per user, so another UserSession may have
+                # bound it since. Bind it here again so refreshes save this user_info
+                self._bind_token_storage(user_id, self.user_sessions[user_id]["token_manager"])
             
             # Set tokens in token manager
             self.user_sessions[user_id]["token_manager"].set_tokens(token_data)

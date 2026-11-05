@@ -190,6 +190,21 @@ class TestTokenRefresh(unittest.TestCase):
             token_manager.get_access_token()
         self.assertEqual(post.call_count, 1)
 
+    def test_refresh_saves_the_latest_user_info_when_another_session_bound_the_token_manager(self):
+        session = UserSession()
+        session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+        # Another UserSession for the same user shares the token manager and binds it
+        UserSession().set_user_data("user_1", {**USER_INFO, "redirect_uri": "http://old"}, self.expired_tokens)
+        # The first session gets newer user info for its existing session
+        session.set_user_data("user_1", {**USER_INFO, "redirect_uri": "http://new"}, self.expired_tokens)
+
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self.refresh_ok):
+            session.get_token_manager("user_1").get_access_token()
+
+        saved = StorageManager().get("user_1")
+        self.assertEqual(saved["tokens"]["refresh_token"], "new_refresh_token")
+        self.assertEqual(saved["user_info"]["redirect_uri"], "http://new")
+
     def test_user_stays_authenticated_when_saving_refreshed_tokens_fails(self):
         session = UserSession()
         session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)

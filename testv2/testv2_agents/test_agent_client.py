@@ -485,6 +485,42 @@ class TestTokens:
         assert stored is not None and tokens == stored
         assert stored["refresh_token"] in fake.refresh_tokens
 
+    async def test_invalid_client_keeps_tokens_another_client_just_saved(self, fake):
+        storage = InMemoryAgentStorage()
+        await make_client(fake, storage=storage).connect()
+        key = f"{RESOURCE_URL}|default"
+        old = await storage.get_tokens(key)
+        newer = {**old, "access_token": "newer-access", "refresh_token": "newer-refresh"}
+
+        async def handler(request):
+            if is_grant(request, "refresh_token"):
+                # Another process signs in again and saves a new pair before Kinde answers
+                await storage.set_tokens(key, newer)
+                return httpx.Response(401, json={"error": "invalid_client"})
+            return fake.handle(request)
+
+        client = make_client(fake, storage=storage)
+        client._http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        assert await client.refresh() == newer
+        assert await storage.get_tokens(key) == newer
+
+    async def test_missing_registration_keeps_tokens_another_client_just_saved(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, storage=storage)
+        await client.connect()
+        key = f"{RESOURCE_URL}|default"
+        old = await storage.get_tokens(key)
+        newer = {**old, "access_token": "newer-access", "refresh_token": "newer-refresh"}
+
+        async def no_identity(tokens):
+            # Another process replaced the registration and saved a new pair in the meantime
+            await storage.set_tokens(key, newer)
+            return None
+
+        client._identity_for_tokens = no_identity
+        assert await client.refresh() == newer
+        assert await storage.get_tokens(key) == newer
+
     async def test_invalid_grant_restarts_sign_in(self, fake):
         client = make_client(fake, client_metadata_url=CIMD_URL)
         await client.connect()
@@ -815,6 +851,31 @@ class TestFileStorage:
             for i in range(25):
                 assert await storage.get_tokens(f"p{n}-{i}") is not None
 
+
+    async def test_failed_lock_closes_the_file_and_keeps_the_error(self, tmp_path, monkeypatch):
+        from kinde_sdk.agents import storage as storage_module
+
+        calls = []
+
+        class FakeMsvcrt:
+            LK_LOCK, LK_UNLCK = 1, 0
+
+            @staticmethod
+            def locking(fd, mode, size):
+                calls.append(mode)
+                if mode == FakeMsvcrt.LK_LOCK:
+                    raise OSError("lock timed out")  # what Windows does after about 10 seconds
+
+        closed = []
+        real_close = os.close
+        monkeypatch.setattr(storage_module, "fcntl", None)
+        monkeypatch.setattr(storage_module, "msvcrt", FakeMsvcrt, raising=False)
+        monkeypatch.setattr(storage_module.os, "close", lambda fd: (closed.append(fd), real_close(fd)))
+        storage = FileAgentStorage(str(tmp_path / "tokens.json"))
+        with pytest.raises(OSError, match="lock timed out"):
+            await storage.set_tokens("k", {"access_token": "a"})
+        assert calls == [FakeMsvcrt.LK_LOCK]  # never unlocks a lock it didn't get
+        assert len(closed) == 1
 
 class TestConcurrentSignIn:
     async def test_concurrent_first_requests_sign_in_once(self, fake):

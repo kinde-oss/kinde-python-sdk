@@ -139,17 +139,21 @@ class FileAgentStorage:
         os.makedirs(directory, mode=0o700, exist_ok=True)
         fd = os.open(self.path + ".lock", os.O_RDWR | os.O_CREAT, 0o600)
         try:
+            # Lock before the inner try, so a failed lock (Windows gives up after about 10 seconds)
+            # is never followed by an unlock of a region this process doesn't hold
             if fcntl is not None:
                 fcntl.flock(fd, fcntl.LOCK_EX)
             else:  # pragma: no cover - Windows
                 msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
-            yield
+            try:
+                yield
+            finally:
+                if fcntl is not None:
+                    fcntl.flock(fd, fcntl.LOCK_UN)
+                else:  # pragma: no cover - Windows
+                    os.lseek(fd, 0, os.SEEK_SET)
+                    msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
         finally:
-            if fcntl is not None:
-                fcntl.flock(fd, fcntl.LOCK_UN)
-            else:  # pragma: no cover - Windows
-                os.lseek(fd, 0, os.SEEK_SET)
-                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
             os.close(fd)
 
     def _guard(self) -> asyncio.Lock:

@@ -807,8 +807,8 @@ class KindeAgentClient:
                 return None
             identity = await self._identity_for_tokens(tokens)
             if identity is None:
-                await self.storage.delete_tokens(self._token_key)
-                return None
+                # The registration behind these tokens is gone; keep any newer pair another process saved
+                return await self._drop_tokens_unless_replaced(tokens["refresh_token"])
             data = {
                 "grant_type": "refresh_token",
                 "refresh_token": tokens["refresh_token"],
@@ -827,8 +827,7 @@ class KindeAgentClient:
             if error == "invalid_client":
                 # The registration expired: register again and sign in again
                 await self._drop_registration(identity)
-                await self.storage.delete_tokens(self._token_key)
-                return None
+                return await self._drop_tokens_unless_replaced(tokens["refresh_token"])
             raise TokenRequestError(
                 f"The refresh failed: {error or response.status_code}", error=error, error_description=description
             )

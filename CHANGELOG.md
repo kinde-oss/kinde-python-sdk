@@ -5,6 +5,41 @@ All notable changes to the Kinde Python SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **CI**: Hardened `renovate.json` so Renovate can no longer re-propose bumping the Python
+  `<3.12` `django` pin in `requirements.txt` to Django 6.x (Django 6.0+ requires Python
+  3.12+). Django is a test-only dependency for this SDK (no runtime usage), and the
+  `>=4.2.0,<5.0.0` pin for `python_version < "3.12"` is intentional; the same breaking
+  bump was already rejected once in PR #198 and recurred in PR #200.
+
+## [2.4.0] - 2026-08-20
+
+### Added
+- **Management client**: Regenerated from the latest OpenAPI spec, adding the `directories_api`
+  and `environments_api` namespaces, plus expanded `organizations_api`, `roles_api`, `users_api`
+  and `applications_api` surfaces (including application access roles and billing customer
+  endpoints/models)
+
+### Improved
+- **Documentation**: Refreshed `README_management_client.md` examples to use the namespaced
+  management client accessors (e.g. `client.users_api.get_users()`,
+  `client.environments_api.get_environement_feature_flags()`) instead of the flattened,
+  deprecated top-level methods
+- **CI**: Bumped `actions/setup-python` to v7
+
+## [2.3.1] - 2026-07-06
+
+### Fixed
+- **Dependencies (security)**: Updated `cryptography` (v48, then v49), `requests` (2.33.1, 2.34.0, then 2.34.2 with Python-version-specific pins), and `pytest` (^9.0.3, addressing CVE-2025-71176)
+- **CI**: Fixed the test suite for Django 6 on Python 3.9–3.11 and corrected the `requests` marker for Python 3.9
+
+### Improved
+- **Dependencies**: Upgraded `django` to v6 and `pylint` to v4 for the development toolchain; bumped `actions/checkout` and `codecov/codecov-action` to v7
+- **Versioning**: Consolidated the SDK version into a single source of truth in `kinde_sdk/_version.py`, extracted shared helpers into `_sdk_generator_utils.py`, and made the OpenAPI generator configs derived artifacts via an `SDK_VERSION` placeholder
+- **Housekeeping**: Removed an incidental `poetry.lock` (the project uses setuptools)
+
 ## [2.3.0] - 2026-04-16
 
 ### Added

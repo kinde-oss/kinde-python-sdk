@@ -11,6 +11,7 @@ from kinde_sdk.management.api.business_api import BusinessApi
 from kinde_sdk.management.api.callbacks_api import CallbacksApi
 from kinde_sdk.management.api.connected_apps_api import ConnectedAppsApi
 from kinde_sdk.management.api.connections_api import ConnectionsApi
+from kinde_sdk.management.api.directories_api import DirectoriesApi
 from kinde_sdk.management.api.environment_variables_api import EnvironmentVariablesApi
 from kinde_sdk.management.api.environments_api import EnvironmentsApi
 from kinde_sdk.management.api.feature_flags_api import FeatureFlagsApi

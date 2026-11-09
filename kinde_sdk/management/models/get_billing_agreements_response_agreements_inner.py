@@ -33,8 +33,10 @@ class GetBillingAgreementsResponseAgreementsInner(BaseModel):
     plan_code: Optional[StrictStr] = Field(default=None, description="The plan code the billing customer is subscribed to")
     expires_on: Optional[datetime] = Field(default=None, description="The date the agreement expired (and was no longer active)")
     billing_group_id: Optional[StrictStr] = Field(default=None, description="The friendly id of the billing group this agreement's plan is part of")
+    current_period_start: Optional[datetime] = Field(default=None, description="The start date of the agreement's current billing period. Null when the agreement has no current billing cycle. ")
+    current_period_end: Optional[datetime] = Field(default=None, description="The end date of the agreement's current billing period (typically the next billing date). Null when the agreement has no current billing cycle; may be in the past if cycle roll or provider sync has lagged. ")
     entitlements: Optional[List[GetBillingAgreementsResponseAgreementsInnerEntitlementsInner]] = Field(default=None, description="A list of billing entitlements that is part of this agreement")
-    __properties: ClassVar[List[str]] = ["id", "plan_code", "expires_on", "billing_group_id", "entitlements"]
+    __properties: ClassVar[List[str]] = ["id", "plan_code", "expires_on", "billing_group_id", "current_period_start", "current_period_end", "entitlements"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -82,6 +84,26 @@ class GetBillingAgreementsResponseAgreementsInner(BaseModel):
                 if _item_entitlements:
                     _items.append(_item_entitlements.to_dict())
             _dict['entitlements'] = _items
+        # set to None if expires_on (nullable) is None
+        # and model_fields_set contains the field
+        if self.expires_on is None and "expires_on" in self.model_fields_set:
+            _dict['expires_on'] = None
+
+        # set to None if billing_group_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.billing_group_id is None and "billing_group_id" in self.model_fields_set:
+            _dict['billing_group_id'] = None
+
+        # set to None if current_period_start (nullable) is None
+        # and model_fields_set contains the field
+        if self.current_period_start is None and "current_period_start" in self.model_fields_set:
+            _dict['current_period_start'] = None
+
+        # set to None if current_period_end (nullable) is None
+        # and model_fields_set contains the field
+        if self.current_period_end is None and "current_period_end" in self.model_fields_set:
+            _dict['current_period_end'] = None
+
         return _dict
 
     @classmethod
@@ -98,6 +120,8 @@ class GetBillingAgreementsResponseAgreementsInner(BaseModel):
             "plan_code": obj.get("plan_code"),
             "expires_on": obj.get("expires_on"),
             "billing_group_id": obj.get("billing_group_id"),
+            "current_period_start": obj.get("current_period_start"),
+            "current_period_end": obj.get("current_period_end"),
             "entitlements": [GetBillingAgreementsResponseAgreementsInnerEntitlementsInner.from_dict(_item) for _item in obj["entitlements"]] if obj.get("entitlements") is not None else None
         })
         return _obj

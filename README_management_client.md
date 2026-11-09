@@ -40,7 +40,7 @@ KINDE_MANAGEMENT_CLIENT_SECRET=your-management-client-secret
 ### 2. Basic Usage
 
 ```python
-from kinde_sdk.management.management_client import ManagementClient
+from kinde_sdk.management import ManagementClient
 
 # Initialize the client
 client = ManagementClient(
@@ -50,16 +50,16 @@ client = ManagementClient(
 )
 
 # Get all users
-users = client.get_users()
+users = client.users_api.get_users()
 
 # Get a specific user
-user = client.get_user(id="user_id")
+user = client.users_api.get_user_data(id="user_id")
 
 # Get organizations
-organizations = client.get_organizations()
+organizations = client.organizations_api.get_organizations()
 
-# Get feature flags
-feature_flags = client.get_feature_flags()
+# Get environment feature flags
+feature_flags = client.environments_api.get_environement_feature_flags()
 ```
 
 ### 3. Using with .env file
@@ -67,7 +67,7 @@ feature_flags = client.get_feature_flags()
 ```python
 import os
 from dotenv import load_dotenv
-from kinde_sdk.management.management_client import ManagementClient
+from kinde_sdk.management import ManagementClient
 
 # Load environment variables from .env file
 load_dotenv()
@@ -80,51 +80,27 @@ client = ManagementClient(
 )
 ```
 
-## Available Methods
+## Available APIs
 
-The Management Client automatically generates methods for all available API endpoints:
+Each Management API resource group is exposed as a `<resource>_api` attribute on the client. All methods, parameters, and typed request/response models are generated directly from the Kinde API spec:
 
-### Users
-- `get_users()` - Get all users
-- `get_user(id=user_id)` - Get a specific user
-- `create_user(**data)` - Create a new user
-- `update_user(id=user_id, **data)` - Update a user
-- `delete_user(id=user_id)` - Delete a user
+- `client.users_api` - User management
+- `client.organizations_api` - Organization management
+- `client.roles_api` - Role management
+- `client.permissions_api` - Permission management
+- `client.feature_flags_api` - Feature flag management
+- `client.environments_api` - Environment settings and feature flags
+- `client.apis_api` - API (resource server) management
+- `client.applications_api` - Application management
+- `client.subscribers_api` - Subscriber management
+- `client.properties_api` - Property management
+- `client.webhooks_api` - Webhook management
+- `client.connections_api` - Connection management
+- `client.business_api` - Business information
 
-### Organizations
-- `get_organizations()` - Get all organizations
-- `get_organization(org_code)` - Get a specific organization
-- `create_organization(**data)` - Create a new organization
-- `update_organization(org_code, **data)` - Update an organization
-- `delete_organization(org_code)` - Delete an organization
+For example, `client.users_api.get_users()`, `client.organizations_api.create_organization(...)`, `client.roles_api.get_roles()`.
 
-### Roles
-- `get_roles()` - Get all roles
-- `get_role(role_id)` - Get a specific role
-- `create_role(**data)` - Create a new role
-- `update_role(role_id, **data)` - Update a role
-- `delete_role(role_id)` - Delete a role
-
-### Permissions
-- `get_permissions()` - Get all permissions
-- `get_permission(permission_id)` - Get a specific permission
-- `create_permission(**data)` - Create a new permission
-- `update_permission(permission_id, **data)` - Update a permission
-- `delete_permission(permission_id)` - Delete a permission
-
-### Feature Flags
-- `get_feature_flags()` - Get all feature flags
-- `get_feature_flag(feature_flag_id)` - Get a specific feature flag
-- `create_feature_flag(**data)` - Create a new feature flag
-- `update_feature_flag(feature_flag_id, **data)` - Update a feature flag
-- `delete_feature_flag(feature_flag_id)` - Delete a feature flag
-
-### Other Resources
-- `get_timezones()` - Get available timezones
-- `get_industries()` - Get available industries
-- `get_subscribers()` - Get all subscribers
-- `get_connected_apps()` - Get connected applications
-- `get_api_applications()` - Get API applications
+> **Note**: Flat convenience methods on the client itself (e.g. `client.get_users()`) still work but are **deprecated** and emit a `DeprecationWarning`. Use the resource APIs above for full functionality and proper type hints.
 
 ## Examples
 
@@ -132,89 +108,88 @@ The Management Client automatically generates methods for all available API endp
 
 ```python
 # Get first 10 users
-users = client.get_users(page_size=10)
+users = client.users_api.get_users(page_size=10)
 
 # Get next page
-next_token = users.get('next_token')
-if next_token:
-    next_page = client.get_users(page_size=10, next_token=next_token)
+if users.next_token:
+    next_page = client.users_api.get_users(page_size=10, next_token=users.next_token)
 ```
 
 ### Creating a User
 
 ```python
-user_data = {
-    "profile": {
-        "given_name": "John",
-        "family_name": "Doe"
-    },
-    "identities": [
-        {
-            "type": "email",
-            "details": {
-                "email": "john.doe@example.com"
-            }
-        }
-    ]
-}
+from kinde_sdk.management.models.create_user_request import CreateUserRequest
+from kinde_sdk.management.models.create_user_request_profile import CreateUserRequestProfile
+from kinde_sdk.management.models.create_user_request_identities_inner import CreateUserRequestIdentitiesInner
 
-new_user = client.create_user(**user_data)
+new_user = client.users_api.create_user(
+    create_user_request=CreateUserRequest(
+        profile=CreateUserRequestProfile(given_name="John", family_name="Doe"),
+        identities=[
+            CreateUserRequestIdentitiesInner(
+                type="email",
+                details={"email": "john.doe@example.com"},
+            )
+        ],
+    )
+)
 ```
 
 ### Creating an Organization
 
 ```python
-org_data = {
-    "name": "My Organization",
-    "feature_flags": {
-        "theme": "dark"
-    }
-}
+from kinde_sdk.management.models.create_organization_request import CreateOrganizationRequest
 
-new_org = client.create_organization(**org_data)
+new_org = client.organizations_api.create_organization(
+    create_organization_request=CreateOrganizationRequest(name="My Organization")
+)
 ```
 
 ### Working with Feature Flags
 
 ```python
-# Get all feature flags
-flags = client.get_feature_flags()
+from kinde_sdk.management.models.create_feature_flag_request import CreateFeatureFlagRequest
+
+# Get all environment feature flags
+flags = client.environments_api.get_environement_feature_flags()
 
 # Create a new feature flag
-flag_data = {
-    "name": "new_feature",
-    "type": "boolean",
-    "description": "Enable new feature",
-    "allow_override": True,
-    "default_value": False
-}
-
-new_flag = client.create_feature_flag(**flag_data)
+new_flag = client.feature_flags_api.create_feature_flag(
+    create_feature_flag_request=CreateFeatureFlagRequest(
+        name="new_feature",
+        key="new_feature",
+        type="bool",
+        description="Enable new feature",
+        allow_override_level="env",
+        default_value="false",
+    )
+)
 ```
 
 ## Error Handling
 
-The Management Client includes comprehensive error handling:
+The Management Client includes comprehensive error handling. API errors raise `ApiException` (or a status-specific subclass such as `NotFoundException` or `UnauthorizedException`):
 
 ```python
+from kinde_sdk.management.exceptions import ApiException, NotFoundException
+
 try:
-    users = client.get_users()
-except Exception as e:
-    print(f"Error getting users: {e}")
-    # Handle the error appropriately
+    users = client.users_api.get_users()
+except NotFoundException:
+    print("Resource not found")
+except ApiException as e:
+    print(f"API error ({e.status}): {e.reason}")
 ```
 
 ## Testing
 
-### Quick Test
+### Unit Tests
 
-Run the quick test script to verify everything is working:
+Run the management test suite:
 
 ```bash
-python test_management_client.py
+pytest testv2/testv2_management/
 ```
-
-The script will automatically create a sample `.env` file if one doesn't exist.
 
 ### Full Example
 

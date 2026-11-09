@@ -49,7 +49,7 @@ class SearchApi:
         properties: Optional[Dict[str, Dict[str, List[StrictStr]]]] = None,
         starting_after: Annotated[Optional[StrictStr], Field(description="The ID of the user to start after.")] = None,
         ending_before: Annotated[Optional[StrictStr], Field(description="The ID of the user to end before.")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. One or more of (comma-separated): \"organizations\", \"identities\", \"properties\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -79,7 +79,7 @@ class SearchApi:
         :type starting_after: str
         :param ending_before: The ID of the user to end before.
         :type ending_before: str
-        :param expand: Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".
+        :param expand: Additional data to include in the response. One or more of (comma-separated): \"organizations\", \"identities\", \"properties\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -143,7 +143,7 @@ class SearchApi:
         properties: Optional[Dict[str, Dict[str, List[StrictStr]]]] = None,
         starting_after: Annotated[Optional[StrictStr], Field(description="The ID of the user to start after.")] = None,
         ending_before: Annotated[Optional[StrictStr], Field(description="The ID of the user to end before.")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. One or more of (comma-separated): \"organizations\", \"identities\", \"properties\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -173,7 +173,7 @@ class SearchApi:
         :type starting_after: str
         :param ending_before: The ID of the user to end before.
         :type ending_before: str
-        :param expand: Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".
+        :param expand: Additional data to include in the response. One or more of (comma-separated): \"organizations\", \"identities\", \"properties\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -237,7 +237,7 @@ class SearchApi:
         properties: Optional[Dict[str, Dict[str, List[StrictStr]]]] = None,
         starting_after: Annotated[Optional[StrictStr], Field(description="The ID of the user to start after.")] = None,
         ending_before: Annotated[Optional[StrictStr], Field(description="The ID of the user to end before.")] = None,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. One or more of (comma-separated): \"organizations\", \"identities\", \"properties\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -267,7 +267,7 @@ class SearchApi:
         :type starting_after: str
         :param ending_before: The ID of the user to end before.
         :type ending_before: str
-        :param expand: Specify additional data to retrieve. Use \"organizations\" and/or \"identities\".
+        :param expand: Additional data to include in the response. One or more of (comma-separated): \"organizations\", \"identities\", \"properties\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request

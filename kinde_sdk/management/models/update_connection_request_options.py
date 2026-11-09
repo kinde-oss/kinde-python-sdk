@@ -19,13 +19,13 @@ import pprint
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Any, List, Optional
 from kinde_sdk.management.models.create_connection_request_options_one_of import CreateConnectionRequestOptionsOneOf
-from kinde_sdk.management.models.replace_connection_request_options_one_of1 import ReplaceConnectionRequestOptionsOneOf1
 from kinde_sdk.management.models.update_connection_request_options_one_of import UpdateConnectionRequestOptionsOneOf
+from kinde_sdk.management.models.update_connection_request_options_one_of1 import UpdateConnectionRequestOptionsOneOf1
 from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-UPDATECONNECTIONREQUESTOPTIONS_ONE_OF_SCHEMAS = ["CreateConnectionRequestOptionsOneOf", "ReplaceConnectionRequestOptionsOneOf1", "UpdateConnectionRequestOptionsOneOf"]
+UPDATECONNECTIONREQUESTOPTIONS_ONE_OF_SCHEMAS = ["CreateConnectionRequestOptionsOneOf", "UpdateConnectionRequestOptionsOneOf", "UpdateConnectionRequestOptionsOneOf1"]
 
 class UpdateConnectionRequestOptions(BaseModel):
     """
@@ -35,10 +35,10 @@ class UpdateConnectionRequestOptions(BaseModel):
     oneof_schema_1_validator: Optional[CreateConnectionRequestOptionsOneOf] = None
     # data type: UpdateConnectionRequestOptionsOneOf
     oneof_schema_2_validator: Optional[UpdateConnectionRequestOptionsOneOf] = None
-    # data type: ReplaceConnectionRequestOptionsOneOf1
-    oneof_schema_3_validator: Optional[ReplaceConnectionRequestOptionsOneOf1] = None
-    actual_instance: Optional[Union[CreateConnectionRequestOptionsOneOf, ReplaceConnectionRequestOptionsOneOf1, UpdateConnectionRequestOptionsOneOf]] = None
-    one_of_schemas: Set[str] = { "CreateConnectionRequestOptionsOneOf", "ReplaceConnectionRequestOptionsOneOf1", "UpdateConnectionRequestOptionsOneOf" }
+    # data type: UpdateConnectionRequestOptionsOneOf1
+    oneof_schema_3_validator: Optional[UpdateConnectionRequestOptionsOneOf1] = None
+    actual_instance: Optional[Union[CreateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf1]] = None
+    one_of_schemas: Set[str] = { "CreateConnectionRequestOptionsOneOf", "UpdateConnectionRequestOptionsOneOf", "UpdateConnectionRequestOptionsOneOf1" }
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -71,17 +71,17 @@ class UpdateConnectionRequestOptions(BaseModel):
             error_messages.append(f"Error! Input type `{type(v)}` is not `UpdateConnectionRequestOptionsOneOf`")
         else:
             match += 1
-        # validate data type: ReplaceConnectionRequestOptionsOneOf1
-        if not isinstance(v, ReplaceConnectionRequestOptionsOneOf1):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `ReplaceConnectionRequestOptionsOneOf1`")
+        # validate data type: UpdateConnectionRequestOptionsOneOf1
+        if not isinstance(v, UpdateConnectionRequestOptionsOneOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `UpdateConnectionRequestOptionsOneOf1`")
         else:
             match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in UpdateConnectionRequestOptions with oneOf schemas: CreateConnectionRequestOptionsOneOf, ReplaceConnectionRequestOptionsOneOf1, UpdateConnectionRequestOptionsOneOf. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in UpdateConnectionRequestOptions with oneOf schemas: CreateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf1. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in UpdateConnectionRequestOptions with oneOf schemas: CreateConnectionRequestOptionsOneOf, ReplaceConnectionRequestOptionsOneOf1, UpdateConnectionRequestOptionsOneOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in UpdateConnectionRequestOptions with oneOf schemas: CreateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf1. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -108,19 +108,19 @@ class UpdateConnectionRequestOptions(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # deserialize data into ReplaceConnectionRequestOptionsOneOf1
+        # deserialize data into UpdateConnectionRequestOptionsOneOf1
         try:
-            instance.actual_instance = ReplaceConnectionRequestOptionsOneOf1.from_json(json_str)
+            instance.actual_instance = UpdateConnectionRequestOptionsOneOf1.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into UpdateConnectionRequestOptions with oneOf schemas: CreateConnectionRequestOptionsOneOf, ReplaceConnectionRequestOptionsOneOf1, UpdateConnectionRequestOptionsOneOf. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into UpdateConnectionRequestOptions with oneOf schemas: CreateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf1. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into UpdateConnectionRequestOptions with oneOf schemas: CreateConnectionRequestOptionsOneOf, ReplaceConnectionRequestOptionsOneOf1, UpdateConnectionRequestOptionsOneOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into UpdateConnectionRequestOptions with oneOf schemas: CreateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf1. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -134,7 +134,7 @@ class UpdateConnectionRequestOptions(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], CreateConnectionRequestOptionsOneOf, ReplaceConnectionRequestOptionsOneOf1, UpdateConnectionRequestOptionsOneOf]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], CreateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf, UpdateConnectionRequestOptionsOneOf1]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

@@ -2,5 +2,14 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "description": "Django 6.x dropped support for Python <3.12 (Django only supports 3.12+ as of 6.0). requirements.txt pins django>=4.2.0,<5.0.0 for python_version<3.12 specifically so CI on 3.9-3.11 keeps working; restrict that pin to Django 4.x so Renovate doesn't repeat the breaking django>=6.1 bump for those interpreters (see PR #198 and #200).",
+      "matchManagers": ["pip_requirements"],
+      "matchPackageNames": ["django"],
+      "matchCurrentValue": "/^>=4\\.2\\.0,<5\\.0\\.0$/",
+      "allowedVersions": "<5.0.0"
+    }
   ]
 }

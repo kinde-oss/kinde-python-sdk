@@ -35,8 +35,9 @@ class Identity(BaseModel):
     total_logins: Optional[StrictInt] = None
     name: Optional[StrictStr] = Field(default=None, description="The value of the identity")
     email: Optional[StrictStr] = Field(default=None, description="The associated email of the identity")
+    connection_id: Optional[StrictStr] = Field(default=None, description="The social or enterprise connection ID associated with the identity. Null for email, phone, username, and passkey identities.")
     is_primary: Optional[StrictBool] = Field(default=None, description="Whether the identity is the primary identity for the user")
-    __properties: ClassVar[List[str]] = ["id", "type", "is_confirmed", "created_on", "last_login_on", "total_logins", "name", "email", "is_primary"]
+    __properties: ClassVar[List[str]] = ["id", "type", "is_confirmed", "created_on", "last_login_on", "total_logins", "name", "email", "connection_id", "is_primary"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -77,6 +78,11 @@ class Identity(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if connection_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.connection_id is None and "connection_id" in self.model_fields_set:
+            _dict['connection_id'] = None
+
         # set to None if is_primary (nullable) is None
         # and model_fields_set contains the field
         if self.is_primary is None and "is_primary" in self.model_fields_set:
@@ -102,6 +108,7 @@ class Identity(BaseModel):
             "total_logins": obj.get("total_logins"),
             "name": obj.get("name"),
             "email": obj.get("email"),
+            "connection_id": obj.get("connection_id"),
             "is_primary": obj.get("is_primary")
         })
         return _obj

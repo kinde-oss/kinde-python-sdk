@@ -27,8 +27,8 @@ class UpdateUserRequest(BaseModel):
     """
     UpdateUserRequest
     """ # noqa: E501
-    given_name: Optional[StrictStr] = Field(default=None, description="User's first name.")
-    family_name: Optional[StrictStr] = Field(default=None, description="User's last name.")
+    given_name: Optional[StrictStr] = Field(default=None, description="User's first name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
+    family_name: Optional[StrictStr] = Field(default=None, description="User's last name. If the user is the owner of a family billing customer, this update is also propagated to the corresponding billing customer details. ")
     picture: Optional[StrictStr] = Field(default=None, description="The user's profile picture.")
     is_suspended: Optional[StrictBool] = Field(default=None, description="Whether the user is currently suspended or not.")
     is_password_reset_requested: Optional[StrictBool] = Field(default=None, description="Prompt the user to change their password on next sign in.")

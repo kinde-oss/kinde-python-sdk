@@ -808,6 +808,7 @@ class TestManagementClient(unittest.TestCase):
             'callbacks_api',            # from CallbacksApi
             'connected_apps_api',       # from ConnectedAppsApi
             'connections_api',          # from ConnectionsApi
+            'directories_api',          # from DirectoriesApi (added in updated spec)
             'environment_variables_api',# from EnvironmentVariablesApi
             'environments_api',         # from EnvironmentsApi
             'feature_flags_api',        # from FeatureFlagsApi
@@ -848,6 +849,46 @@ class TestManagementClient(unittest.TestCase):
         assert not hasattr(client, 'users')      # Should be users_api, not users
         assert not hasattr(client, 'apis')       # Should be apis_api, not apis
         assert not hasattr(client, 'api_keys')   # Should be api_keys_api, not api_keys
+
+    @patch('kinde_sdk.management.management_client.Configuration')
+    @patch('kinde_sdk.management.management_client.ApiClient')
+    @patch('kinde_sdk.management.management_client.ManagementTokenManager')
+    def test_every_generated_api_class_is_exposed(self, mock_token_manager_class, mock_api_client_class, mock_config_class):
+        """Guard against regen drift: EVERY *Api class in the generated api module
+        must be auto-exposed under a valid snake_case attribute.
+
+        This is intentionally exhaustive (not a hardcoded list) so that a future
+        spec regeneration adding a new API class — especially one with an acronym
+        that could break snake_case conversion (cf. APIsApi/MFAApi) — is caught
+        automatically without editing this test. We test our dynamic-discovery
+        plumbing, not the generated endpoints themselves.
+        """
+        import inspect as _inspect
+        from kinde_sdk.management import api as _api_module
+
+        mock_token_manager_class.return_value = self.mock_token_manager
+        mock_api_client_class.return_value = self.mock_api_client
+        mock_config_class.return_value = self.mock_configuration
+        self.mock_api_client.rest_client = self.mock_rest_client
+
+        client = ManagementClient(self.domain, self.client_id, self.client_secret)
+
+        api_classes = [
+            name for name, obj in _inspect.getmembers(_api_module)
+            if _inspect.isclass(obj) and name.endswith('Api')
+        ]
+        assert api_classes, "No API classes discovered in kinde_sdk.management.api"
+
+        for class_name in api_classes:
+            attr_name = ManagementClient._class_name_to_snake_case(class_name)
+            # Naming convention: snake_case, ends with _api, no leftover uppercase
+            assert attr_name.endswith('_api'), f"{class_name} -> {attr_name} should end with '_api'"
+            assert attr_name.islower(), f"{class_name} -> {attr_name} should be lowercase"
+            assert '__' not in attr_name, f"{class_name} -> {attr_name} has a doubled underscore"
+            # The client must actually expose it as a live API instance
+            assert hasattr(client, attr_name), f"client.{attr_name} (from {class_name}) should exist"
+            assert hasattr(getattr(client, attr_name), 'api_client'), \
+                f"client.{attr_name} should be an API instance"
 
     # =========================================================================
     # Tests for deprecated wrapper methods (for coverage)

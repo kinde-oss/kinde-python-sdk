@@ -58,8 +58,10 @@ class GetOrganizationResponse(BaseModel):
     is_allow_registrations: Optional[StrictBool] = Field(default=None, description="Deprecated - Use 'is_auto_membership_enabled' instead")
     sender_name: Optional[StrictStr] = Field(default=None, description="The name of the organization that will be used in emails")
     sender_email: Optional[StrictStr] = Field(default=None, description="The email address that will be used in emails. Requires custom SMTP to be set up.")
+    is_suspended: Optional[StrictBool] = Field(default=None, description="Whether the organization is currently suspended or not.")
+    suspended_on: Optional[StrictStr] = Field(default=None, description="The date the organization was suspended in ISO 8601 format. Null if not suspended.")
     billing: Optional[GetOrganizationResponseBilling] = None
-    __properties: ClassVar[List[str]] = ["code", "name", "handle", "is_default", "external_id", "is_auto_membership_enabled", "logo", "logo_dark", "favicon_svg", "favicon_fallback", "allowed_domains", "link_color", "background_color", "button_color", "button_text_color", "link_color_dark", "background_color_dark", "button_text_color_dark", "button_color_dark", "button_border_radius", "card_border_radius", "input_border_radius", "theme_code", "color_scheme", "created_on", "is_allow_registrations", "sender_name", "sender_email", "billing"]
+    __properties: ClassVar[List[str]] = ["code", "name", "handle", "is_default", "external_id", "is_auto_membership_enabled", "logo", "logo_dark", "favicon_svg", "favicon_fallback", "allowed_domains", "link_color", "background_color", "button_color", "button_text_color", "link_color_dark", "background_color_dark", "button_text_color_dark", "button_color_dark", "button_border_radius", "card_border_radius", "input_border_radius", "theme_code", "color_scheme", "created_on", "is_allow_registrations", "sender_name", "sender_email", "is_suspended", "suspended_on", "billing"]
 
     @field_validator('theme_code')
     def theme_code_validate_enum(cls, value):
@@ -247,6 +249,11 @@ class GetOrganizationResponse(BaseModel):
         if self.sender_email is None and "sender_email" in self.model_fields_set:
             _dict['sender_email'] = None
 
+        # set to None if suspended_on (nullable) is None
+        # and model_fields_set contains the field
+        if self.suspended_on is None and "suspended_on" in self.model_fields_set:
+            _dict['suspended_on'] = None
+
         return _dict
 
     @classmethod
@@ -287,6 +294,8 @@ class GetOrganizationResponse(BaseModel):
             "is_allow_registrations": obj.get("is_allow_registrations"),
             "sender_name": obj.get("sender_name"),
             "sender_email": obj.get("sender_email"),
+            "is_suspended": obj.get("is_suspended"),
+            "suspended_on": obj.get("suspended_on"),
             "billing": GetOrganizationResponseBilling.from_dict(obj["billing"]) if obj.get("billing") is not None else None
         })
         return _obj

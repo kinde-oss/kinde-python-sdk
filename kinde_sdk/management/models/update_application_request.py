@@ -18,7 +18,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -33,7 +33,15 @@ class UpdateApplicationRequest(BaseModel):
     redirect_uris: Optional[List[StrictStr]] = Field(default=None, description="The application's redirect uris.")
     login_uri: Optional[StrictStr] = Field(default=None, description="The default login route for resolving session issues.")
     homepage_uri: Optional[StrictStr] = Field(default=None, description="The homepage link to your application.")
-    __properties: ClassVar[List[str]] = ["name", "language_key", "logout_uris", "redirect_uris", "login_uri", "homepage_uri"]
+    is_allow_faceless_auth: Optional[StrictBool] = Field(default=None, description="Bypass Kinde's sign up and sign in screens and use your own design.")
+    is_ask_for_name: Optional[StrictBool] = Field(default=None, description="Show fields to collect name details from users signing up with email or phone.")
+    has_marketing_consent: Optional[StrictBool] = Field(default=None, description="Show a marketing consent checkbox on the sign-up page.")
+    has_sign_in_link_on_sign_up_page: Optional[StrictBool] = Field(default=None, description="Allow users to switch to the login page from the sign-up page.")
+    has_register_link_on_sign_in_page: Optional[StrictBool] = Field(default=None, description="Allow users to switch to the register page from the sign-in page.")
+    has_sign_in_with_sso_button: Optional[StrictBool] = Field(default=None, description="When home realm discovery is configured, users see a button to prompt them to use their work email.")
+    use_gravatar_fallback: Optional[StrictBool] = Field(default=None, description="Use a backup image if a profile picture is not available.")
+    is_access_control_enabled: Optional[StrictBool] = Field(default=None, description="Whether role-based access control is enforced for the application. At least one allowed role must be configured before enabling.")
+    __properties: ClassVar[List[str]] = ["name", "language_key", "logout_uris", "redirect_uris", "login_uri", "homepage_uri", "is_allow_faceless_auth", "is_ask_for_name", "has_marketing_consent", "has_sign_in_link_on_sign_up_page", "has_register_link_on_sign_in_page", "has_sign_in_with_sso_button", "use_gravatar_fallback", "is_access_control_enabled"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -91,7 +99,15 @@ class UpdateApplicationRequest(BaseModel):
             "logout_uris": obj.get("logout_uris"),
             "redirect_uris": obj.get("redirect_uris"),
             "login_uri": obj.get("login_uri"),
-            "homepage_uri": obj.get("homepage_uri")
+            "homepage_uri": obj.get("homepage_uri"),
+            "is_allow_faceless_auth": obj.get("is_allow_faceless_auth"),
+            "is_ask_for_name": obj.get("is_ask_for_name"),
+            "has_marketing_consent": obj.get("has_marketing_consent"),
+            "has_sign_in_link_on_sign_up_page": obj.get("has_sign_in_link_on_sign_up_page"),
+            "has_register_link_on_sign_in_page": obj.get("has_register_link_on_sign_in_page"),
+            "has_sign_in_with_sso_button": obj.get("has_sign_in_with_sso_button"),
+            "use_gravatar_fallback": obj.get("use_gravatar_fallback"),
+            "is_access_control_enabled": obj.get("is_access_control_enabled")
         })
         return _obj
 

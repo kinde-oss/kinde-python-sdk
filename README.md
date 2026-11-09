@@ -85,13 +85,12 @@ The FastAPI integration automatically provides these routes:
 #### Protected Routes
 
 ```python
-from fastapi import Depends
-from kinde_sdk.management.kinde_api_client import KindeApiClient
+from fastapi import HTTPException
 
-@router.get("/protected")
-async def protected_route(
-    kinde_client: KindeApiClient = Depends(get_kinde_client)
-):
+@app.get("/protected")
+async def protected_route():
+    if not kinde_oauth.is_authenticated():
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return {"message": "This is a protected route"}
 ```
 
@@ -186,9 +185,6 @@ For both FastAPI and Flask integrations:
 5. Implement proper session management
 6. Consider implementing CSRF protection
 
-After initializing both OAuth and KindeApiClient use the following fn to get proper urls:
-`api_client.fetch_openid_configuration(oauth)`
-
 # Kinde Management API Module
 
 This module provides a client for the Kinde Management API, allowing you to manage users, organizations, roles, permissions, and feature flags programmatically.
@@ -208,127 +204,190 @@ The Management API client requires:
 
 ### Initializing the client
 
-You can access the Management API through the existing `KindeApiClient`:
+Create a `ManagementClient` with your M2M application's client credentials. It
+authenticates automatically using the `client_credentials` grant — no callback
+URL or grant type is required.
 
 ```python
-from kinde_sdk.management.kinde_api_client import KindeApiClient
-from kinde_sdk.enums import GrantType
+from kinde_sdk.management import ManagementClient
 
-# Initialize the client with client credentials
-client = KindeApiClient(
+# Initialize the client with client credentials (M2M application)
+management = ManagementClient(
     domain="your-domain.kinde.com",
-    callback_url="https://your-app.com/callback",
     client_id="your-client-id",
-    client_secret="your-client-secret", # Required for management API
-    grant_type=GrantType.CLIENT_CREDENTIALS,
+    client_secret="your-client-secret",
 )
-
-# Get the management client
-management = client.get_management()
 ```
+
+Each API group is exposed as a `<resource>_api` attribute, e.g.
+`management.users_api`, `management.organizations_api`, `management.roles_api`.
+The examples below use these resource APIs. Note that the client is
+**synchronous** — calls are not awaited.
 
 ### Managing Users
 
 ```python
+from kinde_sdk.management.models.create_user_request import CreateUserRequest
+from kinde_sdk.management.models.create_user_request_profile import CreateUserRequestProfile
+from kinde_sdk.management.models.create_user_request_identities_inner import CreateUserRequestIdentitiesInner
+from kinde_sdk.management.models.update_user_request import UpdateUserRequest
+
 # List users
-users = management.get_users(page_size=10)
+users = management.users_api.get_users(page_size=10)
 
 # Get a specific user
-user = management.get_user(user_id="user_id")
+user = management.users_api.get_user_data(id="user_id")
 
 # Create a new user
-new_user = management.create_user(
-    first_name="John",
-    last_name="Doe",
-    email="john.doe@example.com"
+new_user = management.users_api.create_user(
+    create_user_request=CreateUserRequest(
+        profile=CreateUserRequestProfile(given_name="John", family_name="Doe"),
+        identities=[
+            CreateUserRequestIdentitiesInner(
+                type="email",
+                details={"email": "john.doe@example.com"},
+            )
+        ],
+    )
 )
 
 # Update a user
-updated_user = management.update_user(
-    user_id="user_id",
-    first_name="John",
-    last_name="Smith"
+updated_user = management.users_api.update_user(
+    id="user_id",
+    update_user_request=UpdateUserRequest(given_name="John", family_name="Smith"),
 )
 
 # Delete a user
-result = management.delete_user(user_id="user_id")
+result = management.users_api.delete_user(id="user_id")
 ```
 
 ### Managing Organizations
 
 ```python
+from kinde_sdk.management.models.create_organization_request import CreateOrganizationRequest
+from kinde_sdk.management.models.update_organization_request import UpdateOrganizationRequest
+
 # List organizations
-organizations = management.get_organizations(page_size=10)
+organizations = management.organizations_api.get_organizations(page_size=10)
 
 # Get a specific organization
-org = management.get_organization(org_code="org_code")
+org = management.organizations_api.get_organization(code="org_code")
 
 # Create a new organization
-new_org = management.create_organization(
-    name="Example Organization"
+new_org = management.organizations_api.create_organization(
+    create_organization_request=CreateOrganizationRequest(name="Example Organization")
 )
 
 # Update an organization
-updated_org = management.update_organization(
+updated_org = management.organizations_api.update_organization(
     org_code="org_code",
-    name="Updated Organization Name"
+    update_organization_request=UpdateOrganizationRequest(name="Updated Organization Name"),
 )
 
 # Delete an organization
-result = management.delete_organization(org_code="org_code")
+result = management.organizations_api.delete_organization(org_code="org_code")
+```
+
+### Managing Organization Invites
+
+```python
+from kinde_sdk.management.models.create_organization_invite_request import CreateOrganizationInviteRequest
+
+# List invites for an organization
+invites = management.organizations_api.get_organization_invites(org_code="org_code")
+
+# Create an invite
+new_invite = management.organizations_api.create_organization_invite(
+    org_code="org_code",
+    create_organization_invite_request=CreateOrganizationInviteRequest(
+        email="invitee@example.com",
+        first_name="Jane",
+        last_name="Doe",
+        roles=["member"],  # role keys to assign on acceptance
+    ),
+)
+
+# Get a single invite
+invite = management.organizations_api.get_organization_invite(
+    org_code="org_code", invite_code="invite_code"
+)
+
+# Delete an invite
+result = management.organizations_api.delete_organization_invite(
+    org_code="org_code", invite_code="invite_code"
+)
 ```
 
 ### Managing Roles
 
 ```python
+from kinde_sdk.management.models.create_role_request import CreateRoleRequest
+from kinde_sdk.management.models.update_roles_request import UpdateRolesRequest
+
 # List roles
-roles = management.get_roles(page_size=10)
+roles = management.roles_api.get_roles(page_size=10)
 
 # Get a specific role
-role = management.get_role(role_id="role_id")
+role = management.roles_api.get_role(role_id="role_id")
 
 # Create a new role
-new_role = management.create_role(
-    name="Admin",
-    description="Administrator role",
-    key="admin_role"
+new_role = management.roles_api.create_role(
+    create_role_request=CreateRoleRequest(
+        name="Admin",
+        description="Administrator role",
+        key="admin_role",
+    )
 )
 
 # Update a role
-updated_role = management.update_role(
+updated_role = management.roles_api.update_roles(
     role_id="role_id",
-    name="Super Admin",
-    description="Super administrator role"
+    update_roles_request=UpdateRolesRequest(
+        name="Super Admin",
+        key="admin_role",
+        description="Super administrator role",
+    ),
 )
 
 # Delete a role
-result = management.delete_role(role_id="role_id")
+result = management.roles_api.delete_role(role_id="role_id")
 ```
 
 ### Managing Feature Flags
 
+Feature flags are created against your business and read back per organization
+or environment.
+
 ```python
-# List feature flags
-flags = management.get_feature_flags(page_size=10)
+from kinde_sdk.management.models.create_feature_flag_request import CreateFeatureFlagRequest
+
+# List feature flags for an organization
+flags = management.organizations_api.get_organization_feature_flags(org_code="org_code")
 
 # Create a new feature flag
-new_flag = management.create_feature_flag(
-    name="Dark Mode",
-    key="dark_mode",
-    description="Enable dark mode theme",
-    type="boolean",
-    default_value=False
+new_flag = management.feature_flags_api.create_feature_flag(
+    create_feature_flag_request=CreateFeatureFlagRequest(
+        name="Dark Mode",
+        key="dark_mode",
+        description="Enable dark mode theme",
+        type="bool",
+        allow_override_level="env",
+        default_value="false",
+    )
 )
 
-# Update a feature flag
-updated_flag = management.update_feature_flag(
-    feature_flag_id="flag_id",
+# Update a feature flag (identified by its key)
+updated_flag = management.feature_flags_api.update_feature_flag(
+    feature_flag_key="dark_mode",
     name="Dark Theme",
-    description="Enable dark theme for the application"
+    description="Enable dark theme for the application",
+    type="bool",
+    allow_override_level="env",
+    default_value="false",
 )
 
 # Delete a feature flag
-result = management.delete_feature_flag(feature_flag_id="flag_id")
+result = management.feature_flags_api.delete_feature_flag(feature_flag_key="dark_mode")
 ```
 
 ## Token Management
@@ -346,7 +405,7 @@ All API methods can raise exceptions for HTTP errors. It's recommended to wrap c
 
 ```python
 try:
-    user = management.get_user(user_id="non_existent_id")
+    user = management.users_api.get_user_data(id="non_existent_id")
 except Exception as e:
     print(f"Error: {e}")
 ```
@@ -354,215 +413,102 @@ except Exception as e:
 Complete example given below
 
 ```python
-from kinde_sdk.management.kinde_api_client import KindeApiClient
-from kinde_sdk.enums import GrantType
+from kinde_sdk.management import ManagementClient
+from kinde_sdk.management.models.create_user_request import CreateUserRequest
+from kinde_sdk.management.models.create_user_request_profile import CreateUserRequestProfile
+from kinde_sdk.management.models.create_user_request_identities_inner import CreateUserRequestIdentitiesInner
+from kinde_sdk.management.models.create_organization_request import CreateOrganizationRequest
+
 
 def main():
-    """Main function demonstrating Management API usage."""
-    # Initialize the Kinde client with management capabilities
-    client = KindeApiClient(
-        domain="your-domain.kinde.com",  # Replace with your Kinde domain
-        callback_url="https://your-app.com/callback",  # Your auth callback URL
-        client_id="your-client-id",  # Your client ID
-        client_secret="your-client-secret",  # Required for management API
-        grant_type=GrantType.CLIENT_CREDENTIALS,  # Use client credentials for management API
+    """Demonstrates Management API usage with the synchronous ManagementClient."""
+    # Initialize with your M2M application's client credentials.
+    management = ManagementClient(
+        domain="your-domain.kinde.com",      # Replace with your Kinde domain
+        client_id="your-client-id",          # Your M2M client ID
+        client_secret="your-client-secret",  # Your M2M client secret
     )
 
-    # Get the management client
-    management = client.get_management()
-    
+    user_id = None
+    org_code = None
+
     # Example 1: List users
     print("Example 1: List users")
     print("-" * 50)
-    users_result = management.get_users(page_size=10)
-    if users_result and "users" in users_result:
-        users = users_result["users"]
-        print(f"Total users: {len(users)}")
-        for user in users:
-            print(f"User: {user.get('first_name', '')} {user.get('last_name', '')} ({user.get('email', '')})")
-    else:
-        print("No users found or error occurred")
+    users_result = management.users_api.get_users(page_size=10)
+    for user in users_result.users or []:
+        print(f"User: {user.first_name} {user.last_name} ({user.email})")
     print()
 
     # Example 2: Create a new user
     print("Example 2: Create a new user")
     print("-" * 50)
     try:
-        new_user = management.create_user(
-            first_name="Test",
-            last_name="User",
-            email="testuser@example.com",
+        new_user = management.users_api.create_user(
+            create_user_request=CreateUserRequest(
+                profile=CreateUserRequestProfile(given_name="Test", family_name="User"),
+                identities=[
+                    CreateUserRequestIdentitiesInner(
+                        type="email",
+                        details={"email": "testuser@example.com"},
+                    )
+                ],
+            )
         )
-        print(f"User created: {new_user}")
-        
-        # Store the user ID for later examples
-        user_id = new_user.get("id")
-        print(f"User ID: {user_id}")
+        user_id = new_user.id
+        print(f"User created: {user_id}")
     except Exception as e:
         print(f"Error creating user: {e}")
     print()
 
-    # Example 3: Update a user
-    print("Example 3: Update a user")
+    # Example 3: List organizations
+    print("Example 3: List organizations")
     print("-" * 50)
-    try:
-        # Use the user ID from Example 2
-        if 'user_id' in locals():
-            updated_user = management.update_user(user_id,
-                first_name="Updated",
-                last_name="User"
-            )
-            print(f"User updated: {updated_user}")
-        else:
-            print("No user ID available for update")
-    except Exception as e:
-        print(f"Error updating user: {e}")
+    orgs_result = management.organizations_api.get_organizations(page_size=10)
+    for org in orgs_result.organizations or []:
+        print(f"Organization: {org.name} (Code: {org.code})")
     print()
 
-    # Example 4: List organizations
-    print("Example 4: List organizations")
-    print("-" * 50)
-    orgs_result = management.get_organizations(page_size=10)
-    if orgs_result and "organizations" in orgs_result:
-        orgs = orgs_result["organizations"]
-        print(f"Total organizations: {len(orgs)}")
-        for org in orgs:
-            print(f"Organization: {org.get('name', '')} (Code: {org.get('code', '')})")
-    else:
-        print("No organizations found or error occurred")
-    print()
-
-    # Example 5: Create a new organization
-    print("Example 5: Create a new organization")
+    # Example 4: Create a new organization
+    print("Example 4: Create a new organization")
     print("-" * 50)
     try:
-        new_org = management.create_organization(
-            name="Test Organization"
+        new_org = management.organizations_api.create_organization(
+            create_organization_request=CreateOrganizationRequest(name="Test Organization")
         )
-        print(f"Organization created: {new_org}")
-        
-        # Store the org code for later examples
-        org_code = new_org.get("code")
-        print(f"Organization Code: {org_code}")
+        org_code = new_org.organization.code
+        print(f"Organization created: {org_code}")
     except Exception as e:
         print(f"Error creating organization: {e}")
     print()
 
-    # Example 6: Update an organization
-    print("Example 6: Update an organization")
-    print("-" * 50)
-    try:
-        # Use the org code from Example 5
-        if 'org_code' in locals():
-            updated_org = management.update_organization(org_code,
-                name="Updated Organization"
-            )
-            print(f"Organization updated: {updated_org}")
-        else:
-            print("No organization code available for update")
-    except Exception as e:
-        print(f"Error updating organization: {e}")
-    print()
-
-    # Example 7: List roles
-    print("Example 7: List roles")
-    print("-" * 50)
-    roles_result = management.get_roles(page_size=10)
-    if roles_result and "roles" in roles_result:
-        roles = roles_result["roles"]
-        print(f"Total roles: {len(roles)}")
-        for role in roles:
-            print(f"Role: {role.get('name', '')} (Key: {role.get('key', '')})")
-    else:
-        print("No roles found or error occurred")
-    print()
-
-    # Example 8: Create a new role
-    print("Example 8: Create a new role")
-    print("-" * 50)
-    try:
-        new_role = management.create_role(
-            name="Test Role",
-            description="A test role created via the Management API",
-            key="test_role"
-        )
-        print(f"Role created: {new_role}")
-        
-        # Store the role ID for later examples
-        role_id = new_role.get("id")
-        print(f"Role ID: {role_id}")
-    except Exception as e:
-        print(f"Error creating role: {e}")
-    print()
-
-    # Example 9: Get feature flags
-    print("Example 9: Get feature flags")
-    print("-" * 50)
-    flags_result = management.get_feature_flags(page_size=10)
-    if flags_result and "feature_flags" in flags_result:
-        flags = flags_result["feature_flags"]
-        print(f"Total feature flags: {len(flags)}")
-        for flag in flags:
-            print(f"Flag: {flag.get('name', '')} (Key: {flag.get('key', '')})")
-    else:
-        print("No feature flags found or error occurred")
-    print()
-
-    # Example 10: Create a new feature flag
-    print("Example 10: Create a new feature flag")
-    print("-" * 50)
-    try:
-        new_flag = management.create_feature_flag(
-            name="Test Flag",
-            key="test_flag",
-            description="A test feature flag created via the Management API",
-            type="boolean",
-            default_value=False
-        )
-        print(f"Feature flag created: {new_flag}")
-        
-        # Store the flag ID for later examples
-        flag_id = new_flag.get("id")
-        print(f"Flag ID: {flag_id}")
-    except Exception as e:
-        print(f"Error creating feature flag: {e}")
-    print()
-
-    # Example 11: Clean up (delete created resources)
-    print("Example 11: Clean up")
-    print("-" * 50)
-    
-    # Delete the feature flag (if created)
-    if 'flag_id' in locals():
+    # Example 5: List organization invites
+    if org_code:
+        print("Example 5: List organization invites")
+        print("-" * 50)
         try:
-            result = management.delete_feature_flag(flag_id)
-            print(f"Feature flag deleted: {result}")
+            invites = management.organizations_api.get_organization_invites(org_code=org_code)
+            print(f"Invites: {invites}")
         except Exception as e:
-            print(f"Error deleting feature flag: {e}")
-    
-    # Delete the role (if created)
-    if 'role_id' in locals():
+            print(f"Error listing invites: {e}")
+        print()
+
+    # Example 6: Clean up created resources
+    print("Example 6: Clean up")
+    print("-" * 50)
+    if org_code:
         try:
-            result = management.delete_role(role_id)
-            print(f"Role deleted: {result}")
-        except Exception as e:
-            print(f"Error deleting role: {e}")
-    
-    # Delete the organization (if created)
-    if 'org_code' in locals():
-        try:
-            result = management.delete_organization(org_code)
-            print(f"Organization deleted: {result}")
+            management.organizations_api.delete_organization(org_code=org_code)
+            print("Organization deleted")
         except Exception as e:
             print(f"Error deleting organization: {e}")
-    
-    # Delete the user (if created)
-    if 'user_id' in locals():
+    if user_id:
         try:
-            result = management.delete_user(user_id)
-            print(f"User deleted: {result}")
+            management.users_api.delete_user(id=user_id)
+            print("User deleted")
         except Exception as e:
             print(f"Error deleting user: {e}")
+
 
 if __name__ == "__main__":
     main()

@@ -39,7 +39,9 @@ class CreateConnectionRequestOptionsOneOf1(BaseModel):
     is_create_missing_user: Optional[StrictBool] = Field(default=None, description="Create a user record in Kinde if the user signing in does not exist.")
     is_force_show_sso_button: Optional[StrictBool] = Field(default=None, description="Force showing the SSO button for this connection.")
     upstream_params: Optional[Dict[str, Any]] = Field(default=None, description="Additional upstream parameters to pass to the identity provider.")
-    __properties: ClassVar[List[str]] = ["client_id", "client_secret", "home_realm_domains", "entra_id_domain", "is_use_common_endpoint", "is_sync_user_profile_on_login", "is_retrieve_provider_user_groups", "is_extended_attributes_required", "is_auto_join_organization_enabled", "is_create_missing_user", "is_force_show_sso_button", "upstream_params"]
+    is_use_custom_domain: Optional[StrictBool] = Field(default=None, description="Use custom domain callback URL.")
+    is_trusted: Optional[StrictBool] = Field(default=None, description="Trust this connection for account merging.")
+    __properties: ClassVar[List[str]] = ["client_id", "client_secret", "home_realm_domains", "entra_id_domain", "is_use_common_endpoint", "is_sync_user_profile_on_login", "is_retrieve_provider_user_groups", "is_extended_attributes_required", "is_auto_join_organization_enabled", "is_create_missing_user", "is_force_show_sso_button", "upstream_params", "is_use_custom_domain", "is_trusted"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -103,7 +105,9 @@ class CreateConnectionRequestOptionsOneOf1(BaseModel):
             "is_auto_join_organization_enabled": obj.get("is_auto_join_organization_enabled"),
             "is_create_missing_user": obj.get("is_create_missing_user"),
             "is_force_show_sso_button": obj.get("is_force_show_sso_button"),
-            "upstream_params": obj.get("upstream_params")
+            "upstream_params": obj.get("upstream_params"),
+            "is_use_custom_domain": obj.get("is_use_custom_domain"),
+            "is_trusted": obj.get("is_trusted")
         })
         return _obj
 

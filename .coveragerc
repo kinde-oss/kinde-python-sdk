@@ -9,19 +9,12 @@ omit =
     # Generated OpenAPI files
     kinde_sdk/management/api/*
     kinde_sdk/management/models/*
-    kinde_sdk/management/schemas.py
     kinde_sdk/management/rest.py
     kinde_sdk/management/api_client.py
     kinde_sdk/management/configuration.py
     kinde_sdk/management/api_response.py
     kinde_sdk/management/exceptions.py
-    kinde_sdk/management/model_utils.py
     kinde_sdk/management/__init__.py
-    
-    # Legacy generated files (if they exist)
-    kinde_sdk/apis/*
-    kinde_sdk/model/*
-    kinde_sdk/paths/*
     
     # Test files
     test/*

@@ -33,6 +33,7 @@ class GetEnvironmentResponseEnvironment(BaseModel):
     name: Optional[StrictStr] = Field(default=None, description="The environment's name.")
     hotjar_site_id: Optional[StrictStr] = Field(default=None, description="Your HotJar site ID.")
     google_analytics_tag: Optional[StrictStr] = Field(default=None, description="Your Google Analytics tag.")
+    contentsquare_tag_id: Optional[StrictStr] = Field(default=None, description="Your Contentsquare Tag ID.")
     is_default: Optional[StrictBool] = Field(default=None, description="Whether the environment is the default. Typically this is your production environment.")
     is_live: Optional[StrictBool] = Field(default=None, description="Whether the environment is live.")
     kinde_domain: Optional[StrictStr] = Field(default=None, description="Your domain on Kinde")
@@ -55,7 +56,7 @@ class GetEnvironmentResponseEnvironment(BaseModel):
     theme_code: Optional[StrictStr] = Field(default=None, description="Whether the environment is forced into light mode, dark mode or user preference")
     color_scheme: Optional[StrictStr] = Field(default=None, description="The color scheme for the environment used for meta tags based on the theme code")
     created_on: Optional[StrictStr] = Field(default=None, description="Date of environment creation in ISO 8601 format.")
-    __properties: ClassVar[List[str]] = ["code", "name", "hotjar_site_id", "google_analytics_tag", "is_default", "is_live", "kinde_domain", "custom_domain", "logo", "logo_dark", "favicon_svg", "favicon_fallback", "link_color", "background_color", "button_color", "button_text_color", "link_color_dark", "background_color_dark", "button_text_color_dark", "button_color_dark", "button_border_radius", "card_border_radius", "input_border_radius", "theme_code", "color_scheme", "created_on"]
+    __properties: ClassVar[List[str]] = ["code", "name", "hotjar_site_id", "google_analytics_tag", "contentsquare_tag_id", "is_default", "is_live", "kinde_domain", "custom_domain", "logo", "logo_dark", "favicon_svg", "favicon_fallback", "link_color", "background_color", "button_color", "button_text_color", "link_color_dark", "background_color_dark", "button_text_color_dark", "button_color_dark", "button_border_radius", "card_border_radius", "input_border_radius", "theme_code", "color_scheme", "created_on"]
 
     @field_validator('theme_code')
     def theme_code_validate_enum(cls, value):
@@ -149,6 +150,11 @@ class GetEnvironmentResponseEnvironment(BaseModel):
         # and model_fields_set contains the field
         if self.google_analytics_tag is None and "google_analytics_tag" in self.model_fields_set:
             _dict['google_analytics_tag'] = None
+
+        # set to None if contentsquare_tag_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.contentsquare_tag_id is None and "contentsquare_tag_id" in self.model_fields_set:
+            _dict['contentsquare_tag_id'] = None
 
         # set to None if custom_domain (nullable) is None
         # and model_fields_set contains the field
@@ -246,6 +252,7 @@ class GetEnvironmentResponseEnvironment(BaseModel):
             "name": obj.get("name"),
             "hotjar_site_id": obj.get("hotjar_site_id"),
             "google_analytics_tag": obj.get("google_analytics_tag"),
+            "contentsquare_tag_id": obj.get("contentsquare_tag_id"),
             "is_default": obj.get("is_default"),
             "is_live": obj.get("is_live"),
             "kinde_domain": obj.get("kinde_domain"),

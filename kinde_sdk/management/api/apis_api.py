@@ -2615,7 +2615,7 @@ class APIsApi:
     @validate_call
     def get_apis(
         self,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"scopes\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"scopes\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2633,7 +2633,7 @@ class APIsApi:
 
         Returns a list of your APIs. The APIs are returned sorted by name.  <div>   <code>read:apis</code> </div> 
 
-        :param expand: Specify additional data to retrieve. Use \"scopes\".
+        :param expand: Additional data to include in the response. Allowed value: \"scopes\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -2685,7 +2685,7 @@ class APIsApi:
     @validate_call
     def get_apis_with_http_info(
         self,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"scopes\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"scopes\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2703,7 +2703,7 @@ class APIsApi:
 
         Returns a list of your APIs. The APIs are returned sorted by name.  <div>   <code>read:apis</code> </div> 
 
-        :param expand: Specify additional data to retrieve. Use \"scopes\".
+        :param expand: Additional data to include in the response. Allowed value: \"scopes\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
@@ -2755,7 +2755,7 @@ class APIsApi:
     @validate_call
     def get_apis_without_preload_content(
         self,
-        expand: Annotated[Optional[StrictStr], Field(description="Specify additional data to retrieve. Use \"scopes\".")] = None,
+        expand: Annotated[Optional[StrictStr], Field(description="Additional data to include in the response. Allowed value: \"scopes\".")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2773,7 +2773,7 @@ class APIsApi:
 
         Returns a list of your APIs. The APIs are returned sorted by name.  <div>   <code>read:apis</code> </div> 
 
-        :param expand: Specify additional data to retrieve. Use \"scopes\".
+        :param expand: Additional data to include in the response. Allowed value: \"scopes\".
         :type expand: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request

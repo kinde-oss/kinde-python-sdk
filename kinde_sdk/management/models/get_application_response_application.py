@@ -35,7 +35,15 @@ class GetApplicationResponseApplication(BaseModel):
     login_uri: Optional[StrictStr] = Field(default=None, description="The default login route for resolving session issues.")
     homepage_uri: Optional[StrictStr] = Field(default=None, description="The homepage link to your application.")
     has_cancel_button: Optional[StrictBool] = Field(default=None, description="Whether the application has a cancel button to allow users to exit the auth flow [Beta].")
-    __properties: ClassVar[List[str]] = ["id", "name", "type", "client_id", "client_secret", "login_uri", "homepage_uri", "has_cancel_button"]
+    is_access_control_enabled: Optional[StrictBool] = Field(default=None, description="Whether role-based access control is enforced for the application. Always false for application types that do not support connections. ")
+    is_allow_faceless_auth: Optional[StrictBool] = Field(default=None, description="Bypass Kinde's sign up and sign in screens and use your own design.")
+    is_ask_for_name: Optional[StrictBool] = Field(default=None, description="Show fields to collect name details from users signing up with email or phone.")
+    has_marketing_consent: Optional[StrictBool] = Field(default=None, description="Show a marketing consent checkbox on the sign-up page.")
+    has_sign_in_link_on_sign_up_page: Optional[StrictBool] = Field(default=None, description="Allow users to switch to the login page from the sign-up page.")
+    has_register_link_on_sign_in_page: Optional[StrictBool] = Field(default=None, description="Allow users to switch to the register page from the sign-in page.")
+    has_sign_in_with_sso_button: Optional[StrictBool] = Field(default=None, description="When home realm discovery is configured, users see a button to prompt them to use their work email.")
+    use_gravatar_fallback: Optional[StrictBool] = Field(default=None, description="Use a backup image if a profile picture is not available.")
+    __properties: ClassVar[List[str]] = ["id", "name", "type", "client_id", "client_secret", "login_uri", "homepage_uri", "has_cancel_button", "is_access_control_enabled", "is_allow_faceless_auth", "is_ask_for_name", "has_marketing_consent", "has_sign_in_link_on_sign_up_page", "has_register_link_on_sign_in_page", "has_sign_in_with_sso_button", "use_gravatar_fallback"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
@@ -43,8 +51,8 @@ class GetApplicationResponseApplication(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['m2m', 'reg', 'spa']):
-            raise ValueError("must be one of enum values ('m2m', 'reg', 'spa')")
+        if value not in set(['m2m', 'reg', 'spa', 'device']):
+            raise ValueError("must be one of enum values ('m2m', 'reg', 'spa', 'device')")
         return value
 
     model_config = ConfigDict(
@@ -105,7 +113,15 @@ class GetApplicationResponseApplication(BaseModel):
             "client_secret": obj.get("client_secret"),
             "login_uri": obj.get("login_uri"),
             "homepage_uri": obj.get("homepage_uri"),
-            "has_cancel_button": obj.get("has_cancel_button")
+            "has_cancel_button": obj.get("has_cancel_button"),
+            "is_access_control_enabled": obj.get("is_access_control_enabled"),
+            "is_allow_faceless_auth": obj.get("is_allow_faceless_auth"),
+            "is_ask_for_name": obj.get("is_ask_for_name"),
+            "has_marketing_consent": obj.get("has_marketing_consent"),
+            "has_sign_in_link_on_sign_up_page": obj.get("has_sign_in_link_on_sign_up_page"),
+            "has_register_link_on_sign_in_page": obj.get("has_register_link_on_sign_in_page"),
+            "has_sign_in_with_sso_button": obj.get("has_sign_in_with_sso_button"),
+            "use_gravatar_fallback": obj.get("use_gravatar_fallback")
         })
         return _obj
 

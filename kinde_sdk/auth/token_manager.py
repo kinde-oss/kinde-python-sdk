@@ -1,6 +1,5 @@
 import time
 import requests
-from kinde_sdk.core.exceptions import KindeTokenPersistenceException
 import threading
 import logging
 from typing import Any, Dict, Optional
@@ -134,12 +133,8 @@ class TokenManager:
             # again. Refresh tokens rotate, so storage must not keep the old one: if
             # this save fails and a refresh below fails too, a restart could not
             # recover the session. A failed save keeps the refreshed tokens in memory.
-            save_error = None
             if self._save_pending:
-                try:
-                    self._save_refreshed_tokens()
-                except KindeTokenPersistenceException as e:
-                    save_error = e
+                self._save_refreshed_tokens()
 
             # Check if token is expired
             # if time.time() >= self.tokens["expires_at"]:
@@ -159,23 +154,20 @@ class TokenManager:
                 else:
                     raise ValueError("Access token expired and no refresh token available")
 
-            if save_error is not None:
-                raise save_error
             return self.tokens["access_token"]
 
     def _save_refreshed_tokens(self) -> None:
-        """Save the tokens from a refresh. If saving fails, the refreshed tokens are kept
-        and the save is retried on the next call, without refreshing again."""
+        """Save the tokens from a refresh. If saving fails, log it and keep the refreshed
+        tokens: they are still valid, and the save is retried on the next call without
+        refreshing again."""
         if self.on_tokens_refreshed:
             try:
                 self.on_tokens_refreshed()
             except Exception as e:
                 logging.getLogger(__name__).warning(
-                    "Refreshed tokens could not be saved: %s", type(e).__name__
+                    "Refreshed tokens could not be saved, will retry: %s", type(e).__name__
                 )
-                raise KindeTokenPersistenceException(
-                    "Refreshed tokens could not be saved", access_token=self.tokens["access_token"]
-                ) from e
+                return
         self._save_pending = False
 
     def _adopt_newer_persisted_tokens(self) -> None:

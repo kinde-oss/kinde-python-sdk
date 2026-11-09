@@ -10,7 +10,6 @@ import requests
 from kinde_sdk.auth.oauth import OAuth
 from kinde_sdk.auth.token_manager import TokenManager
 from kinde_sdk.auth.user_session import UserSession
-from kinde_sdk.core.exceptions import KindeTokenPersistenceException
 from kinde_sdk.core.storage.memory_storage import MemoryStorage
 from kinde_sdk.core.storage.storage_manager import StorageManager
 
@@ -149,17 +148,17 @@ class TestTokenRefresh(unittest.TestCase):
             self.assertEqual(session.get_token_manager("user_1").get_access_token(), self.new_access_token)
         self.assertEqual(post.call_args.kwargs["data"]["refresh_token"], "rotated_by_other_worker")
 
-    def test_failed_save_keeps_tokens_raises_and_is_retried_without_refreshing(self):
+    def test_failed_save_keeps_tokens_and_is_retried_without_refreshing(self):
         session = UserSession()
         session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
         token_manager = session.get_token_manager("user_1")
 
         with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self.refresh_ok) as post:
             with patch.object(StorageManager, "setItems", side_effect=OSError("disk full")), \
-                    self.assertRaises(KindeTokenPersistenceException) as raised:
-                token_manager.get_access_token()
-            # The refreshed tokens are kept and handed to the caller
-            self.assertEqual(raised.exception.access_token, self.new_access_token)
+                    self.assertLogs("kinde_sdk.auth.token_manager", level="WARNING") as logs:
+                # The refreshed tokens are kept and handed to the caller
+                self.assertEqual(token_manager.get_access_token(), self.new_access_token)
+            self.assertIn("Refreshed tokens could not be saved, will retry: OSError", "\n".join(logs.output))
             self.assertEqual(token_manager.tokens["refresh_token"], "new_refresh_token")
             self.assertEqual(StorageManager().get("user_1")["tokens"]["refresh_token"], "old_refresh_token")
 
@@ -174,8 +173,7 @@ class TestTokenRefresh(unittest.TestCase):
         token_manager = session.get_token_manager("user_1")
 
         with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self.refresh_ok), \
-                patch.object(StorageManager, "setItems", side_effect=OSError("disk full")), \
-                self.assertRaises(KindeTokenPersistenceException):
+                patch.object(StorageManager, "setItems", side_effect=OSError("disk full")):
             token_manager.get_access_token()
 
         def check_saved_then_fail(*args, **kwargs):
@@ -189,6 +187,21 @@ class TestTokenRefresh(unittest.TestCase):
                 self.assertRaises(requests.RequestException):
             token_manager.get_access_token()
         self.assertEqual(post.call_count, 1)
+
+    def test_valid_token_keeps_working_while_saving_keeps_failing(self):
+        session = UserSession()
+        session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+        token_manager = session.get_token_manager("user_1")
+
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self.refresh_ok) as post, \
+                patch.object(StorageManager, "setItems", side_effect=OSError("disk full")) as save:
+            for _ in range(3):
+                self.assertEqual(token_manager.get_access_token(), self.new_access_token)
+            self.assertTrue(session.is_authenticated("user_1"))
+        # One refresh only; every call retried the save
+        self.assertEqual(post.call_count, 1)
+        self.assertGreaterEqual(save.call_count, 4)
+        self.assertEqual(StorageManager().get("user_1")["tokens"]["refresh_token"], "old_refresh_token")
 
     def test_refresh_saves_the_latest_user_info_when_another_session_bound_the_token_manager(self):
         session = UserSession()

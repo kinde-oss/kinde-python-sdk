@@ -14,8 +14,10 @@ import asyncio
 import base64
 import hashlib
 import html
+import ipaddress
 import logging
 import secrets
+import socket
 import time
 import webbrowser
 from dataclasses import asdict, dataclass, field
@@ -28,6 +30,7 @@ from kinde_sdk.agents.client_metadata import validate_client_metadata_url
 from kinde_sdk.agents.config import (
     AUTHORIZATION_SERVER_WELL_KNOWN,
     PROTECTED_RESOURCE_WELL_KNOWN,
+    is_internal_address,
     is_loopback_host,
 )
 from kinde_sdk.agents.errors import (
@@ -73,11 +76,27 @@ def _require_secure(url: str, what: str) -> None:
     raise DiscoveryError(f"Refusing a non-https {what}: {url}")
 
 
-def _refuse_loopback_from_remote(url: str, resource_url: str, what: str) -> None:
-    """Raise :class:`DiscoveryError` when a remote resource's metadata points at this machine."""
-    # Loopback is fine for local development, where the resource itself is on loopback
-    if is_loopback_host(urlsplit(url).hostname) and not is_loopback_host(urlsplit(resource_url).hostname):
-        raise DiscoveryError(f"Refusing a loopback {what} from a remote resource: {url}")
+async def _resolve_host(host: str) -> List[str]:
+    """Return the IP addresses ``host`` resolves to (empty if it doesn't resolve)."""
+    try:
+        infos = await asyncio.get_running_loop().getaddrinfo(host, None, type=socket.SOCK_STREAM)
+    except (OSError, UnicodeError):
+        return []
+    return [info[4][0] for info in infos]
+
+
+async def _is_internal_host(host: Optional[str]) -> bool:
+    """Whether ``host`` is loopback, or is or resolves to a private, link-local or other non-public address."""
+    if not host or is_loopback_host(host):
+        return True
+    if is_internal_address(host):
+        return True
+    try:
+        ipaddress.ip_address(host.split("%", 1)[0])
+        return False  # a public IP literal
+    except ValueError:
+        pass
+    return any(is_internal_address(address) for address in await _resolve_host(host))
 
 
 def resource_covers(prm_resource: str, resource_url: str) -> bool:
@@ -280,8 +299,15 @@ class KindeAgentClient:
         http_client: Optional[httpx.AsyncClient] = None,
         timeout_seconds: float = 10.0,
         callback_timeout_seconds: float = 300.0,
+        allow_private_network: bool = False,
     ):
-        """Validate the configuration and set up storage and the HTTP client."""
+        """Validate the configuration and set up storage and the HTTP client.
+
+        Discovery refuses authorization servers and endpoints on loopback, private or
+        link-local addresses when the resource itself is public, so a resource can't
+        point the agent at internal services. Set ``allow_private_network`` only when a
+        public resource deliberately uses an authorization server on your own network.
+        """
         _require_secure_resource(resource_url)
         if client_metadata_url is not None:
             validate_client_metadata_url(client_metadata_url)
@@ -303,6 +329,8 @@ class KindeAgentClient:
         self.open_browser = open_browser or webbrowser.open
         self.authorization_handler = authorization_handler
         self.callback_timeout_seconds = callback_timeout_seconds
+        self.allow_private_network = allow_private_network
+        self._resource_is_internal: Optional[bool] = None
         self._http = http_client or httpx.AsyncClient(timeout=timeout_seconds)
         self._owns_http = http_client is None
         self._prm: Optional[Dict[str, Any]] = None
@@ -364,7 +392,7 @@ class KindeAgentClient:
             raise DiscoveryError("The protected resource metadata lists no authorization server")
         issuer = servers[0]
         _require_secure(issuer, "authorization server")
-        _refuse_loopback_from_remote(issuer, self.resource_url, "authorization server")
+        await self._refuse_internal_from_public(issuer, "authorization server")
 
         metadata = await self._fetch_authorization_server_metadata(issuer)
         stored = await self.storage.get_tokens(self._token_key)
@@ -395,7 +423,7 @@ class KindeAgentClient:
         if challenge_response is not None:
             challenge = find_bearer_challenge(challenge_response.headers.get_list("www-authenticate"))
             metadata_url = challenge.get("resource_metadata") if challenge else None
-            if metadata_url and self._may_fetch(metadata_url):
+            if metadata_url and await self._may_fetch(metadata_url):
                 candidates.append(metadata_url)
         for url in protected_resource_metadata_urls(self.resource_url):
             if url not in candidates:
@@ -413,19 +441,40 @@ class KindeAgentClient:
                 raise DiscoveryError(f"Could not reach {self.resource_url}: {type(exc).__name__}") from exc
             challenge = find_bearer_challenge(probe.headers.get_list("www-authenticate"))
             metadata_url = challenge.get("resource_metadata") if challenge else None
-            if probe.status_code == 401 and metadata_url not in (None, *candidates) and self._may_fetch(metadata_url):
+            if (
+                probe.status_code == 401
+                and metadata_url not in (None, *candidates)
+                and await self._may_fetch(metadata_url)
+            ):
                 return await self._fetch_protected_resource_metadata(probe)
         raise DiscoveryError(f"No protected resource metadata found for {self.resource_url}")
 
-    def _may_fetch(self, metadata_url: str) -> bool:
+    async def _may_fetch(self, metadata_url: str) -> bool:
         """Whether a ``resource_metadata`` URL from a challenge is safe to fetch."""
-        # A remote resource must not point the agent at a service on this machine
+        # A public resource must not point the agent at a service on this machine or its network
         try:
-            _refuse_loopback_from_remote(metadata_url, self.resource_url, "resource_metadata URL")
+            await self._refuse_internal_from_public(metadata_url, "resource_metadata URL")
         except DiscoveryError:
-            logger.warning("Ignoring a loopback resource_metadata URL from a remote resource: %s", metadata_url)
+            logger.warning(
+                "Ignoring an internal-network resource_metadata URL from a public resource: %s", metadata_url
+            )
             return False
         return True
+
+    async def _refuse_internal_from_public(self, url: str, what: str) -> None:
+        """Raise :class:`DiscoveryError` when a public resource's metadata points at an internal address."""
+        if self.allow_private_network:
+            return
+        if self._resource_is_internal is None:
+            # Internal targets are fine when the resource itself is local or on the same private network
+            self._resource_is_internal = await _is_internal_host(urlsplit(self.resource_url).hostname)
+        if self._resource_is_internal:
+            return
+        # The address is checked when discovered; a DNS change between this check and the request isn't caught
+        if await _is_internal_host(urlsplit(url).hostname):
+            raise DiscoveryError(
+                f"Refusing a {what} on a loopback, private or link-local address from a public resource: {url}"
+            )
 
     async def _fetch_authorization_server_metadata(self, issuer: str) -> Dict[str, Any]:
         """Fetch and validate the issuer's metadata (issuer match, PKCE S256, https)."""
@@ -446,7 +495,7 @@ class KindeAgentClient:
             for name in ("authorization_endpoint", "token_endpoint", "registration_endpoint", "revocation_endpoint"):
                 if metadata.get(name):
                     _require_secure(metadata[name], name.replace("_", " "))
-                    _refuse_loopback_from_remote(metadata[name], self.resource_url, name.replace("_", " "))
+                    await self._refuse_internal_from_public(metadata[name], name.replace("_", " "))
             return metadata
         raise DiscoveryError(f"No authorization server metadata found for {issuer}")
 
@@ -650,11 +699,12 @@ class KindeAgentClient:
         """Finish a sign-in from the full callback URL the browser was sent to."""
         if pending.used:
             raise AuthorizationError("This authorization attempt was already used")
-        pending.used = True
         query = parse_qs(urlsplit(callback_url).query)
         state = (query.get("state") or [""])[0]
         if not secrets.compare_digest(state.encode(), pending.state.encode()):
+            # Leave the attempt unused, so a forged callback can't block the real one
             raise AuthorizationError("The state on the callback does not match")
+        pending.used = True
         error = (query.get("error") or [None])[0]
         if error:
             description = (query.get("error_description") or [None])[0]

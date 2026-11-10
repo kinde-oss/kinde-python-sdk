@@ -6,6 +6,7 @@ the SDK's normal login application. Its issuer and endpoints are derived from
 the domain and its client ID, so users never type them.
 """
 
+import ipaddress
 import os
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence
@@ -31,6 +32,17 @@ _LOOPBACK_HOSTS = ("localhost", "127.0.0.1", "::1")
 def is_loopback_host(host: Optional[str]) -> bool:
     """Whether ``host`` is localhost, 127.0.0.1 or ::1."""
     return (host or "").lower() in _LOOPBACK_HOSTS
+
+
+def is_internal_address(address: str) -> bool:
+    """Whether an IP address is loopback, private, link-local or otherwise not on the public internet."""
+    try:
+        ip = ipaddress.ip_address(address.split("%", 1)[0])  # drop an IPv6 zone ID
+    except ValueError:
+        return False
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+    return not ip.is_global or ip.is_multicast
 
 
 def normalize_domain(domain: str) -> str:

@@ -647,7 +647,7 @@ class TestDiscovery:
 
     async def test_remote_resource_cannot_name_a_loopback_issuer(self, fake):
         fake.prm["authorization_servers"] = ["http://127.0.0.1:9/oauth2"]
-        with pytest.raises(DiscoveryError, match="loopback authorization server"):
+        with pytest.raises(DiscoveryError, match="authorization server on a loopback"):
             await make_client(fake, client_metadata_url=CIMD_URL).discover()
         assert not [r for r in fake.requests if r.url.host == "127.0.0.1"]
 
@@ -657,12 +657,61 @@ class TestDiscovery:
         with pytest.raises(DiscoveryError, match="loopback"):
             await make_client(fake).discover()
 
-    def test_loopback_resource_may_use_a_loopback_issuer(self):
-        from kinde_sdk.agents.client import _refuse_loopback_from_remote
-
-        _refuse_loopback_from_remote("http://127.0.0.1:8000/oauth2", "http://localhost:3001/mcp", "issuer")
+    async def test_loopback_resource_may_use_a_loopback_issuer(self):
+        local = KindeAgentClient("http://localhost:3001/mcp")
+        await local._refuse_internal_from_public("http://127.0.0.1:8000/oauth2", "issuer")
         with pytest.raises(DiscoveryError):
-            _refuse_loopback_from_remote("http://127.0.0.1:8000/oauth2", RESOURCE_URL, "issuer")
+            await KindeAgentClient(RESOURCE_URL)._refuse_internal_from_public("http://127.0.0.1:8000/oauth2", "issuer")
+
+    @pytest.mark.parametrize(
+        "issuer",
+        [
+            "https://10.0.0.5/oauth2",
+            "https://192.168.1.10/oauth2",
+            "https://169.254.169.254/latest",  # cloud metadata service
+            "https://[fd00::1]/oauth2",
+            "https://[::ffff:10.0.0.5]/oauth2",
+            "https://100.64.0.1/oauth2",
+        ],
+    )
+    async def test_public_resource_cannot_name_a_private_issuer(self, fake, issuer):
+        fake.prm["authorization_servers"] = [issuer]
+        with pytest.raises(DiscoveryError, match="private or link-local"):
+            await make_client(fake, client_metadata_url=CIMD_URL).discover()
+        assert len(fake.requests) == 1  # only the resource's own metadata was fetched
+
+    async def test_public_resource_cannot_name_a_hostname_that_resolves_to_a_private_address(self, fake, dns):
+        dns["auth.internal.example"] = ["93.184.216.34", "10.0.0.5"]
+        fake.prm["authorization_servers"] = ["https://auth.internal.example/oauth2"]
+        with pytest.raises(DiscoveryError, match="private or link-local"):
+            await make_client(fake, client_metadata_url=CIMD_URL).discover()
+
+    async def test_public_resource_cannot_name_private_endpoints(self, fake, dns):
+        dns["token.internal.example"] = ["192.168.0.20"]
+        fake.as_metadata["token_endpoint"] = "https://token.internal.example/token"
+        with pytest.raises(DiscoveryError, match="token endpoint on a loopback, private"):
+            await make_client(fake).discover()
+
+    async def test_public_resource_cannot_point_metadata_at_a_private_address(self, fake):
+        client = make_client(fake, client_metadata_url=CIMD_URL)
+        challenge = httpx.Response(
+            401, headers={"WWW-Authenticate": 'Bearer resource_metadata="https://169.254.169.254/latest"'}
+        )
+        await client.discover(challenge)
+        assert not [r for r in fake.requests if r.url.host == "169.254.169.254"]
+
+    async def test_private_resource_may_use_a_private_issuer(self, dns):
+        dns["mcp.corp.example"] = ["10.1.2.3"]
+        client = KindeAgentClient("https://mcp.corp.example/mcp")
+        await client._refuse_internal_from_public("https://10.0.0.5/oauth2", "issuer")
+
+    async def test_allow_private_network_opts_out(self):
+        client = KindeAgentClient(RESOURCE_URL, allow_private_network=True)
+        await client._refuse_internal_from_public("https://10.0.0.5/oauth2", "issuer")
+
+    async def test_unresolvable_host_is_left_to_the_request(self, dns):
+        dns["nowhere.example"] = []
+        await KindeAgentClient(RESOURCE_URL)._refuse_internal_from_public("https://nowhere.example/x", "issuer")
 
     async def test_sends_the_resource_the_metadata_names(self, fake):
         fake.prm["resource"] = "https://api.example.com/"  # a parent of the URL the agent calls
@@ -736,6 +785,17 @@ class TestAuthorizationStep:
         callback = fake.authorize(pending.authorization_url).replace(pending.state, "x" * 43)
         with pytest.raises(AuthorizationError, match="state"):
             await client.complete_authorization(pending, callback)
+
+    async def test_forged_callback_does_not_use_up_the_attempt(self, fake):
+        client = make_client(fake, client_metadata_url=CIMD_URL)
+        pending = await client.begin_authorization()
+        for forged in (f"{REDIRECT}?code=forged", f"{REDIRECT}?code=forged&state={'x' * 43}"):
+            with pytest.raises(AuthorizationError, match="state"):
+                await client.complete_authorization(pending, forged)
+        assert pending.used is False
+        # The real callback still works
+        await client.complete_authorization(pending, fake.authorize(pending.authorization_url))
+        assert pending.used is True
 
     async def test_pending_is_single_use_and_serialisable(self, fake):
         client = make_client(fake, client_metadata_url=CIMD_URL)

@@ -240,7 +240,12 @@ class FastAPIFramework(FrameworkInterface):
                 # Still sign the user out here and at Kinde. Returning a response (not
                 # raising) is what saves the cleared session to the cookie
                 self._logger.error("Logout failed: %s", type(e).__name__)
-                logout_url = await self._oauth.logout()
+                try:
+                    logout_url = await self._oauth.logout()
+                except Exception as e:
+                    # The Kinde logout URL can't be built either: sign out locally only
+                    self._logger.error("Logout URL failed: %s", type(e).__name__)
+                    logout_url = "/"
             request.session.clear()
             return RedirectResponse(url=logout_url)
         

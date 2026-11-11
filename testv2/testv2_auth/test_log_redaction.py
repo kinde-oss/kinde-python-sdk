@@ -320,13 +320,33 @@ class TestFlaskRoutes:
         client = app.test_client()
         q = _query(client.get("/login").headers["Location"])
         exchange.return_value = Tokens(q["nonce"]).response()
+        assert client.get(f"/callback?code={AUTH_CODE}&state={q['state']}").status_code == 302
+        with client.session_transaction() as session:
+            user_id = session.get("user_id")
+        assert user_id
+
+        with patch.object(oauth._session_manager, "logout", side_effect=OSError("storage down")) as sdk_logout:
+            logout = client.get("/logout")
+
+        sdk_logout.assert_called_once_with(user_id)
+        assert logout.status_code == 302
+        assert logout.headers["Location"].startswith(f"{HOST}/logout")
+        with client.session_transaction() as session:
+            assert "user_id" not in session
+
+    def test_logout_signs_out_locally_when_the_logout_url_cannot_be_built(self, flask_app, network):
+        exchange, _ = network
+        app, oauth = flask_app
+        client = app.test_client()
+        q = _query(client.get("/login").headers["Location"])
+        exchange.return_value = Tokens(q["nonce"]).response()
         client.get(f"/callback?code={AUTH_CODE}&state={q['state']}")
 
-        with patch.object(oauth._session_manager, "logout", side_effect=OSError("storage down")):
+        with patch.object(OAuth, "logout", AsyncMock(side_effect=ValueError("bad redirect"))):
             logout = client.get("/logout")
 
         assert logout.status_code == 302
-        assert logout.headers["Location"].startswith(f"{HOST}/logout")
+        assert logout.headers["Location"] == "/"
         with client.session_transaction() as session:
             assert "user_id" not in session
 
@@ -433,6 +453,27 @@ class TestFastAPIRoutes:
         assert logout.status_code in (302, 307)
         assert logout.headers["location"].startswith(f"{HOST}/logout")
         # The cleared session reached the cookie, so the user is signed out
+        assert client.get("/whoami").json()["user_id"] is None
+
+    def test_logout_signs_out_locally_when_the_logout_url_cannot_be_built(self, fastapi_app, network):
+        exchange, _ = network
+        client, oauth = fastapi_app
+        from fastapi import Request
+
+        @client.app.get("/whoami")
+        async def whoami(request: Request):
+            return {"user_id": request.session.get("user_id")}
+
+        q = _query(client.get("/login").headers["location"])
+        exchange.return_value = Tokens(q["nonce"]).response()
+        client.get(f"/callback?code={AUTH_CODE}&state={q['state']}")
+        assert client.get("/whoami").json()["user_id"]
+
+        with patch.object(OAuth, "logout", AsyncMock(side_effect=ValueError("bad redirect"))):
+            logout = client.get("/logout")
+
+        assert logout.status_code in (302, 307)
+        assert logout.headers["location"] == "/"
         assert client.get("/whoami").json()["user_id"] is None
 
     def test_failed_exchange_returns_400_without_body_echo(self, fastapi_app, debug_logs, network):

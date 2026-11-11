@@ -287,7 +287,12 @@ class FlaskFramework(FrameworkInterface):
             except Exception as e:
                 # Still sign the user out here and at Kinde
                 logger.error("Logout failed: %s", type(e).__name__)
-                logout_url = self._run_async(self._oauth.logout())
+                try:
+                    logout_url = self._run_async(self._oauth.logout())
+                except Exception as e:
+                    # The Kinde logout URL can't be built either: sign out locally only
+                    logger.error("Logout URL failed: %s", type(e).__name__)
+                    logout_url = "/"
             session.clear()
             return redirect(logout_url)
         

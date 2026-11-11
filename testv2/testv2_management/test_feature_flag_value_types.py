@@ -44,6 +44,7 @@ def test_generator_erratum_patches_generated_model(tmp_path):
     patched = target.read_text()
     assert "Optional[Union[StrictBool, StrictInt, StrictStr]]" in patched
     assert "StrictBool, StrictInt, StrictStr, field_validator" in patched
+    assert "from typing import Any, ClassVar, Dict, List, Optional, Union\n" in patched
 
     assert generator.apply_spec_errata({"output_dir": str(tmp_path)})
     assert target.read_text() == patched
@@ -62,3 +63,20 @@ def test_generator_fails_when_erratum_cannot_be_applied(tmp_path, generated):
         target.write_text(generated)
 
     assert generator.apply_spec_errata({"output_dir": str(tmp_path)}) is False
+
+
+def test_generation_fails_when_erratum_cannot_be_applied(monkeypatch):
+    import generate_management_sdk as generator
+
+    monkeypatch.setattr(generator, "generate_sdk", lambda config: True)
+    monkeypatch.setattr(generator, "fix_imports", lambda config: None)
+    monkeypatch.setattr(generator, "make_version_dynamic", lambda path: None)
+    monkeypatch.setattr(generator, "add_custom_imports", lambda config: None)
+    monkeypatch.setattr(generator, "apply_spec_errata", lambda config: False)
+    later_steps = []
+    monkeypatch.setattr(generator, "validate_generation", lambda config: later_steps.append("validate") or True)
+    monkeypatch.setattr(generator, "run_tests", lambda config: later_steps.append("tests") or True)
+    monkeypatch.setattr(generator, "show_diff", lambda config: later_steps.append("diff"))
+
+    assert generator.generate_single_sdk(skip_tests=False, no_diff=False) is False
+    assert later_steps == []

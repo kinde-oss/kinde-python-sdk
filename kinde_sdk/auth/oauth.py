@@ -142,8 +142,15 @@ class OAuth:
         # Create storage using the framework's storage factory
         self._storage = StorageFactory.create_storage({"type": self.framework})
         
-        # Initialize storage manager with the framework-specific storage
-        self._storage_manager.initialize(config={"type": self.framework, "device_id": self._framework.get_name()}, storage=self._storage)
+        # Initialize storage manager with the framework-specific storage. The
+        # device id is part of every session key, so it must be the same in
+        # every worker process: a generated one would hide a session stored by
+        # one worker from all the others.
+        self._storage_manager.initialize(
+            config={"type": self.framework},
+            device_id=self._framework.get_name(),
+            storage=self._storage,
+        )
 
     def _initialize_null_framework(self, storage_config: Dict[str, Any]) -> None:
         """

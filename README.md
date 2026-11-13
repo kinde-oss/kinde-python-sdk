@@ -514,6 +514,109 @@ if __name__ == "__main__":
     main()
 ```
 
+## Step-up authentication
+
+Ask Kinde for a stronger or more recent authentication before a sensitive action, for example "MFA in the last 5 minutes before changing payout details". Kinde collects only what is missing (the second factor, or a passkey), and the user keeps their session. This is [RFC 9470](https://www.rfc-editor.org/rfc/rfc9470) on the normal Kinde login flow. There is nothing to register in Kinde, and nothing changes for existing logins.
+
+| What | How |
+|---|---|
+| Ask for a context at login | `LoginOptions.ACR_VALUES` (`"mfa"` or `"phr"`) and `LoginOptions.MAX_AGE` (seconds) on `login()` and `register()` |
+| Start a step-up | `await oauth.step_up(acr="mfa", max_age=300)` returns the URL to redirect to |
+| Read how the user signed in | `oauth.get_authentication_context()` returns `{"acr": ..., "amr": [...], "auth_time": ...}` |
+| Check a requirement | `oauth.has_authentication_context(acr="mfa", max_age=300)` |
+| Check the environment | `oauth.is_step_up_supported()` |
+| Callback errors | `UnmetAuthenticationRequirementsError`, `LoginRequiredError` |
+
+`mfa` means a second factor. `phr` means phishing-resistant (a passkey with user verification) and also meets an `mfa` requirement. Kinde leaves `acr` out for a single-factor sign-in, so `acr` is `None` then.
+
+### Require MFA in the last 5 minutes
+
+#### FastAPI
+
+```python
+from fastapi.responses import PlainTextResponse, RedirectResponse
+from kinde_sdk.core.exceptions import UnmetAuthenticationRequirementsError
+
+@app.get("/payouts")
+async def payouts():
+    if not kinde_oauth.is_authenticated():
+        return RedirectResponse("/login")
+    if not kinde_oauth.has_authentication_context(acr="mfa", max_age=300):
+        # The built-in /callback route brings the user back to this page
+        return RedirectResponse(await kinde_oauth.step_up(acr="mfa", max_age=300))
+    return {"message": "Payout details"}
+
+@app.exception_handler(UnmetAuthenticationRequirementsError)
+async def step_up_not_possible(request, error):
+    # The user can't meet the requirement. This is final: don't send them back to Kinde.
+    return PlainTextResponse("Add an authenticator app to your account to continue.", status_code=403)
+```
+
+#### Flask
+
+```python
+import asyncio
+from flask import redirect
+from kinde_sdk.core.exceptions import UnmetAuthenticationRequirementsError
+
+@app.route("/payouts")
+def payouts():
+    if not kinde_oauth.is_authenticated():
+        return redirect("/login")
+    if not kinde_oauth.has_authentication_context(acr="mfa", max_age=300):
+        # The built-in /callback route brings the user back to this page
+        return redirect(asyncio.run(kinde_oauth.step_up(acr="mfa", max_age=300)))
+    return {"message": "Payout details"}
+
+@app.errorhandler(UnmetAuthenticationRequirementsError)
+def step_up_not_possible(error):
+    # The user can't meet the requirement. This is final: don't send them back to Kinde.
+    return "Add an authenticator app to your account to continue.", 403
+```
+
+`step_up()` is a coroutine, like `login()`. In an `async def` Flask view (which needs `flask[async]`), `await` it instead of using `asyncio.run()`.
+
+### When the user can't step up
+
+If the user has no enrolled MFA factor or no passkey, Kinde returns `error=unmet_authentication_requirements` to your callback instead of tokens. The SDK validates `state` and raises `UnmetAuthenticationRequirementsError`. The built-in `/callback` routes let it reach your app, so handle it with `@app.exception_handler(...)` (FastAPI) or `@app.errorhandler(...)` (Flask), as above. Without a handler of your own, the user sees a plain-text 403 page.
+
+- It is a final answer. Retrying gives the same error, and sending the user to login would sign them in without the step-up. Tell them why instead, for example "add a passkey to continue".
+- The error has `error_description`, `state`, and the `acr_values` and `max_age` that were asked for, so you can say what is missing.
+- A user who was signed in stays signed in, with the tokens they already had.
+- `LoginRequiredError` is the same kind of error for `login_required`, which Kinde returns when a `prompt=none` request needs a screen. Both extend `KindeCallbackError`.
+
+If you handle the callback yourself, pass the error through and catch it:
+
+```python
+try:
+    await oauth.handle_redirect(code, user_id, state, error=error, error_description=error_description)
+except UnmetAuthenticationRequirementsError as e:
+    show_error(e.error_description)
+```
+
+### Good to know
+
+- **After a step-up, the callback replaces the access, ID and refresh tokens.** Refreshing never upgrades a session: a refreshed token keeps the `acr`, `amr` and `auth_time` it had. When `has_authentication_context()` is false, the only way forward is `step_up()`.
+- **`step_up()` is interactive.** It raises `ValueError` for `prompt=none` (also inside `auth_params`), for an invalid `acr` or `max_age`, and when neither is given. `max_age` must be a non-negative `int`. `0` is valid and forces a fresh verification.
+- **Don't check `max_age=0`.** `has_authentication_context(max_age=0)` is only true in the same second as the sign-in, so the user would be sent back to Kinde every time. Use a short window such as 60 seconds.
+- **Call `step_up()` when you redirect, not to render a link.** Each call stores a new `state`, replacing any login in progress.
+- **Where the user lands.** With FastAPI and Flask, the user comes back to the page that called `step_up()` when that request was a GET. For any other method nothing is remembered, so the user lands on `/`: pass `post_login_redirect_url="/somewhere"` to choose the page, which you should do for a form POST (the POST is not replayed). Without a framework integration, your own callback decides.
+- **Environments without step-up.** If the discovery document has no `acr_values_supported`, Kinde ignores `acr_values` and `max_age`. `step_up()` then raises `KindeConfigurationException` and sends nothing, instead of pretending it worked. `get_authentication_context()` reports `auth_time` as `None` there, because the claim may be the token's issue time, so `has_authentication_context(max_age=...)` is always false. Check `is_step_up_supported()` first and deny the action, or force a fresh sign-in with `login({"prompt": "login"})`, which only proves the user signed in again.
+- **If discovery can't be fetched.** While the discovery document is unavailable, `is_step_up_supported()` returns `False` and `step_up()` raises `KindeRetrieveException`. That one is temporary: `step_up()` retries the fetch, at most once every 5 seconds.
+- **More than one worker process.** Tokens are saved in the session with a revision, and every worker follows the newest one: a step-up handled by one worker is picked up by the others, and refreshed tokens are saved. This needs a session store that every worker shares (for Flask, the same `SECRET_KEY` and session backend).
+- **Overlapping requests.** Session backends save a request's whole session when it ends, so a request that began before a step-up can write the old tokens back. A worker that has the newer tokens ignores that and repairs the session on its next request. A worker that has never seen the session (another process, or after a restart) trusts what it reads, so in that window it can still see the old tokens and ask for the step-up again.
+- **`auth_time` comes from the ID token.** `amr` is informational. `has_authentication_context()` decides on `acr` and `auth_time` only.
+- **What `mfa` asserts.** `acr: "mfa"` means two factors were accepted under your MFA policy. It does not assert that they are independent: a social sign-in followed by a one-time code to the same mailbox proves one channel twice. `phr` is the stronger value, because a phishing site can't use a passkey. For payments and regulated workloads, assess factor independence, enrolment and recovery against your own configuration rather than relying on `acr` alone.
+- **APIs.** `kinde_sdk.has_authentication_context(claims, acr="mfa", max_age=300)` is the same check as a pure function, for the claims of an access token you have verified yourself. A `require_authentication_context` dependency/decorator that answers with the RFC 9470 `401` challenge is planned as a follow-up.
+
+### Differences from the cross-SDK recommendations
+
+- **No `returnTo` in `state` for standalone use.** Returning the user is done through the FastAPI and Flask post-login redirect. Without a framework integration the SDK doesn't own the callback, so your callback chooses the destination.
+- **Only a GET returns the user automatically.** `step_up()` from a POST (or any other method) doesn't send the user back to the page that made it. Pass `post_login_redirect_url=` for those.
+- **No `prompt=login` fallback.** On an environment without step-up, `step_up(max_age=...)` raises like `step_up(acr=...)` does, and the app decides what to do. A fallback sign-in could never satisfy `has_authentication_context(max_age=...)` there, so a guarded page would redirect in a loop.
+- **`auth_params` is a raw passthrough.** `LoginOptions.ACR_VALUES` accepts only `mfa` and `phr`, and `LoginOptions.MAX_AGE` only an `int`. Inside `auth_params`, `acr_values` is sent as given and `max_age` may also be a string of digits, as before. In both places an unset value is never sent and an invalid `max_age` raises `ValueError`.
+- **No clock tolerance by default.** `oauth.has_authentication_context()` compares `auth_time` with the server clock exactly. The pure function takes `leeway=` if you need one.
+
 ## Advanced Usage: Direct Storage Management
 
 This section covers direct interaction with the `StorageManager` for custom storage solutions.

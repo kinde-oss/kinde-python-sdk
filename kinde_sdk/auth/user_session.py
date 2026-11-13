@@ -10,8 +10,14 @@ class UserSession:
         self.lock = threading.Lock()  # Add a lock for thread safety
         self.storage_manager = StorageManager()  # Use the provided storage backend
 
-    def set_user_data(self, user_id: str, user_info: Dict[str, Any], token_data: Dict[str, Any]):
-        """Store user session details and associate tokens."""
+    def set_user_data(self, user_id: str, user_info: Dict[str, Any], token_data: Dict[str, Any], replace_tokens: bool = False):
+        """
+        Store user session details and associate tokens.
+
+        Args:
+            replace_tokens: If True, the stored access, ID and refresh tokens
+                are all replaced by ``token_data`` instead of merged with it.
+        """
         with self.lock:  # Acquire the lock
             if user_id not in self.user_sessions:
                 # Create new token manager
@@ -35,7 +41,10 @@ class UserSession:
                 self.user_sessions[user_id]["user_info"] = user_info
             
             # Set tokens in token manager
-            self.user_sessions[user_id]["token_manager"].set_tokens(token_data)
+            if replace_tokens:
+                self.user_sessions[user_id]["token_manager"].set_tokens(token_data, replace=True)
+            else:
+                self.user_sessions[user_id]["token_manager"].set_tokens(token_data)
             
             # Save to persistent storage
             self._save_to_storage(user_id)

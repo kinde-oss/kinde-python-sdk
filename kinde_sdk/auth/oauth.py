@@ -571,8 +571,10 @@ class OAuth:
             "redirect_uri": self.redirect_uri,
         }
         
-        # Store session data
-        self._session_manager.set_user_data(user_id, user_info, token_data)
+        # Store session data. The new tokens replace all of the stored ones, so
+        # nothing issued before this authorization (such as a refresh token from
+        # before a step-up) is left behind.
+        self._session_manager.set_user_data(user_id, user_info, token_data, replace_tokens=True)
         
         # Get user details using the token
         token_manager = self._session_manager.get_token_manager(user_id)

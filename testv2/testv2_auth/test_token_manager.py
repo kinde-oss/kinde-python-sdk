@@ -413,6 +413,44 @@ class TestTokenManagerExtended(unittest.TestCase):
         # The refresh response had no refresh token, so the current one is kept
         self.assertEqual(self.token_manager.tokens["refresh_token"], "refresh_token")
 
+    def test_set_tokens_merges_by_default(self):
+        """Test that set_tokens keeps the refresh and ID tokens a response doesn't include"""
+        first_id_token = jwt.encode({"sub": "user123", "jti": "first"}, "k" * 32, algorithm="HS256")
+        self.token_manager.set_tokens({
+            "access_token": jwt.encode({"sub": "user123"}, "k" * 32, algorithm="HS256"),
+            "refresh_token": "first_refresh_token",
+            "id_token": first_id_token,
+            "expires_in": 3600
+        })
+
+        # A refresh response without a refresh token or an ID token
+        second_access_token = jwt.encode({"sub": "user123", "jti": "second"}, "k" * 32, algorithm="HS256")
+        self.token_manager.set_tokens({"access_token": second_access_token, "expires_in": 3600})
+
+        self.assertEqual(self.token_manager.tokens["access_token"], second_access_token)
+        self.assertEqual(self.token_manager.tokens["refresh_token"], "first_refresh_token")
+        self.assertEqual(self.token_manager.tokens["id_token"], first_id_token)
+
+    def test_set_tokens_replace_drops_older_tokens(self):
+        """Test that set_tokens(replace=True) keeps nothing from an earlier authorization"""
+        self.token_manager.set_tokens({
+            "access_token": jwt.encode({"sub": "user123"}, "k" * 32, algorithm="HS256"),
+            "refresh_token": "first_refresh_token",
+            "id_token": jwt.encode({"sub": "user123", "jti": "first"}, "k" * 32, algorithm="HS256"),
+            "expires_in": 3600
+        })
+        tokens = self.token_manager.tokens
+
+        second_access_token = jwt.encode({"sub": "user123", "jti": "second"}, "k" * 32, algorithm="HS256")
+        self.token_manager.set_tokens({"access_token": second_access_token, "expires_in": 3600}, replace=True)
+
+        self.assertEqual(self.token_manager.tokens["access_token"], second_access_token)
+        self.assertNotIn("refresh_token", self.token_manager.tokens)
+        self.assertNotIn("id_token", self.token_manager.tokens)
+        self.assertNotIn("id_token_claims", self.token_manager.tokens)
+        # Replaced in place: the session keeps a reference to this dict
+        self.assertIs(self.token_manager.tokens, tokens)
+
 # Helper function to run async tests
 def asyncio_test(coro):
     """Run a coroutine in the event loop and return its result."""

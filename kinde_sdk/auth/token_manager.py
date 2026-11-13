@@ -48,9 +48,21 @@ class TokenManager:
         """Get the force_api setting for this token manager."""
         return self.force_api
 
-    def set_tokens(self, token_data: Dict[str, Any]):
-        """ Store tokens with expiration. """
+    def set_tokens(self, token_data: Dict[str, Any], replace: bool = False):
+        """
+        Store tokens with expiration.
+
+        Args:
+            token_data: The token endpoint response.
+            replace: If True, drop every stored token first. Use this for the
+                tokens of a new authorization (a login or a step-up), so that
+                an older refresh or ID token is never kept alongside them.
+                The default merges, which is right for a token refresh.
+        """
         with self.lock:
+            if replace:
+                self.tokens.clear()
+
             # Update existing tokens instead of creating new dict
             self.tokens.update({
                 "access_token": token_data.get("access_token"),

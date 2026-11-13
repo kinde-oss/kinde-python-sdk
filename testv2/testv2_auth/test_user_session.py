@@ -71,6 +71,36 @@ class TestUserSession(unittest.TestCase):
             "expires_in": 3600
         }
 
+    def test_set_user_data_replace_tokens(self):
+        """Test that replace_tokens drops the tokens of an earlier authorization"""
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+
+            # By default a response without a refresh or ID token is merged
+            self.user_session.set_user_data(
+                self.user_id, self.user_info, {"access_token": "second_access_token", "expires_in": 3600}
+            )
+            tokens = self.user_session.get_token_manager(self.user_id).tokens
+            self.assertEqual(tokens["access_token"], "second_access_token")
+            self.assertEqual(tokens["refresh_token"], "test_refresh_token")
+            self.assertEqual(tokens["id_token"], "test_id_token")
+
+            self.user_session.set_user_data(
+                self.user_id,
+                self.user_info,
+                {"access_token": "third_access_token", "expires_in": 3600},
+                replace_tokens=True,
+            )
+
+        tokens = self.user_session.get_token_manager(self.user_id).tokens
+        self.assertEqual(tokens["access_token"], "third_access_token")
+        self.assertNotIn("refresh_token", tokens)
+        self.assertNotIn("id_token", tokens)
+        # The stored session matches
+        self.assertNotIn("refresh_token", self.storage_dict[self.user_id]["tokens"])
+
     def test_set_user_data(self):
         """Test setting user data"""
         # Set up JWT decode mock

@@ -38,6 +38,11 @@ class TokenManager:
         self.lock = threading.RLock()
         self.redirect_uri = None  # Initialize the redirect_uri attribute
         self.force_api = False  # Initialize force_api setting
+        # Called after a refresh or a code exchange stores new tokens, so the
+        # session that owns this token manager can persist them
+        self.on_tokens_changed = None
+        # Revision of these tokens in the stored session, kept by UserSession
+        self.revision = None
         self.initialized = True
 
     def set_force_api(self, force_api: bool):
@@ -131,7 +136,18 @@ class TokenManager:
         token_data = response.json()
         
         self.set_tokens(token_data)
+        self._notify_tokens_changed()
         return self.tokens["access_token"]
+
+    def _notify_tokens_changed(self):
+        """Let the owning session persist tokens that changed outside a callback."""
+        callback = getattr(self, "on_tokens_changed", None)
+        if callback is None:
+            return
+        try:
+            callback()
+        except Exception as e:
+            logging.warning(f"Failed to persist updated tokens: {str(e)}")
     
     def get_access_token(self):
         """ Get a valid access token. Refresh if expired. """
@@ -170,6 +186,9 @@ class TokenManager:
         token_data = response.json()
         
         self.set_tokens(token_data)
+        # Persist the refreshed tokens: another process serving this session
+        # must not keep refreshing from the token that was just used
+        self._notify_tokens_changed()
         return self.tokens["access_token"]
 
     def get_id_token(self):

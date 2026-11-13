@@ -6,7 +6,9 @@ network is faked (the ``http`` fixture in ``testv2/conftest.py``).
 """
 
 import asyncio
+import threading
 import time
+from contextlib import contextmanager
 from types import SimpleNamespace
 
 import pytest
@@ -65,6 +67,18 @@ def build_app(configure=None):
     def mfa_login():
         return redirect(asyncio.run(oauth.login({"acr_values": "mfa"})))
 
+    # A request that is still in flight while other requests come and go
+    app.gate = SimpleNamespace(entered=threading.Event(), release=threading.Event())
+
+    @app.route("/slow")
+    def slow():
+        app.gate.entered.set()
+        app.gate.release.wait(10)
+        return jsonify(
+            authenticated=oauth.is_authenticated(),
+            context=oauth.get_authentication_context(),
+        )
+
     @app.route("/whoami")
     def whoami():
         return jsonify(
@@ -105,6 +119,15 @@ def sign_in(site):
     return response
 
 
+def sign_in_with_an_expired_access_token(site):
+    """Sign in with a refresh token and an access token that has already expired."""
+    response = site.client.get("/login")
+    site.http.token_responses.append({**token_response("login"), "expires_in": -1})
+    return site.client.get(
+        f"/callback?code=login_code&state={query(response.location)['state']}"
+    )
+
+
 def start_step_up(site, path="/payouts?tab=bank"):
     response = site.client.get(path)
     assert response.status_code == 302
@@ -115,6 +138,31 @@ def start_step_up(site, path="/payouts?tab=bank"):
 def stepped_up_tokens():
     claims = {"acr": "mfa", "amr": ["pwd", "totp"], "auth_time": int(time.time())}
     return token_response("step-up", access_claims={"acr": "mfa"}, id_claims=claims)
+
+
+@contextmanager
+def request_in_flight(site):
+    """
+    A request from the same browser that has loaded its session and is still
+    running. It finishes, and writes its session back, when the block ends.
+    """
+    cookie = site.client.get_cookie("session").value
+    result = {}
+
+    def run():
+        client = site.app.test_client()
+        client.set_cookie("session", cookie)
+        result["response"] = client.get("/slow")
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    assert site.app.gate.entered.wait(10)
+    try:
+        yield result
+    finally:
+        site.app.gate.release.set()
+        thread.join(10)
+    assert not thread.is_alive()
 
 
 def assert_not_sent_anywhere(response):
@@ -209,6 +257,71 @@ class TestFlaskStepUp:
         )
 
         assert response.location == "http://localhost/transfer/confirm"
+
+
+class TestFlaskOverlappingRequests:
+    """
+    Flask-Session writes a request's whole session back when the request ends,
+    so a request that began before the tokens changed puts the old ones back.
+    """
+
+    def test_request_in_flight_during_a_step_up_does_not_undo_it(self, site):
+        sign_in(site)
+
+        with request_in_flight(site) as slow:
+            params = start_step_up(site, "/payouts")
+            tokens = stepped_up_tokens()
+            site.http.token_responses.append(tokens)
+            site.client.get(f"/callback?code=step_up_code&state={params['state']}")
+            assert site.client.get("/payouts").status_code == 200
+
+        # The in-flight request saw the stepped-up tokens, and didn't restore the old ones
+        assert slow["response"].get_json()["context"]["acr"] == "mfa"
+        response = site.client.get("/payouts")
+        assert (
+            response.status_code == 200 and response.get_data(as_text=True) == "payouts"
+        )
+        with site.client.session_transaction() as session:
+            session_key = next(
+                key for key in session if key.endswith(f":{session['user_id']}")
+            )
+            assert (
+                session[session_key]["tokens"]["access_token"] == tokens["access_token"]
+            )
+
+    def test_request_in_flight_during_a_later_sign_in_does_not_restore_mfa(self, site):
+        sign_in(site)
+        params = start_step_up(site, "/payouts")
+        site.http.token_responses.append(stepped_up_tokens())
+        site.client.get(f"/callback?code=step_up_code&state={params['state']}")
+        assert site.client.get("/payouts").status_code == 200
+
+        with request_in_flight(site) as slow:
+            sign_in(site)  # a plain, single-factor sign-in in the same browser session
+            assert site.client.get("/payouts").status_code == 302
+
+        assert slow["response"].get_json()["context"]["acr"] is None
+        response = site.client.get("/payouts")
+        assert response.status_code == 302
+        assert query(response.location)["acr_values"] == "mfa"
+
+    def test_overlapping_requests_refresh_once(self, site):
+        sign_in_with_an_expired_access_token(site)
+        site.http.post.reset_mock()
+
+        with request_in_flight(site) as slow:
+            # The fake token endpoint has one response: a second refresh would fail the test
+            site.http.token_responses.append(
+                token_response("refreshed", refresh=False, id_token=False)
+            )
+            assert site.client.get("/whoami").get_json()["authenticated"] is True
+
+        assert slow["response"].get_json()["authenticated"] is True
+        assert site.client.get("/whoami").get_json()["authenticated"] is True
+        assert [request["grant_type"] for request in site.http.token_requests] == [
+            "refresh_token"
+        ]
+        assert site.http.token_requests[0]["refresh_token"] == "refresh-login"
 
 
 class TestFlaskCallbackErrors:

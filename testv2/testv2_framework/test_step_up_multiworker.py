@@ -76,3 +76,64 @@ def test_a_session_is_visible_to_every_worker(browser):
         who = browser.get(worker, "/whoami")["json"]
         assert who["authenticated"] is True
         assert who["access_token"] == "access-login-shared"
+
+
+def test_step_up_handled_by_another_worker_is_seen_everywhere(browser):
+    browser.sign_in("A", "login-forward")
+    assert browser.get("A", "/whoami")["json"]["acr"] is None  # cached on A
+
+    started = browser.get("A", "/payouts")
+    assert query(started["location"])["acr_values"] == "mfa"
+    response = browser.callback("B", "stepup-forward", started)
+    assert response["location"] == "http://localhost/payouts"
+
+    # The worker that cached the single-factor tokens answers from the new ones
+    who = browser.get("A", "/whoami")["json"]
+    assert who["acr"] == "mfa"
+    assert who["access_token"] == "access-stepup-forward"
+    assert who["refresh_token"] == "refresh-from-stepup-forward"
+    page = browser.get("A", "/payouts")
+    assert page["status"] == 200 and page["body"] == "payouts"
+
+
+def test_refresh_after_a_step_up_on_another_worker_uses_the_new_refresh_token(browser):
+    browser.sign_in("A", "login-refresh")
+    browser.get("A", "/whoami")
+    browser.callback("B", "stepup-refresh", browser.get("A", "/payouts"))
+    browser.get("A", "/whoami")
+
+    browser.get("A", "/expire")
+    refreshed = browser.get("A", "/whoami")
+
+    assert refreshed["token_requests"] == [
+        {
+            "grant_type": "refresh_token",
+            "code": None,
+            "refresh_token": "refresh-from-stepup-refresh",
+        }
+    ]
+    assert refreshed["json"]["acr"] == "mfa"
+    assert refreshed["json"]["access_token"] == "access-refreshed-by-A"
+
+    # The refreshed tokens were saved: the other worker uses them, without refreshing again
+    other = browser.get("B", "/whoami")
+    assert other["token_requests"] == []
+    assert other["json"]["access_token"] == "access-refreshed-by-A"
+    assert other["json"]["acr"] == "mfa"
+
+
+def test_later_single_factor_sign_in_is_seen_by_a_worker_that_cached_mfa(browser):
+    browser.sign_in("A", "login-reverse")
+    browser.callback("A", "stepup-reverse", browser.get("A", "/payouts"))
+    assert browser.get("A", "/payouts")["status"] == 200  # mfa, cached on A
+
+    # A plain sign-in in the same browser session lands on the other worker
+    browser.sign_in("B", "login-again")
+    assert browser.get("B", "/whoami")["json"]["acr"] is None
+
+    who = browser.get("A", "/whoami")["json"]
+    assert who["acr"] is None
+    assert who["access_token"] == "access-login-again"
+    page = browser.get("A", "/payouts")
+    assert page["status"] == 302
+    assert query(page["location"])["acr_values"] == "mfa"

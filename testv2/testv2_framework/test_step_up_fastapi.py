@@ -230,6 +230,63 @@ class TestFastAPIStepUp:
         )
 
 
+class TestFastAPIOlderSessionCookie:
+    """
+    With a cookie session, the stored session is whatever cookie the request
+    carried. A request sent before the tokens changed carries the old ones.
+    """
+
+    @staticmethod
+    def get_with_cookie(site, path, cookie):
+        client = TestClient(site.app, follow_redirects=False)
+        return client.get(path, headers={"cookie": f"session={cookie}"})
+
+    def test_request_with_the_cookie_from_before_a_step_up(self, site):
+        sign_in(site)
+        old_cookie = site.client.cookies.get("session")
+        params = start_step_up(site, "/payouts")
+        site.http.token_responses.append(stepped_up_tokens())
+        site.client.get(
+            "/callback", params={"code": "step_up_code", "state": params["state"]}
+        )
+
+        # A request the browser had already sent
+        response = self.get_with_cookie(site, "/whoami", old_cookie)
+
+        assert response.json()["context"]["acr"] == "mfa"
+        # Its response replaces the old cookie with the current tokens
+        repaired = response.cookies.get("session")
+        assert repaired and repaired != old_cookie
+        assert self.get_with_cookie(site, "/payouts", repaired).status_code == 200
+        assert site.client.get("/payouts").status_code == 200
+
+    def test_request_with_the_cookie_from_before_a_refresh_does_not_refresh_again(
+        self, site
+    ):
+        # Sign in with a refresh token and an access token that has already expired
+        response = site.client.get("/login")
+        site.http.token_responses.append({**token_response("login"), "expires_in": -1})
+        site.client.get(
+            "/callback",
+            params={"code": "login_code", "state": query(location(response))["state"]},
+        )
+        old_cookie = site.client.cookies.get("session")
+        site.http.post.reset_mock()
+
+        # The fake token endpoint has one response: a second refresh would fail the test
+        site.http.token_responses.append(
+            token_response("refreshed", refresh=False, id_token=False)
+        )
+        assert site.client.get("/whoami").json()["authenticated"] is True
+
+        response = self.get_with_cookie(site, "/whoami", old_cookie)
+        assert response.json()["authenticated"] is True
+        assert [request["grant_type"] for request in site.http.token_requests] == [
+            "refresh_token"
+        ]
+        assert site.http.token_requests[0]["refresh_token"] == "refresh-login"
+
+
 class TestFastAPICallbackErrors:
     def test_unmet_error_reaches_the_app(self, site):
         seen = []

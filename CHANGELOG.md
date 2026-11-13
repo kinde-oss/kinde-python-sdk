@@ -7,7 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Step-up authentication (RFC 9470)**: `LoginOptions.ACR_VALUES` and `LoginOptions.MAX_AGE` on
+  `login()` and `register()`; `step_up()`, `get_authentication_context()`,
+  `has_authentication_context()` and `is_step_up_supported()` on `OAuth`, `AsyncOAuth` and
+  `SmartOAuth`; `UnmetAuthenticationRequirementsError` and `LoginRequiredError`, raised by
+  `handle_redirect()` and by the Flask and FastAPI `/callback` routes after `state` is validated.
+  Opt-in: existing login URLs are unchanged. See "Step-up authentication" in the README.
+
+### Changed
+- **Auth**: The tokens from an authorization callback now replace the session's access, ID and
+  refresh tokens. Previously a refresh or ID token from an earlier sign-in was kept when the new
+  response had none.
+- **Auth**: `acr_values` and `max_age` inside `auth_params` are no longer sent when unset
+  (`None` or empty). An invalid `max_age`, or an `acr_values` that is not a string or a list
+  of strings, raises `ValueError`.
+- **Auth**: Top-level `acr_values` and `max_age` keys in the login options were silently
+  ignored and are now sent, after validation. `max_age` must be an `int`, so for example
+  `login({"max_age": "300"})` now raises `ValueError`.
+
 ### Fixed
+- **Auth**: `TokenManager.get_access_token()` no longer deadlocks when it refreshes an expired
+  access token.
+- **Auth**: Flask and FastAPI sessions use the same storage key in every worker process. Each
+  process generated its own, so a session stored by one worker could not be read by another,
+  and no session survived a restart.
+- **Auth**: Tokens are now saved in the session with a revision, and each worker process
+  follows the newest one. A worker that had cached a session picks up tokens stored by
+  another worker (a step-up, or a later sign-in), refreshed tokens are saved back to the
+  session, and an older copy of the session written back by an overlapping request is
+  ignored and repaired.
+- **Flask**: The `/callback` route keeps the post-login redirect location when it rejects a
+  callback, instead of dropping it before the callback is validated.
 - **CI**: Hardened `renovate.json` so Renovate can no longer re-propose bumping the Python
   `<3.12` `django` pin in `requirements.txt` to Django 6.x (Django 6.0+ requires Python
   3.12+). Django is a test-only dependency for this SDK (no runtime usage), and the

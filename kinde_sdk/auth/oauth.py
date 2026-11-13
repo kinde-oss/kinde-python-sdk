@@ -1,8 +1,9 @@
+import hmac
 import os
 import requests
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlencode
 
 from .user_session import UserSession
@@ -18,7 +19,25 @@ from kinde_sdk.core.exceptions import (
     KindeLoginException,
     KindeTokenException,
     KindeRetrieveException,
+    KindeCallbackError,
+    CALLBACK_ERRORS,
 )
+from .step_up import (
+    authentication_context_from_claims,
+    discovery_supports_step_up,
+    has_authentication_context as _has_authentication_context,
+    normalize_acr_values,
+    normalize_max_age,
+    normalize_step_up_auth_param,
+    prompt_includes_none,
+    strongest_acr,
+)
+
+# Seconds to wait before fetching the OpenID discovery document again after a
+# failed fetch. Checks that run on every request wait longer than step_up(),
+# which cannot go ahead without the document.
+_DISCOVERY_RETRY_SECONDS = 60
+_STEP_UP_DISCOVERY_RETRY_SECONDS = 5
 
 class OAuth:
     def __init__(
@@ -61,6 +80,10 @@ class OAuth:
         if not self.client_id:
             raise KindeConfigurationException("Client ID is required.")
         
+        # OpenID discovery document, cached by _fetch_openid_configuration()
+        self._openid_configuration = None
+        self._openid_configuration_tried_at = 0.0
+
         # Initialize API endpoints
         self._set_api_endpoints()
 
@@ -119,8 +142,15 @@ class OAuth:
         # Create storage using the framework's storage factory
         self._storage = StorageFactory.create_storage({"type": self.framework})
         
-        # Initialize storage manager with the framework-specific storage
-        self._storage_manager.initialize(config={"type": self.framework, "device_id": self._framework.get_name()}, storage=self._storage)
+        # Initialize storage manager with the framework-specific storage. The
+        # device id is part of every session key, so it must be the same in
+        # every worker process: a generated one would hide a session stored by
+        # one worker from all the others.
+        self._storage_manager.initialize(
+            config={"type": self.framework},
+            device_id=self._framework.get_name(),
+            storage=self._storage,
+        )
 
     def _initialize_null_framework(self, storage_config: Dict[str, Any]) -> None:
         """
@@ -225,6 +255,10 @@ class OAuth:
         
         if response.status_code == 200:
             config = response.json()
+
+            # Keep the document for is_step_up_supported()
+            if isinstance(config, dict):
+                self._openid_configuration = config
             
             # Update endpoints with the values from the configuration
             self.auth_url = config.get("authorization_endpoint", f"{self.host}/oauth2/auth")
@@ -277,6 +311,9 @@ class OAuth:
             LoginOptions.REDIRECT_URL: "redirect_url",
             LoginOptions.HAS_SUCCESS_PAGE: "has_success_page",
             LoginOptions.WORKFLOW_DEPLOYMENT_ID: "workflow_deployment_id",
+            # Step-up authentication params
+            LoginOptions.ACR_VALUES: "acr_values",
+            LoginOptions.MAX_AGE: "max_age",
             # Registration params
             LoginOptions.PLAN_INTEREST: "plan_interest",
             LoginOptions.PRICING_TABLE_KEY: "pricing_table_key",
@@ -314,6 +351,13 @@ class OAuth:
                     # Only add is_invitation if it's truthy
                     if login_options[option_key]:
                         search_params[param_key] = "true"
+                elif option_key == LoginOptions.ACR_VALUES:
+                    # "mfa" / "phr" or a list of them, sent space-separated
+                    search_params[param_key] = normalize_acr_values(login_options[option_key])
+                elif option_key == LoginOptions.MAX_AGE:
+                    # Rejected unless a non-negative int: Kinde reads a malformed
+                    # max_age as "re-authenticate", which would hide the bug
+                    search_params[param_key] = str(normalize_max_age(login_options[option_key]))
                 else:
                     # Use string representation for query params
                     search_params[param_key] = str(login_options[option_key])
@@ -326,6 +370,11 @@ class OAuth:
         # Add additional auth parameters
         if LoginOptions.AUTH_PARAMS in login_options and isinstance(login_options[LoginOptions.AUTH_PARAMS], dict):
             for key, value in login_options[LoginOptions.AUTH_PARAMS].items():
+                if key in (LoginOptions.ACR_VALUES, LoginOptions.MAX_AGE):
+                    # Never send an unset or malformed step-up parameter
+                    value = normalize_step_up_auth_param(key, value)
+                    if value is None:
+                        continue
                 # Convert all values to strings for URL parameters
                 search_params[key] = str(value) if value is not None else ""
         
@@ -391,6 +440,8 @@ class OAuth:
                 - has_success_page: Whether to show success page
                 - workflow_deployment_id: Workflow deployment ID
                 - pricing_table_key: Optional string indicating the pricing table key
+                - acr_values: Required authentication context, "mfa" or "phr" (or a list)
+                - max_age: Maximum age of the last authentication, in seconds (non-negative int)
                 - auth_params: Additional auth parameters
                 
         Returns:
@@ -430,6 +481,8 @@ class OAuth:
                 - workflow_deployment_id: Workflow deployment ID
                 - plan_interest: Optional string indicating the plan of interest
                 - pricing_table_key: Optional string indicating the pricing table key
+                - acr_values: Required authentication context, "mfa" or "phr" (or a list)
+                - max_age: Maximum age of the last authentication, in seconds (non-negative int)
                 - auth_params: Additional auth parameters
                 
         Returns:
@@ -451,6 +504,229 @@ class OAuth:
         )
         return auth_url_data["url"]
     
+    async def step_up(
+        self,
+        acr: Optional[Union[str, List[str]]] = None,
+        max_age: Optional[int] = None,
+        login_options: Optional[Dict[str, Any]] = None,
+        post_login_redirect_url: Optional[str] = None,
+    ) -> str:
+        """
+        Generate the URL for a step-up authentication request (RFC 9470).
+
+        Ask Kinde for a stronger or more recent authentication before a
+        sensitive action. Kinde collects only what is missing, and the user
+        keeps their session. This is a normal interactive login with
+        ``acr_values`` and/or ``max_age``: redirect the user to the returned
+        URL. The current tokens stay in place until the callback replaces them.
+
+        Args:
+            acr: Required context, ``"mfa"`` or ``"phr"`` (or a list of them).
+            max_age: Maximum age of the last authentication, in seconds.
+                ``0`` forces a fresh verification.
+            login_options: The usual login options (see ``login()``).
+            post_login_redirect_url: Where the framework's callback route sends
+                the user afterwards. Defaults to the current page for GET
+                requests. Ignored without a framework integration.
+
+        Returns:
+            The authorization URL.
+
+        Raises:
+            ValueError: If neither ``acr`` nor ``max_age`` is requested, a value
+                is invalid, or ``prompt=none`` is passed (including through
+                ``auth_params``). Kinde can't collect a factor without a screen.
+            KindeConfigurationException: If the environment doesn't advertise
+                step-up in its discovery document. Kinde would ignore
+                ``acr_values`` and ``max_age`` there, so nothing is sent. To
+                force a fresh sign-in on such an environment, use ``login()``
+                with ``prompt=login``.
+            KindeRetrieveException: If the discovery document could not be
+                fetched, so support is unknown. This is temporary: the fetch
+                is retried, at most once every few seconds.
+        """
+        options = dict(login_options) if login_options else {}
+        auth_params = options.get(LoginOptions.AUTH_PARAMS)
+        auth_params = dict(auth_params) if isinstance(auth_params, dict) else {}
+
+        if acr is not None:
+            options[LoginOptions.ACR_VALUES] = acr
+        if max_age is not None:
+            options[LoginOptions.MAX_AGE] = max_age
+
+        # Kinde cannot collect a factor without showing a screen
+        if prompt_includes_none(options.get(LoginOptions.PROMPT)) or prompt_includes_none(auth_params.get("prompt")):
+            raise ValueError("step_up() cannot be used with prompt=none: step-up authentication is interactive")
+
+        # Work out what will be sent. auth_params override the typed options.
+        requested_acr = None
+        if options.get(LoginOptions.ACR_VALUES) is not None:
+            requested_acr = normalize_acr_values(options[LoginOptions.ACR_VALUES])
+        passthrough_acr = normalize_step_up_auth_param("acr_values", auth_params.get("acr_values"))
+        if passthrough_acr is not None:
+            # Kinde silently ignores unrecognised values, which would skip the step-up
+            if strongest_acr(passthrough_acr) is None:
+                raise ValueError(f"Unsupported acr_values {passthrough_acr!r}. Expected 'mfa' or 'phr'")
+            requested_acr = passthrough_acr
+
+        requested_max_age = None
+        if options.get(LoginOptions.MAX_AGE) is not None:
+            requested_max_age = normalize_max_age(options[LoginOptions.MAX_AGE])
+        passthrough_max_age = normalize_step_up_auth_param("max_age", auth_params.get("max_age"))
+        if passthrough_max_age is not None:
+            requested_max_age = int(passthrough_max_age)
+
+        if requested_acr is None and requested_max_age is None:
+            raise ValueError("step_up() requires acr, max_age, or both")
+
+        # Kinde ignores acr_values and max_age unless the environment advertises
+        # step-up. Sending them anyway would bring the user back unchanged, and
+        # a guard that asks again would redirect in a loop.
+        openid_configuration = self._get_openid_configuration(retry_after=_STEP_UP_DISCOVERY_RETRY_SECONDS)
+        if openid_configuration is None:
+            raise KindeRetrieveException(
+                "Could not fetch the OpenID configuration, so it is not known whether this "
+                "Kinde environment supports step-up authentication. Try again."
+            )
+        if not discovery_supports_step_up(openid_configuration):
+            raise KindeConfigurationException(
+                "Step-up authentication is not supported on this Kinde environment: its discovery "
+                "document has no acr_values_supported, so acr_values and max_age would be ignored. "
+                "To force a fresh sign-in there, use login() with prompt=login."
+            )
+
+        if auth_params or LoginOptions.AUTH_PARAMS in options:
+            options[LoginOptions.AUTH_PARAMS] = auth_params
+
+        # Same as login(): add support for re-authentication
+        options[LoginOptions.SUPPORT_RE_AUTH] = "true"
+
+        auth_url_data = await self.generate_auth_url(
+            route_type=IssuerRouteTypes.LOGIN,
+            login_options=options
+        )
+
+        # Remember what was asked for, so a callback error can say what was not met
+        self._session_manager.storage_manager.setItems("user:step_up", {
+            "state": auth_url_data["state"],
+            "acr_values": requested_acr,
+            "max_age": requested_max_age,
+        })
+
+        # Bring the user back to where they were, through the framework's
+        # post-login redirect (a no-op without a framework integration)
+        remember_redirect = getattr(self._framework, "set_post_login_redirect_url", None)
+        if callable(remember_redirect):
+            remember_redirect(post_login_redirect_url)
+
+        return auth_url_data["url"]
+
+    def is_step_up_supported(self) -> bool:
+        """
+        Check whether the Kinde environment supports step-up authentication.
+
+        Reads ``acr_values_supported`` from the OpenID discovery document that
+        is fetched when the client is created. If that fetch failed, it is
+        retried here, at most once a minute.
+
+        Returns:
+            bool: True if step-up is supported. False if it isn't, or while the
+            discovery document is unavailable (``step_up()`` tells the two
+            apart). Without support, Kinde ignores ``acr_values`` and ``max_age``.
+        """
+        return discovery_supports_step_up(self._get_openid_configuration())
+
+    def _get_openid_configuration(self, retry_after: float = _DISCOVERY_RETRY_SECONDS) -> Optional[Dict[str, Any]]:
+        """
+        Return the cached discovery document, or None if it is unavailable.
+
+        A fetch that failed is not repeated until ``retry_after`` seconds have
+        passed since the last attempt, so that an unreachable host is not
+        waited on by every request.
+        """
+        config = getattr(self, "_openid_configuration", None)
+        if config is not None:
+            return config
+
+        now = time.time()
+        if now - getattr(self, "_openid_configuration_tried_at", 0.0) < retry_after:
+            return None
+        self._openid_configuration_tried_at = now
+
+        try:
+            response = requests.get(f"{self.host}/.well-known/openid-configuration", timeout=5)
+            if response.status_code == 200:
+                config = response.json()
+                if isinstance(config, dict):
+                    self._openid_configuration = config
+                    return config
+        except Exception as e:
+            self._logger.warning(f"Failed to fetch OpenID configuration: {str(e)}")
+        return None
+
+    def get_authentication_context(self) -> Dict[str, Any]:
+        """
+        Get how the current user authenticated, from the session's tokens.
+
+        Returns:
+            Dict[str, Any]: ``{"acr": ..., "amr": [...], "auth_time": ...}``
+                - acr: ``"mfa"``, ``"phr"``, or None for a single-factor sign-in
+                - amr: the methods used (informational only), or ``[]``
+                - auth_time: when the user last actively authenticated, in
+                  seconds since the epoch, read from the ID token. None if
+                  unknown, or if the environment doesn't support step-up
+                  (the claim may then be the token's issue time).
+
+            All three are empty when there is no signed-in user.
+
+        Use this for UI decisions. On a server, make security decisions with
+        ``has_authentication_context()`` on every request that needs them.
+        """
+        token_manager = None
+        user_id = self._framework.get_user_id()
+        if user_id:
+            token_manager = self._session_manager.get_token_manager(user_id)
+        if not token_manager:
+            return authentication_context_from_claims()
+
+        return authentication_context_from_claims(
+            id_token_claims=token_manager.get_claims("id_token"),
+            access_token_claims=token_manager.get_claims("access_token"),
+            trust_auth_time=self.is_step_up_supported(),
+        )
+
+    def has_authentication_context(
+        self,
+        acr: Optional[Union[str, List[str]]] = None,
+        max_age: Optional[int] = None,
+    ) -> bool:
+        """
+        Check whether the current user's authentication meets a requirement.
+
+        Args:
+            acr: Required context, ``"mfa"`` or ``"phr"``. ``phr`` also meets ``mfa``.
+            max_age: Maximum age of the last authentication, in seconds. ``0``
+                is almost never met; use a short window such as 60 instead.
+
+        Returns:
+            bool: True if the user is signed in and meets the requirement.
+            When it returns False, call ``step_up()`` with the same arguments.
+            Refreshing tokens never changes the answer.
+
+        Raises:
+            ValueError: If ``acr`` or ``max_age`` is not a valid requirement.
+        """
+        # Validate first, so a mistyped requirement raises instead of returning False
+        if acr is not None:
+            normalize_acr_values(acr)
+        if max_age is not None:
+            normalize_max_age(max_age)
+
+        if not self.is_authenticated():
+            return False
+
+        return _has_authentication_context(self.get_authentication_context(), acr=acr, max_age=max_age)
+
     async def logout(self, user_id: Optional[str] = None, logout_options: Dict[str, Any] = None) -> str:
         """
         Generate the logout URL and clear session if user_id provided.
@@ -503,18 +779,42 @@ class OAuth:
         query_string = urlencode(params)
         return f"{self.logout_url}?{query_string}"
 
-    async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
+    async def handle_redirect(
+        self,
+        code: Optional[str],
+        user_id: Optional[str],
+        state: Optional[str] = None,
+        error: Optional[str] = None,
+        error_description: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Handle the OAuth redirect and exchange the code for tokens.
+
+        The tokens from the callback replace the session's access, ID and
+        refresh tokens, including when the user is already signed in (for
+        example after a step-up).
         
         Args:
             code: Authorization code from the redirect
             user_id: User identifier for token storage
             state: State parameter for verification
+            error: The ``error`` parameter from the redirect, if any
+            error_description: The ``error_description`` parameter from the redirect, if any
             
         Returns:
             Dict with user and token information
+
+        Raises:
+            UnmetAuthenticationRequirementsError: The redirect carried
+                ``error=unmet_authentication_requirements``. This is final:
+                don't retry and don't redirect to login.
+            LoginRequiredError: The redirect carried ``error=login_required``.
+            KindeCallbackError: The redirect carried any other ``error``.
+            KindeLoginException: The state is missing or doesn't match.
         """
+        if error:
+            self._raise_callback_error(error, error_description, state)
+
         # Verify state if provided
         if state:
             stored_state = self._session_manager.storage_manager.get("user:state")
@@ -547,8 +847,10 @@ class OAuth:
             "redirect_uri": self.redirect_uri,
         }
         
-        # Store session data
-        self._session_manager.set_user_data(user_id, user_info, token_data)
+        # Store session data. The new tokens replace all of the stored ones, so
+        # nothing issued before this authorization (such as a refresh token from
+        # before a step-up) is left behind.
+        self._session_manager.set_user_data(user_id, user_info, token_data, replace_tokens=True)
         
         # Get user details using the token
         token_manager = self._session_manager.get_token_manager(user_id)
@@ -571,11 +873,53 @@ class OAuth:
         
         # Clean up nonce
         self._session_manager.storage_manager.delete("user:nonce")
+
+        # Clean up the pending step-up request, if any
+        self._session_manager.storage_manager.delete("user:step_up")
         
         return {
             "tokens": token_data,
             "user": user_details
         }
+
+    def _raise_callback_error(self, error: str, error_description: Optional[str], state: Optional[str]) -> None:
+        """
+        Raise the exception for an OAuth error returned to the callback.
+
+        The state is validated first, exactly once: the pending request is
+        cleared, so the same error redirect cannot be replayed. Stored tokens
+        are not touched, and nothing is retried.
+        """
+        storage = self._session_manager.storage_manager
+
+        stored_state = storage.get("user:state")
+        expected_state = stored_state.get("value") if stored_state else None
+        if (
+            not state
+            or not expected_state
+            or not hmac.compare_digest(str(state).encode("utf-8"), str(expected_state).encode("utf-8"))
+        ):
+            self._logger.error("State mismatch on an error callback")
+            raise KindeLoginException("Invalid state parameter")
+
+        # What the step-up request asked for, if this answers one
+        pending = storage.get("user:step_up")
+        if not isinstance(pending, dict) or pending.get("state") != state:
+            pending = {}
+
+        # The authorization response has arrived: this request is finished
+        for key in ("user:state", "user:nonce", "user:code_verifier", "user:step_up"):
+            storage.delete(key)
+
+        error_class = CALLBACK_ERRORS.get(error)
+        if error_class is not None:
+            raise error_class(
+                error_description,
+                state,
+                acr_values=pending.get("acr_values"),
+                max_age=pending.get("max_age"),
+            )
+        raise KindeCallbackError(error_description, state, error=error)
     
     async def exchange_code_for_tokens(self, code: str, code_verifier: Optional[str] = None) -> Dict[str, Any]:
         """

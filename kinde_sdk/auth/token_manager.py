@@ -33,9 +33,16 @@ class TokenManager:
         self.client_secret = client_secret
         self.token_url = token_url
         self.tokens = {}  # Store tokens (access/refresh)
-        self.lock = threading.Lock()  # Add a lock for thread safety
+        # Re-entrant: get_access_token() holds the lock while it refreshes,
+        # and the refresh stores the new tokens through set_tokens()
+        self.lock = threading.RLock()
         self.redirect_uri = None  # Initialize the redirect_uri attribute
         self.force_api = False  # Initialize force_api setting
+        # Called after a refresh or a code exchange stores new tokens, so the
+        # session that owns this token manager can persist them
+        self.on_tokens_changed = None
+        # Revision of these tokens in the stored session, kept by UserSession
+        self.revision = None
         self.initialized = True
 
     def set_force_api(self, force_api: bool):
@@ -46,9 +53,21 @@ class TokenManager:
         """Get the force_api setting for this token manager."""
         return self.force_api
 
-    def set_tokens(self, token_data: Dict[str, Any]):
-        """ Store tokens with expiration. """
+    def set_tokens(self, token_data: Dict[str, Any], replace: bool = False):
+        """
+        Store tokens with expiration.
+
+        Args:
+            token_data: The token endpoint response.
+            replace: If True, drop every stored token first. Use this for the
+                tokens of a new authorization (a login or a step-up), so that
+                an older refresh or ID token is never kept alongside them.
+                The default merges, which is right for a token refresh.
+        """
         with self.lock:
+            if replace:
+                self.tokens.clear()
+
             # Update existing tokens instead of creating new dict
             self.tokens.update({
                 "access_token": token_data.get("access_token"),
@@ -117,7 +136,18 @@ class TokenManager:
         token_data = response.json()
         
         self.set_tokens(token_data)
+        self._notify_tokens_changed()
         return self.tokens["access_token"]
+
+    def _notify_tokens_changed(self):
+        """Let the owning session persist tokens that changed outside a callback."""
+        callback = getattr(self, "on_tokens_changed", None)
+        if callback is None:
+            return
+        try:
+            callback()
+        except Exception as e:
+            logging.warning(f"Failed to persist updated tokens: {str(e)}")
     
     def get_access_token(self):
         """ Get a valid access token. Refresh if expired. """
@@ -156,6 +186,9 @@ class TokenManager:
         token_data = response.json()
         
         self.set_tokens(token_data)
+        # Persist the refreshed tokens: another process serving this session
+        # must not keep refreshing from the token that was just used
+        self._notify_tokens_changed()
         return self.tokens["access_token"]
 
     def get_id_token(self):

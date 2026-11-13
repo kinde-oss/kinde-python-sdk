@@ -71,6 +71,36 @@ class TestUserSession(unittest.TestCase):
             "expires_in": 3600
         }
 
+    def test_set_user_data_replace_tokens(self):
+        """Test that replace_tokens drops the tokens of an earlier authorization"""
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+
+            # By default a response without a refresh or ID token is merged
+            self.user_session.set_user_data(
+                self.user_id, self.user_info, {"access_token": "second_access_token", "expires_in": 3600}
+            )
+            tokens = self.user_session.get_token_manager(self.user_id).tokens
+            self.assertEqual(tokens["access_token"], "second_access_token")
+            self.assertEqual(tokens["refresh_token"], "test_refresh_token")
+            self.assertEqual(tokens["id_token"], "test_id_token")
+
+            self.user_session.set_user_data(
+                self.user_id,
+                self.user_info,
+                {"access_token": "third_access_token", "expires_in": 3600},
+                replace_tokens=True,
+            )
+
+        tokens = self.user_session.get_token_manager(self.user_id).tokens
+        self.assertEqual(tokens["access_token"], "third_access_token")
+        self.assertNotIn("refresh_token", tokens)
+        self.assertNotIn("id_token", tokens)
+        # The stored session matches
+        self.assertNotIn("refresh_token", self.storage_dict[self.user_id]["tokens"])
+
     def test_set_user_data(self):
         """Test setting user data"""
         # Set up JWT decode mock
@@ -183,8 +213,171 @@ class TestUserSession(unittest.TestCase):
         self.assertEqual(token_manager.user_id, self.user_id)
         self.assertEqual(token_manager.tokens["access_token"], "test_access_token")
         
-        # Since it's in memory, storage.get shouldn't be called
-        self.mock_storage_manager.get.assert_not_called()
+        # The stored session is checked for tokens replaced by another process.
+        # It is unchanged here, so the cached token manager is kept as it is.
+        self.mock_storage_manager.get.assert_called_once_with(self.user_id)
+        self.assertIs(self.user_session.get_token_manager(self.user_id), token_manager)
+
+    def _stored_copy(self):
+        """The stored session as a serializing backend holds it: a copy, not the cached dict."""
+        stored = dict(self.storage_dict[self.user_id])
+        stored["tokens"] = dict(stored["tokens"])
+        return stored
+
+    def _store_tokens_from_another_process(self, token_data):
+        """Replace the stored session's tokens, as another worker process would."""
+        stored = self._stored_copy()
+        stored["tokens"] = dict(token_data)
+        stored["revision"] = [stored["revision"][0] + 1, time.time()]
+        self.storage_dict[self.user_id] = stored
+
+    def test_get_token_manager_picks_up_tokens_stored_by_another_process(self):
+        """Test that the stored session wins over a cached one when it changes"""
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        token_manager = self.user_session.get_token_manager(self.user_id)
+
+        # Another worker handled a step-up callback for this session
+        self._store_tokens_from_another_process({
+            "access_token": "stepped_up_access_token",
+            "id_token": "stepped_up_id_token",
+            "refresh_token": "stepped_up_refresh_token",
+            "expires_at": time.time() + 3600,
+            "id_token_claims": {"sub": "user123", "acr": "mfa"},
+        })
+
+        self.assertIs(self.user_session.get_token_manager(self.user_id), token_manager)
+        self.assertEqual(token_manager.tokens["access_token"], "stepped_up_access_token")
+        self.assertEqual(token_manager.tokens["refresh_token"], "stepped_up_refresh_token")
+        self.assertEqual(token_manager.get_claims("id_token")["acr"], "mfa")
+        self.assertTrue(self.user_session.is_authenticated(self.user_id))
+
+    def test_get_token_manager_keeps_unsaved_changes_while_the_store_is_unchanged(self):
+        """Test that tokens changed in memory are not overwritten by an unchanged store"""
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        token_manager = self.user_session.get_token_manager(self.user_id)
+
+        # Changed in memory only; the store still holds what was saved
+        self.storage_dict[self.user_id] = self._stored_copy()
+        token_manager.tokens = {"access_token": "changed_in_memory", "expires_at": time.time() + 3600}
+
+        self.assertEqual(
+            self.user_session.get_token_manager(self.user_id).tokens["access_token"], "changed_in_memory"
+        )
+        self.assertEqual(self.storage_dict[self.user_id]["tokens"]["access_token"], "test_access_token")
+
+    def test_get_token_manager_never_adopts_an_older_stored_session(self):
+        """Test that an older copy of the session is not adopted, and is repaired"""
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+            # What a request that is still in flight loaded when it began
+            older_copy = self._stored_copy()
+
+            # Meanwhile a step-up callback replaces the session's tokens
+            self.user_session.set_user_data(
+                self.user_id,
+                self.user_info,
+                {"access_token": "stepped_up_access_token", "refresh_token": "stepped_up_refresh_token", "expires_in": 3600},
+                replace_tokens=True,
+            )
+
+        # The in-flight request's session is what this process now reads as the store
+        self.storage_dict[self.user_id] = older_copy
+
+        token_manager = self.user_session.get_token_manager(self.user_id)
+        self.assertEqual(token_manager.tokens["access_token"], "stepped_up_access_token")
+        self.assertEqual(token_manager.tokens["refresh_token"], "stepped_up_refresh_token")
+        # ...and the current tokens are written back over the older ones
+        stored = self.storage_dict[self.user_id]
+        self.assertEqual(stored["tokens"]["access_token"], "stepped_up_access_token")
+        self.assertEqual(stored["revision"][0], older_copy["revision"][0] + 1)
+
+    def test_revisions_increase_across_processes(self):
+        """Test that a process with nothing cached saves a revision above the stored one"""
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+            self.assertEqual(self.storage_dict[self.user_id]["revision"][0], 2)
+            self.storage_dict[self.user_id] = self._stored_copy()
+
+            # Another process: its own caches, the same store
+            TokenManager._instances = {}
+            other_process = UserSession()
+            other_process.set_user_data(
+                self.user_id, self.user_info, {"access_token": "from_other_process", "expires_in": 3600},
+                replace_tokens=True,
+            )
+
+        self.assertEqual(self.storage_dict[self.user_id]["revision"][0], 3)
+        self.assertEqual(self.storage_dict[self.user_id]["tokens"]["access_token"], "from_other_process")
+
+    def test_load_from_storage_keeps_newer_tokens_already_in_this_process(self):
+        """Test that loading an older stored copy doesn't replace newer shared tokens"""
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+            older_copy = self._stored_copy()
+            self.user_session.set_user_data(
+                self.user_id, self.user_info, {"access_token": "newer_access_token", "expires_in": 3600},
+                replace_tokens=True,
+            )
+        self.storage_dict[self.user_id] = older_copy
+
+        # A second session object in the same process shares the token manager
+        other_session = UserSession()
+        token_manager = other_session.get_token_manager(self.user_id)
+
+        self.assertEqual(token_manager.tokens["access_token"], "newer_access_token")
+
+    def test_session_stored_without_a_revision_is_loaded(self):
+        """Test that a session saved before revisions existed still loads and updates"""
+        self.storage_dict[self.user_id] = {
+            "user_info": self.user_info,
+            "tokens": {"access_token": "legacy_access_token", "expires_at": time.time() + 3600},
+        }
+
+        token_manager = self.user_session.get_token_manager(self.user_id)
+        self.assertEqual(token_manager.tokens["access_token"], "legacy_access_token")
+        self.assertEqual(self.user_session.get_token_manager(self.user_id), token_manager)
+
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+        self.assertEqual(self.storage_dict[self.user_id]["revision"][0], 1)
+
+    def test_refreshed_tokens_are_saved(self):
+        """Test that a token refresh is written back to the stored session"""
+        with patch('jwt.decode') as mock_decode:
+            mock_decode.return_value = {"sub": "user123"}
+            self.user_session.set_user_data(self.user_id, self.user_info, self.token_data)
+            token_manager = self.user_session.get_token_manager(self.user_id)
+            # Stored sessions are serialized, so they don't share the cached dict
+            self.storage_dict[self.user_id] = self._stored_copy()
+            saved_revision = self.storage_dict[self.user_id]["revision"]
+            token_manager.tokens["expires_at"] = time.time() - 100  # Expired
+
+            with patch('requests.post') as mock_post:
+                mock_post.return_value.json.return_value = {
+                    "access_token": "refreshed_access_token",
+                    "refresh_token": "rotated_refresh_token",
+                    "expires_in": 3600,
+                }
+                self.assertTrue(self.user_session.is_authenticated(self.user_id))
+
+        self.assertEqual(mock_post.call_args.kwargs["data"]["refresh_token"], "test_refresh_token")
+        stored_tokens = self.storage_dict[self.user_id]["tokens"]
+        self.assertEqual(stored_tokens["access_token"], "refreshed_access_token")
+        self.assertEqual(stored_tokens["refresh_token"], "rotated_refresh_token")
+        self.assertEqual(self.storage_dict[self.user_id]["revision"][0], saved_revision[0] + 1)
+        # The session's own save is not mistaken for another process's
+        self.assertEqual(
+            self.user_session.get_token_manager(self.user_id).tokens["access_token"], "refreshed_access_token"
+        )
 
     def test_logout(self):
         """Test logout"""

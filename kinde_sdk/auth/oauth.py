@@ -19,6 +19,11 @@ from kinde_sdk.core.exceptions import (
     KindeTokenException,
     KindeRetrieveException,
 )
+from .step_up import (
+    normalize_acr_values,
+    normalize_max_age,
+    normalize_step_up_auth_param,
+)
 
 class OAuth:
     def __init__(
@@ -277,6 +282,9 @@ class OAuth:
             LoginOptions.REDIRECT_URL: "redirect_url",
             LoginOptions.HAS_SUCCESS_PAGE: "has_success_page",
             LoginOptions.WORKFLOW_DEPLOYMENT_ID: "workflow_deployment_id",
+            # Step-up authentication params
+            LoginOptions.ACR_VALUES: "acr_values",
+            LoginOptions.MAX_AGE: "max_age",
             # Registration params
             LoginOptions.PLAN_INTEREST: "plan_interest",
             LoginOptions.PRICING_TABLE_KEY: "pricing_table_key",
@@ -314,6 +322,13 @@ class OAuth:
                     # Only add is_invitation if it's truthy
                     if login_options[option_key]:
                         search_params[param_key] = "true"
+                elif option_key == LoginOptions.ACR_VALUES:
+                    # "mfa" / "phr" or a list of them, sent space-separated
+                    search_params[param_key] = normalize_acr_values(login_options[option_key])
+                elif option_key == LoginOptions.MAX_AGE:
+                    # Rejected unless a non-negative int: Kinde reads a malformed
+                    # max_age as "re-authenticate", which would hide the bug
+                    search_params[param_key] = str(normalize_max_age(login_options[option_key]))
                 else:
                     # Use string representation for query params
                     search_params[param_key] = str(login_options[option_key])
@@ -326,6 +341,11 @@ class OAuth:
         # Add additional auth parameters
         if LoginOptions.AUTH_PARAMS in login_options and isinstance(login_options[LoginOptions.AUTH_PARAMS], dict):
             for key, value in login_options[LoginOptions.AUTH_PARAMS].items():
+                if key in (LoginOptions.ACR_VALUES, LoginOptions.MAX_AGE):
+                    # Never send an unset or malformed step-up parameter
+                    value = normalize_step_up_auth_param(key, value)
+                    if value is None:
+                        continue
                 # Convert all values to strings for URL parameters
                 search_params[key] = str(value) if value is not None else ""
         
@@ -391,6 +411,8 @@ class OAuth:
                 - has_success_page: Whether to show success page
                 - workflow_deployment_id: Workflow deployment ID
                 - pricing_table_key: Optional string indicating the pricing table key
+                - acr_values: Required authentication context, "mfa" or "phr" (or a list)
+                - max_age: Maximum age of the last authentication, in seconds (non-negative int)
                 - auth_params: Additional auth parameters
                 
         Returns:
@@ -430,6 +452,8 @@ class OAuth:
                 - workflow_deployment_id: Workflow deployment ID
                 - plan_interest: Optional string indicating the plan of interest
                 - pricing_table_key: Optional string indicating the pricing table key
+                - acr_values: Required authentication context, "mfa" or "phr" (or a list)
+                - max_age: Maximum age of the last authentication, in seconds (non-negative int)
                 - auth_params: Additional auth parameters
                 
         Returns:

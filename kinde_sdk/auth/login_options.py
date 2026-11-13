@@ -27,6 +27,10 @@ class LoginOptions:
     PLAN_INTEREST = "plan_interest"
     PRICING_TABLE_KEY = "pricing_table_key"
     
+    # Step-up authentication parameters (RFC 9470)
+    ACR_VALUES = "acr_values"  # "mfa" or "phr", or a list of them
+    MAX_AGE = "max_age"  # non-negative int, seconds since the last authentication
+
     # Invitation parameters
     INVITATION_CODE = "invitation_code"
     IS_INVITATION = "is_invitation"

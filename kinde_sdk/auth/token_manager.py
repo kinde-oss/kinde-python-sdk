@@ -33,7 +33,9 @@ class TokenManager:
         self.client_secret = client_secret
         self.token_url = token_url
         self.tokens = {}  # Store tokens (access/refresh)
-        self.lock = threading.Lock()  # Add a lock for thread safety
+        # Re-entrant: get_access_token() holds the lock while it refreshes,
+        # and the refresh stores the new tokens through set_tokens()
+        self.lock = threading.RLock()
         self.redirect_uri = None  # Initialize the redirect_uri attribute
         self.force_api = False  # Initialize force_api setting
         self.initialized = True

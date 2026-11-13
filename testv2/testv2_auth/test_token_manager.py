@@ -384,6 +384,35 @@ class TestTokenManagerExtended(unittest.TestCase):
         
         self.assertIn("Access token expired and no refresh token available", str(context.exception))
 
+    def test_get_access_token_refreshes_without_deadlock(self):
+        """Test that an expired access token is refreshed through the real refresh path"""
+        # get_access_token() holds the lock while refresh_access_token() stores
+        # the new tokens through set_tokens(), which takes the same lock
+        self.token_manager.tokens = {
+            "access_token": "expired_token",
+            "refresh_token": "refresh_token",
+            "expires_at": time.time() - 100  # Expired
+        }
+        new_token = jwt.encode({"sub": "user123"}, "k" * 32, algorithm="HS256")
+        result = []
+
+        with patch('requests.post') as mock_post:
+            mock_post.return_value.json.return_value = {"access_token": new_token, "expires_in": 3600}
+
+            thread = threading.Thread(
+                target=lambda: result.append(self.token_manager.get_access_token()),
+                daemon=True
+            )
+            thread.start()
+            thread.join(timeout=5)
+
+        self.assertFalse(thread.is_alive(), "get_access_token() deadlocked while refreshing")
+        self.assertEqual(result, [new_token])
+        self.assertEqual(mock_post.call_args.kwargs["data"]["grant_type"], "refresh_token")
+        self.assertEqual(mock_post.call_args.kwargs["data"]["refresh_token"], "refresh_token")
+        # The refresh response had no refresh token, so the current one is kept
+        self.assertEqual(self.token_manager.tokens["refresh_token"], "refresh_token")
+
 # Helper function to run async tests
 def asyncio_test(coro):
     """Run a coroutine in the event loop and return its result."""

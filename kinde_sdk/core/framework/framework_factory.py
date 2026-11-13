@@ -39,7 +39,7 @@ class FrameworkFactory:
                 try:
                     # Import the package
                     importlib.import_module(name)
-                    logger.warning(f"Successfully imported framework package: {name}")
+                    logger.debug(f"Successfully imported framework package: {name}")
                 except ImportError as e:
                     logger.warning(f"Failed to import framework package {name}: {str(e)}")
                 except Exception as e:
@@ -59,7 +59,7 @@ class FrameworkFactory:
         """
         with cls._lock:
             cls._frameworks[name] = framework_class
-            logger.warning(f"Registered framework: {name}")
+            logger.debug(f"Registered framework: {name}")
     
     @classmethod
     def get_framework_instance(cls) -> Optional[FrameworkInterface]:

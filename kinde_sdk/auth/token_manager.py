@@ -139,15 +139,27 @@ class TokenManager:
         self._notify_tokens_changed()
         return self.tokens["access_token"]
 
-    def _notify_tokens_changed(self):
-        """Let the owning session persist tokens that changed outside a callback."""
+    def _notify_tokens_changed(self, refreshed: bool = False):
+        """
+        Let the owning session persist tokens that changed outside a callback.
+
+        Args:
+            refreshed: True when the new tokens come from refreshing the
+                previous ones, False when they come from a new authorization.
+        """
         callback = getattr(self, "on_tokens_changed", None)
         if callback is None:
             return
         try:
-            callback()
+            callback(refreshed)
         except Exception as e:
-            logging.warning(f"Failed to persist updated tokens: {str(e)}")
+            # Not raised: the new tokens are valid and are kept in memory, and
+            # failing here would sign the user out of a working session. The
+            # session saves them again the next time it is read (see
+            # UserSession._sync_with_storage).
+            logging.warning(
+                "Failed to save updated tokens to the session, will retry: %s", type(e).__name__
+            )
     
     def get_access_token(self):
         """ Get a valid access token. Refresh if expired. """
@@ -168,28 +180,32 @@ class TokenManager:
 
     def refresh_access_token(self):
         """ Use the refresh token to get a new access token. """
-        if "refresh_token" not in self.tokens:
-            raise ValueError("No refresh token available")
+        # The lock is held from reading the refresh token until the result is
+        # saved, so nothing else in this process changes the tokens in between
+        with self.lock:
+            if "refresh_token" not in self.tokens:
+                raise ValueError("No refresh token available")
 
-        data = {
-            "grant_type": "refresh_token",
-            "refresh_token": self.tokens["refresh_token"],
-            "client_id": self.client_id,
-        }
-        
-        # Add client secret if available
-        if self.client_secret:
-            data["client_secret"] = self.client_secret
-            
-        response = requests.post(self.token_url, data=data)
-        response.raise_for_status()
-        token_data = response.json()
-        
-        self.set_tokens(token_data)
-        # Persist the refreshed tokens: another process serving this session
-        # must not keep refreshing from the token that was just used
-        self._notify_tokens_changed()
-        return self.tokens["access_token"]
+            data = {
+                "grant_type": "refresh_token",
+                "refresh_token": self.tokens["refresh_token"],
+                "client_id": self.client_id,
+            }
+
+            # Add client secret if available
+            if self.client_secret:
+                data["client_secret"] = self.client_secret
+
+            response = requests.post(self.token_url, data=data)
+            response.raise_for_status()
+            token_data = response.json()
+
+            self.set_tokens(token_data)
+            # Persist the refreshed tokens: another process serving this session
+            # must not keep refreshing from the token that was just used. The
+            # session may instead replace them with newer stored tokens.
+            self._notify_tokens_changed(refreshed=True)
+            return self.tokens["access_token"]
 
     def get_id_token(self):
         """Get the ID token if available."""

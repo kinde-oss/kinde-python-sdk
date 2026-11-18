@@ -6,6 +6,8 @@ network is replaced by the ``http`` fixture in ``testv2/conftest.py``, so
 nothing leaves the machine.
 """
 
+import asyncio
+import threading
 import time
 from unittest.mock import MagicMock
 
@@ -975,7 +977,8 @@ class TestStepUpWhileDiscoveryIsUnavailable:
     async def test_step_up_works_within_seconds_of_discovery_coming_back(
         self, oauth, http
     ):
-        assert oauth.is_step_up_supported() is False  # uses up this minute's retry
+        # Uses up this minute's retry (off the event loop, so it is done before going on)
+        assert await asyncio.to_thread(oauth.is_step_up_supported) is False
         oauth._openid_configuration_tried_at -= 5
         with pytest.raises(KindeRetrieveException):
             await oauth.step_up(acr="mfa")
@@ -1007,6 +1010,75 @@ class TestStepUpWhileDiscoveryIsUnavailable:
         with pytest.raises(ValueError):
             await oauth.step_up(acr="mfa", login_options={LoginOptions.PROMPT: "none"})
         assert http.get.call_count == fetched
+
+
+class TestDiscoveryRetryOnAnEventLoop:
+    """The retry is a blocking request, so it must not run on the event loop's thread."""
+
+    @pytest.fixture
+    def oauth(self, http):
+        http.discovery_status = 503
+        client = make_client()
+        http.discovery_status = 200
+        return client
+
+    @pytest.fixture
+    def fetches(self, http):
+        """Records the thread of each discovery fetch, and holds it until released."""
+        serve = http.get.side_effect
+
+        class Fetches:
+            threads = []
+            release = threading.Event()
+
+        def get(url, **kwargs):
+            Fetches.threads.append(threading.get_ident())
+            assert Fetches.release.wait(5), "the fetch was never released"
+            return serve(url, **kwargs)
+
+        http.get.side_effect = get
+        yield Fetches
+        Fetches.release.set()
+
+    async def test_step_up_awaits_the_fetch_on_another_thread(self, oauth, fetches):
+        fetches.release.set()
+
+        assert query(await oauth.step_up(acr="mfa"))["acr_values"] == "mfa"
+        assert len(fetches.threads) == 1
+        assert fetches.threads[0] != threading.get_ident()
+
+    async def test_checks_return_without_waiting_and_retry_in_the_background(
+        self, oauth, fetches
+    ):
+        # The fetch is held, and neither check waits for it
+        assert oauth.is_step_up_supported() is False
+        assert oauth.has_authentication_context(max_age=300) is False
+        assert oauth.is_step_up_supported() is False
+
+        fetches.release.set()
+        for _ in range(200):
+            if oauth._openid_configuration is not None:
+                break
+            await asyncio.sleep(0.01)
+
+        assert oauth.is_step_up_supported() is True
+        # One fetch, started by the first check, and not on the event loop's thread
+        assert len(fetches.threads) == 1
+        assert fetches.threads[0] != threading.get_ident()
+
+    async def test_step_up_waits_for_a_fetch_that_a_check_started(self, oauth, fetches):
+        assert oauth.is_step_up_supported() is False  # starts the fetch, which is held
+        asyncio.get_running_loop().call_later(0.05, fetches.release.set)
+
+        # Not "try again": the fetch in flight is awaited, and it succeeds
+        assert query(await oauth.step_up(acr="mfa"))["acr_values"] == "mfa"
+        assert len(fetches.threads) == 1
+
+    def test_checks_outside_an_event_loop_fetch_inline(self, oauth, fetches):
+        fetches.release.set()
+
+        assert oauth.is_step_up_supported() is True
+        assert fetches.threads == [threading.get_ident()]
 
 
 # ---------------------------------------------------------------------------
@@ -1094,6 +1166,21 @@ class TestAsyncAndSmartClients:
             await client.step_up(acr="mfa")
         with pytest.raises(KindeConfigurationException, match="not supported"):
             await client.step_up(max_age=60)
+
+    def test_smart_client_checks_see_what_step_up_learned_about_discovery(self, http):
+        http.discovery_status = 503
+        client = make_client(SmartOAuth)
+        # A failed retry: checks won't fetch again for a minute
+        assert client.is_step_up_supported() is False
+
+        # Discovery is back, and a few seconds later step_up() fetches it
+        http.discovery_status = 200
+        client._async_oauth._sync_oauth._openid_configuration_tried_at -= 5
+        assert query(asyncio.run(client.step_up(max_age=300)))["max_age"] == "300"
+
+        # The checks must agree at once. Otherwise the user comes back from
+        # Kinde to a max_age check that still fails, and is sent there again.
+        assert client.is_step_up_supported() is True
 
     @pytest.mark.parametrize("cls", [AsyncOAuth, SmartOAuth])
     async def test_step_up_while_discovery_is_unavailable(self, http, cls):

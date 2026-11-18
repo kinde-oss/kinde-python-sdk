@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional
 from kinde_sdk.core.storage.storage_manager import StorageManager
 
 # Revision of a session that was stored before revisions existed
-_NO_REVISION = (0, 0.0)
+_NO_REVISION = (0, 0, 0.0)
 
 
 class UserSession:
@@ -47,28 +47,23 @@ class UserSession:
             # Save again whenever the token manager refreshes its tokens
             self._persist_token_changes(user_id)
             
-            # Set tokens in token manager
-            if replace_tokens:
-                self.user_sessions[user_id]["token_manager"].set_tokens(token_data, replace=True)
-            else:
-                self.user_sessions[user_id]["token_manager"].set_tokens(token_data)
-            
-            # Save to persistent storage, as a new revision of the session's tokens
-            self._save_to_storage(user_id, tokens_changed=True)
-    
-    def _save_to_storage(self, user_id: str, tokens_changed: bool = False):
-        """
-        Save session data to storage.
+            # Set the tokens and save them as a new authorization. The token
+            # manager's lock is held across both, so its tokens and their
+            # revision always change together (see _sync_with_storage).
+            token_manager = self.user_sessions[user_id]["token_manager"]
+            with token_manager.lock:
+                if replace_tokens:
+                    token_manager.set_tokens(token_data, replace=True)
+                else:
+                    token_manager.set_tokens(token_data)
 
-        Args:
-            tokens_changed: True when the tokens are new (a callback or a
-                refresh), which gives them a revision later than any seen so far.
-        """
+                self._commit_token_change(user_id, refreshed=False)
+    
+    def _save_to_storage(self, user_id: str):
+        """Save session data to storage, under the revision its tokens have now."""
         session_data = self.user_sessions.get(user_id)
         if session_data:
             token_manager = session_data["token_manager"]
-            if tokens_changed:
-                token_manager.revision = self._next_revision(user_id, token_manager)
 
             # We need to serialize the session data
             # Token manager can't be directly serialized
@@ -86,25 +81,75 @@ class UserSession:
     def _persist_token_changes(self, user_id: str):
         """Save the session whenever its token manager stores new tokens (e.g. a refresh)."""
         token_manager = self.user_sessions[user_id]["token_manager"]
-        token_manager.on_tokens_changed = lambda: self._save_to_storage(user_id, tokens_changed=True)
+        token_manager.on_tokens_changed = (
+            lambda refreshed=False: self._commit_token_change(user_id, refreshed=refreshed)
+        )
+
+    def _commit_token_change(self, user_id: str, refreshed: bool):
+        """
+        Give tokens that have just changed their revision, and save them.
+
+        Args:
+            refreshed: True when the tokens were refreshed from the previous
+                ones. False when they come from a new authorization (a
+                sign-in or a step-up), which outranks everything before it.
+
+        A refresh only continues the authorization it started from. If the
+        stored session moved past that point while the refresh was in flight
+        (another process handled a step-up, say), the refreshed tokens are
+        out of date: they are dropped and the stored ones adopted instead.
+        """
+        session_data = self.user_sessions.get(user_id)
+        if not session_data:
+            return
+        token_manager = session_data["token_manager"]
+
+        with token_manager.lock:
+            cached = self._as_revision(getattr(token_manager, "revision", None)) or _NO_REVISION
+            try:
+                stored_session = self._stored_session(user_id)
+            except Exception:
+                # Not known. The revision is still advanced, so that a save
+                # that fails below is repeated by _sync_with_storage().
+                stored_session = None
+            stored = self._stored_revision(stored_session)
+
+            if refreshed:
+                if stored > cached:
+                    token_manager.tokens = dict(stored_session["tokens"])
+                    token_manager.revision = stored
+                    return
+                token_manager.revision = (cached[0], cached[1] + 1, time.time())
+            else:
+                token_manager.revision = (max(cached[0], stored[0]) + 1, 0, time.time())
+
+            self._save_to_storage(user_id)
 
     @staticmethod
     def _as_revision(value: Any) -> Optional[tuple]:
         """
-        Read a revision: ``(counter, saved_at)``, compared in that order.
+        Read a revision: ``(authorization, refresh, saved_at)``, compared in
+        that order.
 
-        The counter orders changes that followed one another, whichever process
-        made them and whatever its clock says. The time only settles a tie
-        between two processes that changed the tokens at the same moment.
+        ``authorization`` counts the sign-ins and step-ups that have replaced
+        the session's tokens, and ``refresh`` the refreshes since the last
+        one. Tokens refreshed from an earlier authorization therefore never
+        outrank a later authorization, however late the refresh finishes and
+        whichever process ran it.
+
+        The counters order changes that followed one another, whatever the
+        clocks of the processes say. The time only settles a tie between two
+        processes that made the same change at the same moment.
         """
-        if not isinstance(value, (list, tuple)) or len(value) != 2:
+        if not isinstance(value, (list, tuple)) or len(value) != 3:
             return None
-        counter, saved_at = value
-        if isinstance(counter, bool) or not isinstance(counter, int):
-            return None
+        authorization, refresh, saved_at = value
+        for counter in (authorization, refresh):
+            if isinstance(counter, bool) or not isinstance(counter, int):
+                return None
         if isinstance(saved_at, bool) or not isinstance(saved_at, (int, float)):
             return None
-        return (counter, float(saved_at))
+        return (authorization, refresh, float(saved_at))
 
     def _stored_session(self, user_id: str) -> Optional[Dict[str, Any]]:
         """The stored session for a user, if it holds tokens."""
@@ -121,13 +166,7 @@ class UserSession:
             return _NO_REVISION
         return self._as_revision(stored_session.get("revision")) or _NO_REVISION
 
-    def _next_revision(self, user_id: str, token_manager: TokenManager) -> tuple:
-        """A revision later than the cached one and the stored one."""
-        cached = self._as_revision(getattr(token_manager, "revision", None)) or _NO_REVISION
-        stored = self._stored_revision(self._stored_session(user_id))
-        return (max(cached[0], stored[0]) + 1, time.time())
-
-    def _sync_with_storage(self, user_id: str):
+    def _sync_with_storage(self, user_id: str, token_manager: TokenManager):
         """
         Reconcile a session cached in this process with the stored session.
 
@@ -141,23 +180,27 @@ class UserSession:
         adopted. Older stored tokens are never adopted, and are overwritten
         with the current ones. Tokens changed in memory without being saved
         are left alone.
-        """
-        token_manager = self.user_sessions[user_id]["token_manager"]
-        stored_session = self._stored_session(user_id)
-        if stored_session is None:
-            return
 
-        stored_revision = self._stored_revision(stored_session)
-        cached_revision = self._as_revision(getattr(token_manager, "revision", None))
-        if cached_revision is None:
-            # Nothing to compare with yet: keep the cached tokens
-            token_manager.revision = stored_revision
-        elif stored_revision > cached_revision:
-            with token_manager.lock:
+        The comparison and what follows from it happen under the token
+        manager's lock. A refresh holds that lock until its tokens are saved,
+        so a decision made here can't be applied over tokens that changed
+        after it was made.
+        """
+        with token_manager.lock:
+            stored_session = self._stored_session(user_id)
+            if stored_session is None:
+                return
+
+            stored_revision = self._stored_revision(stored_session)
+            cached_revision = self._as_revision(getattr(token_manager, "revision", None))
+            if cached_revision is None:
+                # Nothing to compare with yet: keep the cached tokens
+                token_manager.revision = stored_revision
+            elif stored_revision > cached_revision:
                 token_manager.tokens = dict(stored_session["tokens"])
                 token_manager.revision = stored_revision
-        elif stored_revision < cached_revision:
-            self._save_to_storage(user_id)
+            elif stored_revision < cached_revision:
+                self._save_to_storage(user_id)
 
     def reset(self):
         """Reset all session data - useful for testing"""
@@ -204,10 +247,11 @@ class UserSession:
         # this process, so it may already hold newer tokens than this stored
         # session, which can be an older copy (see _sync_with_storage).
         stored_revision = self._stored_revision(session_data)
-        cached_revision = self._as_revision(getattr(token_manager, "revision", None))
-        if cached_revision is None or not token_manager.tokens or stored_revision >= cached_revision:
-            token_manager.tokens = tokens
-            token_manager.revision = stored_revision
+        with token_manager.lock:
+            cached_revision = self._as_revision(getattr(token_manager, "revision", None))
+            if cached_revision is None or not token_manager.tokens or stored_revision >= cached_revision:
+                token_manager.tokens = tokens
+                token_manager.revision = stored_revision
         
         # Store in memory
         self.user_sessions[user_id] = {
@@ -237,11 +281,16 @@ class UserSession:
             if user_id not in self.user_sessions:
                 if not self._load_from_storage(user_id):
                     return None
-            else:
-                # Another process may have replaced the session's tokens
-                self._sync_with_storage(user_id)
-                    
-            return self.user_sessions.get(user_id, {}).get("token_manager")
+                return self.user_sessions.get(user_id, {}).get("token_manager")
+
+            token_manager = self.user_sessions[user_id].get("token_manager")
+
+        # Another process may have replaced the session's tokens. Checked after
+        # releasing self.lock: this waits for a refresh in flight for this
+        # user, which must not hold up every other user's requests.
+        if token_manager is not None:
+            self._sync_with_storage(user_id, token_manager)
+        return token_manager
 
 
     def is_authenticated(self, user_id: str) -> bool:

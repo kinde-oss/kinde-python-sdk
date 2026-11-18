@@ -1,7 +1,9 @@
+import asyncio
 import hmac
 import os
 import requests
 import logging
+import threading
 import time
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlencode
@@ -38,6 +40,16 @@ from .step_up import (
 # which cannot go ahead without the document.
 _DISCOVERY_RETRY_SECONDS = 60
 _STEP_UP_DISCOVERY_RETRY_SECONDS = 5
+
+
+def _on_event_loop() -> bool:
+    """True when the caller is running on an asyncio event loop."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    return True
+
 
 class OAuth:
     def __init__(
@@ -83,6 +95,8 @@ class OAuth:
         # OpenID discovery document, cached by _fetch_openid_configuration()
         self._openid_configuration = None
         self._openid_configuration_tried_at = 0.0
+        # Held while the document is fetched again after a failed fetch
+        self._openid_configuration_lock = threading.Lock()
 
         # Initialize API endpoints
         self._set_api_endpoints()
@@ -582,7 +596,9 @@ class OAuth:
         # Kinde ignores acr_values and max_age unless the environment advertises
         # step-up. Sending them anyway would bring the user back unchanged, and
         # a guard that asks again would redirect in a loop.
-        openid_configuration = self._get_openid_configuration(retry_after=_STEP_UP_DISCOVERY_RETRY_SECONDS)
+        openid_configuration = await self._get_openid_configuration_async(
+            retry_after=_STEP_UP_DISCOVERY_RETRY_SECONDS
+        )
         if openid_configuration is None:
             raise KindeRetrieveException(
                 "Could not fetch the OpenID configuration, so it is not known whether this "
@@ -643,26 +659,70 @@ class OAuth:
         A fetch that failed is not repeated until ``retry_after`` seconds have
         passed since the last attempt, so that an unreachable host is not
         waited on by every request.
+
+        The retry is a blocking request. Called on an event loop it would
+        stall every request the loop is serving, so there it runs on a
+        background thread and this call returns None without waiting.
         """
-        config = getattr(self, "_openid_configuration", None)
+        config = self._openid_configuration
         if config is not None:
             return config
 
-        now = time.time()
-        if now - getattr(self, "_openid_configuration_tried_at", 0.0) < retry_after:
-            return None
-        self._openid_configuration_tried_at = now
+        if not _on_event_loop():
+            return self._refresh_openid_configuration(retry_after)
 
-        try:
-            response = requests.get(f"{self.host}/.well-known/openid-configuration", timeout=5)
-            if response.status_code == 200:
-                config = response.json()
-                if isinstance(config, dict):
-                    self._openid_configuration = config
-                    return config
-        except Exception as e:
-            self._logger.warning(f"Failed to fetch OpenID configuration: {str(e)}")
+        if self._openid_configuration_retry_due(retry_after) and not self._openid_configuration_lock.locked():
+            threading.Thread(
+                target=self._refresh_openid_configuration,
+                args=(retry_after,),
+                name="kinde-openid-configuration",
+                daemon=True,
+            ).start()
         return None
+
+    async def _get_openid_configuration_async(self, retry_after: float) -> Optional[Dict[str, Any]]:
+        """
+        ``_get_openid_configuration()`` for a coroutine: the retry runs on a
+        worker thread and is awaited, so the event loop keeps serving requests.
+        """
+        config = self._openid_configuration
+        if config is not None:
+            return config
+        return await asyncio.to_thread(self._refresh_openid_configuration, retry_after)
+
+    def _openid_configuration_retry_due(self, retry_after: float) -> bool:
+        return time.time() - self._openid_configuration_tried_at >= retry_after
+
+    def _refresh_openid_configuration(self, retry_after: float) -> Optional[Dict[str, Any]]:
+        """
+        Fetch the discovery document again, unless it has arrived meanwhile or
+        was tried in the last ``retry_after`` seconds. Blocks on the network.
+
+        One fetch runs at a time. A caller that waited for another's fetch
+        uses its result instead of fetching again.
+        """
+        with self._openid_configuration_lock:
+            config = self._openid_configuration
+            if config is not None:
+                return config
+            if not self._openid_configuration_retry_due(retry_after):
+                return None
+
+            try:
+                response = requests.get(f"{self.host}/.well-known/openid-configuration", timeout=5)
+                if response.status_code == 200:
+                    config = response.json()
+                    if isinstance(config, dict):
+                        self._openid_configuration = config
+                        return config
+            except Exception as e:
+                self._logger.warning(f"Failed to fetch OpenID configuration: {str(e)}")
+            finally:
+                # Counted from the end of the attempt. A caller that waited for
+                # a slow failure must find the wait still running, and not
+                # fetch again straight away.
+                self._openid_configuration_tried_at = time.time()
+            return None
 
     def get_authentication_context(self) -> Dict[str, Any]:
         """

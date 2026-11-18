@@ -120,9 +120,15 @@ class SmartOAuth(BaseOAuth):
             post_login_redirect_url=post_login_redirect_url,
         )
 
+    # The checks below go through the same client as step_up(). Each client
+    # keeps its own copy of the discovery document, so after a failed fetch
+    # one can know that step-up is supported before the other does. Split
+    # across the two, step_up() could send the user to Kinde while the check
+    # still answered "not met", and a guarded page would redirect in a loop.
+
     def get_authentication_context(self) -> Dict[str, Any]:
         """Get the acr, amr and auth_time of the current session."""
-        return self._sync_oauth.get_authentication_context()
+        return self._async_oauth.get_authentication_context()
 
     def has_authentication_context(
         self,
@@ -130,11 +136,11 @@ class SmartOAuth(BaseOAuth):
         max_age: Optional[int] = None,
     ) -> bool:
         """Check whether the current session meets a required authentication context."""
-        return self._sync_oauth.has_authentication_context(acr=acr, max_age=max_age)
+        return self._async_oauth.has_authentication_context(acr=acr, max_age=max_age)
 
     def is_step_up_supported(self) -> bool:
         """Check whether the Kinde environment supports step-up authentication."""
-        return self._sync_oauth.is_step_up_supported()
+        return self._async_oauth.is_step_up_supported()
     
     # Delegate other properties and methods to the sync implementation
     def __getattr__(self, name):

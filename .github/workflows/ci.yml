@@ -14,7 +14,8 @@ concurrency:
 jobs:
 
   unittest:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest is now 26.04, which has no Python 3.9 build
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:

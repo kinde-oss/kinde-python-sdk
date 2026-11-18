@@ -4,7 +4,7 @@ This ensures consistency for async applications.
 """
 
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional, Union
 from .base_oauth import BaseOAuth
 from .oauth import OAuth
 from kinde_sdk.core.helpers import get_user_details
@@ -89,9 +89,51 @@ class AsyncOAuth(BaseOAuth):
         """Generate logout URL asynchronously."""
         return await self._sync_oauth.logout(user_id, logout_options)
     
-    async def handle_redirect(self, code: str, user_id: str, state: Optional[str] = None) -> Dict[str, Any]:
+    async def handle_redirect(
+        self,
+        code: Optional[str],
+        user_id: Optional[str],
+        state: Optional[str] = None,
+        error: Optional[str] = None,
+        error_description: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Handle OAuth redirect asynchronously."""
+        if error:
+            return await self._sync_oauth.handle_redirect(
+                code, user_id, state, error=error, error_description=error_description
+            )
         return await self._sync_oauth.handle_redirect(code, user_id, state)
+
+    async def step_up(
+        self,
+        acr: Optional[Union[str, List[str]]] = None,
+        max_age: Optional[int] = None,
+        login_options: Optional[Dict[str, Any]] = None,
+        post_login_redirect_url: Optional[str] = None,
+    ) -> str:
+        """Generate the URL for a step-up authentication request asynchronously."""
+        return await self._sync_oauth.step_up(
+            acr=acr,
+            max_age=max_age,
+            login_options=login_options,
+            post_login_redirect_url=post_login_redirect_url,
+        )
+
+    def get_authentication_context(self) -> Dict[str, Any]:
+        """Get the acr, amr and auth_time of the current session (sync method)."""
+        return self._sync_oauth.get_authentication_context()
+
+    def has_authentication_context(
+        self,
+        acr: Optional[Union[str, List[str]]] = None,
+        max_age: Optional[int] = None,
+    ) -> bool:
+        """Check whether the current session meets a required authentication context (sync method)."""
+        return self._sync_oauth.has_authentication_context(acr=acr, max_age=max_age)
+
+    def is_step_up_supported(self) -> bool:
+        """Check whether the Kinde environment supports step-up authentication (sync method)."""
+        return self._sync_oauth.is_step_up_supported()
     
     # Delegate other properties and methods to the sync implementation
     def __getattr__(self, name):

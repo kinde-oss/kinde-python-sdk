@@ -74,6 +74,20 @@ class FrameworkInterface(ABC):
         """
         pass
     
+    def set_post_login_redirect_url(self, url: Optional[str] = None) -> None:
+        """
+        Remember where the callback route should send the user after the next
+        sign-in or step-up.
+
+        Frameworks that register a callback route override this. The default
+        does nothing, for frameworks where the application owns the callback.
+
+        Args:
+            url: The URL to return to. If None, the current page is used when
+                the current request is a GET.
+        """
+        return None
+
     @abstractmethod
     def can_auto_detect(self) -> bool:
         """

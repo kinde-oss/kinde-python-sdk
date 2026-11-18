@@ -1,7 +1,12 @@
 from typing import Optional
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, PlainTextResponse
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
+from kinde_sdk.core.exceptions import (
+    CALLBACK_ERRORS,
+    KindeCallbackError,
+    UnmetAuthenticationRequirementsError,
+)
 from kinde_sdk.auth.oauth import OAuth
 from ..middleware.framework_middleware import FrameworkMiddleware
 import os
@@ -62,6 +67,9 @@ class FastAPIFramework(FrameworkInterface):
             
             # Register Kinde routes
             self._register_kinde_routes()
+
+            # Default page for errors the callback hands to the app
+            self._register_error_handlers()
             
             self._initialized = True
     
@@ -113,6 +121,55 @@ class FastAPIFramework(FrameworkInterface):
         """
         self._oauth = oauth
     
+    def set_post_login_redirect_url(self, url: Optional[str] = None) -> None:
+        """
+        Remember where the callback route sends the user after the next
+        sign-in or step-up.
+
+        Args:
+            url: The URL to return to. If None, the current page is used when
+                the current request is a GET. For any other method nothing is
+                remembered (a POST is never replayed), and a location left by
+                an earlier, abandoned request is cleared.
+        """
+        request = self.get_request()
+        if request is None:
+            return
+        if url is None:
+            if request.method != "GET":
+                request.session.pop('post_login_redirect_url', None)
+                return
+            url = str(request.url)
+        request.session['post_login_redirect_url'] = {'url': url}
+
+    def _register_error_handlers(self) -> None:
+        """
+        Register the default page for callback errors.
+
+        The callback route raises UnmetAuthenticationRequirementsError and
+        LoginRequiredError. Handle them with ``@app.exception_handler(...)``.
+        This default only applies when the application has no handler of its own.
+        """
+        if KindeCallbackError not in self.app.exception_handlers:
+            self.app.add_exception_handler(KindeCallbackError, self._default_callback_error_page)
+
+    @staticmethod
+    async def _default_callback_error_page(request: Request, error: KindeCallbackError):
+        """Explain a callback error in plain words. The user stays signed in."""
+        if isinstance(error, UnmetAuthenticationRequirementsError):
+            message = (
+                "We couldn't complete the extra verification needed for this action. "
+                "Your account may not have a second sign-in method (such as an "
+                "authenticator app) or a passkey set up yet."
+            )
+            status_code = 403
+        else:
+            message = "You need to sign in again to continue."
+            status_code = 401
+        if error.error_description:
+            message = f"{message}\n\nDetails: {error.error_description}"
+        return PlainTextResponse(message, status_code=status_code)
+
     def _register_kinde_routes(self) -> None:
         """
         Register all Kinde-specific routes with the FastAPI application.
@@ -183,6 +240,29 @@ class FastAPIFramework(FrameworkInterface):
                         return RedirectResponse(login_url)
                     except Exception as ex:
                         return HTMLResponse(f"Error parsing reauth state: {str(ex)}", status_code=400)
+
+            # A step-up the user cannot meet (or login_required after prompt=none)
+            # is a final answer. Hand it to the app: the core validates the state
+            # and raises the error. Never redirect to login or retry from here.
+            if error in CALLBACK_ERRORS:
+                assert self._oauth is not None
+                try:
+                    await self._oauth.handle_redirect(
+                        code,
+                        request.session.get('user_id'),
+                        state,
+                        error=error,
+                        error_description=request.query_params.get('error_description'),
+                    )
+                except KindeCallbackError:
+                    # The state was valid, so this answers the pending request
+                    # and its return location is finished with. A callback
+                    # with a wrong state leaves it for the genuine one.
+                    request.session.pop('post_login_redirect_url', None)
+                    raise
+                except Exception as e:
+                    return PlainTextResponse(f"Authentication failed: {str(e)}", status_code=400)
+                return PlainTextResponse("Authentication failed", status_code=400)
 
             user_id = request.session.get('user_id') or str(uuid.uuid4())
 

@@ -1,7 +1,12 @@
 from typing import Optional, TYPE_CHECKING
-from flask import Flask, request, redirect, session
+from flask import Flask, Response, request, redirect, session, has_request_context
 from flask_session import Session
 from kinde_sdk.core.framework.framework_interface import FrameworkInterface
+from kinde_sdk.core.exceptions import (
+    CALLBACK_ERRORS,
+    KindeCallbackError,
+    UnmetAuthenticationRequirementsError,
+)
 from kinde_sdk.auth.oauth import OAuth
 from ..middleware.framework_middleware import FrameworkMiddleware
 import os
@@ -94,6 +99,9 @@ class FlaskFramework(FrameworkInterface):
             
             # Register Kinde routes
             self._register_kinde_routes()
+
+            # Default page for errors the callback hands to the app
+            self._register_error_handlers()
             
             self._initialized = True
     
@@ -145,6 +153,55 @@ class FlaskFramework(FrameworkInterface):
         """
         self._oauth = oauth
     
+    def set_post_login_redirect_url(self, url: Optional[str] = None) -> None:
+        """
+        Remember where the callback route sends the user after the next
+        sign-in or step-up.
+
+        Args:
+            url: The URL to return to. If None, the current page is used when
+                the current request is a GET. For any other method nothing is
+                remembered (a POST is never replayed), and a location left by
+                an earlier, abandoned request is cleared.
+        """
+        if not has_request_context():
+            return
+        if url is None:
+            if request.method != "GET":
+                session.pop('post_login_redirect_url', None)
+                return
+            url = request.url
+        session['post_login_redirect_url'] = {'url': url}
+
+    def _register_error_handlers(self) -> None:
+        """
+        Register the default page for callback errors.
+
+        The callback route raises UnmetAuthenticationRequirementsError and
+        LoginRequiredError. Handle them with ``@app.errorhandler(...)``. This
+        default only applies when the application has no handler of its own.
+        """
+        handlers = self.app.error_handler_spec[None][None]
+        if KindeCallbackError not in handlers:
+            self.app.register_error_handler(KindeCallbackError, self._default_callback_error_page)
+
+    @staticmethod
+    def _default_callback_error_page(error: KindeCallbackError):
+        """Explain a callback error in plain words. The user stays signed in."""
+        if isinstance(error, UnmetAuthenticationRequirementsError):
+            message = (
+                "We couldn't complete the extra verification needed for this action. "
+                "Your account may not have a second sign-in method (such as an "
+                "authenticator app) or a passkey set up yet."
+            )
+            status = 403
+        else:
+            message = "You need to sign in again to continue."
+            status = 401
+        if error.error_description:
+            message = f"{message}\n\nDetails: {error.error_description}"
+        return Response(message, status=status, mimetype="text/plain")
+
     @staticmethod
     def _run_async(coro):
         """
@@ -231,7 +288,31 @@ class FlaskFramework(FrameworkInterface):
                     except Exception as ex:
                         return f"Error parsing reauth state: {str(ex)}", 400
 
-            post_login_redirect = session.pop('post_login_redirect_url', None)
+            # A step-up the user cannot meet (or login_required after prompt=none)
+            # is a final answer. Hand it to the app: the core validates the state
+            # and raises the error. Never redirect to login or retry from here.
+            if error in CALLBACK_ERRORS:
+                try:
+                    self._run_async(self._oauth.handle_redirect(
+                        request.args.get('code'),
+                        session.get('user_id'),
+                        request.args.get('state'),
+                        error=error,
+                        error_description=request.args.get('error_description'),
+                    ))
+                except KindeCallbackError:
+                    # The state was valid, so this answers the pending request
+                    # and its return location is finished with. A callback
+                    # with a wrong state leaves it for the genuine one.
+                    session.pop('post_login_redirect_url', None)
+                    raise
+                except Exception as e:
+                    return f"Authentication failed: {str(e)}", 400
+                return "Authentication failed", 400
+
+            # Read the return location, and drop it only once the callback has
+            # been accepted: a callback with a wrong state must not discard it
+            post_login_redirect = session.get('post_login_redirect_url')
             if post_login_redirect:
                 post_login_redirect = post_login_redirect.get('url', '/')
             else:
@@ -253,6 +334,8 @@ class FlaskFramework(FrameworkInterface):
                 self._run_async(self._oauth.handle_redirect(code, user_id, state))
             except Exception as e:
                 return f"Authentication failed: {str(e)}", 400
+
+            session.pop('post_login_redirect_url', None)
 
             if not post_login_redirect.startswith('http'):
                 # Use url_root to get just the scheme and host without the current path

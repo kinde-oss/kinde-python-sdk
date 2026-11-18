@@ -41,6 +41,10 @@ _ACR_ALIASES = {
 
 _DIGITS = re.compile(r"[0-9]+")
 
+# How far ahead of this machine's clock an auth_time may be and still count as
+# "just now". Kinde's clock and the server's are never exactly in step.
+_CLOCK_SKEW_SECONDS = 60
+
 
 def _split_acr_values(acr_values: Any) -> List[str]:
     """Split a string or a list/tuple of strings into individual acr values."""
@@ -231,10 +235,12 @@ def authentication_context_from_claims(
         access_token_claims if isinstance(access_token_claims, Mapping) else {}
     )
 
-    # Tokens of two different users never describe one authentication
+    # Tokens of two different users never describe one authentication. An ID
+    # token is only trusted when it names the same user as the access token,
+    # so one without a "sub" is not trusted either.
     id_sub = id_claims.get("sub")
     access_sub = access_claims.get("sub")
-    if id_sub and access_sub and id_sub != access_sub:
+    if id_claims and (not id_sub or id_sub != access_sub):
         return {"acr": None, "amr": [], "auth_time": None}
 
     acr = _claim_acr(id_claims) or _claim_acr(access_claims)
@@ -278,6 +284,7 @@ def has_authentication_context(
     Returns:
         ``True`` if the requirement is met. An absent ``acr`` meets no ``acr``
         requirement, and a missing ``auth_time`` meets no ``max_age`` requirement.
+        Nor does an ``auth_time`` in the future, beyond a minute of clock skew.
 
     Raises:
         ValueError: If ``acr`` or ``max_age`` is not a valid requirement.
@@ -295,7 +302,10 @@ def has_authentication_context(
             return False
         if now is None:
             now = time.time()
-        if now - auth_time > max_age + leeway:
+        age = now - auth_time
+        # A future auth_time is invalid, not "very recent". A few seconds
+        # ahead is only the two clocks disagreeing, right after a sign-in.
+        if age < -max(leeway, _CLOCK_SKEW_SECONDS) or age > max_age + leeway:
             return False
 
     return True

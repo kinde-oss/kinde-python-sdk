@@ -5,12 +5,14 @@ Shared helpers for the step-up authentication tests.
 ``testv2/conftest.py`` installs it, so the tests never touch the network.
 """
 
+import time
 from unittest.mock import MagicMock
 from urllib.parse import parse_qs, urlparse
 
 import jwt
 
 HOST = "https://test.kinde.com"
+CLIENT_ID = "test_client_id"
 JWT_KEY = "k" * 32
 
 ENDPOINTS = {
@@ -30,6 +32,9 @@ class FakeHttp:
         self.discovery = WITH_STEP_UP
         self.discovery_status = 200
         self.token_responses = []
+        # The nonce of the authorization request in progress. Kinde ties it to
+        # the code it issues; the ``http`` fixture records it here.
+        self.nonce = None
         self.get = MagicMock(side_effect=self._get)
         self.post = MagicMock(side_effect=self._post)
 
@@ -45,10 +50,23 @@ class FakeHttp:
     def _post(self, url, data=None, **kwargs):
         assert url == f"{HOST}/oauth2/token", f"unexpected POST {url}"
         assert self.token_responses, "unexpected request to the token endpoint"
+        tokens = self.token_responses.pop(0)
+        if data.get("grant_type") == "authorization_code":
+            self._add_nonce(tokens)
         response = MagicMock()
         response.status_code = 200
-        response.json.return_value = self.token_responses.pop(0)
+        response.json.return_value = tokens
         return response
+
+    def _add_nonce(self, tokens):
+        """Put the login's nonce in the ID token, unless the test chose one."""
+        if not self.nonce or "id_token" not in tokens:
+            return
+        claims = jwt.decode(tokens["id_token"], options={"verify_signature": False})
+        if "nonce" not in claims:
+            tokens["id_token"] = jwt.encode(
+                {**claims, "nonce": self.nonce}, JWT_KEY, algorithm="HS256"
+            )
 
     @property
     def token_requests(self):
@@ -68,7 +86,15 @@ def token_response(
         "expires_in": 3600,
     }
     if id_token:
-        response["id_token"] = make_jwt(jti=f"id-{label}", **(id_claims or {}))
+        response["id_token"] = make_jwt(
+            **{
+                "jti": f"id-{label}",
+                "iss": HOST,
+                "aud": [CLIENT_ID],
+                "exp": int(time.time()) + 3600,
+                **(id_claims or {}),
+            }
+        )
     if refresh:
         response["refresh_token"] = f"refresh-{label}"
     return response

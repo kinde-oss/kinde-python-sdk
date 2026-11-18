@@ -5,6 +5,10 @@ Each worker is a separate Python process with its own in-memory caches, like a
 ``gunicorn`` worker. The workers share one server-side session directory. The
 network is faked inside the worker: the token endpoint behaves as Kinde does,
 so a refresh keeps the ``acr`` of the grant its refresh token came from.
+
+Kinde returns the nonce of an authorization request in the ID token it issues
+for that request's code. The login and its callback can land on different
+workers, so here the code carries the nonce: ``<code>~<nonce>``.
 """
 
 import asyncio
@@ -20,18 +24,25 @@ def _fake_kinde(worker_name, token_requests):
 
     import jwt
 
-    def tokens(label, mfa, refresh_token):
+    def tokens(label, mfa, refresh_token, nonce=None):
         now = int(time.time())
         claims = {"sub": "kp_user", "auth_time": now if mfa else now - 3600}
         if mfa:
             claims.update(acr="mfa", amr=["pwd", "totp"])
+        id_claims = {
+            **claims,
+            "jti": f"id-{label}",
+            "iss": HOST,
+            "aud": ["test_client_id"],
+            "exp": now + 3600,
+        }
+        if nonce:
+            id_claims["nonce"] = nonce
         return {
             "access_token": jwt.encode(
                 {**claims, "jti": f"access-{label}"}, "k" * 32, algorithm="HS256"
             ),
-            "id_token": jwt.encode(
-                {**claims, "jti": f"id-{label}"}, "k" * 32, algorithm="HS256"
-            ),
+            "id_token": jwt.encode(id_claims, "k" * 32, algorithm="HS256"),
             "refresh_token": refresh_token,
             "expires_in": 3600,
         }
@@ -49,15 +60,19 @@ def _fake_kinde(worker_name, token_requests):
         return response
 
     def post(url, data=None, **kwargs):
+        code, _, nonce = (data.get("code") or "").partition("~")
         token_requests.append(
-            {key: data.get(key) for key in ("grant_type", "code", "refresh_token")}
+            {
+                "grant_type": data.get("grant_type"),
+                "code": code or None,
+                "refresh_token": data.get("refresh_token"),
+            }
         )
         response = MagicMock()
         response.status_code = 200
         if data["grant_type"] == "authorization_code":
-            code = data["code"]
             response.json.return_value = tokens(
-                code, code.startswith("stepup"), f"refresh-from-{code}"
+                code, code.startswith("stepup"), f"refresh-from-{code}", nonce
             )
         else:
             # A refresh never upgrades: it keeps the context of its refresh token

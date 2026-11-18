@@ -1,6 +1,7 @@
 import asyncio
 import hmac
 import os
+import jwt
 import requests
 import logging
 import threading
@@ -40,6 +41,11 @@ from .step_up import (
 # which cannot go ahead without the document.
 _DISCOVERY_RETRY_SECONDS = 60
 _STEP_UP_DISCOVERY_RETRY_SECONDS = 5
+
+_DEFAULT_SCOPE = "openid profile email"
+
+# Clock tolerance, in seconds, when checking an ID token's expiry
+_ID_TOKEN_LEEWAY_SECONDS = 60
 
 
 def _on_event_loop() -> bool:
@@ -343,7 +349,7 @@ class OAuth:
             "client_id": self.client_id,
             "response_type": login_options.get(LoginOptions.RESPONSE_TYPE, "code"),
             "redirect_uri": login_options.get(LoginOptions.REDIRECT_URI, self.redirect_uri),
-            "scope": login_options.get(LoginOptions.SCOPE, "openid profile email"),
+            "scope": login_options.get(LoginOptions.SCOPE, _DEFAULT_SCOPE),
         }
         
         # Add audience if specified in the instance or options
@@ -543,6 +549,11 @@ class OAuth:
                 the user afterwards. Defaults to the current page for GET
                 requests. Ignored without a framework integration.
 
+        The scope is the default (``openid profile email``) unless
+        ``login_options`` sets one, as for ``login()``: pass the scope your
+        login uses. ``offline`` is added when the session has a refresh
+        token, so the step-up doesn't leave it without one.
+
         Returns:
             The authorization URL.
 
@@ -593,6 +604,18 @@ class OAuth:
         if requested_acr is None and requested_max_age is None:
             raise ValueError("step_up() requires acr, max_age, or both")
 
+        # The callback replaces every stored token, and Kinde only returns a
+        # refresh token when "offline" is requested. Without it a session that
+        # could be refreshed before the step-up could not be afterwards, and
+        # the user would be signed out when the access token expires.
+        if self._session_has_refresh_token():
+            if "scope" in auth_params:
+                auth_params["scope"] = self._scope_with_offline(auth_params["scope"])
+            else:
+                options[LoginOptions.SCOPE] = self._scope_with_offline(
+                    options.get(LoginOptions.SCOPE) or _DEFAULT_SCOPE
+                )
+
         # Kinde ignores acr_values and max_age unless the environment advertises
         # step-up. Sending them anyway would bring the user back unchanged, and
         # a guard that asks again would redirect in a loop.
@@ -636,6 +659,20 @@ class OAuth:
             remember_redirect(post_login_redirect_url)
 
         return auth_url_data["url"]
+
+    def _session_has_refresh_token(self) -> bool:
+        """Whether the current user's session holds a refresh token."""
+        user_id = self._framework.get_user_id()
+        if not user_id:
+            return False
+        token_manager = self._session_manager.get_token_manager(user_id)
+        return bool(token_manager and token_manager.tokens.get("refresh_token"))
+
+    @staticmethod
+    def _scope_with_offline(scope: Any) -> str:
+        """``scope`` with ``offline`` added, unless it is already there."""
+        scope = str(scope)
+        return scope if "offline" in scope.split() else f"{scope} offline".strip()
 
     def is_step_up_supported(self) -> bool:
         """
@@ -883,6 +920,12 @@ class OAuth:
                 self._logger.error(f"State mismatch: received {state}, stored {stored_state}")
                 raise KindeLoginException("Invalid state parameter")
         
+        # The nonce sent with this login. It is single-use: consumed here, so
+        # it can't be replayed even if the rest of the flow fails.
+        stored_nonce = self._session_manager.storage_manager.get("user:nonce")
+        expected_nonce = stored_nonce.get("value") if stored_nonce else None
+        self._session_manager.storage_manager.delete("user:nonce")
+
         # Get code verifier for PKCE
         code_verifier = None
         stored_code_verifier = self._session_manager.storage_manager.get("user:code_verifier")
@@ -898,6 +941,10 @@ class OAuth:
         except Exception as e:
             self._logger.error(f"Token exchange failed: {str(e)}")
             raise KindeTokenException(f"Failed to exchange code for tokens: {str(e)}") from e
+
+        # The ID token's acr and auth_time decide has_authentication_context().
+        # Before it is stored, check it was issued to this client, for this login.
+        self._validate_id_token(token_data.get("id_token"), expected_nonce)
         
         # Store tokens
         user_info = {
@@ -931,9 +978,6 @@ class OAuth:
         if state:
             self._session_manager.storage_manager.delete("user:state")
         
-        # Clean up nonce
-        self._session_manager.storage_manager.delete("user:nonce")
-
         # Clean up the pending step-up request, if any
         self._session_manager.storage_manager.delete("user:step_up")
         
@@ -941,6 +985,52 @@ class OAuth:
             "tokens": token_data,
             "user": user_details
         }
+
+    def _validate_id_token(self, id_token: Optional[str], expected_nonce: Optional[str]) -> None:
+        """
+        Check that an ID token from the callback belongs to this login.
+
+        The signature isn't verified: the token comes straight from the token
+        endpoint over TLS. OpenID Connect still requires the audience, expiry
+        and issuer to be checked, and the nonce to match the one that was sent
+        with the authorization request.
+
+        A response without an ID token has nothing to check. The
+        authentication context then comes from the access token alone.
+
+        Raises:
+            KindeLoginException: If the token is malformed or expired, was
+                issued to another client or by another issuer, or doesn't
+                carry the nonce of this login.
+        """
+        if not id_token:
+            return
+
+        try:
+            claims = jwt.decode(
+                id_token,
+                options={
+                    "verify_signature": False,
+                    "verify_aud": True,
+                    "verify_exp": True,
+                    "require": ["iss", "aud", "exp"],
+                },
+                audience=self.client_id,
+                leeway=_ID_TOKEN_LEEWAY_SECONDS,
+            )
+        except jwt.PyJWTError as e:
+            self._logger.error("Invalid ID token: %s", type(e).__name__)
+            raise KindeLoginException("Invalid ID token") from e
+
+        if str(claims["iss"]).rstrip("/") != str(self.host).rstrip("/"):
+            self._logger.error("ID token issuer does not match the configured Kinde host")
+            raise KindeLoginException("Invalid ID token issuer")
+
+        if not expected_nonce or not hmac.compare_digest(
+            str(claims.get("nonce", "")).encode("utf-8"), str(expected_nonce).encode("utf-8")
+        ):
+            self._logger.error("Nonce mismatch in ID token")
+            raise KindeLoginException("Invalid nonce in ID token")
 
     def _raise_callback_error(self, error: str, error_description: Optional[str], state: Optional[str]) -> None:
         """

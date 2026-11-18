@@ -497,6 +497,31 @@ class TestFlaskCallbackErrors:
         # Used once: the next sign-in goes to the default page
         assert sign_in(site).location == "http://localhost/"
 
+    def test_id_token_from_another_login_does_not_step_the_session_up(self, site):
+        sign_in(site)
+        params = start_step_up(site)
+
+        site.http.token_responses.append(
+            token_response(
+                "forged",
+                id_claims={
+                    "acr": "mfa",
+                    "auth_time": int(time.time()),
+                    "nonce": "the-nonce-of-another-login",
+                },
+            )
+        )
+        response = site.client.get(
+            f"/callback?code=someone_elses_code&state={params['state']}"
+        )
+        assert response.status_code == 400
+
+        # Still signed in, and still without the context the page requires
+        who = site.client.get("/whoami").get_json()
+        assert who["authenticated"] is True
+        assert who["context"]["acr"] is None
+        assert site.client.get("/payouts").location.startswith(f"{HOST}/oauth2/auth?")
+
     def test_default_page_does_not_claim_the_user_is_signed_in(self, site):
         # A first sign-in that asks for mfa, by a user with no factor
         state = query(site.client.get("/mfa-login").location)["state"]

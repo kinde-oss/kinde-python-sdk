@@ -487,6 +487,27 @@ class TestUserSession(unittest.TestCase):
         self.assertEqual(stored["tokens"]["access_token"], "refreshed_access_token")
         self.assertEqual(stored["tokens"]["refresh_token"], "rotated_refresh_token")
 
+    def test_cached_session_survives_a_session_store_that_cannot_be_read(self):
+        """Test that a failing store doesn't make an authentication check raise"""
+        token_manager = self._sign_in()
+        working_get = self.mock_storage_manager.get.side_effect
+
+        def failing_get(key):
+            raise OSError("session store is down")
+
+        self.mock_storage_manager.get.side_effect = failing_get
+        with self.assertLogs(level="WARNING"):
+            for _ in range(3):
+                self.assertIs(self.user_session.is_authenticated(self.user_id), True)
+            self.assertIs(self.user_session.get_token_manager(self.user_id), token_manager)
+        self.assertEqual(token_manager.tokens["access_token"], "test_access_token")
+
+        # The store is back, with a step-up from another worker: it is picked up
+        self.mock_storage_manager.get.side_effect = working_get
+        self._store_tokens_from_another_process(self.STEPPED_UP_TOKENS)
+        self.assertIs(self.user_session.is_authenticated(self.user_id), True)
+        self.assertEqual(token_manager.tokens["access_token"], "stepped_up_access_token")
+
     def test_sync_that_waited_for_a_token_change_does_not_undo_it(self):
         """Test that the stored session is compared after waiting for the token manager's lock"""
         token_manager = self._sign_in()

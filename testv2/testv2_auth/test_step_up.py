@@ -7,10 +7,12 @@ nothing leaves the machine.
 """
 
 import asyncio
+import copy
 import threading
 import time
 from unittest.mock import MagicMock
 
+import jwt
 import pytest
 import requests
 
@@ -40,6 +42,7 @@ from kinde_sdk.core.exceptions import (
 from kinde_sdk.core.framework.null_framework import NullFramework
 from kinde_sdk.core.storage.storage_manager import StorageManager
 from testv2.step_up_helpers import (
+    CLIENT_ID,
     HOST,
     WITHOUT_STEP_UP,
     query,
@@ -107,6 +110,10 @@ async def sign_in(client, http, response=None, user_id=USER_ID):
 
 def stored_state():
     return StorageManager().get("user:state")
+
+
+def jwt_encode(claims):
+    return jwt.encode(claims, "k" * 32, algorithm="HS256")
 
 
 # ---------------------------------------------------------------------------
@@ -642,6 +649,134 @@ class TestSessionUpdate:
         http.post.assert_not_called()
 
 
+class TestStepUpKeepsTheRefreshToken:
+    """Kinde only returns a refresh token when the ``offline`` scope is requested."""
+
+    async def test_offline_is_requested_when_the_session_has_a_refresh_token(
+        self, oauth, http
+    ):
+        await sign_in(oauth, http)
+        assert oauth.get_tokens(USER_ID)["refresh_token"] == "refresh-login"
+
+        url = await oauth.step_up(acr="mfa")
+        assert query(url)["scope"] == "openid profile email offline"
+
+        await complete_callback(
+            oauth, http, url, token_response("step-up", id_claims={"acr": "mfa"})
+        )
+        assert oauth.get_tokens(USER_ID)["refresh_token"] == "refresh-step-up"
+
+    async def test_scope_is_unchanged_without_a_refresh_token(self, oauth, http):
+        # Not signed in
+        assert query(await oauth.step_up(acr="mfa"))["scope"] == "openid profile email"
+
+        await sign_in(oauth, http, token_response("login", refresh=False))
+        assert query(await oauth.step_up(acr="mfa"))["scope"] == "openid profile email"
+
+    @pytest.mark.parametrize(
+        "login_options, expected",
+        [
+            ({"scope": "openid profile"}, "openid profile offline"),
+            ({"scope": "openid offline email"}, "openid offline email"),
+            ({"auth_params": {"scope": "openid"}}, "openid offline"),
+            (
+                {"scope": "openid", "auth_params": {"scope": "openid offline"}},
+                "openid offline",
+            ),
+        ],
+    )
+    async def test_offline_is_added_once_to_the_scope_that_is_sent(
+        self, oauth, http, login_options, expected
+    ):
+        await sign_in(oauth, http)
+        passed = copy.deepcopy(login_options)
+        url = await oauth.step_up(acr="mfa", login_options=passed)
+        assert query(url)["scope"] == expected
+        # The caller's options are not modified
+        assert passed == login_options
+
+
+class TestIdTokenValidation:
+    """The ID token's claims decide has_authentication_context(), so the callback checks it."""
+
+    @pytest.mark.parametrize(
+        "id_claims",
+        [
+            {"nonce": "not-the-nonce-of-this-login"},
+            {"aud": ["another_client"]},
+            {"iss": "https://someone-else.kinde.com"},
+            {"exp": int(time.time()) - 3600},
+        ],
+        ids=["nonce", "audience", "issuer", "expired"],
+    )
+    async def test_id_token_that_is_not_for_this_login_is_rejected(
+        self, oauth, http, id_claims
+    ):
+        await sign_in(oauth, http)
+        before = dict(oauth.get_tokens(USER_ID))
+
+        forged = token_response(
+            "forged",
+            id_claims={"acr": "mfa", "auth_time": int(time.time()), **id_claims},
+        )
+        with pytest.raises(KindeLoginException, match="ID token"):
+            await complete_callback(oauth, http, await oauth.step_up(acr="mfa"), forged)
+
+        # Nothing was stored: the session is as it was, without the forged acr
+        assert oauth.get_tokens(USER_ID) == before
+        assert oauth.has_authentication_context(acr="mfa") is False
+
+    @pytest.mark.parametrize("missing", ["nonce", "aud", "iss", "exp"])
+    async def test_id_token_must_carry_each_checked_claim(self, oauth, http, missing):
+        url = await oauth.login()
+        claims = {
+            "sub": "kp_user",
+            "iss": HOST,
+            "aud": [CLIENT_ID],
+            "exp": int(time.time()) + 3600,
+            "nonce": query(url)["nonce"],
+        }
+        del claims[missing]
+        response = token_response("login")
+        response["id_token"] = jwt_encode(claims)
+        if missing == "nonce":
+            http.nonce = None  # the fake Kinde leaves the nonce out too
+
+        with pytest.raises(KindeLoginException, match="ID token"):
+            await complete_callback(oauth, http, url, response)
+        assert oauth.is_authenticated() is False
+
+    async def test_audience_may_be_a_string_and_the_issuer_may_end_in_a_slash(
+        self, oauth, http
+    ):
+        response = token_response(
+            "login", id_claims={"aud": CLIENT_ID, "iss": f"{HOST}/"}
+        )
+        await sign_in(oauth, http, response)
+        assert oauth.is_authenticated() is True
+
+    async def test_nonce_is_single_use(self, oauth, http):
+        url = await oauth.login()
+        with pytest.raises(KindeLoginException, match="ID token"):
+            await complete_callback(
+                oauth, http, url, token_response("first", id_claims={"aud": ["x"]})
+            )
+
+        # The same request can't be finished a second time, even with a good token
+        with pytest.raises(KindeLoginException, match="nonce"):
+            await complete_callback(oauth, http, url, token_response("second"))
+        assert StorageManager().get("user:nonce") is None
+
+    async def test_response_without_an_id_token_is_still_accepted(self, oauth, http):
+        response = token_response(
+            "login", access_claims={"acr": "mfa"}, id_token=False
+        )
+        await sign_in(oauth, http, response)
+
+        assert oauth.is_authenticated() is True
+        assert oauth.get_authentication_context()["acr"] == "mfa"
+
+
 # ---------------------------------------------------------------------------
 # get_authentication_context()
 # ---------------------------------------------------------------------------
@@ -731,6 +866,27 @@ class TestGetAuthenticationContext:
         )
         assert context == {"acr": None, "amr": [], "auth_time": None}
 
+    @pytest.mark.parametrize(
+        "id_claims, access_claims",
+        [
+            ({"acr": "mfa", "auth_time": 1}, {"sub": "kp_one", "acr": "mfa"}),  # no sub
+            ({"sub": "", "acr": "mfa"}, {"sub": "kp_one"}),
+            ({"sub": "kp_one", "acr": "mfa"}, {"acr": "mfa"}),  # nothing to match
+            ({"sub": "kp_one", "acr": "mfa"}, None),
+        ],
+    )
+    def test_id_token_is_only_trusted_when_its_user_matches_the_access_token(
+        self, id_claims, access_claims
+    ):
+        context = authentication_context_from_claims(id_claims, access_claims)
+        assert context == {"acr": None, "amr": [], "auth_time": None}
+
+    def test_access_token_is_used_when_there_is_no_id_token(self):
+        context = authentication_context_from_claims(
+            None, {"sub": "kp_one", "acr": "mfa", "auth_time": 5}
+        )
+        assert context == {"acr": "mfa", "amr": [], "auth_time": 5}
+
 
 # ---------------------------------------------------------------------------
 # has_authentication_context()
@@ -795,6 +951,29 @@ class TestHasAuthenticationContext:
             has_authentication_context(context, max_age=max_age, now=NOW, leeway=leeway)
             is expected
         )
+
+    @pytest.mark.parametrize(
+        "ahead, leeway, expected",
+        [
+            (86400, 0, False),  # a future auth_time is invalid, not "very recent"
+            (61, 0, False),
+            (60, 0, True),  # the two clocks disagreeing, right after a sign-in
+            (2, 0, True),
+            (90, 120, True),  # a larger tolerance, when the caller asks for one
+            (121, 120, False),
+        ],
+    )
+    def test_auth_time_in_the_future(self, ahead, leeway, expected):
+        context = {"acr": "mfa", "amr": [], "auth_time": NOW + ahead}
+        for max_age in (0, 60, 10**9):
+            assert (
+                has_authentication_context(
+                    context, max_age=max_age, now=NOW, leeway=leeway
+                )
+                is expected
+            )
+        # Only max_age looks at auth_time
+        assert has_authentication_context(context, acr="mfa", now=NOW) is True
 
     def test_both_requirements_must_be_met(self):
         recent_single_factor = {"acr": None, "auth_time": NOW}

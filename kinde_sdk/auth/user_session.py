@@ -1,4 +1,5 @@
 from .token_manager import TokenManager
+import logging
 import threading
 import time
 from typing import Dict, Any, Optional
@@ -289,7 +290,16 @@ class UserSession:
         # releasing self.lock: this waits for a refresh in flight for this
         # user, which must not hold up every other user's requests.
         if token_manager is not None:
-            self._sync_with_storage(user_id, token_manager)
+            try:
+                self._sync_with_storage(user_id, token_manager)
+            except Exception as e:
+                # The session store can't be read or written just now. The
+                # cached tokens are still good: keep them, and compare again
+                # on the next call.
+                logging.warning(
+                    "Could not compare the cached session with the stored one, will retry: %s",
+                    type(e).__name__,
+                )
         return token_manager
 
 

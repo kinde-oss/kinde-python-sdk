@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Auth**: The tokens from an authorization callback now replace the session's access, ID and
   refresh tokens. Previously a refresh or ID token from an earlier sign-in was kept when the new
   response had none.
+- **Auth**: The authorization callback now checks the ID token before storing the tokens: its
+  audience must include the client ID, its issuer must be the configured Kinde host, it must
+  not be expired, and its nonce must be the one sent with the login. Otherwise
+  `handle_redirect()` raises `KindeLoginException`. The nonce is consumed by the callback, so
+  a login can't be completed twice.
 - **Auth**: `acr_values` and `max_age` inside `auth_params` are no longer sent when unset
   (`None` or empty). An invalid `max_age`, or an `acr_values` that is not a string or a list
   of strings, raises `ValueError`.

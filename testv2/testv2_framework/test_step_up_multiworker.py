@@ -57,8 +57,11 @@ class Browser:
 
     def callback(self, worker, code, started):
         """Deliver Kinde's callback for the request ``started`` to a worker."""
-        state = query(started["location"])["state"]
-        return self.get(worker, f"/callback?code={code}&state={state}")
+        request = query(started["location"])
+        # The fake Kinde reads the request's nonce from the code (see the worker)
+        return self.get(
+            worker, f"/callback?code={code}~{request['nonce']}&state={request['state']}"
+        )
 
     def sign_in(self, worker, code):
         return self.callback(worker, code, self.get(worker, "/login"))

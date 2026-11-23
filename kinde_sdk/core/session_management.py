@@ -63,17 +63,17 @@ class KindeSessionManagement:
             # Check if it's a NullFramework instance
             if current_framework and isinstance(current_framework, NullFramework):
                 return current_framework
-            
-            # If not found in FrameworkFactory, try to get it from the NullFramework singleton
-            # This handles the case where OAuth creates NullFramework directly
-            try:
-                null_framework = NullFramework()
-                # Check if this is actually being used (has been initialized)
-                if hasattr(null_framework, '_initialized') and null_framework._initialized:
-                    return null_framework
-            except Exception:
-                pass
-            
+
+            # A web framework owns the session
+            if current_framework is not None:
+                return None
+
+            # Standalone OAuth creates the NullFramework singleton directly. Constructing it
+            # always marks it initialized, so require that an OAuth client is attached.
+            null_framework = NullFramework()
+            if null_framework is not None and getattr(null_framework, "_oauth", None) is not None:
+                return null_framework
+
             return None
             
         except Exception as e:

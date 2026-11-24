@@ -35,7 +35,7 @@ classifiers = [
 dependencies = [
     "urllib3 >=2.2.0, <3.0",
     "python-dateutil >=2.9.0, <3.0",
-    "pyjwt >=2.10.0, <3.0",
+    "pyjwt[crypto] >=2.10.0, <3.0",
     "requests ~=2.32.5; python_version < '3.10'",
     "requests ~=2.34.2; python_version >= '3.10'",
     "typing-extensions >=4.11.0, <5.0",
@@ -59,6 +59,11 @@ flask = [
     # cachelib dependency that its default filesystem backend (used by
     # kinde_flask) needs; 0.8.0 restored it.
     "flask-session >=0.6.0, !=0.7.0, <1.0.0",
+]
+# MCP adapters in kinde_sdk.agents.mcp. The mcp package needs Python 3.10+.
+# Capped below 3.0: the client adapter hooks into OAuthClientProvider internals.
+mcp = [
+    "mcp >=2.3.0, <3.0.0; python_version >= '3.10'",
 ]
 dev = [
     # pytest 9 requires Python >=3.10; pytest 9.0.3 fixes CVE-2025-71176

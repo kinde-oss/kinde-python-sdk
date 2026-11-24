@@ -80,22 +80,45 @@ class TestStorageManager(unittest.TestCase):
         """Test get method."""
         test_key = "test_key"
         test_value = {"value": "test_value"}
-        self.mock_storage.get.return_value = test_value
+        namespaced = f"device:{self.test_device_id}:{test_key}"
+        self.mock_storage.get.side_effect = lambda key: test_value if key == namespaced else None
         
         result = self.storage_manager.get(test_key)
         self.assertEqual(result, test_value)
-        self.mock_storage.get.assert_called_once_with(f"device:{self.test_device_id}:{test_key}")
+        self.mock_storage.get.assert_called_with(namespaced)
 
     def test_setItems(self):
         """Test setItems method."""
         test_key = "test_key"
         test_value = {"value": "test_value"}
+        self.mock_storage.get.return_value = None
         
         self.storage_manager.setItems(test_key, test_value)
-        self.mock_storage.set.assert_called_once_with(
+        self.mock_storage.set.assert_called_with(
             f"device:{self.test_device_id}:{test_key}",
             test_value
         )
+
+    def test_device_id_comes_from_the_session(self):
+        """Another process or worker must find the keys the signing-in process wrote."""
+        session_device_id = str(uuid.uuid4())
+        self.mock_storage.get.side_effect = (
+            lambda key: {"value": session_device_id} if key == "_device_id" else None
+        )
+
+        self.storage_manager.setItems("user_1", {"tokens": {}})
+
+        self.mock_storage.set.assert_called_once_with(f"device:{session_device_id}:user_1", {"tokens": {}})
+        self.assertNotEqual(session_device_id, self.test_device_id)
+
+    def test_device_id_is_pinned_in_a_new_session(self):
+        self.mock_storage.get.return_value = None
+
+        self.assertEqual(self.storage_manager.get_device_id(), self.test_device_id)
+
+        key, value = self.mock_storage.set.call_args.args
+        self.assertEqual(key, "_device_id")
+        self.assertEqual(value["value"], self.test_device_id)
 
     def test_set(self):
         """Test set method for flat access token."""
@@ -149,17 +172,69 @@ class TestStorageManager(unittest.TestCase):
         self.assertTrue(all(r == results[0] for r in results))
 
     def test_reset(self):
-        """Test reset method."""
-        #self.storage_manager.reset()
-        #self.assertIsNone(self.storage_manager._storage)
-        #self.assertIsNone(self.storage_manager._device_id)
-        #self.assertEqual(self.storage_manager._storage_type, "memory")
+        """reset() re-initializes fresh memory storage without deadlocking on its own lock."""
+        self.storage_manager.initialize({"type": "memory"}, device_id="before-reset")
+        self.storage_manager.setItems("key", {"value": 1})
+
+        worker = threading.Thread(target=self.storage_manager.reset, daemon=True)
+        worker.start()
+        worker.join(timeout=5)
+        self.assertFalse(worker.is_alive(), "reset() deadlocked")
+
+        self.assertEqual(self.storage_manager._storage_type, "memory")
+        self.assertIsNotNone(self.storage_manager._storage)
+        self.assertNotEqual(self.storage_manager.get_device_id(), "before-reset")
+        self.assertIsNone(self.storage_manager.get("key"))
 
     def test_auto_initialize(self):
         """Test auto-initialization when storage is None."""
         self.storage_manager._storage = None
         self.storage_manager.get("test_key")
         self.assertIsNotNone(self.storage_manager._storage)
+
+
+class TestDeviceIdFallbacks(unittest.TestCase):
+    def setUp(self):
+        StorageManager._instance = None
+        self.storage_manager = StorageManager()
+
+    def tearDown(self):
+        StorageManager._instance = None
+
+    def test_without_storage_an_in_process_id_is_generated_once(self):
+        self.assertIsNone(self.storage_manager._storage)
+
+        device_id = self.storage_manager.get_device_id()
+
+        self.assertEqual(str(uuid.UUID(device_id)), device_id)
+        self.assertEqual(self.storage_manager.get_device_id(), device_id)
+
+    def test_failed_device_id_write_still_returns_the_id(self):
+        storage = MagicMock(spec=StorageInterface)
+        storage.get.return_value = None
+        storage.set.side_effect = OSError("session not writable")
+        self.storage_manager._storage = storage
+
+        device_id = self.storage_manager.get_device_id()
+
+        self.assertTrue(device_id)
+        self.assertEqual(self.storage_manager.get_device_id(), device_id)
+
+    def test_failed_device_id_write_is_logged_without_details(self):
+        storage = MagicMock(spec=StorageInterface)
+        storage.get.return_value = None
+        storage.set.side_effect = OSError("session not writable: secret-detail")
+        self.storage_manager._storage = storage
+
+        with self.assertLogs("kinde_sdk.core.storage.storage_manager", level="WARNING") as logs:
+            device_id = self.storage_manager.get_device_id()
+
+        self.assertTrue(device_id)
+        output = "\n".join(logs.output)
+        self.assertIn("Failed to persist device ID", output)
+        self.assertIn("OSError", output)
+        self.assertNotIn("secret-detail", output)
+        self.assertNotIn(device_id, output)
 
 if __name__ == "__main__":
     unittest.main() 

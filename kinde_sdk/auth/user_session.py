@@ -8,6 +8,13 @@ from kinde_sdk.core.storage.storage_manager import StorageManager
 logger = logging.getLogger(__name__)
 
 class UserSession:
+    # Keyed by client_id and populated by OAuth. Kept in process memory so the
+    # secret is never written to session storage (which may be a browser cookie).
+    client_secrets: Dict[str, Optional[str]] = {}
+    # Configured Kinde host per client_id, also set by OAuth. The Account API
+    # host is checked against it rather than trusted from a token's iss claim.
+    client_hosts: Dict[str, str] = {}
+
     def __init__(self):
         self.user_sessions = {}  # Store user-specific session data
         self.lock = threading.Lock()  # Add a lock for thread safety
@@ -16,12 +23,18 @@ class UserSession:
     def set_user_data(self, user_id: str, user_info: Dict[str, Any], token_data: Dict[str, Any]):
         """Store user session details and associate tokens."""
         with self.lock:  # Acquire the lock
+            # A secret passed in user_info (e.g. without an OAuth client) belongs to this
+            # session's token manager only. It isn't shared with other sessions for the
+            # same client, and it's never written to session storage.
+            # May be None for PKCE flow.
+            client_secret = user_info.get("client_secret") or self.client_secrets.get(user_info["client_id"])
+
             if user_id not in self.user_sessions:
                 # Create new token manager
                 token_manager = TokenManager(
-                    user_id, 
-                    user_info["client_id"], 
-                    user_info.get("client_secret"),  # May be None for PKCE flow
+                    user_id,
+                    user_info["client_id"],
+                    client_secret,
                     user_info["token_url"]
                 )
                 
@@ -40,7 +53,13 @@ class UserSession:
                 # The token manager is shared per user, so another UserSession may have
                 # bound it since. Bind it here again so refreshes save this user_info
                 self._bind_token_storage(user_id, self.user_sessions[user_id]["token_manager"])
-            
+
+            # The manager may already exist (one per user), so give it the secret if it
+            # has none, but keep a secret it already has
+            token_manager = self.user_sessions[user_id]["token_manager"]
+            if not token_manager.client_secret and client_secret:
+                token_manager.client_secret = client_secret
+
             # Set tokens in token manager
             self.user_sessions[user_id]["token_manager"].set_tokens(token_data)
             
@@ -53,8 +72,10 @@ class UserSession:
         if session_data:
             # We need to serialize the session data
             # Token manager can't be directly serialized
+            # Never persist client_secret, even if a caller passed it in user_info
+            user_info = {k: v for k, v in session_data["user_info"].items() if k != "client_secret"}
             serialized_data = {
-                "user_info": session_data["user_info"],
+                "user_info": user_info,
                 "tokens": session_data["token_manager"].tokens,
             }
             # Store with user: prefix to make it user-specific but device-independent
@@ -96,12 +117,17 @@ class UserSession:
             "token_url" not in user_info or
             "access_token" not in tokens):
             return False
-            
-        
+
+        # Sessions saved by older SDK versions may still contain client_secret. Drop it,
+        # and write the cleaned record back so it doesn't stay in the stored session
+        if "client_secret" in user_info:
+            user_info = {k: v for k, v in user_info.items() if k != "client_secret"}
+            self.storage_manager.setItems(user_id, {**session_data, "user_info": user_info})
+
         token_manager = TokenManager(
             user_id,
             user_info.get("client_id"),
-            user_info.get("client_secret"),
+            self.client_secrets.get(user_info.get("client_id")),
             user_info.get("token_url")
         )
         

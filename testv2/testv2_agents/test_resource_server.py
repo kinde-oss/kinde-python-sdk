@@ -66,6 +66,13 @@ class TestConfig:
             "https://api.example.com/.well-known/oauth-protected-resource/mcp"
         )
 
+    def test_metadata_url_keeps_the_resource_query(self, fake):
+        config = make_auth(fake, resource_url="https://api.example.com/mcp?tenant=blue").config
+        assert config.protected_resource_metadata_path == "/.well-known/oauth-protected-resource/mcp"
+        assert config.protected_resource_metadata_url == (
+            "https://api.example.com/.well-known/oauth-protected-resource/mcp?tenant=blue"
+        )
+
     def test_root_resource_has_root_metadata_path(self, fake):
         config = make_auth(fake, resource_url="https://api.example.com/").config
         assert config.protected_resource_metadata_path == "/.well-known/oauth-protected-resource"

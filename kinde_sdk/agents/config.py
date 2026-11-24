@@ -190,5 +190,7 @@ class AgentAuthConfig:
 
     @property
     def protected_resource_metadata_url(self) -> str:
+        """The URL agents fetch the metadata from. Keeps the resource's query (RFC 9728 §3.1); the route doesn't."""
         parts = urlsplit(self.resource_url)
-        return f"{parts.scheme}://{parts.netloc}{self.protected_resource_metadata_path}"
+        query = f"?{parts.query}" if parts.query else ""
+        return f"{parts.scheme}://{parts.netloc}{self.protected_resource_metadata_path}{query}"

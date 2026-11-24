@@ -90,10 +90,27 @@ class TestHelpers:
             ("https://api.example.com/mc", False),
             ("https://evil.example.com/mcp", False),
             ("http://api.example.com/mcp", False),
+            ("https://api.example.com/mcp?tenant=blue", False),
         ],
     )
     def test_resource_covers(self, prm_resource, expected):
         assert resource_covers(prm_resource, RESOURCE_URL) is expected
+
+    def test_resource_covers_compares_the_query(self):
+        blue = "https://api.example.com/mcp?tenant=blue"
+        assert resource_covers(blue, blue) is True
+        assert resource_covers("https://api.example.com/mcp?tenant=green", blue) is False
+        assert resource_covers(RESOURCE_URL, blue) is False
+
+    def test_metadata_urls_keep_the_resource_query(self):
+        assert protected_resource_metadata_urls("https://api.example.com/mcp?tenant=blue") == [
+            "https://api.example.com/.well-known/oauth-protected-resource/mcp?tenant=blue",
+            "https://api.example.com/.well-known/oauth-protected-resource",
+        ]
+        assert protected_resource_metadata_urls("https://api.example.com/?tenant=blue") == [
+            "https://api.example.com/.well-known/oauth-protected-resource?tenant=blue",
+            "https://api.example.com/.well-known/oauth-protected-resource",
+        ]
 
     def test_rejects_insecure_resource(self):
         with pytest.raises(AgentConfigError):
@@ -390,13 +407,25 @@ class TestTokens:
     async def test_concurrent_401s_share_one_refresh(self, fake):
         client = make_client(fake, client_metadata_url=CIMD_URL)
         await client.connect()
+        stale = await client.get_access_token()
         fake.active_tokens.clear()  # the resource now rejects the access token
+        rejected = []
+        all_rejected = asyncio.Event()
+
+        async def handler(request):
+            if request.url.host == "api.example.com" and request.headers.get("authorization") == f"Bearer {stale}":
+                # Hold every 401 until all callers have one, so they really wait on refresh together
+                rejected.append(request)
+                if len(rejected) == 5:
+                    all_rejected.set()
+                await asyncio.wait_for(all_rejected.wait(), 5)
+            return fake.handle(request)
+
+        client._http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
         responses = await asyncio.gather(*(client.request("GET") for _ in range(5)))
         assert all(r.status_code == 200 for r in responses)
-        refreshes = [
-            r for r in fake.requests if r.url.path.endswith("/token") and b"grant_type=refresh_token" in r.content
-        ]
-        assert len(refreshes) == 1
+        assert len(rejected) == 5
+        assert len([r for r in fake.requests if is_grant(r, "refresh_token")]) == 1
 
     async def test_signs_in_again_when_the_refreshed_token_is_refused(self, fake):
         refused = set()
@@ -887,7 +916,9 @@ class TestFileStorage:
         await storage.set_registration("r", {"client_id": "c"})
         assert await FileAgentStorage(str(path)).get_tokens("k") == {"access_token": "a"}
         assert await storage.get_registration("r") == {"client_id": "c"}
-        assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
+        if os.name == "posix":
+            # Windows reports 0666 for any writable file; there the folder's access rules apply
+            assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
         await storage.delete_tokens("k")
         assert await storage.get_tokens("k") is None
 
@@ -966,3 +997,251 @@ class TestConcurrentSignIn:
         responses = await asyncio.gather(*(client.request("GET") for _ in range(5)))
         assert all(r.status_code == 200 for r in responses)
         assert len(signins) == 2  # the first connect, then one shared sign-in
+
+
+class TestReviewRaces:
+    """Work that finishes after something else changed the state it started from."""
+
+    @pytest.mark.parametrize("storage_class", ["memory", "file", "basic"])
+    async def test_slow_refresh_never_overwrites_a_newer_sign_in(self, fake, tmp_path, storage_class):
+        storage = _storage(storage_class, tmp_path, hide="set_tokens_if_refresh_token")
+        await make_client(fake, client_metadata_url=CIMD_URL, storage=storage).connect()
+        key = f"{RESOURCE_URL}|default"
+        old = await storage.get_tokens(key)
+        newer = {**old, "access_token": "newer-access", "refresh_token": "newer-refresh"}
+
+        async def handler(request):
+            if is_grant(request, "refresh_token"):
+                await storage.set_tokens(key, newer)  # a sign-in finishes while the refresh is in flight
+            return fake.handle(request)
+
+        client = client_with_handler(handler, fake=fake, storage=storage)
+        assert await client.refresh() == newer
+        assert await storage.get_tokens(key) == newer
+
+    @pytest.mark.parametrize("storage_class", ["memory", "file", "basic"])
+    async def test_slow_refresh_never_undoes_a_sign_out(self, fake, tmp_path, storage_class):
+        storage = _storage(storage_class, tmp_path, hide="set_tokens_if_refresh_token")
+        await make_client(fake, client_metadata_url=CIMD_URL, storage=storage).connect()
+        key = f"{RESOURCE_URL}|default"
+
+        async def handler(request):
+            if is_grant(request, "refresh_token"):
+                await storage.delete_tokens(key)  # disconnect() runs while the refresh is in flight
+            return fake.handle(request)
+
+        client = client_with_handler(handler, fake=fake, storage=storage)
+        assert await client.refresh() is None
+        assert await storage.get_tokens(key) is None
+
+    async def test_refresh_still_saves_when_nothing_changed(self, fake, tmp_path):
+        fake.rotate_refresh_tokens = True
+        storage = FileAgentStorage(str(tmp_path / "t.json"))
+        client = make_client(fake, client_metadata_url=CIMD_URL, storage=storage)
+        await client.connect()
+        before = await storage.get_tokens(f"{RESOURCE_URL}|default")
+        after = await client.refresh()
+        assert after["refresh_token"] != before["refresh_token"]
+        assert await storage.get_tokens(f"{RESOURCE_URL}|default") == after
+
+    async def test_issuer_change_keeps_tokens_saved_meanwhile(self, fake):
+        key = f"{RESOURCE_URL}|default"
+        newer = {"access_token": "b", "refresh_token": "rb", "issuer": ISSUER}
+
+        class RacingStorage(InMemoryAgentStorage):
+            async def delete_tokens_if_refresh_token(self, key_, refresh_token):
+                # Another process signs in at the new issuer between discovery's read and its delete
+                await self.set_tokens(key_, newer)
+                await super().delete_tokens_if_refresh_token(key_, refresh_token)
+
+        storage = RacingStorage()
+        await storage.set_tokens(key, {"access_token": "a", "refresh_token": "ra", "issuer": "https://old.example.com"})
+        await make_client(fake, storage=storage).discover()
+        assert await storage.get_tokens(key) == newer
+
+    async def test_registration_is_not_saved_under_an_issuer_found_meanwhile(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, storage=storage)
+        await client.discover()
+
+        def handler(request):
+            if request.url.path.endswith("/register"):
+                # Discovery finds another issuer while the registration request is in flight
+                client._as_metadata = {**client._as_metadata, "issuer": "https://other.example.com"}
+            return fake.handle(request)
+
+        client._http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        with pytest.raises(RegistrationError, match="changed during registration"):
+            await client.begin_authorization()
+        assert await storage.get_registration(REGISTRATION_KEY) is None
+
+    async def test_code_exchange_is_not_saved_under_an_issuer_found_meanwhile(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, client_metadata_url=CIMD_URL, storage=storage)
+        pending = await client.begin_authorization()
+        callback = fake.authorize(pending.authorization_url)
+
+        def handler(request):
+            if is_grant(request, "authorization_code"):
+                client._as_metadata = {**client._as_metadata, "issuer": "https://other.example.com"}
+            return fake.handle(request)
+
+        client._http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        with pytest.raises(AuthorizationError, match="changed during sign-in"):
+            await client.complete_authorization(pending, callback)
+        assert await storage.get_tokens(f"{RESOURCE_URL}|default") is None
+
+    async def test_refresh_is_not_saved_under_an_issuer_found_meanwhile(self, fake):
+        storage = InMemoryAgentStorage()
+        await make_client(fake, client_metadata_url=CIMD_URL, storage=storage).connect()
+        key = f"{RESOURCE_URL}|default"
+        before = await storage.get_tokens(key)
+        client = make_client(fake, client_metadata_url=CIMD_URL, storage=storage)
+
+        def handler(request):
+            if is_grant(request, "refresh_token"):
+                client._as_metadata = {**client._as_metadata, "issuer": "https://other.example.com"}
+            return fake.handle(request)
+
+        client._http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        assert await client.refresh() is None
+        assert await storage.get_tokens(key) == before
+
+
+class TestReviewEdgeCases:
+    async def test_registration_404_keeps_tokens_and_registration(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, storage=storage)
+        await client.connect()
+        key = f"{RESOURCE_URL}|default"
+        tokens, registration = await storage.get_tokens(key), await storage.get_registration(REGISTRATION_KEY)
+        fake.register_status = 404
+        with pytest.raises(RegistrationError, match="404"):
+            # A new redirect URI needs a new registration, but the existing grant still works
+            await client.begin_authorization(redirect_uri="http://127.0.0.1:9999/callback")
+        assert await storage.get_tokens(key) == tokens
+        assert await storage.get_registration(REGISTRATION_KEY) == registration
+        assert (await client.request("GET")).status_code == 200
+
+    async def test_unreachable_challenge_url_falls_back_to_well_known(self, fake):
+        def handler(request):
+            if request.url.host == "metadata.example.com":
+                raise httpx.ConnectTimeout("timed out", request=request)
+            return fake.handle(request)
+
+        client = client_with_handler(handler, fake=fake)
+        challenge = httpx.Response(
+            401, headers={"WWW-Authenticate": 'Bearer resource_metadata="https://metadata.example.com/prm"'}
+        )
+        assert (await client.discover(challenge))["issuer"] == ISSUER
+
+    async def test_no_reachable_metadata_reports_why(self, fake):
+        def handler(request):
+            raise httpx.ConnectTimeout("timed out", request=request)
+
+        client = client_with_handler(handler, fake=fake)
+        challenge = httpx.Response(
+            401, headers={"WWW-Authenticate": 'Bearer resource_metadata="https://m.example.com/p"'}
+        )
+        with pytest.raises(DiscoveryError, match="ConnectTimeout"):
+            await client.discover(challenge)
+
+    @pytest.mark.parametrize("value", [1, True, ["https://x.example.com"], ""])
+    async def test_non_string_optional_endpoint_aborts_discovery(self, fake, value):
+        fake.as_metadata["revocation_endpoint"] = value
+        with pytest.raises(DiscoveryError, match="invalid revocation_endpoint"):
+            await make_client(fake).discover()
+
+    async def test_disconnect_clears_everything_when_an_endpoint_is_invalid(self, fake):
+        storage = InMemoryAgentStorage()
+        client = make_client(fake, storage=storage)
+        await client.connect()
+        fake.as_metadata["revocation_endpoint"] = 1
+        client._metadata_at = 0
+        await client.disconnect(forget=True)
+        assert await storage.get_tokens(f"{RESOURCE_URL}|default") is None
+        assert await storage.get_registration(REGISTRATION_KEY) is None
+
+    async def test_one_shot_body_is_not_resent_after_a_401(self, fake):
+        client = make_client(fake, client_metadata_url=CIMD_URL)
+        await client.connect()
+        fake.active_tokens.clear()
+
+        async def body():
+            yield b'{"jsonrpc": "2.0"}'
+
+        response = await client.request("POST", content=body())
+        assert response.status_code == 401
+        assert len([r for r in fake.requests if r.url.host == "api.example.com" and r.method == "POST"]) == 1
+        assert len([r for r in fake.requests if is_grant(r, "refresh_token")]) == 1
+        # The caller's retry with a fresh body uses the refreshed token
+        assert (await client.request("POST", content=body())).status_code == 200
+
+    async def test_buffered_body_is_still_retried(self, fake):
+        client = make_client(fake, client_metadata_url=CIMD_URL)
+        await client.connect()
+        fake.active_tokens.clear()
+        response = await client.request("POST", json={"jsonrpc": "2.0"})
+        assert response.status_code == 200
+        posts = [r for r in fake.requests if r.url.host == "api.example.com" and r.method == "POST"]
+        assert [r.content for r in posts] == [b'{"jsonrpc":"2.0"}'] * 2
+
+    async def test_listener_close_does_not_wait_for_a_stalled_connection(self):
+        listener = _LoopbackListener("http://127.0.0.1/callback")
+        await listener.start()
+        port = int(urlsplit(listener.redirect_uri).port)
+        # A local client opens a connection and never finishes its headers
+        _, stalled = await asyncio.open_connection("127.0.0.1", port)
+        stalled.write(b"GET /callback HTTP/1.1\r\nHost: x\r\n")
+        await stalled.drain()
+        listener.expected_state = "s"
+        try:
+            async with httpx.AsyncClient() as browser:
+                response = await browser.get(listener.redirect_uri + "?code=c&state=s")
+            assert response.status_code == 200
+            assert query_of(await listener.wait(1))["code"] == "c"
+        finally:
+            await asyncio.wait_for(listener.close(), 2)
+            stalled.close()
+
+
+@pytest.mark.skipif(os.name != "posix", reason="uses fcntl to hold the lock from outside")
+async def test_file_lock_wait_does_not_block_the_event_loop(tmp_path):
+    import fcntl
+
+    path = str(tmp_path / "tokens.json")
+    storage = FileAgentStorage(path)
+    await storage.set_tokens("k", {"access_token": "a"})
+    holder = os.open(path + ".lock", os.O_RDWR)
+    fcntl.flock(holder, fcntl.LOCK_EX)  # another process holds the lock
+    try:
+        write = asyncio.ensure_future(storage.set_tokens("k", {"access_token": "b"}))
+        ticks = 0
+        for _ in range(5):
+            await asyncio.sleep(0.01)  # the loop keeps running while the write waits
+            ticks += 1
+        assert ticks == 5 and not write.done()
+    finally:
+        fcntl.flock(holder, fcntl.LOCK_UN)
+        os.close(holder)
+    await asyncio.wait_for(write, 5)
+    assert await storage.get_tokens("k") == {"access_token": "b"}
+
+
+def _storage(kind: str, tmp_path, *, hide: str):
+    """An in-memory, file, or basic store; the basic one lacks the optional ``hide`` method."""
+
+    class BasicStorage:
+        def __init__(self):
+            self.inner = InMemoryAgentStorage()
+
+        def __getattr__(self, name):
+            if name == hide:
+                raise AttributeError(name)
+            return getattr(self.inner, name)
+
+    return {
+        "memory": InMemoryAgentStorage,
+        "file": lambda: FileAgentStorage(str(tmp_path / "t.json")),
+        "basic": BasicStorage,
+    }[kind]()

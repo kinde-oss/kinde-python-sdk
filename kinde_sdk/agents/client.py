@@ -100,20 +100,30 @@ async def _is_internal_host(host: Optional[str]) -> bool:
 
 
 def resource_covers(prm_resource: str, resource_url: str) -> bool:
-    """Whether metadata for ``prm_resource`` applies to ``resource_url``: same origin, same or parent path."""
+    """Whether metadata for ``prm_resource`` applies to ``resource_url``: same origin, same or parent path.
+
+    The query must match exactly, so ``/mcp?tenant=blue`` never accepts the document for ``/mcp?tenant=green``.
+    """
     if _origin(prm_resource) != _origin(resource_url):
         return False
-    base = urlsplit(prm_resource).path.rstrip("/")
-    path = urlsplit(resource_url).path.rstrip("/")
+    prm_parts, parts = urlsplit(prm_resource), urlsplit(resource_url)
+    if prm_parts.query != parts.query:
+        return False
+    base = prm_parts.path.rstrip("/")
+    path = parts.path.rstrip("/")
     return path == base or path.startswith(base + "/")
 
 
 def protected_resource_metadata_urls(resource_url: str) -> List[str]:
-    """The path-suffixed then root RFC 9728 URLs for a resource."""
+    """The resource-specific then root RFC 9728 URLs for a resource.
+
+    The resource-specific URL keeps the resource's query (RFC 9728 §3.1); the root URL has none.
+    """
     parts = urlsplit(resource_url)
     origin = f"{parts.scheme}://{parts.netloc}"
     path = parts.path.rstrip("/")
-    urls = [origin + PROTECTED_RESOURCE_WELL_KNOWN + path] if path else []
+    query = f"?{parts.query}" if parts.query else ""
+    urls = [origin + PROTECTED_RESOURCE_WELL_KNOWN + path + query] if path or query else []
     urls.append(origin + PROTECTED_RESOURCE_WELL_KNOWN)
     return urls
 
@@ -193,6 +203,9 @@ class _LoopbackListener:
         self._query = parts.query
         self._server: Optional[asyncio.AbstractServer] = None
         self._result: Optional[asyncio.Future] = None
+        # Open connections, so close() can drop stalled ones instead of waiting for them
+        self._writers: "set[asyncio.StreamWriter]" = set()
+        self._result_writer: Optional[asyncio.StreamWriter] = None
         self.redirect_uri = redirect_uri
         # Set once the authorization request exists; callbacks with any other state are ignored
         self.expected_state: Optional[str] = None
@@ -209,10 +222,10 @@ class _LoopbackListener:
 
     async def _handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         """Answer one HTTP request; complete the sign-in only for the callback path with the expected state."""
+        self._writers.add(writer)
         try:
-            request_line = (await asyncio.wait_for(reader.readline(), 10)).decode("latin-1")
-            while (await asyncio.wait_for(reader.readline(), 10)) not in (b"\r\n", b"\n", b""):
-                pass
+            # One deadline for the whole request head, so a slow sender can't hold the connection open
+            request_line = (await asyncio.wait_for(self._read_head(reader), 10)).decode("latin-1")
             method, _, rest = request_line.partition(" ")
             target = rest.rsplit(" ", 1)[0]
             query = parse_qs(urlsplit(target).query)
@@ -235,6 +248,7 @@ class _LoopbackListener:
                 + f"Content-Length: {len(body)}\r\n\r\n".encode()
                 + body
             )
+            self._result_writer = writer
             self._result.set_result(f"http://{self._netloc_host}:{self._bound_port}{target}")
         except (asyncio.TimeoutError, ConnectionError, UnicodeDecodeError):
             pass
@@ -244,6 +258,15 @@ class _LoopbackListener:
             except ConnectionError:
                 pass
             writer.close()
+            self._writers.discard(writer)
+
+    @staticmethod
+    async def _read_head(reader: asyncio.StreamReader) -> bytes:
+        """Read the request line, then skip the headers up to the blank line."""
+        request_line = await reader.readline()
+        while (await reader.readline()) not in (b"\r\n", b"\n", b""):
+            pass
+        return request_line
 
     async def wait(self, timeout: float) -> str:
         """Wait for the callback URL, raising :class:`AuthorizationError` on timeout."""
@@ -253,9 +276,13 @@ class _LoopbackListener:
             raise AuthorizationError("Timed out waiting for the browser to finish signing in") from exc
 
     async def close(self) -> None:
-        """Stop listening."""
+        """Stop listening, dropping any other connection still open so shutdown never waits on it."""
         if self._server is not None:
             self._server.close()
+            for writer in list(self._writers):
+                if writer is not self._result_writer:
+                    # Lets the callback's own response finish; drops every other connection
+                    writer.close()
             await self._server.wait_closed()
             self._server = None
 
@@ -399,7 +426,8 @@ class KindeAgentClient:
         if stored and stored.get("issuer") != issuer:
             # Tokens are bound to the issuer that granted them
             logger.info("The authorization server changed; discarding stored tokens")
-            await self.storage.delete_tokens(self._token_key)
+            # Only the record read above: tokens another process saved since are left alone
+            await self._drop_tokens_unless_replaced(stored.get("refresh_token"))
         self._prm, self._as_metadata, self._metadata_at = prm, metadata, time.monotonic()
         return metadata
 
@@ -428,9 +456,15 @@ class KindeAgentClient:
         for url in protected_resource_metadata_urls(self.resource_url):
             if url not in candidates:
                 candidates.append(url)
+        failures: List[str] = []
         for url in candidates:
             _require_secure(url, "protected resource metadata URL")
-            document = await self._get_json(url)
+            try:
+                document = await self._get_json(url)
+            except DiscoveryError as exc:
+                # An unreachable candidate shouldn't stop the next one being tried
+                failures.append(str(exc))
+                continue
             if document is not None:
                 return document
         if challenge_response is None:
@@ -447,7 +481,8 @@ class KindeAgentClient:
                 and await self._may_fetch(metadata_url)
             ):
                 return await self._fetch_protected_resource_metadata(probe)
-        raise DiscoveryError(f"No protected resource metadata found for {self.resource_url}")
+        details = f" ({'; '.join(failures)})" if failures else ""
+        raise DiscoveryError(f"No protected resource metadata found for {self.resource_url}{details}")
 
     async def _may_fetch(self, metadata_url: str) -> bool:
         """Whether a ``resource_metadata`` URL from a challenge is safe to fetch."""
@@ -493,9 +528,13 @@ class KindeAgentClient:
                 if not isinstance(metadata.get(name), str):
                     raise DiscoveryError(f"The authorization server metadata has no {name}")
             for name in ("authorization_endpoint", "token_endpoint", "registration_endpoint", "revocation_endpoint"):
-                if metadata.get(name):
-                    _require_secure(metadata[name], name.replace("_", " "))
-                    await self._refuse_internal_from_public(metadata[name], name.replace("_", " "))
+                value = metadata.get(name)
+                if value is None:
+                    continue  # optional endpoints may be left out
+                if not isinstance(value, str) or not value:
+                    raise DiscoveryError(f"The authorization server metadata has an invalid {name}")
+                _require_secure(value, name.replace("_", " "))
+                await self._refuse_internal_from_public(value, name.replace("_", " "))
             return metadata
         raise DiscoveryError(f"No authorization server metadata found for {issuer}")
 
@@ -544,7 +583,7 @@ class KindeAgentClient:
             )
         ):
             # Replaces this account's previous registration, so registrations don't pile up
-            registration = await self._register(redirect_uri, key)
+            registration = await self._register(redirect_uri, key, metadata)
         return _identity_from_registration(registration, key)
 
     @property
@@ -566,9 +605,9 @@ class KindeAgentClient:
         if stored and stored.get("client_id") == identity.get("client_id"):
             await self.storage.delete_registration(key)
 
-    async def _register(self, redirect_uri: str, key: str) -> Dict[str, Any]:
-        """Register this agent with DCR and store the registration."""
-        endpoint = self._as_metadata["registration_endpoint"]
+    async def _register(self, redirect_uri: str, key: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Register this agent with DCR at the issuer in ``metadata`` and store the registration."""
+        endpoint = metadata["registration_endpoint"]
         request = {
             "redirect_uris": [redirect_uri],
             "client_name": self.client_name,
@@ -585,10 +624,9 @@ class KindeAgentClient:
         if response.status_code == 429:
             raise RegistrationError("Too many registrations; try again later", error=error or "too_many_registrations")
         if response.status_code == 404:
-            # The application behind this issuer is gone
-            await self.storage.delete_tokens(self._token_key)
-            await self.storage.delete_registration(key)
-            raise RegistrationError("The authorization server no longer exists", error=error)
+            # Stored tokens and registrations are left alone: they may still work, and a later
+            # refresh or sign-in clears them if they don't
+            raise RegistrationError("The registration endpoint was not found (HTTP 404)", error=error)
         if response.status_code not in (200, 201):
             if error == "invalid_redirect_uri":
                 # The description names the host to add to the application's Trusted agent hosts
@@ -620,8 +658,12 @@ class KindeAgentClient:
             or ("client_secret_post" if secret else "none"),
             "client_secret_expires_at": expires_at,
             "redirect_uri": redirect_uri,
-            "issuer": self._as_metadata["issuer"],
+            # The issuer that handled this request, not whatever discovery found since
+            "issuer": metadata["issuer"],
         }
+        if self.issuer != metadata["issuer"]:
+            # A newer discovery found another issuer while this request was in flight; keep its state
+            raise RegistrationError("The authorization server changed during registration; start again")
         await self.storage.set_registration(key, registration)
         return registration
 
@@ -745,9 +787,13 @@ class KindeAgentClient:
             raise TokenRequestError(
                 f"The code exchange failed: {error or response.status_code}", error=error, error_description=description
             )
-        await self._store_token_response(
-            response, identity, pending.redirect_uri, previous=None, requested_scope=pending.scope
+        tokens = self._tokens_from_response(
+            response, identity, pending.redirect_uri, metadata["issuer"], previous=None, requested_scope=pending.scope
         )
+        if self.issuer != metadata["issuer"]:
+            # Discovery found another issuer while the code was being exchanged; don't file these under it
+            raise AuthorizationError("The authorization server changed during sign-in; start again")
+        await self.storage.set_tokens(self._token_key, tokens)
 
     async def authorize(
         self, *, scopes: Optional[Sequence[str]] = None, challenge_response: Optional[httpx.Response] = None
@@ -787,15 +833,19 @@ class KindeAgentClient:
         except httpx.HTTPError as exc:
             raise TokenRequestError(f"Could not reach the token endpoint: {type(exc).__name__}") from exc
 
-    async def _store_token_response(
+    def _tokens_from_response(
         self,
         response: httpx.Response,
         identity: Dict[str, Any],
         redirect_uri: Optional[str],
+        issuer: str,
         previous: Optional[Dict[str, Any]],
         requested_scope: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Store a token response, keeping the previous refresh token when none is returned."""
+        """Build the token record from a token response, keeping the previous refresh token when none is returned.
+
+        ``issuer`` is the one the token request went to.
+        """
         try:
             body = response.json()
         except ValueError as exc:
@@ -814,13 +864,12 @@ class KindeAgentClient:
             "expires_in": float(expires_in) if isinstance(expires_in, (int, float)) else None,
             # RFC 6749 §5.1: no scope in the response means the requested scope was granted
             "scope": body.get("scope") or requested_scope or (previous or {}).get("scope"),
-            "issuer": self._as_metadata["issuer"],
+            "issuer": issuer,
             "resource_url": self.resource_url,
             "client_id": identity["client_id"],
             "registration_key": identity.get("registration_key"),
             "redirect_uri": redirect_uri,
         }
-        await self.storage.set_tokens(self._token_key, tokens)
         return tokens
 
     @staticmethod
@@ -868,7 +917,13 @@ class KindeAgentClient:
             self._apply_client_auth(identity, data, headers)
             response = await self._post_token(metadata["token_endpoint"], data, headers)
             if response.status_code == 200:
-                return await self._store_token_response(response, identity, tokens.get("redirect_uri"), previous=tokens)
+                refreshed = self._tokens_from_response(
+                    response, identity, tokens.get("redirect_uri"), metadata["issuer"], previous=tokens
+                )
+                if self.issuer != metadata["issuer"]:
+                    # Another issuer was discovered meanwhile; its tokens, if any, are the current ones
+                    return None
+                return await self._save_refreshed_tokens(tokens["refresh_token"], refreshed)
             error, description = _oauth_error(response)
             if error == "invalid_grant":
                 # Revoked, expired after 15 days, or the application was deleted. Or another client
@@ -882,7 +937,23 @@ class KindeAgentClient:
                 f"The refresh failed: {error or response.status_code}", error=error, error_description=description
             )
 
-    async def _drop_tokens_unless_replaced(self, refresh_token: str) -> Optional[Dict[str, Any]]:
+    async def _save_refreshed_tokens(self, refresh_token: str, refreshed: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Save ``refreshed`` only if the stored tokens still hold ``refresh_token``; return what is stored.
+
+        A sign-in or ``disconnect()`` that finished while the refresh was in flight wins: its tokens
+        (or the cleared session) are kept and returned instead.
+        """
+        set_if = getattr(self.storage, "set_tokens_if_refresh_token", None)
+        if set_if is not None:
+            # The storage checks and writes in one step, so a newer pair can't slip in between
+            await set_if(self._token_key, refresh_token, refreshed)
+        else:
+            stored = await self.storage.get_tokens(self._token_key)
+            if stored and stored.get("refresh_token") == refresh_token:
+                await self.storage.set_tokens(self._token_key, refreshed)
+        return await self.storage.get_tokens(self._token_key)
+
+    async def _drop_tokens_unless_replaced(self, refresh_token: Optional[str]) -> Optional[Dict[str, Any]]:
         """Delete the stored tokens if they still hold ``refresh_token``; return any newer tokens left."""
         delete_if = getattr(self.storage, "delete_tokens_if_refresh_token", None)
         if delete_if is not None:
@@ -965,7 +1036,10 @@ class KindeAgentClient:
         """Call the resource with the bearer token, refreshing, re-authorizing and stepping up as needed.
 
         ``url`` is empty (the resource URL itself), a path on the resource's
-        origin, or an absolute URL on that origin.
+        origin, or an absolute URL on that origin. A body that can only be read
+        once (a generator as ``content``, or ``files``) is never resent: on a
+        ``401`` the tokens are refreshed and the response is returned, so send
+        the request again with a fresh body.
         """
         target = self._resolve(url)
         headers = dict(kwargs.pop("headers", None) or {})
@@ -977,6 +1051,12 @@ class KindeAgentClient:
             )
 
         response = await send(tokens["access_token"])
+        if not _body_is_replayable(kwargs):
+            # A body that can only be read once is gone now: refresh so the caller's next try
+            # works, but return this response rather than resend an empty body
+            if response.status_code == 401:
+                await self.refresh(stale_access_token=tokens["access_token"])
+            return response
         if response.status_code == 401:
             refreshed = await self.refresh(stale_access_token=tokens["access_token"])
             if refreshed:
@@ -1032,6 +1112,14 @@ class KindeAgentClient:
         if forget:
             # Only this account's own registration: other accounts have their own
             await self.storage.delete_registration(self._registration_key)
+
+
+def _body_is_replayable(kwargs: Dict[str, Any]) -> bool:
+    """Whether the request body in ``kwargs`` can be sent again: no body, bytes, text, JSON or a form."""
+    content = kwargs.get("content")
+    if content is not None and not isinstance(content, (bytes, bytearray, str)):
+        return False
+    return not kwargs.get("files")
 
 
 def _identity_from_registration(registration: Dict[str, Any], key: str) -> Dict[str, Any]:

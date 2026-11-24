@@ -308,7 +308,7 @@ Requests without a valid token get `401` with a `WWW-Authenticate` challenge poi
 
 ### How tokens are verified
 
-Tokens are checked with Kinde's introspection endpoint by default, using the application's client ID and secret, so a revoked token stops working immediately. To verify signatures locally instead (no network call per request, but a revoked token stays valid until it expires, 24 hours by default), pass `verification="jwt"`. `"jwt+introspection"` does both. `introspection_cache_seconds` (up to 60) caches successful introspections to cut traffic. With caching on, `revoke_token` clears only the calling process's cache: other workers keep accepting a revoked token until their cached entry expires, at most `introspection_cache_seconds` later.
+Tokens are checked with Kinde's introspection endpoint by default, using the application's client ID and secret, so a revoked token stops working immediately. To verify signatures locally instead (no network call per request, but a revoked token stays valid until it expires, 24 hours by default), pass `verification="jwt"`. `"jwt+introspection"` does both. `introspection_cache_seconds` (up to 60) caches successful introspections to cut traffic. The cache belongs to one `KindeAgentAuth` instance. With caching on, `revoke_token` clears only that instance's cache: other instances, in this process or in other workers, keep accepting a revoked token until their cached entry expires, at most `introspection_cache_seconds` later.
 
 To cut off an agent, revoke its token with `auth.revoke_token(token)`. This revokes both the access token and refresh token of the pair.
 
@@ -330,6 +330,8 @@ async with KindeAgentClient(
 ```
 
 A CLI agent uses a loopback redirect (`http://127.0.0.1/callback`, port picked automatically). A server-hosted agent passes its own `redirect_uri` and uses `begin_authorization()` and `complete_authorization()` in its login and callback routes. For DCR, prefer a fixed port (`http://127.0.0.1:8765/callback`), because a registration is tied to its exact redirect URI. Each account keeps one registration, and signing in on a new redirect URI replaces it. Two processes signing in the same account at the same moment on different ports can replace each other's registration; the loser gets an error and should sign in again.
+
+`FileAgentStorage` keeps refresh tokens and client secrets in plain text, readable only by you on macOS and Linux (mode 0600). On Windows that mode has no effect and the file takes its folder's access rules, so keep it in a folder only you can read, such as one under your user profile.
 
 Agents built on the official MCP client use the adapter instead:
 

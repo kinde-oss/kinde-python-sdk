@@ -11,7 +11,7 @@ import contextlib
 import json
 import os
 import tempfile
-from typing import Any, Dict, Iterator, Optional, Protocol
+from typing import Any, Callable, Dict, Iterator, Optional, Protocol
 
 try:  # POSIX
     import fcntl
@@ -23,7 +23,7 @@ except ImportError:  # pragma: no cover - Windows
 class AgentClientStorage(Protocol):
     """Where an agent keeps its tokens and DCR registrations.
 
-    A store shared between processes can also define two compare-and-delete
+    A store shared between processes can also define these conditional
     methods, each one atomic step. The client uses them when present:
 
     - ``async delete_registration_if_client(key, client_id)`` deletes the
@@ -31,6 +31,9 @@ class AgentClientStorage(Protocol):
     - ``async delete_tokens_if_refresh_token(key, refresh_token)`` deletes the
       tokens only if they still hold that ``refresh_token``, so a failed refresh
       never removes a newer pair another process just saved.
+    - ``async set_tokens_if_refresh_token(key, refresh_token, tokens)`` saves
+      ``tokens`` only if the stored tokens still hold that ``refresh_token``, so a
+      slow refresh never overwrites a newer sign-in or undoes a sign-out.
     """
 
     async def get_tokens(self, key: str) -> Optional[Dict[str, Any]]: ...
@@ -85,6 +88,12 @@ class InMemoryAgentStorage:
         if (self._tokens.get(key) or {}).get("refresh_token") == refresh_token:
             self._tokens.pop(key, None)
 
+    async def set_tokens_if_refresh_token(self, key: str, refresh_token: str, tokens: Dict[str, Any]) -> None:
+        """Save ``tokens`` only if the stored tokens still hold ``refresh_token``."""
+        stored = self._tokens.get(key)
+        if stored is not None and stored.get("refresh_token") == refresh_token:
+            self._tokens[key] = dict(tokens)
+
 
 class FileAgentStorage:
     """Keeps everything in one JSON file readable only by the current user (mode 0600).
@@ -92,6 +101,13 @@ class FileAgentStorage:
     Suitable for CLI agents on a single-user machine. The file holds refresh
     tokens and client secrets in plain text, so prefer the OS keychain or an
     encrypted store where one is available.
+
+    On Windows the 0600 mode has no effect: the file gets the folder's access
+    rules instead. Keep it in a folder only you can read, such as one under
+    your user profile, never a shared folder.
+
+    File reads, writes and lock waits run in a worker thread, so a lock held by
+    another process never blocks the event loop.
 
     Several processes may share one file: each update holds an OS lock on a
     ``<path>.lock`` file next to it, so one process never overwrites another's
@@ -164,21 +180,29 @@ class FileAgentStorage:
 
     async def _get(self, section: str, key: str) -> Optional[Dict[str, Any]]:
         async with self._guard():
-            return self._read()[section].get(key)
+            return (await asyncio.to_thread(self._read))[section].get(key)
 
     async def _set(self, section: str, key: str, value: Optional[Dict[str, Any]]) -> None:
-        async with self._guard():
-            with self._file_lock():
-                self._update(section, key, value)
+        await self._transaction(lambda data: True, section, key, value)
 
-    def _update(self, section: str, key: str, value: Optional[Dict[str, Any]]) -> None:
-        """Set or delete one entry in a section and write the file."""
-        data = self._read()
-        if value is None:
-            data[section].pop(key, None)
-        else:
-            data[section][key] = value
-        self._write(data)
+    async def _transaction(
+        self, condition: Callable[[Dict[str, Dict[str, Any]]], bool], section: str, key: str, value: Any
+    ) -> None:
+        """Under both locks, set or delete one entry if ``condition(data)`` holds, off the event loop."""
+
+        def run() -> None:
+            # Lock, read, check, write and unlock all happen in this one worker thread
+            with self._file_lock():
+                data = self._read()
+                if condition(data):
+                    if value is None:
+                        data[section].pop(key, None)
+                    else:
+                        data[section][key] = value
+                    self._write(data)
+
+        async with self._guard():
+            await asyncio.to_thread(run)
 
     async def get_tokens(self, key: str) -> Optional[Dict[str, Any]]:
         return await self._get("tokens", key)
@@ -200,14 +224,24 @@ class FileAgentStorage:
 
     async def delete_registration_if_client(self, key: str, client_id: Optional[str]) -> None:
         """Delete the registration only if it still belongs to ``client_id``, under the file lock."""
-        async with self._guard():
-            with self._file_lock():
-                if (self._read()["registrations"].get(key) or {}).get("client_id") == client_id:
-                    self._update("registrations", key, None)
+        await self._transaction(
+            lambda data: (data["registrations"].get(key) or {}).get("client_id") == client_id,
+            "registrations",
+            key,
+            None,
+        )
 
     async def delete_tokens_if_refresh_token(self, key: str, refresh_token: Optional[str]) -> None:
         """Delete the tokens only if they still hold ``refresh_token``, under the file lock."""
-        async with self._guard():
-            with self._file_lock():
-                if (self._read()["tokens"].get(key) or {}).get("refresh_token") == refresh_token:
-                    self._update("tokens", key, None)
+        await self._transaction(
+            lambda data: (data["tokens"].get(key) or {}).get("refresh_token") == refresh_token, "tokens", key, None
+        )
+
+    async def set_tokens_if_refresh_token(self, key: str, refresh_token: str, tokens: Dict[str, Any]) -> None:
+        """Save ``tokens`` only if the stored tokens still hold ``refresh_token``, under the file lock."""
+
+        def still_current(data: Dict[str, Dict[str, Any]]) -> bool:
+            stored = data["tokens"].get(key)
+            return stored is not None and stored.get("refresh_token") == refresh_token
+
+        await self._transaction(still_current, "tokens", key, tokens)

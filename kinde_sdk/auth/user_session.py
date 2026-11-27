@@ -136,8 +136,12 @@ class UserSession:
             token_manager.set_redirect_uri(user_info["redirect_uri"])
         self._bind_token_storage(user_id, token_manager)
 
-        # Set tokens
-        token_manager.tokens = tokens
+        # The token manager is shared per user, so it may already hold tokens from a refresh
+        # whose save failed. Those are newer than the stored copy: keep them, so the pending
+        # save writes them and the old, rotated refresh token is never used again
+        with token_manager.lock:
+            if not token_manager._save_pending:
+                token_manager.tokens = tokens
         
         # Store in memory
         self.user_sessions[user_id] = {

@@ -203,6 +203,32 @@ class TestTokenRefresh(unittest.TestCase):
         self.assertGreaterEqual(save.call_count, 4)
         self.assertEqual(StorageManager().get("user_1")["tokens"]["refresh_token"], "old_refresh_token")
 
+    def test_another_session_loading_from_storage_keeps_unsaved_refreshed_tokens(self):
+        session = UserSession()
+        session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+        token_manager = session.get_token_manager("user_1")
+        with patch("kinde_sdk.auth.token_manager.requests.post", return_value=self.refresh_ok), \
+                patch.object(StorageManager, "setItems", side_effect=OSError("disk full")):
+            token_manager.get_access_token()
+        self.assertEqual(StorageManager().get("user_1")["tokens"]["refresh_token"], "old_refresh_token")
+
+        # Another UserSession (e.g. OAuth or portals) loads the user from storage: it shares the
+        # token manager, and must not swap the unsaved refreshed tokens for the stored, older ones
+        self.assertIs(UserSession().get_token_manager("user_1"), token_manager)
+        self.assertEqual(token_manager.tokens["refresh_token"], "new_refresh_token")
+
+        # Next call: the pending save writes the refreshed tokens, and Kinde isn't called again
+        with patch("kinde_sdk.auth.token_manager.requests.post") as post:
+            self.assertEqual(token_manager.get_access_token(), self.new_access_token)
+        post.assert_not_called()
+        self.assertEqual(StorageManager().get("user_1")["tokens"]["refresh_token"], "new_refresh_token")
+
+    def test_loading_from_storage_after_a_restart_uses_the_stored_tokens(self):
+        UserSession().set_user_data("user_1", dict(USER_INFO), self.expired_tokens)
+        TokenManager.reset_instances()  # a restart: no token manager, nothing pending
+        restored = UserSession().get_token_manager("user_1")
+        self.assertEqual(restored.tokens["refresh_token"], "old_refresh_token")
+
     def test_refresh_saves_the_latest_user_info_when_another_session_bound_the_token_manager(self):
         session = UserSession()
         session.set_user_data("user_1", dict(USER_INFO), self.expired_tokens)

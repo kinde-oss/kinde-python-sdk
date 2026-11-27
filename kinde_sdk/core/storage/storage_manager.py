@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 
 class StorageManager:
     _instance = None
-    _lock = threading.RLock()  # Reentrant: reset() calls initialize() while holding it
+    # Reentrant: reset() calls initialize() and get_device_id() calls get() while holding it
+    _lock = threading.RLock()
     
     def __new__(cls):
         with cls._lock:
